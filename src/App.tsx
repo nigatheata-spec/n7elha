@@ -14,7 +14,11 @@ import Quizzes from "./pages/teacher/Quizzes";
 import QuizEditor from "./pages/teacher/QuizEditor";
 import HostGame from "./pages/teacher/HostGame";
 import HostedGames from "./pages/teacher/HostedGames";
+import GameMonitor from "./pages/teacher/GameMonitor";
+import GameResults from "./pages/teacher/GameResults";
 import { Analytics, SettingsPage } from "./pages/teacher/Stubs";
+import Join from "./pages/play/Join";
+import Game from "./pages/play/Game";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -29,6 +33,8 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/play" element={<Join />} />
+            <Route path="/play/:sessionId" element={<Game />} />
             <Route path="/app" element={<RequireAuth><TeacherLayout /></RequireAuth>}>
               <Route index element={<Dashboard />} />
               <Route path="quizzes" element={<Quizzes />} />
@@ -36,6 +42,8 @@ const App = () => (
               <Route path="quizzes/:id/edit" element={<QuizEditor />} />
               <Route path="host/:quizId" element={<HostGame />} />
               <Route path="games" element={<HostedGames />} />
+              <Route path="games/:sessionId/monitor" element={<GameMonitor />} />
+              <Route path="games/:sessionId/results" element={<GameResults />} />
               <Route path="analytics" element={<Analytics />} />
               <Route path="settings" element={<SettingsPage />} />
             </Route>
