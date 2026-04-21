@@ -1,0 +1,89 @@
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/lib/auth";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Plus, Sparkles, Play, Trash2, FileQuestion } from "lucide-react";
+import { toast } from "sonner";
+
+type Quiz = {
+  id: string; title: string; subject: string | null; grade_level: string | null;
+  source: string; created_at: string;
+};
+
+const Quizzes = () => {
+  const { t } = useTranslation();
+  const { user } = useAuth();
+  const [quizzes, setQuizzes] = useState<Quiz[]>([]);
+  const [counts, setCounts] = useState<Record<string, number>>({});
+  const [loading, setLoading] = useState(true);
+
+  const load = async () => {
+    if (!user) return;
+    setLoading(true);
+    const { data } = await supabase.from("quizzes").select("*").eq("created_by", user.id).order("created_at", { ascending: false });
+    setQuizzes(data ?? []);
+    if (data?.length) {
+      const ids = data.map(q => q.id);
+      const { data: qs } = await supabase.from("questions").select("quiz_id").in("quiz_id", ids);
+      const c: Record<string, number> = {};
+      qs?.forEach((r: any) => { c[r.quiz_id] = (c[r.quiz_id] ?? 0) + 1; });
+      setCounts(c);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, [user]);
+
+  const remove = async (id: string) => {
+    if (!confirm("?")) return;
+    await supabase.from("quizzes").delete().eq("id", id);
+    toast.success("OK");
+    load();
+  };
+
+  return (
+    <div className="space-y-6 max-w-6xl">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <h1 className="font-display text-3xl font-bold">{t("my_quizzes")}</h1>
+        <div className="flex gap-2">
+          <Button asChild className="bg-gradient-cyan shadow-glow"><Link to="/app/quizzes/new"><Plus className="h-4 w-4 me-2" />{t("manual_build")}</Link></Button>
+          <Button asChild variant="outline" className="border-accent/40"><Link to="/app/quizzes/new?ai=1"><Sparkles className="h-4 w-4 me-2" />{t("ai_generate")}</Link></Button>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="text-muted-foreground">...</div>
+      ) : quizzes.length === 0 ? (
+        <Card className="p-12 text-center">
+          <FileQuestion className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+          <h3 className="font-bold text-lg">{t("no_quizzes")}</h3>
+          <p className="text-muted-foreground mb-4">{t("start_first")}</p>
+          <Button asChild className="bg-gradient-cyan shadow-glow"><Link to="/app/quizzes/new"><Plus className="h-4 w-4 me-2" />{t("create_quiz")}</Link></Button>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {quizzes.map((q) => (
+            <Card key={q.id} className="p-5 hover:shadow-glow transition-shadow group">
+              <div className="flex items-start justify-between gap-2 mb-2">
+                <h3 className="font-bold text-lg leading-tight">{q.title}</h3>
+                {q.source === "ai" && <span className="shrink-0 text-[10px] px-2 py-0.5 rounded-full bg-accent/20 text-accent-foreground border border-accent/30 font-bold">AI</span>}
+              </div>
+              <div className="text-sm text-muted-foreground mb-1">{q.subject} {q.grade_level && `· ${q.grade_level}`}</div>
+              <div className="text-xs text-muted-foreground mb-4">{counts[q.id] ?? 0} {t("questions")}</div>
+              <div className="flex gap-2">
+                <Button asChild size="sm" className="flex-1 bg-gradient-cyan"><Link to={`/app/host/${q.id}`}><Play className="h-3.5 w-3.5 me-1.5" />{t("host_game")}</Link></Button>
+                <Button asChild size="sm" variant="outline"><Link to={`/app/quizzes/${q.id}/edit`}>{t("edit")}</Link></Button>
+                <Button size="sm" variant="ghost" onClick={() => remove(q.id)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default Quizzes;
