@@ -81,10 +81,12 @@ const HostGame = () => {
 
   const startGame = async () => {
     if (!sessionId) return;
-    await supabase.from("game_sessions").update({ status: "running", started_at: new Date().toISOString() }).eq("id", sessionId);
-    toast.success("✓");
-    // Game monitor screen comes in next iteration
-    navigate("/app/games");
+    await supabase.from("game_sessions").update({
+      status: "running",
+      started_at: new Date().toISOString(),
+      current_question_index: 0,
+    }).eq("id", sessionId);
+    navigate(`/app/games/${sessionId}/monitor`);
   };
 
   const removeStudent = async (id: string) => {
