@@ -56,11 +56,14 @@ const Landing = () => {
               <p className="mt-6 text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
                 {t("hero_sub")}
               </p>
-              <div className="mt-10 flex items-center justify-center gap-3">
+              <div className="mt-10 flex items-center justify-center gap-3 flex-wrap">
                 <Button asChild size="lg" className="bg-gradient-cyan shadow-glow text-base h-12 px-8">
                   <Link to={user ? "/app" : "/auth?mode=signup"}>
                     {t("get_started")} <ArrowRight className="ms-2 h-4 w-4 rtl:rotate-180" />
                   </Link>
+                </Button>
+                <Button asChild size="lg" variant="outline" className="text-base h-12 px-8 border-2">
+                  <Link to="/play">انضم للعبة</Link>
                 </Button>
               </div>
             </div>
