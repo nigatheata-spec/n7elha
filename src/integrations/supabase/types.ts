@@ -19,6 +19,7 @@ export type Database = {
           code: string
           created_at: string
           current_question_index: number
+          current_question_started_at: string | null
           ended_at: string | null
           id: string
           quiz_id: string
@@ -31,6 +32,7 @@ export type Database = {
           code: string
           created_at?: string
           current_question_index?: number
+          current_question_started_at?: string | null
           ended_at?: string | null
           id?: string
           quiz_id: string
@@ -43,6 +45,7 @@ export type Database = {
           code?: string
           created_at?: string
           current_question_index?: number
+          current_question_started_at?: string | null
           ended_at?: string | null
           id?: string
           quiz_id?: string
@@ -190,6 +193,39 @@ export type Database = {
           id?: string
           language?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      question_responses: {
+        Row: {
+          answer_index: number
+          answered_at: string
+          id: string
+          is_correct: boolean
+          question_id: string
+          question_index: number
+          session_id: string
+          student_id: string
+        }
+        Insert: {
+          answer_index: number
+          answered_at?: string
+          id?: string
+          is_correct: boolean
+          question_id: string
+          question_index: number
+          session_id: string
+          student_id: string
+        }
+        Update: {
+          answer_index?: number
+          answered_at?: string
+          id?: string
+          is_correct?: boolean
+          question_id?: string
+          question_index?: number
+          session_id?: string
+          student_id?: string
         }
         Relationships: []
       }
