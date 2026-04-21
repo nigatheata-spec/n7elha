@@ -14,7 +14,262 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      game_sessions: {
+        Row: {
+          code: string
+          created_at: string
+          current_question_index: number
+          ended_at: string | null
+          id: string
+          quiz_id: string
+          settings: Json
+          started_at: string | null
+          status: string
+          teacher_id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          current_question_index?: number
+          ended_at?: string | null
+          id?: string
+          quiz_id: string
+          settings?: Json
+          started_at?: string | null
+          status?: string
+          teacher_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          current_question_index?: number
+          ended_at?: string | null
+          id?: string
+          quiz_id?: string
+          settings?: Json
+          started_at?: string | null
+          status?: string
+          teacher_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_sessions_quiz_id_fkey"
+            columns: ["quiz_id"]
+            isOneToOne: false
+            referencedRelation: "quizzes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      game_students: {
+        Row: {
+          approved: boolean
+          correct_answers: number
+          crypto: number
+          hacks_made: number
+          hacks_received: number
+          id: string
+          is_breached: boolean
+          joined_at: string
+          name: string
+          password: string | null
+          session_id: string
+          total_answers: number
+        }
+        Insert: {
+          approved?: boolean
+          correct_answers?: number
+          crypto?: number
+          hacks_made?: number
+          hacks_received?: number
+          id?: string
+          is_breached?: boolean
+          joined_at?: string
+          name: string
+          password?: string | null
+          session_id: string
+          total_answers?: number
+        }
+        Update: {
+          approved?: boolean
+          correct_answers?: number
+          crypto?: number
+          hacks_made?: number
+          hacks_received?: number
+          id?: string
+          is_breached?: boolean
+          joined_at?: string
+          name?: string
+          password?: string | null
+          session_id?: string
+          total_answers?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_students_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "game_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hack_events: {
+        Row: {
+          created_at: string
+          crypto_transferred: number
+          hacker_id: string
+          id: string
+          password_attempted: string | null
+          session_id: string
+          success: boolean
+          target_id: string
+        }
+        Insert: {
+          created_at?: string
+          crypto_transferred?: number
+          hacker_id: string
+          id?: string
+          password_attempted?: string | null
+          session_id: string
+          success: boolean
+          target_id: string
+        }
+        Update: {
+          created_at?: string
+          crypto_transferred?: number
+          hacker_id?: string
+          id?: string
+          password_attempted?: string | null
+          session_id?: string
+          success?: boolean
+          target_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hack_events_hacker_id_fkey"
+            columns: ["hacker_id"]
+            isOneToOne: false
+            referencedRelation: "game_students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hack_events_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "game_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hack_events_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "game_students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          id: string
+          language: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          id: string
+          language?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          language?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      questions: {
+        Row: {
+          correct_index: number
+          created_at: string
+          difficulty: string
+          id: string
+          options: Json
+          position: number
+          quiz_id: string
+          text: string
+        }
+        Insert: {
+          correct_index: number
+          created_at?: string
+          difficulty?: string
+          id?: string
+          options: Json
+          position?: number
+          quiz_id: string
+          text: string
+        }
+        Update: {
+          correct_index?: number
+          created_at?: string
+          difficulty?: string
+          id?: string
+          options?: Json
+          position?: number
+          quiz_id?: string
+          text?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "questions_quiz_id_fkey"
+            columns: ["quiz_id"]
+            isOneToOne: false
+            referencedRelation: "quizzes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quizzes: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          grade_level: string | null
+          id: string
+          source: string
+          subject: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          grade_level?: string | null
+          id?: string
+          source?: string
+          subject?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          grade_level?: string | null
+          id?: string
+          source?: string
+          subject?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
