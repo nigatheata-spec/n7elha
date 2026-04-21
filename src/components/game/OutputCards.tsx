@@ -39,7 +39,7 @@ export const OutputCards = ({ hackPct, onPick, picked }: { hackPct: number; onPi
   return (
     <div className="text-center py-6">
       <div className="font-mono text-sm text-success mb-2">✓ ACCESS_GRANTED</div>
-      <h3 className="font-mono text-xl text-primary text-glow-cyan mb-6">> SELECT_OUTPUT</h3>
+      <h3 className="font-mono text-xl text-primary text-glow-cyan mb-6">{"> SELECT_OUTPUT"}</h3>
       <div className="grid grid-cols-3 gap-4 max-w-2xl mx-auto">
         {deck.map((r, i) => {
           const isFlipped = flipped === i;

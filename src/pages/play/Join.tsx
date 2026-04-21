@@ -43,7 +43,7 @@ const Join = () => {
         <div className="text-center mb-8">
           <Terminal className="h-14 w-14 mx-auto text-primary text-glow-cyan" />
           <h1 className="font-mono text-4xl font-black text-primary text-glow-cyan mt-3">HASH</h1>
-          <p className="text-muted-foreground mt-1 font-mono text-xs">> ENTER ACCESS CODE</p>
+          <p className="text-muted-foreground mt-1 font-mono text-xs">{"> ENTER ACCESS CODE"}</p>
         </div>
         <form onSubmit={join} className="space-y-4 border-glow rounded-2xl p-6 bg-card/60 backdrop-blur">
           <div>

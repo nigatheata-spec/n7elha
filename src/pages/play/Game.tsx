@@ -189,7 +189,7 @@ const Game = () => {
         <main>
           {phase === "waiting" && (
             <div className="text-center py-20">
-              <div className="font-mono text-2xl text-primary text-glow-cyan animate-pulse">> WAITING_FOR_HOST...</div>
+              <div className="font-mono text-2xl text-primary text-glow-cyan animate-pulse">{"> WAITING_FOR_HOST..."}</div>
               <p className="text-muted-foreground mt-3 text-sm">{students.length} مخترقين متصلين</p>
             </div>
           )}
@@ -246,7 +246,7 @@ const Game = () => {
                 })}
               </div>
               {phase === "answered" && (
-                <p className="text-center mt-6 font-mono text-sm text-muted-foreground">> AWAITING_NEXT_QUESTION...</p>
+                <p className="text-center mt-6 font-mono text-sm text-muted-foreground">{"> AWAITING_NEXT_QUESTION..."}</p>
               )}
             </div>
           )}
