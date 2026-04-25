@@ -6,11 +6,9 @@ import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
-import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Copy, Play, Users, Trash2 } from "lucide-react";
+import { Copy, Play, Users, Trash2, Clock, Coins } from "lucide-react";
 import { toast } from "sonner";
 
 const genCode = () => {
@@ -21,7 +19,8 @@ const genCode = () => {
 const HostGame = () => {
   const { quizId } = useParams();
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const ar = i18n.language === "ar";
   const { user } = useAuth();
 
   const [quiz, setQuiz] = useState<any>(null);
@@ -29,21 +28,17 @@ const HostGame = () => {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [students, setStudents] = useState<any[]>([]);
 
-  // settings
-  const [timePerQ, setTimePerQ] = useState(30);
-  const [showTimer, setShowTimer] = useState(true);
-  const [hackFreq, setHackFreq] = useState<"low"|"medium"|"high">("medium");
-  const [hackPct, setHackPct] = useState(15);
-  const [defenseEnabled, setDefenseEnabled] = useState(true);
+  // simplified settings: time, crypto cap, time per question
+  const [timePerQ, setTimePerQ] = useState(20);
+  const [minutes, setMinutes] = useState(7);
+  const [cryptoCap, setCryptoCap] = useState(1000);
   const [maxStudents, setMaxStudents] = useState(40);
-  const [approveManual, setApproveManual] = useState(false);
 
   useEffect(() => {
     if (!quizId) return;
     supabase.from("quizzes").select("*").eq("id", quizId).maybeSingle().then(({ data }) => setQuiz(data));
   }, [quizId]);
 
-  // realtime students once session created
   useEffect(() => {
     if (!sessionId) return;
     const load = async () => {
@@ -60,15 +55,13 @@ const HostGame = () => {
   const openLobby = async () => {
     if (!user || !quizId) return;
     try {
-      const settings = { timePerQ, showTimer, hackFreq, hackPct, defenseEnabled, maxStudents, approveManual };
+      const settings = { timePerQ, minutes, cryptoCap, maxStudents };
       const { data, error } = await supabase.from("game_sessions")
         .insert({ teacher_id: user.id, quiz_id: quizId, code, status: "lobby", settings }).select().single();
       if (error) throw error;
       setSessionId(data.id);
-      toast.success(t("open_lobby") + " ✓");
-    } catch (e: any) {
-      toast.error(e.message);
-    }
+      toast.success("✓");
+    } catch (e: any) { toast.error(e.message); }
   };
 
   const newCode = async () => {
@@ -84,7 +77,7 @@ const HostGame = () => {
     await supabase.from("game_sessions").update({
       status: "running",
       started_at: new Date().toISOString(),
-      current_question_index: 0,
+      current_question_started_at: new Date().toISOString(),
     }).eq("id", sessionId);
     navigate(`/app/games/${sessionId}/monitor`);
   };
@@ -101,56 +94,41 @@ const HostGame = () => {
       </div>
 
       <div className="grid md:grid-cols-2 gap-6">
-        {/* Settings */}
         <Card className="p-6 space-y-5">
-          <h2 className="font-bold text-lg">{t("settings")}</h2>
+          <h2 className="font-bold text-lg">{ar ? "إعدادات اللعبة" : "Game settings"}</h2>
+
           <div>
-            <Label className="mb-2 block">{t("time_per_q")}: {timePerQ}s</Label>
-            <Slider value={[timePerQ]} onValueChange={([v]) => setTimePerQ(v)} min={10} max={120} step={5} />
+            <Label className="mb-2 flex items-center gap-2"><Clock className="h-4 w-4 text-primary" />{ar ? "مدة اللعبة (دقائق)" : "Game duration (minutes)"}: {minutes}</Label>
+            <Slider value={[minutes]} onValueChange={([v]) => setMinutes(v)} min={2} max={20} step={1} />
+            <p className="text-xs text-muted-foreground mt-1">{ar ? "تنتهي اللعبة بعد انقضاء الوقت" : "Game ends when time runs out"}</p>
           </div>
-          <div className="flex items-center justify-between">
-            <Label>المؤقت ظاهر للطلاب</Label>
-            <Switch checked={showTimer} onCheckedChange={setShowTimer} />
-          </div>
+
           <div>
-            <Label className="mb-2 block">{t("hack_freq")}</Label>
-            <Select value={hackFreq} onValueChange={(v: any) => setHackFreq(v)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="low">{t("low")}</SelectItem>
-                <SelectItem value="medium">{t("medium_freq")}</SelectItem>
-                <SelectItem value="high">{t("high")}</SelectItem>
-              </SelectContent>
-            </Select>
+            <Label className="mb-2 flex items-center gap-2"><Coins className="h-4 w-4 text-primary" />{ar ? "هدف الكريبتو" : "Crypto goal"}: {cryptoCap}</Label>
+            <Slider value={[cryptoCap]} onValueChange={([v]) => setCryptoCap(v)} min={200} max={5000} step={100} />
+            <p className="text-xs text-muted-foreground mt-1">{ar ? "تنتهي إذا وصل أحد إلى هذا الرقم" : "Game ends when any player reaches this"}</p>
           </div>
+
           <div>
-            <Label className="mb-2 block">نسبة الاختراق: {hackPct}%</Label>
-            <Slider value={[hackPct]} onValueChange={([v]) => setHackPct(v)} min={5} max={30} step={1} />
+            <Label className="mb-2 block">{ar ? "وقت كل سؤال (ث)" : "Time per question (s)"}: {timePerQ}</Label>
+            <Slider value={[timePerQ]} onValueChange={([v]) => setTimePerQ(v)} min={10} max={60} step={5} />
           </div>
-          <div className="flex items-center justify-between">
-            <Label>تفعيل مهام الدفاع</Label>
-            <Switch checked={defenseEnabled} onCheckedChange={setDefenseEnabled} />
-          </div>
+
           <div>
             <Label className="mb-2 block">{t("max_students")}</Label>
             <Input type="number" min={2} max={100} value={maxStudents} onChange={e => setMaxStudents(Number(e.target.value))} />
           </div>
-          <div className="flex items-center justify-between">
-            <Label>الموافقة اليدوية</Label>
-            <Switch checked={approveManual} onCheckedChange={setApproveManual} />
-          </div>
         </Card>
 
-        {/* Code + Lobby */}
         <Card className="p-6 space-y-5">
           <h2 className="font-bold text-lg">{t("game_code")}</h2>
           <div className="rounded-2xl border-2 border-primary/40 bg-gradient-hero p-6 text-center shadow-glow">
             <div className="font-mono text-6xl font-black tracking-widest text-primary text-glow-cyan">{code}</div>
-            <div className="mt-2 text-xs text-muted-foreground">شاركه مع طلابك</div>
+            <div className="mt-2 text-xs text-muted-foreground">{ar ? "شارك مع طلابك" : "Share with your students"}</div>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={copy} className="flex-1"><Copy className="h-4 w-4 me-2" />{t("copy")}</Button>
-            <Button variant="outline" onClick={newCode} className="flex-1">رمز جديد</Button>
+            <Button variant="outline" onClick={newCode} className="flex-1">{ar ? "رمز جديد" : "New code"}</Button>
           </div>
 
           {!sessionId ? (
