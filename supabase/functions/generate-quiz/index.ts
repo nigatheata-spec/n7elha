@@ -9,14 +9,20 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { content, numQuestions = 10, difficulty = "medium", topics = "", language = "ar" } = await req.json();
+    const { content, numQuestions = 10, difficulty = "medium", topics = "", language = "ar", creativity = "balanced" } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY missing");
 
     const n = Math.max(3, Math.min(50, Number(numQuestions) || 10));
     const lang = language === "en" ? "English" : "Arabic";
 
-    const systemPrompt = `You are an expert quiz generator for teachers. Generate exactly ${n} multiple-choice questions in ${lang}. Each question has exactly 4 distinct options and ONE correct answer. Difficulty: ${difficulty}. ${topics ? `Focus on these topics: ${topics}.` : ""} Output via the provided tool only.`;
+    const creativityRule = creativity === "strict"
+      ? "STRICT mode: stay 100% faithful to the provided source. Do NOT invent numbers, names, or facts. Only ask about content that is explicitly present."
+      : creativity === "creative"
+      ? "CREATIVE mode: feel free to introduce new numbers, scenarios, twists, and analogies that test the same underlying concept. Make it fun."
+      : "BALANCED mode: stay close to the source but you may rephrase, use simple examples, and vary numbers slightly.";
+
+    const systemPrompt = `You are an expert quiz generator for teachers. Generate exactly ${n} multiple-choice questions in ${lang}. Each question has exactly 4 distinct plausible options and ONE correct answer. Difficulty: ${difficulty}. ${topics ? `Teacher's request / focus: ${topics}.` : ""} ${creativityRule} Output via the provided tool only.`;
 
     const userPrompt = content?.trim()
       ? `Source content:\n\n${String(content).slice(0, 25000)}`

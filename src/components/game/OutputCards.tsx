@@ -8,26 +8,29 @@ export type OutputResult =
   | { kind: "hack" }
   | { kind: "dud" };
 
-const buildDeck = (hackPct: number): OutputResult[] => {
-  const r = Math.random() * 100;
-  let extra: OutputResult;
-  if (r < hackPct) extra = { kind: "hack" };
-  else if (r < hackPct + 15) extra = { kind: "mult", value: Math.random() < 0.3 ? 3 : 2 };
-  else if (r < hackPct + 25) extra = { kind: "dud" };
-  else extra = { kind: "flat", value: [50000,100000,250000,500000][Math.floor(Math.random()*4)] };
+// Equal-probability pool. Eight outcomes, all equal odds.
+const POOL: OutputResult[] = [
+  { kind: "flat", value: 10 },
+  { kind: "flat", value: 20 },
+  { kind: "flat", value: 30 },
+  { kind: "flat", value: 50 },
+  { kind: "mult", value: 2 },
+  { kind: "mult", value: 3 },
+  { kind: "hack" },
+  { kind: "dud" },
+];
 
-  const deck = [
-    extra,
-    { kind: "flat", value: [25000,75000,150000][Math.floor(Math.random()*3)] } as OutputResult,
-    { kind: "dud" } as OutputResult,
-  ];
-  return deck.sort(() => Math.random() - 0.5);
+const pick = (): OutputResult => POOL[Math.floor(Math.random() * POOL.length)];
+
+const buildDeck = (): OutputResult[] => {
+  // 3 cards drawn independently from equal pool
+  return [pick(), pick(), pick()];
 };
 
 const fmt = (n: number) => n.toLocaleString();
 
-export const OutputCards = ({ hackPct, onPick, picked }: { hackPct: number; onPick: (r: OutputResult) => void; picked: OutputResult | null }) => {
-  const deck = useMemo(() => buildDeck(hackPct), []);
+export const OutputCards = ({ onPick, picked }: { onPick: (r: OutputResult) => void; picked: OutputResult | null }) => {
+  const deck = useMemo(() => buildDeck(), []);
   const [flipped, setFlipped] = useState<number | null>(null);
 
   const click = (i: number) => {
@@ -53,10 +56,10 @@ export const OutputCards = ({ hackPct, onPick, picked }: { hackPct: number; onPi
                 <div className="absolute inset-0 flex items-center justify-center font-mono text-6xl text-primary text-glow-cyan">?</div>
               ) : (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 p-3" style={{transform:"rotateY(180deg)"}}>
-                  {r.kind === "flat" && (<><Coins className="h-10 w-10" style={{color:"hsl(51 100% 50%)"}} /><div className="font-mono font-bold" style={{color:"hsl(51 100% 50%)"}}>+{fmt(r.value)}</div></>)}
+                  {r.kind === "flat" && (<><Coins className="h-10 w-10" style={{color:"hsl(51 100% 50%)"}} /><div className="font-mono font-bold text-2xl" style={{color:"hsl(51 100% 50%)"}}>+{fmt(r.value)}</div></>)}
                   {r.kind === "mult" && (<><Zap className="h-10 w-10 text-primary" /><div className="font-mono font-black text-2xl text-primary">{r.value}×</div></>)}
                   {r.kind === "hack" && (<><Skull className="h-10 w-10 text-destructive" /><div className="font-mono font-bold text-destructive">HACK</div></>)}
-                  {r.kind === "dud" && (<><X className="h-10 w-10 text-muted-foreground" /><div className="font-mono text-muted-foreground">DUD</div></>)}
+                  {r.kind === "dud" && (<><X className="h-10 w-10 text-muted-foreground" /><div className="font-mono text-muted-foreground">NOTHING</div></>)}
                 </div>
               )}
             </button>
