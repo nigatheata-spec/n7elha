@@ -2,213 +2,183 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import { SkipForward, Square, Pause, Play } from "lucide-react";
+import { Bitcoin, Square, Maximize, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
 
 const fmt = (n: number) => n.toLocaleString();
+
+// Cute monster avatars assigned by name hash
+const AVATARS = ["👾","🐱","🐶","🐼","🦊","🐸","🐵","🦁","🐯","🐰","🐻","🐨","🐷","🐮","🦄","🐲","🦉","🐺","🐙","🦝"];
+const avatarFor = (name: string) => {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xffffffff;
+  return AVATARS[Math.abs(h) % AVATARS.length];
+};
+
+const ord = (n: number) => {
+  const s = ["th","st","nd","rd"], v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+};
 
 const GameMonitor = () => {
   const { sessionId } = useParams();
   const nav = useNavigate();
   const [session, setSession] = useState<any>(null);
-  const [questions, setQuestions] = useState<any[]>([]);
   const [students, setStudents] = useState<any[]>([]);
-  const [responses, setResponses] = useState<any[]>([]);
   const [hacks, setHacks] = useState<any[]>([]);
-  const [hackFilter, setHackFilter] = useState<"all"|"success"|"fail">("all");
-
-  useEffect(() => {
-    if (!sessionId) return;
-    const load = async () => {
-      const { data: s } = await supabase.from("game_sessions").select("*, quizzes(id, title)").eq("id", sessionId).maybeSingle();
-      setSession(s);
-      if (s?.quiz_id) {
-        const { data: qs } = await supabase.from("questions").select("*").eq("quiz_id", s.quiz_id).order("position");
-        setQuestions(qs ?? []);
-      }
-    };
-    load();
-  }, [sessionId]);
+  const [now, setNow] = useState(Date.now());
+  const [ending, setEnding] = useState(false);
 
   useEffect(() => {
     if (!sessionId) return;
     const refresh = async () => {
-      const [{ data: ss }, { data: rs }, { data: hs }] = await Promise.all([
+      const [{ data: s }, { data: ss }, { data: hs }] = await Promise.all([
+        supabase.from("game_sessions").select("*, quizzes(title)").eq("id", sessionId).maybeSingle(),
         supabase.from("game_students").select("*").eq("session_id", sessionId).order("crypto", { ascending: false }),
-        supabase.from("question_responses").select("*").eq("session_id", sessionId),
-        supabase.from("hack_events").select("*").eq("session_id", sessionId).order("created_at", { ascending: false }),
+        supabase.from("hack_events").select("*").eq("session_id", sessionId).order("created_at", { ascending: false }).limit(10),
       ]);
-      setStudents(ss ?? []); setResponses(rs ?? []); setHacks(hs ?? []);
+      setSession(s); setStudents(ss ?? []); setHacks(hs ?? []);
     };
     refresh();
     const ch = supabase.channel(`monitor-${sessionId}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "game_sessions", filter: `id=eq.${sessionId}` }, (p:any) => setSession((prev:any)=>({...prev,...p.new})))
+      .on("postgres_changes", { event: "*", schema: "public", table: "game_sessions", filter: `id=eq.${sessionId}` }, refresh)
       .on("postgres_changes", { event: "*", schema: "public", table: "game_students", filter: `session_id=eq.${sessionId}` }, refresh)
-      .on("postgres_changes", { event: "*", schema: "public", table: "question_responses", filter: `session_id=eq.${sessionId}` }, refresh)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "hack_events", filter: `session_id=eq.${sessionId}` }, refresh)
       .subscribe();
-    return () => { supabase.removeChannel(ch); };
+    const tick = setInterval(() => setNow(Date.now()), 500);
+    return () => { supabase.removeChannel(ch); clearInterval(tick); };
   }, [sessionId]);
 
-  const qIdx = session?.current_question_index ?? 0;
-  const currentQ = questions[qIdx];
-  const currentResponses = responses.filter(r => r.question_index === qIdx);
-  const distribution = useMemo(() => {
-    const d = [0,0,0,0];
-    currentResponses.forEach(r => { if (r.answer_index >= 0 && r.answer_index < 4) d[r.answer_index]++; });
-    return d;
-  }, [currentResponses]);
+  const totalCrypto = useMemo(() => students.reduce((a, s) => a + (s.crypto || 0), 0), [students]);
+  const settings = session?.settings || {};
+  const minutes = settings.minutes ?? 7;
+  const cap = settings.cryptoCap ?? 1000;
+  const startedAt = session?.started_at ? new Date(session.started_at).getTime() : 0;
+  const elapsed = startedAt ? Math.floor((now - startedAt) / 1000) : 0;
+  const totalSecs = minutes * 60;
+  const left = Math.max(0, totalSecs - elapsed);
+  const top = students[0];
+  const reachedCap = top && top.crypto >= cap;
 
-  const startNext = async () => {
-    if (!session) return;
-    if (qIdx + 1 >= questions.length) {
-      await endGame();
-      return;
+  // auto-end
+  useEffect(() => {
+    if (!session || session.status !== "running") return;
+    if (left === 0 || reachedCap) {
+      if (ending) return;
+      setEnding(true);
+      supabase.from("game_sessions").update({ status: "finished", ended_at: new Date().toISOString() }).eq("id", session.id);
     }
-    await supabase.from("game_sessions").update({
-      current_question_index: qIdx + 1,
-      current_question_started_at: new Date().toISOString(),
-    }).eq("id", session.id);
-  };
+  }, [left, reachedCap, session, ending]);
 
-  const startFirst = async () => {
-    if (!session) return;
-    await supabase.from("game_sessions").update({
-      current_question_index: 0,
-      current_question_started_at: new Date().toISOString(),
-    }).eq("id", session.id);
-  };
-
-  const endGame = async () => {
+  const endNow = async () => {
     if (!session) return;
     await supabase.from("game_sessions").update({ status: "finished", ended_at: new Date().toISOString() }).eq("id", session.id);
-    toast.success("انتهت اللعبة");
     nav(`/app/games/${session.id}/results`);
   };
 
-  if (!session) return <div>...</div>;
+  const goFullscreen = () => {
+    const el = document.documentElement as any;
+    (el.requestFullscreen || el.webkitRequestFullscreen)?.call(el);
+  };
 
-  const filteredHacks = hacks.filter(h => hackFilter === "all" ? true : hackFilter === "success" ? h.success : !h.success);
-  const answeredCount = new Set(currentResponses.map(r => r.student_id)).size;
-  const notStarted = !session.current_question_started_at;
+  if (!session) return <div className="theme-game min-h-screen bg-background text-foreground flex items-center justify-center font-mono">...</div>;
+
+  if (session.status === "finished") {
+    nav(`/app/games/${session.id}/results`, { replace: true });
+    return null;
+  }
+
+  const mm = String(Math.floor(left / 60)).padStart(2, "0");
+  const ss = String(left % 60).padStart(2, "0");
 
   return (
-    <div className="space-y-5 max-w-7xl">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="font-display text-3xl font-bold">{session.quizzes?.title}</h1>
-          <p className="text-muted-foreground text-sm font-mono">CODE: <span className="text-primary">{session.code}</span> · Q {qIdx+1}/{questions.length}</p>
+    <div className="theme-game fixed inset-0 bg-background text-foreground bg-grid overflow-hidden">
+      {/* Top controls (only for teacher, hidden when projector) */}
+      <div className="absolute top-3 inset-x-3 z-20 flex items-center justify-between font-mono text-xs">
+        <div className="text-muted-foreground">
+          CODE <span className="text-primary text-base font-black tracking-widest">{session.code}</span>
+        </div>
+        <div className="text-center text-success font-black text-3xl text-glow-cyan tabular-nums">
+          {mm}:{ss}
         </div>
         <div className="flex gap-2">
-          {notStarted ? (
-            <Button onClick={startFirst} className="bg-gradient-cyan shadow-glow"><Play className="h-4 w-4 me-2" />ابدأ السؤال الأول</Button>
-          ) : (
-            <Button onClick={startNext} className="bg-gradient-cyan"><SkipForward className="h-4 w-4 me-2" />السؤال التالي</Button>
-          )}
-          <Button variant="destructive" onClick={endGame}><Square className="h-4 w-4 me-2" />إنهاء</Button>
+          <Button size="sm" variant="ghost" onClick={goFullscreen} className="text-success hover:text-success hover:bg-success/10">
+            <Maximize className="h-4 w-4" />
+          </Button>
+          <Button size="sm" variant="ghost" onClick={endNow} className="text-destructive hover:text-destructive hover:bg-destructive/10">
+            <Square className="h-4 w-4 me-1" />END
+          </Button>
         </div>
       </div>
 
-      <div className="grid lg:grid-cols-[260px_1fr] gap-5">
-        <Card className="p-4 space-y-3 h-fit">
-          <div className="text-xs text-muted-foreground">الطلاب المتصلون</div>
-          <div className="text-3xl font-bold">{students.length}</div>
-          <div className="text-xs text-muted-foreground">أجابوا على هذا السؤال</div>
-          <div className="text-2xl font-bold text-primary">{answeredCount} / {students.length}</div>
-        </Card>
-
-        <Tabs defaultValue="current">
-          <TabsList>
-            <TabsTrigger value="current">السؤال الحالي</TabsTrigger>
-            <TabsTrigger value="leaderboard">الترتيب</TabsTrigger>
-            <TabsTrigger value="hacks">سجل الاختراقات ({hacks.length})</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="current">
-            <Card className="p-6">
-              {!currentQ ? <p className="text-muted-foreground">لا يوجد سؤال نشط</p> : (
-                <>
-                  <p className="text-lg font-medium mb-4">{currentQ.text}</p>
-                  <div className="space-y-2">
-                    {currentQ.options.map((o: string, i: number) => {
-                      const count = distribution[i];
-                      const pct = currentResponses.length ? (count / currentResponses.length) * 100 : 0;
-                      const isCorrect = i === currentQ.correct_index;
-                      return (
-                        <div key={i} className={cn("rounded-lg border-2 p-3", isCorrect ? "border-success bg-success/10" : "border-border")}>
-                          <div className="flex items-center justify-between mb-1.5 text-sm">
-                            <span><span className="font-mono me-2 opacity-60">{String.fromCharCode(65+i)}.</span>{o} {isCorrect && <Badge className="ms-2 bg-success">✓</Badge>}</span>
-                            <span className="font-mono text-xs">{count} ({pct.toFixed(0)}%)</span>
-                          </div>
-                          <div className="h-2 rounded-full bg-secondary overflow-hidden">
-                            <div className={cn("h-full transition-all", isCorrect ? "bg-success" : "bg-primary/60")} style={{ width: `${pct}%` }} />
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </>
-              )}
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="leaderboard">
-            <Card className="overflow-hidden">
-              <table className="w-full text-sm">
-                <thead className="bg-secondary/50 text-xs">
-                  <tr><th className="p-3 text-start">#</th><th className="p-3 text-start">الاسم</th><th className="p-3">كريبتو</th><th className="p-3">صحيحة</th><th className="p-3">دقة</th><th className="p-3">اخترق</th><th className="p-3">تم اختراقه</th></tr>
-                </thead>
-                <tbody>
-                  {students.map((s, i) => {
-                    const acc = s.total_answers ? (s.correct_answers / s.total_answers) * 100 : 0;
-                    return (
-                      <tr key={s.id} className="border-t border-border">
-                        <td className="p-3 font-mono">{i+1}</td>
-                        <td className="p-3 font-medium">{s.name}</td>
-                        <td className="p-3 text-center font-mono text-accent">{fmt(s.crypto)}</td>
-                        <td className="p-3 text-center">{s.correct_answers}/{s.total_answers}</td>
-                        <td className="p-3 text-center">{acc.toFixed(0)}%</td>
-                        <td className="p-3 text-center">{s.hacks_made}</td>
-                        <td className="p-3 text-center">{s.hacks_received}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="hacks">
-            <div className="flex gap-2 mb-3">
-              {(["all","success","fail"] as const).map(f => (
-                <Button key={f} size="sm" variant={hackFilter===f?"default":"outline"} onClick={()=>setHackFilter(f)}>
-                  {f==="all"?"الكل":f==="success"?"ناجح":"فاشل"}
-                </Button>
-              ))}
+      <div className="h-full grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-4 p-4 pt-14">
+        {/* LEADERBOARD */}
+        <div className="space-y-2 overflow-hidden flex flex-col">
+          {students.length === 0 ? (
+            <div className="flex-1 flex items-center justify-center font-mono text-2xl text-success animate-pulse">
+              {"> WAITING_FOR_HACKERS..."}
             </div>
-            <Card className="max-h-[60vh] overflow-auto">
-              {filteredHacks.length === 0 ? <div className="p-6 text-center text-muted-foreground">لا يوجد</div> : (
-                <ul className="divide-y divide-border">
-                  {filteredHacks.map(h => {
-                    const hk = students.find(x=>x.id===h.hacker_id)?.name ?? "?";
-                    const tg = students.find(x=>x.id===h.target_id)?.name ?? "?";
-                    const t = new Date(h.created_at).toLocaleTimeString();
-                    return (
-                      <li key={h.id} className={cn("p-3 text-sm font-mono", h.success ? "text-success" : "text-destructive")}>
-                        {t} — {hk} {h.success ? "اخترق" : "فشل في اختراق"} {tg}
-                        {h.success && <span className="ms-2 text-accent">+{fmt(h.crypto_transferred)}</span>}
-                      </li>
-                    );
-                  })}
-                </ul>
+          ) : (
+            students.slice(0, 9).map((s, i) => (
+              <div key={s.id} className={cn(
+                "rounded-2xl border-2 px-4 py-3 flex items-center gap-3 transition-all",
+                "border-success/60 bg-success/5",
+                i === 0 && "border-success bg-success/10 shadow-[0_0_30px_-5px_hsl(var(--success)/0.6)]"
+              )}>
+                <span className="font-mono text-success font-black text-2xl w-16 shrink-0">
+                  {ord(i + 1).slice(0, -2)}<sup className="text-sm">{ord(i + 1).slice(-2)}</sup>
+                </span>
+                <span className="text-3xl">{avatarFor(s.name)}</span>
+                <span className="font-mono text-success text-2xl font-bold flex-1 truncate text-glow-cyan">{s.name}</span>
+                <span className="font-mono text-success text-2xl font-black tabular-nums">
+                  {fmt(s.crypto)}
+                </span>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* RIGHT COLUMN */}
+        <div className="grid grid-rows-[1fr_auto] gap-4 overflow-hidden">
+          {/* Hack feed */}
+          <div className="rounded-2xl border-2 border-success/60 bg-success/5 p-4 overflow-hidden">
+            <div className="font-mono text-success/80 text-xs mb-3 flex items-center justify-between">
+              <span>$ TAIL HACK_LOG.LIVE</span>
+              <span className="h-2 w-2 rounded-full bg-success animate-pulse" />
+            </div>
+            <div className="space-y-3 overflow-hidden">
+              {hacks.length === 0 ? (
+                <div className="text-success/40 font-mono text-sm">{"> awaiting breach events..."}</div>
+              ) : (
+                hacks.slice(0, 6).map((h) => {
+                  const hk = students.find(x => x.id === h.hacker_id)?.name ?? "?";
+                  const tg = students.find(x => x.id === h.target_id)?.name ?? "?";
+                  return (
+                    <div key={h.id} className="flex items-start gap-2 font-mono text-success text-sm leading-tight">
+                      <span className="shrink-0 mt-0.5">{h.success ? "💰" : "🔒"}</span>
+                      <span className="flex-1">
+                        <b>{hk}</b> {h.success ? `just took ${fmt(h.crypto_transferred)} crypto from` : `failed to hack`} <b>{tg}</b>
+                      </span>
+                    </div>
+                  );
+                })
               )}
-            </Card>
-          </TabsContent>
-        </Tabs>
+            </div>
+          </div>
+
+          {/* Total bitcoin tile */}
+          <div className="rounded-2xl border-2 border-success bg-success/10 p-4 shadow-[0_0_30px_-5px_hsl(var(--success)/0.6)]">
+            <div className="flex items-center gap-3">
+              <Bitcoin className="h-12 w-12 text-success text-glow-cyan" />
+              <div className="font-mono text-success text-3xl md:text-4xl font-black tabular-nums truncate">
+                {fmt(totalCrypto)}
+              </div>
+            </div>
+            <div className="font-mono text-success/60 text-[10px] mt-1 text-end">
+              GOAL: {fmt(cap)} · {students.length} HACKERS
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
