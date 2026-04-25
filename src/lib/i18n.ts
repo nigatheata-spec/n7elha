@@ -141,11 +141,13 @@ i18n.use(LanguageDetector).use(initReactI18next).init({
   detection: { order: ["localStorage", "navigator"], caches: ["localStorage"], lookupLocalStorage: "hash_lang" },
 });
 
-const applyDir = (lng: string) => {
-  document.documentElement.lang = lng;
-  document.documentElement.dir = lng === "ar" ? "rtl" : "ltr";
+// Force Arabic content but keep LTR layout (text only, not the whole page direction).
+const applyDir = () => {
+  document.documentElement.lang = "ar";
+  document.documentElement.dir = "ltr";
 };
-applyDir(i18n.language || "ar");
+applyDir();
 i18n.on("languageChanged", applyDir);
+if (i18n.language !== "ar") i18n.changeLanguage("ar");
 
 export default i18n;

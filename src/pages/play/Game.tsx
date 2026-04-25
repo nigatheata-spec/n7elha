@@ -164,18 +164,18 @@ const Game = () => {
             <span className="h-2 w-2 rounded-full bg-success animate-pulse" /> {me?.name ?? "—"}
           </div>
           <div className="text-center">
-            <div className="text-[10px] font-mono text-muted-foreground tracking-widest">CRYPTO</div>
+            <div className="text-[10px] font-mono text-muted-foreground tracking-widest">الرصيد</div>
             <div className="font-mono text-3xl md:text-5xl font-black" style={{color:"hsl(51 100% 50%)"}}>
               <Coins className="inline h-5 w-5 me-1" />{fmt(me?.crypto ?? 0)}
             </div>
           </div>
-          <div className="text-xs font-mono text-muted-foreground">Q {askedCount.current}</div>
+          <div className="text-xs font-mono text-muted-foreground">سؤال {askedCount.current}</div>
         </div>
       </header>
 
       <div className="container grid md:grid-cols-[220px_1fr] gap-4 py-4">
         <aside className="space-y-2">
-          <div className="text-xs font-mono text-muted-foreground flex items-center gap-2"><Trophy className="h-3 w-3" /> LEADERBOARD</div>
+          <div className="text-xs font-mono text-muted-foreground flex items-center gap-2"><Trophy className="h-3 w-3" /> الترتيب</div>
           {students.slice(0, 5).map((s, i) => (
             <div key={s.id} className={cn("flex items-center justify-between px-3 py-2 rounded-lg border text-sm",
               s.id === studentId ? "border-primary bg-primary/10" : "border-border bg-card/40")}>
@@ -188,15 +188,15 @@ const Game = () => {
         <main>
           {phase === "waiting" && (
             <div className="text-center py-20">
-              <div className="font-mono text-2xl text-primary text-glow-cyan animate-pulse">{"> WAITING_FOR_HOST..."}</div>
-              <p className="text-muted-foreground mt-3 text-sm">{students.length} hackers connected</p>
+              <div className="font-mono text-2xl text-primary text-glow-cyan animate-pulse">{"> بانتظار المعلّم..."}</div>
+              <p className="text-muted-foreground mt-3 text-sm">{students.length} لاعب متصل</p>
             </div>
           )}
 
           {phase === "done" && (
             <div className="text-center py-12">
               <Trophy className="h-16 w-16 mx-auto" style={{color:"hsl(51 100% 50%)"}} />
-              <h2 className="font-mono text-3xl mt-3 text-glow-cyan">GAME OVER</h2>
+              <h2 className="font-mono text-3xl mt-3 text-glow-cyan">انتهت اللعبة</h2>
               <div className="mt-6 max-w-md mx-auto space-y-2">
                 {students.map((s, i) => (
                   <div key={s.id} className={cn("flex items-center justify-between p-3 rounded-lg border",
@@ -206,14 +206,14 @@ const Game = () => {
                   </div>
                 ))}
               </div>
-              <Button className="mt-6 bg-primary text-primary-foreground" onClick={() => navigate("/play")}>EXIT</Button>
+              <Button className="mt-6 bg-primary text-primary-foreground" onClick={() => navigate("/play")}>خروج</Button>
             </div>
           )}
 
           {(phase === "question" || phase === "answered") && currentQ && (
             <div>
               <div className="flex items-center justify-between mb-3 font-mono text-xs">
-                <span className="text-muted-foreground">QUESTION_{askedCount.current}</span>
+                <span className="text-muted-foreground">سؤال {askedCount.current}</span>
                 <span className={cn("flex items-center gap-1 px-2 py-1 rounded border",
                   timeLeft > duration*0.5 ? "border-success text-success" :
                   timeLeft > duration*0.25 ? "border-accent text-accent" : "border-destructive text-destructive animate-pulse")}>
