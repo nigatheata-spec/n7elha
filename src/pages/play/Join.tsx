@@ -170,87 +170,68 @@ const Join = () => {
     );
   }
 
-  // Terminal stages — replicate the PDF look exactly
+  // Terminal — full-screen, no window chrome
   return (
-    <div className="theme-game min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="w-full max-w-5xl">
-        {/* terminal window */}
-        <div className="rounded-md overflow-hidden border border-primary/30 shadow-[0_0_60px_rgba(0,217,255,0.15)] bg-black">
-          {/* title bar */}
-          <div className="flex items-center gap-2 px-3 py-2 bg-black border-b border-white/10">
-            <div className="flex items-center gap-2 text-white/80 font-mono text-sm">
-              <span className="inline-block w-3 h-3 border border-white/60" />
-              <span>labub</span>
-            </div>
-          </div>
+    <div
+      ref={containerRef}
+      className="theme-game fixed inset-0 overflow-y-auto font-mono text-[hsl(120_100%_55%)]"
+      style={{
+        backgroundImage:
+          "radial-gradient(ellipse at center, rgba(0,80,0,0.55) 0%, rgba(0,30,0,0.95) 75%, rgba(0,15,0,1) 100%)",
+      }}
+    >
+      {/* scanlines */}
+      <div
+        className="pointer-events-none fixed inset-0 opacity-20"
+        style={{
+          backgroundImage:
+            "repeating-linear-gradient(0deg, rgba(0,0,0,0.35) 0px, rgba(0,0,0,0.35) 1px, transparent 1px, transparent 3px)",
+        }}
+      />
 
-          {/* CRT screen */}
-          <div
-            ref={containerRef}
-            className="relative h-[70vh] overflow-y-auto p-6 md:p-10 font-mono text-[hsl(120_100%_55%)]"
-            style={{
-              backgroundImage:
-                "radial-gradient(ellipse at center, rgba(0,80,0,0.55) 0%, rgba(0,30,0,0.95) 75%, rgba(0,15,0,1) 100%)",
-            }}
-          >
-            {/* scanlines */}
-            <div
-              className="pointer-events-none absolute inset-0 opacity-20"
-              style={{
-                backgroundImage: "repeating-linear-gradient(0deg, rgba(0,0,0,0.35) 0px, rgba(0,0,0,0.35) 1px, transparent 1px, transparent 3px)",
-              }}
-            />
+      <div className="relative min-h-full px-6 md:px-16 py-10 md:py-16">
+        <h1 className="text-3xl md:text-6xl font-black tracking-wider mb-8 drop-shadow-[0_0_12px_rgba(0,255,80,0.6)]">
+          WELCOME HACKER
+        </h1>
 
-            <h1 className="text-2xl md:text-4xl font-black tracking-wider mb-6 drop-shadow-[0_0_10px_rgba(0,255,80,0.6)]">
-              WELCOME HACKER
-            </h1>
-
-            {/* typed lines */}
-            <div className="space-y-1 text-base md:text-xl">
-              {lines.map((l, i) => <div key={i}>{l}</div>)}
-              {typing && <div>{typing}<span className="animate-pulse">▌</span></div>}
-            </div>
-
-            {/* password chips */}
-            {showPasswords && stage !== "launch" && (
-              <div className="mt-6 flex flex-wrap gap-3 md:gap-4 text-sm md:text-lg">
-                {passwordChoices.map(p => {
-                  const selected = chosen === p;
-                  return (
-                    <button
-                      key={p}
-                      onClick={() => { setChosen(p); setStage("launch"); }}
-                      disabled={!!chosen}
-                      className={cn(
-                        "px-3 py-1 border-2 rounded-sm transition-all",
-                        "border-[hsl(120_100%_45%)] text-[hsl(120_100%_70%)]",
-                        "hover:bg-[hsl(120_100%_45%)]/20 hover:shadow-[0_0_18px_rgba(0,255,80,0.45)]",
-                        selected && "bg-[hsl(120_100%_45%)]/30 shadow-[0_0_24px_rgba(0,255,80,0.7)]",
-                        chosen && !selected && "opacity-30",
-                      )}
-                    >
-                      {p}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* launch sequence */}
-            {stage === "launch" && (
-              <div className="mt-4 space-y-1 text-base md:text-xl">
-                {launchLines.map((l, i) => <div key={i}>{l}</div>)}
-                <div className="opacity-70 text-xs mt-2">▌</div>
-              </div>
-            )}
-          </div>
-
-          {/* bottom bar — hint of name field like the screenshot */}
-          <div className="px-4 py-3 bg-black border-t border-white/10 flex items-center gap-3 text-white/70 font-mono text-sm">
-            <span>👤</span>
-            <span className="truncate">{name || "—"}</span>
-          </div>
+        {/* typed lines */}
+        <div className="space-y-2 text-lg md:text-2xl">
+          {lines.map((l, i) => <div key={i}>{l}</div>)}
+          {typing && <div>{typing}<span className="animate-pulse">▌</span></div>}
         </div>
+
+        {/* password chips */}
+        {showPasswords && stage !== "launch" && (
+          <div className="mt-8 flex flex-wrap gap-3 md:gap-4 text-sm md:text-lg">
+            {passwordChoices.map(p => {
+              const selected = chosen === p;
+              return (
+                <button
+                  key={p}
+                  onClick={() => { setChosen(p); setStage("launch"); }}
+                  disabled={!!chosen}
+                  className={cn(
+                    "px-4 py-2 border-2 rounded-sm transition-all",
+                    "border-[hsl(120_100%_45%)] text-[hsl(120_100%_70%)]",
+                    "hover:bg-[hsl(120_100%_45%)]/20 hover:shadow-[0_0_18px_rgba(0,255,80,0.45)]",
+                    selected && "bg-[hsl(120_100%_45%)]/30 shadow-[0_0_24px_rgba(0,255,80,0.7)]",
+                    chosen && !selected && "opacity-30",
+                  )}
+                >
+                  {p}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* launch sequence */}
+        {stage === "launch" && (
+          <div className="mt-6 space-y-2 text-lg md:text-2xl">
+            {launchLines.map((l, i) => <div key={i}>{l}</div>)}
+            <div className="opacity-70 mt-2">▌</div>
+          </div>
+        )}
       </div>
     </div>
   );

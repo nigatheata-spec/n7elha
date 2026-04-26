@@ -51,27 +51,28 @@ const GameMonitor = () => {
 
   const totalCrypto = useMemo(() => students.reduce((a, s) => a + (s.crypto || 0), 0), [students]);
   const settings = session?.settings || {};
-  const minutes = settings.minutes ?? 7;
-  const cap = settings.cryptoCap ?? 1000;
+  const minutes: number | null = settings.minutes ?? null;
+  const cap: number | null = settings.cryptoCap ?? null;
   const startedAt = session?.started_at ? new Date(session.started_at).getTime() : 0;
   const elapsed = startedAt ? Math.floor((now - startedAt) / 1000) : 0;
-  const totalSecs = minutes * 60;
-  const left = Math.max(0, totalSecs - elapsed);
-  const top = students[0];
-  const reachedCap = top && top.crypto >= cap;
+  const totalSecs = minutes ? minutes * 60 : 0;
+  const left = minutes ? Math.max(0, totalSecs - elapsed) : null;
+  const reachedCap = cap != null && totalCrypto >= cap;
 
-  // auto-end
+  // auto-end (only when the configured limit is hit)
   useEffect(() => {
     if (!session || session.status !== "running") return;
-    if (left === 0 || reachedCap) {
+    const timeUp = minutes != null && left === 0;
+    if (timeUp || reachedCap) {
       if (ending) return;
       setEnding(true);
       supabase.from("game_sessions").update({ status: "finished", ended_at: new Date().toISOString() }).eq("id", session.id);
     }
-  }, [left, reachedCap, session, ending]);
+  }, [left, reachedCap, session, ending, minutes]);
 
   const endNow = async () => {
     if (!session) return;
+    if (!confirm("End the game now?")) return;
     await supabase.from("game_sessions").update({ status: "finished", ended_at: new Date().toISOString() }).eq("id", session.id);
     nav(`/app/games/${session.id}/results`);
   };
@@ -88,25 +89,27 @@ const GameMonitor = () => {
     return null;
   }
 
-  const mm = String(Math.floor(left / 60)).padStart(2, "0");
-  const ss = String(left % 60).padStart(2, "0");
+  const mm = left != null ? String(Math.floor(left / 60)).padStart(2, "0") : null;
+  const ss = left != null ? String(left % 60).padStart(2, "0") : null;
 
   return (
     <div className="theme-game fixed inset-0 bg-background text-foreground bg-grid overflow-hidden">
-      {/* Top controls (only for teacher, hidden when projector) */}
-      <div className="absolute top-3 inset-x-3 z-20 flex items-center justify-between font-mono text-xs">
+      {/* Top controls */}
+      <div className="absolute top-3 inset-x-3 z-20 flex items-center justify-between font-mono text-xs gap-3">
         <div className="text-muted-foreground">
           CODE <span className="text-primary text-base font-black tracking-widest">{session.code}</span>
         </div>
-        <div className="text-center text-success font-black text-3xl text-glow-cyan tabular-nums">
-          {mm}:{ss}
-        </div>
+        {mm != null && (
+          <div className="text-center text-success font-black text-3xl text-glow-cyan tabular-nums">
+            {mm}:{ss}
+          </div>
+        )}
         <div className="flex gap-2">
           <Button size="sm" variant="ghost" onClick={goFullscreen} className="text-success hover:text-success hover:bg-success/10">
             <Maximize className="h-4 w-4" />
           </Button>
-          <Button size="sm" variant="ghost" onClick={endNow} className="text-destructive hover:text-destructive hover:bg-destructive/10">
-            <Square className="h-4 w-4 me-1" />END
+          <Button size="sm" onClick={endNow} className="bg-destructive hover:bg-destructive/90 text-destructive-foreground font-mono font-bold">
+            <Square className="h-4 w-4 me-1" />END GAME
           </Button>
         </div>
       </div>
@@ -175,7 +178,7 @@ const GameMonitor = () => {
               </div>
             </div>
             <div className="font-mono text-success/60 text-[10px] mt-1 text-end">
-              GOAL: {fmt(cap)} · {students.length} HACKERS
+              {cap != null ? <>GOAL: {fmt(cap)} · </> : null}{students.length} HACKERS
             </div>
           </div>
         </div>

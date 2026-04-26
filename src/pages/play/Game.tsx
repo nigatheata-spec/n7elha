@@ -102,7 +102,7 @@ const Game = () => {
     startedAtRef.current = Date.now();
   }, [phase, qSeed, questions]);
 
-  const duration = session?.settings?.timePerQ ?? 20;
+  const duration = session?.settings?.timePerQ ?? 25;
 
   // per-question countdown
   useEffect(() => {
