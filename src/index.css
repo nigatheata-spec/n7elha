@@ -96,30 +96,31 @@
     --sidebar-ring: 189 100% 50%;
   }
 
-  /* Game theme — dark hacker */
+  /* Game theme — green terminal hacker */
   .theme-game {
-    --background: 230 60% 8%;        /* #0a0e27 */
-    --foreground: 189 100% 80%;
-    --card: 230 50% 11%;
-    --card-foreground: 189 100% 85%;
-    --popover: 230 50% 11%;
-    --popover-foreground: 189 100% 85%;
-    --primary: 189 100% 50%;
-    --primary-foreground: 230 60% 8%;
-    --secondary: 230 45% 14%;
-    --secondary-foreground: 189 100% 80%;
-    --muted: 230 45% 14%;
-    --muted-foreground: 189 30% 65%;
-    --accent: 51 100% 50%;
-    --accent-foreground: 230 60% 8%;
-    --destructive: 0 100% 60%;
+    --background: 0 0% 0%;            /* pure black */
+    --foreground: 120 100% 70%;       /* terminal green */
+    --card: 0 0% 4%;
+    --card-foreground: 120 100% 75%;
+    --popover: 0 0% 4%;
+    --popover-foreground: 120 100% 75%;
+    --primary: 120 100% 45%;          /* neon green */
+    --primary-foreground: 0 0% 0%;
+    --secondary: 120 30% 8%;
+    --secondary-foreground: 120 100% 70%;
+    --muted: 120 20% 10%;
+    --muted-foreground: 120 30% 55%;
+    --accent: 120 100% 50%;
+    --accent-foreground: 0 0% 0%;
+    --destructive: 0 100% 55%;
     --destructive-foreground: 0 0% 100%;
-    --success: 134 100% 50%;
-    --success-foreground: 230 60% 8%;
-    --border: 189 100% 50% / 0.25;
-    --input: 230 45% 14%;
-    --ring: 189 100% 50%;
+    --success: 120 100% 50%;
+    --success-foreground: 0 0% 0%;
+    --border: 120 100% 45% / 0.35;
+    --input: 120 20% 10%;
+    --ring: 120 100% 45%;
   }
+  .theme-game .text-glow-cyan { text-shadow: 0 0 12px hsl(120 100% 50% / 0.8); }
 }
 
 @layer base {
