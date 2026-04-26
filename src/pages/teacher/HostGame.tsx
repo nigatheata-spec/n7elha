@@ -28,10 +28,11 @@ const HostGame = () => {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [students, setStudents] = useState<any[]>([]);
 
-  // simplified settings: time, crypto cap, time per question
-  const [timePerQ, setTimePerQ] = useState(20);
+  // Limits: at least one of (minutes, cryptoCap) must be enabled.
+  const [useTimer, setUseTimer] = useState(true);
+  const [useCap, setUseCap] = useState(true);
   const [minutes, setMinutes] = useState(7);
-  const [cryptoCap, setCryptoCap] = useState(1000);
+  const [cryptoCap, setCryptoCap] = useState(2000); // grand total for the room
   const [maxStudents, setMaxStudents] = useState(40);
 
   useEffect(() => {
@@ -54,8 +55,11 @@ const HostGame = () => {
 
   const openLobby = async () => {
     if (!user || !quizId) return;
+    if (!useTimer && !useCap) { toast.error(ar ? "اختر حدًا واحدًا على الأقل (وقت أو كريبتو)" : "Pick at least one limit"); return; }
     try {
-      const settings = { timePerQ, minutes, cryptoCap, maxStudents };
+      const settings: any = { maxStudents };
+      if (useTimer) settings.minutes = minutes;
+      if (useCap) settings.cryptoCap = cryptoCap;
       const { data, error } = await supabase.from("game_sessions")
         .insert({ teacher_id: user.id, quiz_id: quizId, code, status: "lobby", settings }).select().single();
       if (error) throw error;
