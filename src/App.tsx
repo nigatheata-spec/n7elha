@@ -42,11 +42,12 @@ const App = () => (
               <Route path="quizzes/:id/edit" element={<QuizEditor />} />
               <Route path="host/:quizId" element={<HostGame />} />
               <Route path="games" element={<HostedGames />} />
-              <Route path="games/:sessionId/monitor" element={<GameMonitor />} />
-              <Route path="games/:sessionId/results" element={<GameResults />} />
               <Route path="analytics" element={<Analytics />} />
               <Route path="settings" element={<SettingsPage />} />
             </Route>
+            {/* Full-screen projector views (no sidebar/header) */}
+            <Route path="/app/games/:sessionId/monitor" element={<RequireAuth><GameMonitor /></RequireAuth>} />
+            <Route path="/app/games/:sessionId/results" element={<RequireAuth><GameResults /></RequireAuth>} />
             <Route path="/index" element={<Navigate to="/" replace />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
