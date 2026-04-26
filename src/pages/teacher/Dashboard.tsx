@@ -297,4 +297,94 @@ const Dashboard = () => {
   );
 };
 
+const ReviewDraft = ({
+  draft, ar, saving, busy, onTitleChange, onUpdateQ, onUpdateOpt, onRemove, onRegen, onConfirm, onCancel,
+}: {
+  draft: { title: string; questions: any[] };
+  ar: boolean;
+  saving: boolean;
+  busy: boolean;
+  onTitleChange: (t: string) => void;
+  onUpdateQ: (i: number, patch: Partial<any>) => void;
+  onUpdateOpt: (i: number, oi: number, val: string) => void;
+  onRemove: (i: number) => void;
+  onRegen: (extra: string) => void;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) => {
+  const [feedback, setFeedback] = useState("");
+  return (
+    <div className="fixed inset-0 z-50 bg-background/95 backdrop-blur-sm overflow-y-auto">
+      <div className="max-w-4xl mx-auto p-4 md:p-8">
+        <div className="bg-card border border-border rounded-2xl shadow-xl p-5 md:p-6 space-y-5">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              <h2 className="text-xl font-bold">{ar ? "مراجعة الاختبار قبل الحفظ" : "Review quiz before saving"}</h2>
+            </div>
+            <Button variant="ghost" size="icon" onClick={onCancel}><X className="h-4 w-4" /></Button>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground">{ar ? "عنوان الاختبار" : "Quiz title"}</label>
+            <Input value={draft.title} onChange={(e) => onTitleChange(e.target.value)} className="font-semibold text-lg" />
+          </div>
+
+          <div className="space-y-3 max-h-[50vh] overflow-y-auto pe-1">
+            {draft.questions.map((q, i) => (
+              <Card key={i} className="p-4 space-y-3">
+                <div className="flex items-start justify-between gap-2">
+                  <Badge variant="secondary">#{i + 1}</Badge>
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onRemove(i)}>
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+                <Textarea value={q.text} onChange={(e) => onUpdateQ(i, { text: e.target.value })} rows={2} className="text-sm" />
+                <div className="grid sm:grid-cols-2 gap-2">
+                  {(q.options || []).map((opt: string, oi: number) => (
+                    <div key={oi} className={`flex items-center gap-2 p-2 rounded-lg border ${q.correct_index === oi ? "border-success bg-success/10" : "border-border"}`}>
+                      <button
+                        onClick={() => onUpdateQ(i, { correct_index: oi })}
+                        className={`shrink-0 h-5 w-5 rounded-full border-2 flex items-center justify-center ${q.correct_index === oi ? "border-success bg-success text-white" : "border-muted-foreground/40"}`}
+                        title={ar ? "اجعلها الإجابة الصحيحة" : "Mark correct"}
+                      >
+                        {q.correct_index === oi && <Check className="h-3 w-3" />}
+                      </button>
+                      <Input value={opt} onChange={(e) => onUpdateOpt(i, oi, e.target.value)} className="border-0 bg-transparent h-7 px-1 text-sm" />
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            ))}
+          </div>
+
+          <div className="border-t border-border pt-4 space-y-3">
+            <label className="text-xs text-muted-foreground flex items-center gap-2">
+              <Pencil className="h-3 w-3" />
+              {ar ? "اطلب تعديلات من الذكاء (اختياري)" : "Ask AI for changes (optional)"}
+            </label>
+            <Textarea
+              value={feedback}
+              onChange={(e) => setFeedback(e.target.value)}
+              rows={2}
+              placeholder={ar ? "مثال: اجعل الأسئلة أصعب، أضف أمثلة عددية..." : "e.g. Make harder, add numeric examples..."}
+            />
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <Button variant="outline" onClick={onCancel} disabled={saving || busy}>{ar ? "إلغاء" : "Cancel"}</Button>
+              <Button variant="secondary" onClick={() => { onRegen(feedback); setFeedback(""); }} disabled={busy || saving}>
+                {busy ? <Loader2 className="h-4 w-4 animate-spin me-2" /> : <RefreshCw className="h-4 w-4 me-2" />}
+                {ar ? "إعادة التوليد" : "Regenerate"}
+              </Button>
+              <Button onClick={onConfirm} disabled={saving || busy} className="bg-success text-success-foreground hover:bg-success/90">
+                {saving ? <Loader2 className="h-4 w-4 animate-spin me-2" /> : <Check className="h-4 w-4 me-2" />}
+                {ar ? "تأكيد واستضافة" : "Confirm & host"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default Dashboard;
