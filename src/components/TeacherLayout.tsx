@@ -62,10 +62,7 @@ export const TeacherLayout = () => {
 
       {/* Main */}
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-16 border-b border-border bg-background/80 backdrop-blur sticky top-0 z-20 flex items-center justify-between px-6">
-          <div className="text-sm text-muted-foreground truncate">
-            {user?.email}
-          </div>
+        <header className="h-16 border-b border-border bg-background/80 backdrop-blur sticky top-0 z-20 flex items-center justify-end px-6">
           <LangToggle />
         </header>
         <main className="flex-1 p-6 md:p-8">
