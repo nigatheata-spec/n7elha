@@ -101,21 +101,23 @@ const HostGame = () => {
         <Card className="p-6 space-y-5">
           <h2 className="font-bold text-lg">{ar ? "إعدادات اللعبة" : "Game settings"}</h2>
 
-          <div>
-            <Label className="mb-2 flex items-center gap-2"><Clock className="h-4 w-4 text-primary" />{ar ? "مدة اللعبة (دقائق)" : "Game duration (minutes)"}: {minutes}</Label>
-            <Slider value={[minutes]} onValueChange={([v]) => setMinutes(v)} min={2} max={20} step={1} />
-            <p className="text-xs text-muted-foreground mt-1">{ar ? "تنتهي اللعبة بعد انقضاء الوقت" : "Game ends when time runs out"}</p>
+          <p className="text-xs text-muted-foreground">{ar ? "اختر حدًا واحدًا على الأقل لإنهاء اللعبة" : "Pick at least one limit to end the game"}</p>
+
+          <div className={`rounded-lg border p-3 ${useTimer ? "border-primary/50 bg-primary/5" : "border-border opacity-60"}`}>
+            <label className="flex items-center justify-between mb-2 cursor-pointer">
+              <span className="flex items-center gap-2 font-medium"><Clock className="h-4 w-4 text-primary" />{ar ? "مدة اللعبة (دقائق)" : "Game duration (minutes)"}: {minutes}</span>
+              <input type="checkbox" checked={useTimer} onChange={e => setUseTimer(e.target.checked)} className="h-4 w-4 accent-primary" />
+            </label>
+            <Slider value={[minutes]} onValueChange={([v]) => setMinutes(v)} min={2} max={30} step={1} disabled={!useTimer} />
           </div>
 
-          <div>
-            <Label className="mb-2 flex items-center gap-2"><Coins className="h-4 w-4 text-primary" />{ar ? "هدف الكريبتو" : "Crypto goal"}: {cryptoCap}</Label>
-            <Slider value={[cryptoCap]} onValueChange={([v]) => setCryptoCap(v)} min={200} max={5000} step={100} />
-            <p className="text-xs text-muted-foreground mt-1">{ar ? "تنتهي إذا وصل أحد إلى هذا الرقم" : "Game ends when any player reaches this"}</p>
-          </div>
-
-          <div>
-            <Label className="mb-2 block">{ar ? "وقت كل سؤال (ث)" : "Time per question (s)"}: {timePerQ}</Label>
-            <Slider value={[timePerQ]} onValueChange={([v]) => setTimePerQ(v)} min={10} max={60} step={5} />
+          <div className={`rounded-lg border p-3 ${useCap ? "border-primary/50 bg-primary/5" : "border-border opacity-60"}`}>
+            <label className="flex items-center justify-between mb-2 cursor-pointer">
+              <span className="flex items-center gap-2 font-medium"><Coins className="h-4 w-4 text-primary" />{ar ? "إجمالي الكريبتو للغرفة" : "Total room crypto goal"}: {cryptoCap}</span>
+              <input type="checkbox" checked={useCap} onChange={e => setUseCap(e.target.checked)} className="h-4 w-4 accent-primary" />
+            </label>
+            <Slider value={[cryptoCap]} onValueChange={([v]) => setCryptoCap(v)} min={500} max={20000} step={500} disabled={!useCap} />
+            <p className="text-xs text-muted-foreground mt-1">{ar ? "ينتهي عند وصول مجموع الغرفة لهذا الرقم" : "Ends when the room's combined crypto reaches this"}</p>
           </div>
 
           <div>
