@@ -157,122 +157,85 @@ const Game = () => {
   if (!session) return <div className="theme-game min-h-screen bg-background text-foreground flex items-center justify-center font-mono">...</div>;
 
   return (
-    <div className="theme-game min-h-screen bg-background text-foreground bg-grid">
-      <header className="sticky top-0 z-20 backdrop-blur bg-background/70 border-b border-primary/20">
-        <div className="container py-3 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground">
-            <span className="h-2 w-2 rounded-full bg-success animate-pulse" /> {me?.name ?? "—"}
-          </div>
-          <div className="text-center">
-            <div className="text-[10px] font-mono text-muted-foreground tracking-widest">الرصيد</div>
-            <div className="font-mono text-3xl md:text-5xl font-black" style={{color:"hsl(51 100% 50%)"}}>
-              <Coins className="inline h-5 w-5 me-1" />{fmt(me?.crypto ?? 0)}
-            </div>
-          </div>
-          <div className="text-xs font-mono text-muted-foreground">سؤال {askedCount.current}</div>
+    <div className="theme-game min-h-screen bg-background text-foreground font-mono">
+      {/* Minimal top bar — name left, ₿ crypto right (matches screenshot) */}
+      <header className="flex items-center justify-between px-5 py-3 text-[hsl(120_100%_70%)]">
+        <div className="flex items-center gap-3 text-sm">
+          <span className="opacity-70">⛶</span>
+          <span className="opacity-70">🔊</span>
+          <span className="font-medium">{me?.name ?? "—"}</span>
+        </div>
+        <div className="text-xl font-bold tracking-wider">
+          ₿ {fmt(me?.crypto ?? 0)}
         </div>
       </header>
 
-      <div className="container grid md:grid-cols-[220px_1fr] gap-4 py-4">
-        <aside className="space-y-2">
-          <div className="text-xs font-mono text-muted-foreground flex items-center gap-2"><Trophy className="h-3 w-3" /> الترتيب</div>
-          {students.slice(0, 5).map((s, i) => (
-            <div key={s.id} className={cn("flex items-center justify-between px-3 py-2 rounded-lg border text-sm",
-              s.id === studentId ? "border-primary bg-primary/10" : "border-border bg-card/40")}>
-              <span className="font-mono">#{i+1} {s.name}</span>
-              <span className="font-mono text-xs" style={{color:"hsl(51 100% 50%)"}}>{fmt(s.crypto)}</span>
+      <main className="px-3 md:px-6 pb-6">
+        {phase === "waiting" && (
+          <div className="text-center py-32">
+            <div className="text-2xl text-[hsl(120_100%_55%)] animate-pulse">{"> بانتظار المعلّم..."}</div>
+            <p className="text-muted-foreground mt-3 text-sm">{students.length} لاعب متصل</p>
+          </div>
+        )}
+
+        {phase === "done" && (
+          <div className="text-center py-20">
+            <Trophy className="h-16 w-16 mx-auto" style={{color:"hsl(120 100% 50%)"}} />
+            <h2 className="text-3xl mt-3 text-[hsl(120_100%_60%)]">انتهت اللعبة</h2>
+            <Button className="mt-6 bg-primary text-primary-foreground" onClick={() => navigate("/play")}>خروج</Button>
+          </div>
+        )}
+
+        {(phase === "question" || phase === "answered") && currentQ && (
+          <div className="max-w-6xl mx-auto">
+            {/* Question banner */}
+            <div className="bg-black border-y-2 border-black px-6 py-10 md:py-16 text-center">
+              <p className="text-2xl md:text-4xl text-[hsl(120_100%_75%)] font-medium">
+                {currentQ.text}
+              </p>
+              <div className="mt-3 text-xs text-[hsl(120_100%_45%)]">⏱ {timeLeft}s</div>
             </div>
-          ))}
-        </aside>
 
-        <main>
-          {phase === "waiting" && (
-            <div className="text-center py-20">
-              <div className="font-mono text-2xl text-primary text-glow-cyan animate-pulse">{"> بانتظار المعلّم..."}</div>
-              <p className="text-muted-foreground mt-3 text-sm">{students.length} لاعب متصل</p>
+            {/* Big green answer tiles */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+              {currentQ.options.map((opt, i) => {
+                const isCorrect = i === currentQ.correct_index;
+                const isPicked = picked === i;
+                const showResult = picked !== null;
+                return (
+                  <button
+                    key={i}
+                    disabled={picked !== null}
+                    onClick={() => submit(i)}
+                    className={cn(
+                      "min-h-[140px] md:min-h-[180px] px-4 py-6 text-center text-2xl text-black font-medium border-2 border-black transition-all",
+                      "bg-[hsl(120_55%_55%)] hover:bg-[hsl(120_60%_62%)]",
+                      showResult && isCorrect && "bg-[hsl(120_100%_50%)]",
+                      showResult && isPicked && !isCorrect && "bg-[hsl(0_85%_55%)] text-white",
+                      showResult && !isPicked && !isCorrect && "opacity-40"
+                    )}
+                  >
+                    {opt}
+                  </button>
+                );
+              })}
             </div>
-          )}
+          </div>
+        )}
 
-          {phase === "done" && (
-            <div className="text-center py-12">
-              <Trophy className="h-16 w-16 mx-auto" style={{color:"hsl(51 100% 50%)"}} />
-              <h2 className="font-mono text-3xl mt-3 text-glow-cyan">انتهت اللعبة</h2>
-              <div className="mt-6 max-w-md mx-auto space-y-2">
-                {students.map((s, i) => (
-                  <div key={s.id} className={cn("flex items-center justify-between p-3 rounded-lg border",
-                    s.id === studentId ? "border-primary bg-primary/10" : "border-border bg-card/40")}>
-                    <span className="font-mono">#{i+1} {s.name}</span>
-                    <span className="font-mono" style={{color:"hsl(51 100% 50%)"}}>{fmt(s.crypto)}</span>
-                  </div>
-                ))}
-              </div>
-              <Button className="mt-6 bg-primary text-primary-foreground" onClick={() => navigate("/play")}>خروج</Button>
-            </div>
-          )}
+        {phase === "output" && me && (
+          <OutputCards onPick={onOutput} picked={output} />
+        )}
 
-          {(phase === "question" || phase === "answered") && currentQ && (
-            <div>
-              <div className="flex items-center justify-between mb-3 font-mono text-xs">
-                <span className="text-muted-foreground">سؤال {askedCount.current}</span>
-                <span className={cn("flex items-center gap-1 px-2 py-1 rounded border",
-                  timeLeft > duration*0.5 ? "border-success text-success" :
-                  timeLeft > duration*0.25 ? "border-accent text-accent" : "border-destructive text-destructive animate-pulse")}>
-                  <Clock className="h-3 w-3" /> {timeLeft}s
-                </span>
-              </div>
-              <div className="border-glow rounded-2xl p-6 bg-card/60 mb-4">
-                <p className="text-xl text-center font-medium">{currentQ.text}</p>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {currentQ.options.map((opt, i) => {
-                  const isCorrect = i === currentQ.correct_index;
-                  const isPicked = picked === i;
-                  const showResult = picked !== null;
-                  return (
-                    <button key={i} disabled={picked !== null}
-                      onClick={() => submit(i)}
-                      className={cn("rounded-xl p-4 text-start border-2 font-medium transition-all",
-                        !showResult && "border-primary/30 bg-card/40 hover:border-primary hover:bg-primary/10",
-                        showResult && isCorrect && "border-success bg-success/20 text-success",
-                        showResult && isPicked && !isCorrect && "border-destructive bg-destructive/20 text-destructive",
-                        showResult && !isPicked && !isCorrect && "opacity-40")}>
-                      <span className="font-mono text-xs me-2 opacity-60">{String.fromCharCode(65+i)}.</span>
-                      {opt}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {phase === "output" && me && (
-            <OutputCards onPick={onOutput} picked={output} />
-          )}
-
-          {phase === "hacking" && me && (
-            <HackingFlow
-              me={me}
-              students={students.filter(s => s.id !== me.id)}
-              sessionId={sessionId!}
-              onDone={() => { setQSeed(s => s + 1); setPhase("question"); }}
-              passwords={["alpha","bravo","delta","echo","ghost","shadow","matrix","neon","quantum","vortex"]}
-            />
-          )}
-        </main>
-      </div>
-
-      <div className="fixed bottom-3 inset-x-0 px-3 z-30 pointer-events-none">
-        <div className="container space-y-1 max-w-md mx-auto">
-          {feed.map(f => (
-            <div key={f.id} className={cn("font-mono text-xs px-3 py-2 rounded-lg backdrop-blur border animate-fade-in",
-              f.kind === "good" && "border-success/40 bg-success/10 text-success",
-              f.kind === "bad" && "border-destructive/40 bg-destructive/10 text-destructive",
-              f.kind === "info" && "border-primary/40 bg-primary/10 text-primary")}>
-              {f.text}
-            </div>
-          ))}
-        </div>
-      </div>
+        {phase === "hacking" && me && (
+          <HackingFlow
+            me={me}
+            students={students.filter(s => s.id !== me.id)}
+            sessionId={sessionId!}
+            onDone={() => { setQSeed(s => s + 1); setPhase("question"); }}
+          />
+        )}
+      </main>
 
       {phase === "breach" && me && (
         <BreachModal me={me} onDone={async () => {
