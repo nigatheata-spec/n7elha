@@ -205,7 +205,7 @@ const Dashboard = () => {
             </div>
 
             <Button
-              onClick={generateAndHost}
+              onClick={() => generateDraft()}
               disabled={busy}
               className="rounded-full h-10 w-10 p-0 bg-foreground text-background hover:bg-foreground/90 shadow-md"
               aria-label="generate"
