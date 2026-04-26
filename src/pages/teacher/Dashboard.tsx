@@ -6,8 +6,10 @@ import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Plus, ArrowUp, FileText, X, Loader2, Gauge, Hash, Gamepad2, Eye } from "lucide-react";
+import { Sparkles, Plus, ArrowUp, FileText, X, Loader2, Gauge, Hash, Gamepad2, Eye, Check, RefreshCw, Pencil } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 
 const CREATIVITY = [
@@ -28,6 +30,10 @@ const Dashboard = () => {
   const [numQ, setNumQ] = useState(15);
   const [busy, setBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // Review step
+  const [draft, setDraft] = useState<{ title: string; questions: any[] } | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const [games, setGames] = useState<any[]>([]);
 
@@ -72,7 +78,7 @@ const Dashboard = () => {
     }
   };
 
-  const generateAndHost = async () => {
+  const generateDraft = async (extraInstruction?: string) => {
     if (!user) return;
     if (!prompt.trim() && files.length === 0) {
       toast.error(ar ? "اكتب طلبك أو ارفع مصدر" : "Write a prompt or upload a file");
@@ -84,7 +90,7 @@ const Dashboard = () => {
       const { data, error } = await supabase.functions.invoke("generate-quiz", {
         body: {
           content,
-          topics: prompt,
+          topics: prompt + (extraInstruction ? `\n\nتعديلات المعلم: ${extraInstruction}` : ""),
           numQuestions: numQ,
           creativity: CREATIVITY[creativity].key,
           language: i18n.language,
@@ -96,25 +102,55 @@ const Dashboard = () => {
       if (!qs.length) throw new Error("AI returned no questions");
 
       const title = data.title || prompt.slice(0, 60) || (ar ? "اختبار جديد" : "New Quiz");
-      const { data: quiz, error: qerr } = await supabase.from("quizzes")
-        .insert({ created_by: user.id, title, source: "ai", description: prompt.slice(0, 200) })
-        .select().single();
-      if (qerr) throw qerr;
-
-      const rows = qs.map((q: any, i: number) => ({
-        quiz_id: quiz.id, position: i, text: q.text, options: q.options,
-        correct_index: q.correct_index, difficulty: q.difficulty || "medium",
-      }));
-      const { error: ierr } = await supabase.from("questions").insert(rows);
-      if (ierr) throw ierr;
-
-      toast.success(ar ? `تم توليد ${qs.length} سؤال` : `Generated ${qs.length} questions`);
-      nav(`/app/host/${quiz.id}`);
+      setDraft({ title, questions: qs });
+      toast.success(ar ? `جاهز للمراجعة (${qs.length} سؤال)` : `Ready to review (${qs.length} questions)`);
     } catch (e: any) {
       toast.error(e.message);
     } finally {
       setBusy(false);
     }
+  };
+
+  const confirmAndHost = async () => {
+    if (!user || !draft) return;
+    setSaving(true);
+    try {
+      const { data: quiz, error: qerr } = await supabase.from("quizzes")
+        .insert({ created_by: user.id, title: draft.title, source: "ai", description: prompt.slice(0, 200) })
+        .select().single();
+      if (qerr) throw qerr;
+      const rows = draft.questions.map((q: any, i: number) => ({
+        quiz_id: quiz.id, position: i, text: q.text, options: q.options,
+        correct_index: q.correct_index, difficulty: q.difficulty || "medium",
+      }));
+      const { error: ierr } = await supabase.from("questions").insert(rows);
+      if (ierr) throw ierr;
+      toast.success(ar ? "تم الحفظ" : "Saved");
+      nav(`/app/host/${quiz.id}`);
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const updateDraftQ = (i: number, patch: Partial<any>) => {
+    if (!draft) return;
+    const qs = [...draft.questions];
+    qs[i] = { ...qs[i], ...patch };
+    setDraft({ ...draft, questions: qs });
+  };
+  const updateDraftOption = (i: number, oi: number, val: string) => {
+    if (!draft) return;
+    const qs = [...draft.questions];
+    const opts = [...(qs[i].options || [])];
+    opts[oi] = val;
+    qs[i] = { ...qs[i], options: opts };
+    setDraft({ ...draft, questions: qs });
+  };
+  const removeDraftQ = (i: number) => {
+    if (!draft) return;
+    setDraft({ ...draft, questions: draft.questions.filter((_, j) => j !== i) });
   };
 
   const cur = CREATIVITY[creativity];
