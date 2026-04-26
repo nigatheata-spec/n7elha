@@ -6,8 +6,10 @@ import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Plus, ArrowUp, FileText, X, Loader2, Gauge, Hash, Gamepad2, Eye } from "lucide-react";
+import { Sparkles, Plus, ArrowUp, FileText, X, Loader2, Gauge, Hash, Gamepad2, Eye, Check, RefreshCw, Pencil } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 
 const CREATIVITY = [
@@ -28,6 +30,10 @@ const Dashboard = () => {
   const [numQ, setNumQ] = useState(15);
   const [busy, setBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // Review step
+  const [draft, setDraft] = useState<{ title: string; questions: any[] } | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const [games, setGames] = useState<any[]>([]);
 
@@ -72,7 +78,7 @@ const Dashboard = () => {
     }
   };
 
-  const generateAndHost = async () => {
+  const generateDraft = async (extraInstruction?: string) => {
     if (!user) return;
     if (!prompt.trim() && files.length === 0) {
       toast.error(ar ? "اكتب طلبك أو ارفع مصدر" : "Write a prompt or upload a file");
@@ -84,7 +90,7 @@ const Dashboard = () => {
       const { data, error } = await supabase.functions.invoke("generate-quiz", {
         body: {
           content,
-          topics: prompt,
+          topics: prompt + (extraInstruction ? `\n\nتعديلات المعلم: ${extraInstruction}` : ""),
           numQuestions: numQ,
           creativity: CREATIVITY[creativity].key,
           language: i18n.language,
@@ -96,25 +102,55 @@ const Dashboard = () => {
       if (!qs.length) throw new Error("AI returned no questions");
 
       const title = data.title || prompt.slice(0, 60) || (ar ? "اختبار جديد" : "New Quiz");
-      const { data: quiz, error: qerr } = await supabase.from("quizzes")
-        .insert({ created_by: user.id, title, source: "ai", description: prompt.slice(0, 200) })
-        .select().single();
-      if (qerr) throw qerr;
-
-      const rows = qs.map((q: any, i: number) => ({
-        quiz_id: quiz.id, position: i, text: q.text, options: q.options,
-        correct_index: q.correct_index, difficulty: q.difficulty || "medium",
-      }));
-      const { error: ierr } = await supabase.from("questions").insert(rows);
-      if (ierr) throw ierr;
-
-      toast.success(ar ? `تم توليد ${qs.length} سؤال` : `Generated ${qs.length} questions`);
-      nav(`/app/host/${quiz.id}`);
+      setDraft({ title, questions: qs });
+      toast.success(ar ? `جاهز للمراجعة (${qs.length} سؤال)` : `Ready to review (${qs.length} questions)`);
     } catch (e: any) {
       toast.error(e.message);
     } finally {
       setBusy(false);
     }
+  };
+
+  const confirmAndHost = async () => {
+    if (!user || !draft) return;
+    setSaving(true);
+    try {
+      const { data: quiz, error: qerr } = await supabase.from("quizzes")
+        .insert({ created_by: user.id, title: draft.title, source: "ai", description: prompt.slice(0, 200) })
+        .select().single();
+      if (qerr) throw qerr;
+      const rows = draft.questions.map((q: any, i: number) => ({
+        quiz_id: quiz.id, position: i, text: q.text, options: q.options,
+        correct_index: q.correct_index, difficulty: q.difficulty || "medium",
+      }));
+      const { error: ierr } = await supabase.from("questions").insert(rows);
+      if (ierr) throw ierr;
+      toast.success(ar ? "تم الحفظ" : "Saved");
+      nav(`/app/host/${quiz.id}`);
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const updateDraftQ = (i: number, patch: Partial<any>) => {
+    if (!draft) return;
+    const qs = [...draft.questions];
+    qs[i] = { ...qs[i], ...patch };
+    setDraft({ ...draft, questions: qs });
+  };
+  const updateDraftOption = (i: number, oi: number, val: string) => {
+    if (!draft) return;
+    const qs = [...draft.questions];
+    const opts = [...(qs[i].options || [])];
+    opts[oi] = val;
+    qs[i] = { ...qs[i], options: opts };
+    setDraft({ ...draft, questions: qs });
+  };
+  const removeDraftQ = (i: number) => {
+    if (!draft) return;
+    setDraft({ ...draft, questions: draft.questions.filter((_, j) => j !== i) });
   };
 
   const cur = CREATIVITY[creativity];
@@ -169,7 +205,7 @@ const Dashboard = () => {
             </div>
 
             <Button
-              onClick={generateAndHost}
+              onClick={() => generateDraft()}
               disabled={busy}
               className="rounded-full h-10 w-10 p-0 bg-foreground text-background hover:bg-foreground/90 shadow-md"
               aria-label="generate"
@@ -205,6 +241,23 @@ const Dashboard = () => {
         </div>
       </div>
 
+      {/* Review Draft Modal */}
+      {draft && (
+        <ReviewDraft
+          draft={draft}
+          ar={ar}
+          saving={saving}
+          busy={busy}
+          onTitleChange={(t) => setDraft({ ...draft, title: t })}
+          onUpdateQ={updateDraftQ}
+          onUpdateOpt={updateDraftOption}
+          onRemove={removeDraftQ}
+          onRegen={(extra) => generateDraft(extra)}
+          onConfirm={confirmAndHost}
+          onCancel={() => setDraft(null)}
+        />
+      )}
+
       {/* Past games */}
       <div>
         <div className="flex items-center justify-between mb-3">
@@ -239,6 +292,96 @@ const Dashboard = () => {
             ))}
           </div>
         )}
+      </div>
+    </div>
+  );
+};
+
+const ReviewDraft = ({
+  draft, ar, saving, busy, onTitleChange, onUpdateQ, onUpdateOpt, onRemove, onRegen, onConfirm, onCancel,
+}: {
+  draft: { title: string; questions: any[] };
+  ar: boolean;
+  saving: boolean;
+  busy: boolean;
+  onTitleChange: (t: string) => void;
+  onUpdateQ: (i: number, patch: Partial<any>) => void;
+  onUpdateOpt: (i: number, oi: number, val: string) => void;
+  onRemove: (i: number) => void;
+  onRegen: (extra: string) => void;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) => {
+  const [feedback, setFeedback] = useState("");
+  return (
+    <div className="fixed inset-0 z-50 bg-background/95 backdrop-blur-sm overflow-y-auto">
+      <div className="max-w-4xl mx-auto p-4 md:p-8">
+        <div className="bg-card border border-border rounded-2xl shadow-xl p-5 md:p-6 space-y-5">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              <h2 className="text-xl font-bold">{ar ? "مراجعة الاختبار قبل الحفظ" : "Review quiz before saving"}</h2>
+            </div>
+            <Button variant="ghost" size="icon" onClick={onCancel}><X className="h-4 w-4" /></Button>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground">{ar ? "عنوان الاختبار" : "Quiz title"}</label>
+            <Input value={draft.title} onChange={(e) => onTitleChange(e.target.value)} className="font-semibold text-lg" />
+          </div>
+
+          <div className="space-y-3 max-h-[50vh] overflow-y-auto pe-1">
+            {draft.questions.map((q, i) => (
+              <Card key={i} className="p-4 space-y-3">
+                <div className="flex items-start justify-between gap-2">
+                  <Badge variant="secondary">#{i + 1}</Badge>
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onRemove(i)}>
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+                <Textarea value={q.text} onChange={(e) => onUpdateQ(i, { text: e.target.value })} rows={2} className="text-sm" />
+                <div className="grid sm:grid-cols-2 gap-2">
+                  {(q.options || []).map((opt: string, oi: number) => (
+                    <div key={oi} className={`flex items-center gap-2 p-2 rounded-lg border ${q.correct_index === oi ? "border-success bg-success/10" : "border-border"}`}>
+                      <button
+                        onClick={() => onUpdateQ(i, { correct_index: oi })}
+                        className={`shrink-0 h-5 w-5 rounded-full border-2 flex items-center justify-center ${q.correct_index === oi ? "border-success bg-success text-white" : "border-muted-foreground/40"}`}
+                        title={ar ? "اجعلها الإجابة الصحيحة" : "Mark correct"}
+                      >
+                        {q.correct_index === oi && <Check className="h-3 w-3" />}
+                      </button>
+                      <Input value={opt} onChange={(e) => onUpdateOpt(i, oi, e.target.value)} className="border-0 bg-transparent h-7 px-1 text-sm" />
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            ))}
+          </div>
+
+          <div className="border-t border-border pt-4 space-y-3">
+            <label className="text-xs text-muted-foreground flex items-center gap-2">
+              <Pencil className="h-3 w-3" />
+              {ar ? "اطلب تعديلات من الذكاء (اختياري)" : "Ask AI for changes (optional)"}
+            </label>
+            <Textarea
+              value={feedback}
+              onChange={(e) => setFeedback(e.target.value)}
+              rows={2}
+              placeholder={ar ? "مثال: اجعل الأسئلة أصعب، أضف أمثلة عددية..." : "e.g. Make harder, add numeric examples..."}
+            />
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <Button variant="outline" onClick={onCancel} disabled={saving || busy}>{ar ? "إلغاء" : "Cancel"}</Button>
+              <Button variant="secondary" onClick={() => { onRegen(feedback); setFeedback(""); }} disabled={busy || saving}>
+                {busy ? <Loader2 className="h-4 w-4 animate-spin me-2" /> : <RefreshCw className="h-4 w-4 me-2" />}
+                {ar ? "إعادة التوليد" : "Regenerate"}
+              </Button>
+              <Button onClick={onConfirm} disabled={saving || busy} className="bg-success text-success-foreground hover:bg-success/90">
+                {saving ? <Loader2 className="h-4 w-4 animate-spin me-2" /> : <Check className="h-4 w-4 me-2" />}
+                {ar ? "تأكيد واستضافة" : "Confirm & host"}
+              </Button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

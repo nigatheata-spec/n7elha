@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
-// Bigger pool of "cool hacker passwords" — each student picks one as THEIR password.
-// Others will try to guess it when hacking. Shared across the game session.
+// Big pool — 5 are sampled per student. Each picks one as THEIR password.
+// The same pool is also used for hack guesses, so the real one will appear.
 const PASSWORD_POOL = [
   "FROSTY_PAY65", "FORTNITE", "sealYouLater32", "***everything_ok***", "daGOAT_13",
   "ghost_in_the_shell", "n30n_w0lf", "matrix_42", "shadow_byte", "quantum_leap",
@@ -16,9 +16,9 @@ const PASSWORD_POOL = [
 ];
 
 const STEPS = [
-  { text: "> New User Detected!", delay: 18 },
-  { text: "> Welcome to the Terminal Hacking Portal", delay: 18 },
-  { text: "> Please select a password:", delay: 18 },
+  { text: "> New User Detected!", delay: 36 },
+  { text: "> Welcome to the Terminal Hacking Portal", delay: 36 },
+  { text: "> Please select a password:", delay: 36 },
 ];
 
 const Join = () => {
@@ -37,6 +37,12 @@ const Join = () => {
   const [chosen, setChosen] = useState<string | null>(null);
   const [launchLines, setLaunchLines] = useState<string[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Pick 5 random password options for this student (stable per mount)
+  const passwordChoices = useMemo(
+    () => [...PASSWORD_POOL].sort(() => Math.random() - 0.5).slice(0, 5),
+    []
+  );
 
   // ── Step 1: validate code
   const submitCode = async (e: React.FormEvent) => {
@@ -104,7 +110,7 @@ const Join = () => {
       for (const ln of seq) {
         if (cancelled) return;
         setLaunchLines(prev => [...prev, ln]);
-        await new Promise(r => setTimeout(r, 320));
+        await new Promise(r => setTimeout(r, 640));
       }
       if (cancelled) return;
       // Insert student record now
@@ -208,7 +214,7 @@ const Join = () => {
             {/* password chips */}
             {showPasswords && stage !== "launch" && (
               <div className="mt-6 flex flex-wrap gap-3 md:gap-4 text-sm md:text-lg">
-                {PASSWORD_POOL.map(p => {
+                {passwordChoices.map(p => {
                   const selected = chosen === p;
                   return (
                     <button

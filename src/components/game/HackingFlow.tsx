@@ -43,7 +43,7 @@ export const HackingFlow = ({
     return () => clearTimeout(t);
   }, [students, target]);
 
-  // Build 4 password choices: real one + 3 decoys from other students' chosen passwords
+  // Build 5 password choices: real one is ALWAYS included + 4 decoys from other students.
   const choices = useMemo(() => {
     if (!target) return [] as string[];
     const real = (target.password as string) || "ghost_byte";
@@ -52,11 +52,12 @@ export const HackingFlow = ({
       .map(s => s.password as string)
       .filter(p => p !== real);
     const unique = Array.from(new Set(otherPwds));
-    const decoys = unique.sort(() => Math.random() - 0.5).slice(0, 3);
-    while (decoys.length < 3) {
-      // pad with throwaway fakes if not enough other students
-      const fake = ["null_route", "0xDEAD", "admin_root", "guest_42", "no_signal"][decoys.length];
+    const decoys = unique.sort(() => Math.random() - 0.5).slice(0, 4);
+    const fillers = ["null_route", "0xDEAD", "admin_root", "guest_42", "no_signal", "root_kit", "byte_me"];
+    while (decoys.length < 4) {
+      const fake = fillers[decoys.length % fillers.length];
       if (!decoys.includes(fake) && fake !== real) decoys.push(fake);
+      else fillers.push(fake + "_" + decoys.length);
     }
     return [real, ...decoys].sort(() => Math.random() - 0.5);
   }, [target, students]);
