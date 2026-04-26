@@ -178,7 +178,7 @@ const GameMonitor = () => {
               </div>
             </div>
             <div className="font-mono text-success/60 text-[10px] mt-1 text-end">
-              GOAL: {fmt(cap)} · {students.length} HACKERS
+              {cap != null ? <>GOAL: {fmt(cap)} · </> : null}{students.length} HACKERS
             </div>
           </div>
         </div>
