@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
-// Bigger pool of "cool hacker passwords" — each student picks one as THEIR password.
-// Others will try to guess it when hacking. Shared across the game session.
+// Big pool — 5 are sampled per student. Each picks one as THEIR password.
+// The same pool is also used for hack guesses, so the real one will appear.
 const PASSWORD_POOL = [
   "FROSTY_PAY65", "FORTNITE", "sealYouLater32", "***everything_ok***", "daGOAT_13",
   "ghost_in_the_shell", "n30n_w0lf", "matrix_42", "shadow_byte", "quantum_leap",
@@ -16,9 +16,9 @@ const PASSWORD_POOL = [
 ];
 
 const STEPS = [
-  { text: "> New User Detected!", delay: 18 },
-  { text: "> Welcome to the Terminal Hacking Portal", delay: 18 },
-  { text: "> Please select a password:", delay: 18 },
+  { text: "> New User Detected!", delay: 36 },
+  { text: "> Welcome to the Terminal Hacking Portal", delay: 36 },
+  { text: "> Please select a password:", delay: 36 },
 ];
 
 const Join = () => {
