@@ -16,10 +16,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Set up listener FIRST so we don't miss SIGNED_IN events
     const { data: sub } = supabase.auth.onAuthStateChange((_evt, s) => {
       setSession(s);
       setLoading(false);
     });
+    // Then load existing session
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
       setLoading(false);
@@ -28,7 +30,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    // Clear local state immediately so RequireAuth doesn't bounce
+    setSession(null);
+    try {
+      await supabase.auth.signOut();
+    } catch {
+      // ignore — local state already cleared
+    }
   };
 
   return (
