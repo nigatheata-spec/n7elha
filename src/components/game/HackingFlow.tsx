@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
-import { Skull, Coins } from "lucide-react";
+import { Coins } from "lucide-react";
 
 const fmt = (n: number) => n.toLocaleString();
 
@@ -35,13 +35,18 @@ export const HackingFlow = ({
   const [phase, setPhase] = useState<"intro" | "guess" | "result">("intro");
   const [result, setResult] = useState<{ ok: boolean; transferred: number } | null>(null);
 
-  // pick a random target once on mount
+  // Pick a random target once on mount. Phase change is separate so React's
+  // cleanup does not cancel the timer when target state updates.
   useEffect(() => {
     if (target || students.length === 0) return;
     setTarget(pickWeightedTarget(students));
-    const t = setTimeout(() => setPhase("guess"), 1200);
-    return () => clearTimeout(t);
   }, [students, target]);
+
+  useEffect(() => {
+    if (!target || phase !== "intro") return;
+    const t = setTimeout(() => setPhase("guess"), 900);
+    return () => clearTimeout(t);
+  }, [target, phase]);
 
   // Build 5 password choices: real one is ALWAYS included + 4 decoys from other students.
   const choices = useMemo(() => {
@@ -88,12 +93,23 @@ export const HackingFlow = ({
     setTimeout(onDone, 2400);
   };
 
+  if (students.length === 0) {
+    return (
+      <div className="min-h-[calc(100dvh-56px)] pt-8 font-mono text-primary">
+        <div className="text-lg md:text-2xl font-black">لا يوجد هدف متاح</div>
+        <div className="mt-3 text-sm text-muted-foreground">&gt; انتظر دخول لاعب آخر للنظام</div>
+        <button onClick={onDone} className="mt-8 border border-primary/70 px-4 py-2 text-sm text-primary hover:bg-primary/15">
+          رجوع
+        </button>
+      </div>
+    );
+  }
+
   if (phase === "intro" || !target) {
     return (
-      <div className="text-center py-16 font-mono">
-        <Skull className="h-14 w-14 mx-auto text-destructive animate-pulse" />
-        <div className="mt-4 text-lg text-muted-foreground">{"> اختيار هدف عشوائي..."}</div>
-        <div className="mt-2 text-2xl text-primary text-glow-cyan">
+      <div className="min-h-[calc(100dvh-56px)] pt-8 font-mono text-primary">
+        <div className="text-sm text-muted-foreground">&gt; اختيار هدف عشوائي...</div>
+        <div className="mt-3 text-3xl md:text-5xl font-black text-primary text-glow-cyan animate-pulse">
           {target ? target.name : "..."}
         </div>
       </div>
@@ -123,27 +139,25 @@ export const HackingFlow = ({
 
   // guess phase
   return (
-    <div className="py-6 max-w-2xl mx-auto font-mono">
-      <div className="text-center mb-6">
-        <Skull className="h-14 w-14 mx-auto text-destructive" />
-        <div className="text-xs text-muted-foreground mt-2">جاري الاختراق</div>
-        <div className="text-3xl text-primary text-glow-cyan mt-1">{target.name}</div>
+    <div className="min-h-[calc(100dvh-56px)] pt-5 md:pt-8 font-mono text-primary">
+      <div className="mb-6">
+        <div className="text-2xl md:text-4xl font-black text-primary text-glow-cyan">HACKING {target.name}</div>
         <div className="text-sm mt-1" style={{ color: "hsl(51 100% 50%)" }}>
           الرصيد: {fmt(target.crypto || 0)}
         </div>
-        <div className="mt-3 text-sm text-muted-foreground">
-          {"> اختر كلمة المرور الصحيحة لاختراق الهدف"}
+        <div className="mt-4 text-sm md:text-base text-muted-foreground">
+          {"> اختر كلمة المرور الصحيحة"}
         </div>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="flex flex-wrap gap-2 md:gap-4">
         {choices.map(p => (
           <button
             key={p}
             onClick={() => tryPwd(p)}
             className={cn(
-              "px-4 py-4 rounded-md border-2 text-center transition-all",
-              "border-[hsl(120_100%_45%)] text-[hsl(120_100%_70%)] bg-black/40",
-              "hover:bg-[hsl(120_100%_45%)]/20 hover:shadow-[0_0_18px_rgba(0,255,80,0.5)]"
+              "px-3 py-2 md:px-4 md:py-3 border-2 text-left text-sm md:text-base transition-all break-all",
+              "border-primary/70 text-primary bg-primary/10 shadow-[inset_0_0_10px_hsl(var(--primary)/0.18)]",
+              "hover:bg-primary/25 hover:shadow-[0_0_18px_hsl(var(--primary)/0.5)]"
             )}
           >
             {p}

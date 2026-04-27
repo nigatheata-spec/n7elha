@@ -98,17 +98,17 @@
 
   /* Game theme — green terminal hacker */
   .theme-game {
-    --background: 0 0% 0%;            /* pure black */
-    --foreground: 120 100% 70%;       /* terminal green */
-    --card: 0 0% 4%;
+    --background: 128 100% 8%;        /* deep terminal green */
+    --foreground: 120 100% 72%;       /* terminal green */
+    --card: 128 100% 10%;
     --card-foreground: 120 100% 75%;
-    --popover: 0 0% 4%;
+    --popover: 128 100% 10%;
     --popover-foreground: 120 100% 75%;
-    --primary: 120 100% 45%;          /* neon green */
+    --primary: 120 100% 58%;          /* neon green */
     --primary-foreground: 0 0% 0%;
-    --secondary: 120 30% 8%;
+    --secondary: 128 80% 12%;
     --secondary-foreground: 120 100% 70%;
-    --muted: 120 20% 10%;
+    --muted: 128 70% 12%;
     --muted-foreground: 120 30% 55%;
     --accent: 120 100% 50%;
     --accent-foreground: 0 0% 0%;
@@ -140,6 +140,14 @@
   .text-glow-cyan { text-shadow: 0 0 12px hsl(189 100% 50% / 0.7); }
   .text-glow-amber { text-shadow: 0 0 12px hsl(51 100% 50% / 0.7); }
   .border-glow { box-shadow: 0 0 0 1px hsl(189 100% 50% / 0.3), 0 0 20px hsl(189 100% 50% / 0.25); }
+  .terminal-screen {
+    background:
+      radial-gradient(ellipse at 35% 20%, hsl(126 100% 16% / 0.82) 0%, hsl(128 100% 9% / 0.96) 54%, hsl(132 100% 5%) 100%);
+  }
+  .terminal-scanlines {
+    opacity: 0.24;
+    background-image: repeating-linear-gradient(0deg, hsl(0 0% 0% / 0.34) 0px, hsl(0 0% 0% / 0.34) 1px, transparent 1px, transparent 4px);
+  }
   .bg-grid {
     background-image: linear-gradient(hsl(var(--border)) 1px, transparent 1px),
                       linear-gradient(90deg, hsl(var(--border)) 1px, transparent 1px);

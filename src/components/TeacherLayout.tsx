@@ -29,7 +29,7 @@ const AppSidebar = () => {
 
   const handleLogout = async () => {
     await signOut();
-    navigate("/");
+    navigate("/auth", { replace: true });
   };
 
   return (

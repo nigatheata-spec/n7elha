@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Trophy, Clock, Coins } from "lucide-react";
+import { Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { HackingFlow } from "@/components/game/HackingFlow";
 import { BreachModal } from "@/components/game/BreachModal";
@@ -23,7 +23,6 @@ const Game = () => {
   const [picked, setPicked] = useState<number | null>(null);
   const [timeLeft, setTimeLeft] = useState(0);
   const [output, setOutput] = useState<OutputResult | null>(null);
-  const [feed, setFeed] = useState<{id:string;text:string;kind:"good"|"bad"|"info"}[]>([]);
   const [currentQ, setCurrentQ] = useState<Q | null>(null);
   const [qSeed, setQSeed] = useState(0);
   const studentId = sessionId ? localStorage.getItem(`hash_student_${sessionId}`) : null;
@@ -65,21 +64,12 @@ const Game = () => {
           const hacker = students.find(x => x.id === ev.hacker_id)?.name ?? "?";
           const target = students.find(x => x.id === ev.target_id)?.name ?? "?";
           if (ev.success) {
-            pushFeed(`${hacker} → ${target} (+${fmt(ev.crypto_transferred)})`, "good");
             if (ev.target_id === studentId) setPhase("breach");
-          } else {
-            pushFeed(`${hacker} ⚠ ${target}`, "bad");
           }
         })
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [sessionId, studentId, students]);
-
-  const pushFeed = (text: string, kind: "good"|"bad"|"info") => {
-    const id = crypto.randomUUID();
-    setFeed(f => [{ id, text, kind }, ...f].slice(0, 6));
-    setTimeout(() => setFeed(f => f.filter(x => x.id !== id)), 8000);
-  };
 
   // status sync
   useEffect(() => {
@@ -148,25 +138,25 @@ const Game = () => {
     if (r.kind === "mult") delta = Math.floor(me.crypto * (r.value - 1));
     if (delta !== 0) {
       await supabase.from("game_students").update({ crypto: me.crypto + delta }).eq("id", me.id);
-      pushFeed(`+${fmt(delta)} ₿`, "good");
     }
     if (r.kind === "hack") { setTimeout(() => setPhase("hacking"), 700); return; }
     setTimeout(() => { setQSeed(s => s + 1); setPhase("question"); }, 1200);
   };
 
-  if (!session) return <div className="theme-game min-h-screen bg-background text-foreground flex items-center justify-center font-mono">...</div>;
+  if (!session) return <div className="theme-game terminal-screen min-h-screen text-foreground flex items-center justify-center font-mono">...</div>;
 
   return (
-    <div className="theme-game min-h-[100dvh] bg-background text-foreground font-mono flex flex-col">
+    <div className="theme-game terminal-screen min-h-[100dvh] text-foreground font-mono flex flex-col overflow-hidden">
+      <div className="pointer-events-none fixed inset-0 terminal-scanlines" />
       {/* Minimal sticky top bar — name left, ₿ crypto right */}
-      <header className="flex items-center justify-between px-4 py-3 text-[hsl(120_100%_70%)] border-b border-[hsl(120_100%_45%/0.25)] sticky top-0 bg-background/95 backdrop-blur z-10">
+      <header className="relative flex items-center justify-between px-4 py-3 text-primary border-b border-primary/30 sticky top-0 bg-background/75 backdrop-blur-sm z-10">
         <div className="font-medium text-sm md:text-base truncate max-w-[55%]">{me?.name ?? "—"}</div>
         <div className="text-lg md:text-xl font-bold tracking-wider whitespace-nowrap">
           ₿ {fmt(me?.crypto ?? 0)}
         </div>
       </header>
 
-      <main className="flex-1 px-3 md:px-6 pb-4">
+      <main className="relative flex-1 px-3 md:px-6 pb-4">
         {phase === "waiting" && (
           <div className="text-center py-24 md:py-32">
             <div className="text-xl md:text-2xl text-[hsl(120_100%_55%)] animate-pulse">{"> بانتظار المعلّم..."}</div>
@@ -184,7 +174,7 @@ const Game = () => {
 
         {(phase === "question" || phase === "answered") && currentQ && (
           <div className="max-w-6xl mx-auto h-full flex flex-col">
-            <div className="bg-black border-y-2 border-black px-4 py-6 md:py-12 text-center">
+            <div className="border-y-2 border-primary/40 bg-primary/5 px-4 py-6 md:py-12 text-center shadow-[inset_0_0_30px_hsl(var(--primary)/0.12)]">
               <p className="text-xl md:text-3xl lg:text-4xl text-[hsl(120_100%_75%)] font-medium leading-relaxed">
                 {currentQ.text}
               </p>
@@ -202,8 +192,8 @@ const Game = () => {
                     disabled={picked !== null}
                     onClick={() => submit(i)}
                     className={cn(
-                      "min-h-[110px] md:min-h-[180px] px-3 py-4 md:py-6 text-center text-base md:text-2xl text-black font-medium border-2 border-black transition-all break-words active:scale-[0.98]",
-                      "bg-[hsl(120_55%_55%)] hover:bg-[hsl(120_60%_62%)]",
+                      "min-h-[110px] md:min-h-[180px] px-3 py-4 md:py-6 text-center text-base md:text-2xl text-primary font-medium border-2 border-primary/60 transition-all break-words active:scale-[0.98] rounded-none",
+                      "bg-primary/10 hover:bg-primary/20 shadow-[inset_0_0_18px_hsl(var(--primary)/0.12)]",
                       showResult && isCorrect && "bg-[hsl(120_100%_50%)]",
                       showResult && isPicked && !isCorrect && "bg-[hsl(0_85%_55%)] text-white",
                       showResult && !isPicked && !isCorrect && "opacity-40"

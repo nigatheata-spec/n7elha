@@ -11,19 +11,31 @@ type AuthCtx = {
 
 const Ctx = createContext<AuthCtx>({ user: null, session: null, loading: true, signOut: async () => {} });
 
+const clearStoredAuth = () => {
+  Object.keys(localStorage)
+    .filter((key) => key.startsWith("sb-") && key.includes("auth-token"))
+    .forEach((key) => localStorage.removeItem(key));
+};
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     // Set up listener FIRST so we don't miss SIGNED_IN events
-    const { data: sub } = supabase.auth.onAuthStateChange((_evt, s) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((evt, s) => {
+      if (evt === "SIGNED_OUT") clearStoredAuth();
       setSession(s);
       setLoading(false);
     });
     // Then load existing session
-    supabase.auth.getSession().then(({ data }) => {
+    supabase.auth.getSession().then(({ data, error }) => {
+      if (error) clearStoredAuth();
       setSession(data.session);
+      setLoading(false);
+    }).catch(() => {
+      clearStoredAuth();
+      setSession(null);
       setLoading(false);
     });
     return () => sub.subscription.unsubscribe();
@@ -32,10 +44,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signOut = async () => {
     // Clear local state immediately so RequireAuth doesn't bounce
     setSession(null);
+    clearStoredAuth();
     try {
-      await supabase.auth.signOut();
+      await supabase.auth.signOut({ scope: "local" });
     } catch {
       // ignore — local state already cleared
+    } finally {
+      clearStoredAuth();
     }
   };
 
