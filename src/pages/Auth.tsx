@@ -36,7 +36,7 @@ const Auth = () => {
         return;
       }
       if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({
+        const { error, data } = await supabase.auth.signUp({
           email, password,
           options: {
             emailRedirectTo: `${window.location.origin}/app`,
@@ -45,11 +45,12 @@ const Auth = () => {
         });
         if (error) throw error;
         toast.success(t("welcome_back"));
-        navigate("/app");
+        if (data.session) window.location.assign("/app");
+        else toast.info("Check your email to confirm");
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { error, data } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        navigate("/app");
+        if (data.session) window.location.assign("/app");
       }
     } catch (e: any) {
       toast.error(e.message || "Error");
