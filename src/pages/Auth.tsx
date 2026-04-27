@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,7 @@ const schema = z.object({
 });
 
 const Auth = () => {
-  const [params] = useSearchParams();
+  const [params, setParams] = useSearchParams();
   const [mode, setMode] = useState<"login" | "signup">((params.get("mode") as any) || "login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -25,6 +25,16 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { t } = useTranslation();
+
+  useEffect(() => {
+    setMode(params.get("mode") === "signup" ? "signup" : "login");
+  }, [params]);
+
+  const switchMode = (next: "login" | "signup") => {
+    setMode(next);
+    setParams(next === "signup" ? { mode: "signup" } : {}, { replace: true });
+    setLoading(false);
+  };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,7 +53,14 @@ const Auth = () => {
             data: { display_name: name || email.split("@")[0] },
           },
         });
-        if (error) throw error;
+        if (error) {
+          if (error.message.toLowerCase().includes("already")) {
+            switchMode("login");
+            toast.info("الحساب موجود مسبقًا — سجّل دخولك الآن");
+            return;
+          }
+          throw error;
+        }
         toast.success(t("welcome_back"));
         if (data.session) window.location.assign("/app");
         else toast.info("Check your email to confirm");
@@ -95,7 +112,7 @@ const Auth = () => {
             </form>
             <p className="mt-6 text-sm text-center text-muted-foreground">
               {mode === "signup" ? t("have_account") : t("no_account")}{" "}
-              <button className="text-primary font-medium hover:underline" onClick={() => setMode(mode === "signup" ? "login" : "signup")}>
+              <button type="button" className="text-primary font-medium hover:underline" onClick={() => switchMode(mode === "signup" ? "login" : "signup")}>
                 {mode === "signup" ? t("login") : t("signup")}
               </button>
             </p>
