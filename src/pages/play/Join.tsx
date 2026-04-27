@@ -189,20 +189,20 @@ const Join = () => {
         }}
       />
 
-      <div className="relative min-h-full px-6 md:px-16 py-10 md:py-16">
-        <h1 className="text-3xl md:text-6xl font-black tracking-wider mb-8 drop-shadow-[0_0_12px_rgba(0,255,80,0.6)]">
+      <div className="relative min-h-full px-5 md:px-16 py-8 md:py-16">
+        <h1 className="text-2xl md:text-6xl font-black tracking-wider mb-6 md:mb-8 drop-shadow-[0_0_12px_rgba(0,255,80,0.6)]">
           WELCOME HACKER
         </h1>
 
         {/* typed lines */}
-        <div className="space-y-2 text-lg md:text-2xl">
+        <div className="space-y-2 text-base md:text-2xl leading-relaxed">
           {lines.map((l, i) => <div key={i}>{l}</div>)}
           {typing && <div>{typing}<span className="animate-pulse">▌</span></div>}
         </div>
 
         {/* password chips */}
         {showPasswords && stage !== "launch" && (
-          <div className="mt-8 flex flex-wrap gap-3 md:gap-4 text-sm md:text-lg">
+          <div className="mt-6 md:mt-8 flex flex-wrap gap-2 md:gap-4 text-sm md:text-lg">
             {passwordChoices.map(p => {
               const selected = chosen === p;
               return (
@@ -211,7 +211,7 @@ const Join = () => {
                   onClick={() => { setChosen(p); setStage("launch"); }}
                   disabled={!!chosen}
                   className={cn(
-                    "px-4 py-2 border-2 rounded-sm transition-all",
+                    "px-3 py-2 md:px-4 border-2 rounded-sm transition-all break-all",
                     "border-[hsl(120_100%_45%)] text-[hsl(120_100%_70%)]",
                     "hover:bg-[hsl(120_100%_45%)]/20 hover:shadow-[0_0_18px_rgba(0,255,80,0.45)]",
                     selected && "bg-[hsl(120_100%_45%)]/30 shadow-[0_0_24px_rgba(0,255,80,0.7)]",
@@ -227,7 +227,7 @@ const Join = () => {
 
         {/* launch sequence */}
         {stage === "launch" && (
-          <div className="mt-6 space-y-2 text-lg md:text-2xl">
+          <div className="mt-6 space-y-2 text-base md:text-2xl">
             {launchLines.map((l, i) => <div key={i}>{l}</div>)}
             <div className="opacity-70 mt-2">▌</div>
           </div>
