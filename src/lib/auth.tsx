@@ -11,6 +11,12 @@ type AuthCtx = {
 
 const Ctx = createContext<AuthCtx>({ user: null, session: null, loading: true, signOut: async () => {} });
 
+const clearStoredAuth = () => {
+  Object.keys(localStorage)
+    .filter((key) => key.startsWith("sb-") && key.includes("auth-token"))
+    .forEach((key) => localStorage.removeItem(key));
+};
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
@@ -32,10 +38,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signOut = async () => {
     // Clear local state immediately so RequireAuth doesn't bounce
     setSession(null);
+    clearStoredAuth();
     try {
-      await supabase.auth.signOut();
+      await supabase.auth.signOut({ scope: "local" });
     } catch {
       // ignore — local state already cleared
+    } finally {
+      clearStoredAuth();
     }
   };
 
