@@ -10,10 +10,13 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { z } from "zod";
 
-const schema = z.object({
+const loginSchema = z.object({
   email: z.string().trim().email().max(255),
   password: z.string().min(6).max(72),
-  display_name: z.string().trim().min(1).max(100).optional(),
+});
+
+const signupSchema = loginSchema.extend({
+  display_name: z.string().trim().min(1).max(100),
 });
 
 const Auth = () => {
@@ -40,7 +43,11 @@ const Auth = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      const parsed = schema.safeParse({ email, password, display_name: name });
+      const parsed = (mode === "signup" ? signupSchema : loginSchema).safeParse({
+        email,
+        password,
+        ...(mode === "signup" ? { display_name: name } : {}),
+      });
       if (!parsed.success) {
         toast.error(parsed.error.errors[0].message);
         return;
