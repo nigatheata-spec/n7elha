@@ -157,23 +157,19 @@ const Game = () => {
   if (!session) return <div className="theme-game min-h-screen bg-background text-foreground flex items-center justify-center font-mono">...</div>;
 
   return (
-    <div className="theme-game min-h-screen bg-background text-foreground font-mono">
-      {/* Minimal top bar — name left, ₿ crypto right (matches screenshot) */}
-      <header className="flex items-center justify-between px-5 py-3 text-[hsl(120_100%_70%)]">
-        <div className="flex items-center gap-3 text-sm">
-          <span className="opacity-70">⛶</span>
-          <span className="opacity-70">🔊</span>
-          <span className="font-medium">{me?.name ?? "—"}</span>
-        </div>
-        <div className="text-xl font-bold tracking-wider">
+    <div className="theme-game min-h-[100dvh] bg-background text-foreground font-mono flex flex-col">
+      {/* Minimal sticky top bar — name left, ₿ crypto right */}
+      <header className="flex items-center justify-between px-4 py-3 text-[hsl(120_100%_70%)] border-b border-[hsl(120_100%_45%/0.25)] sticky top-0 bg-background/95 backdrop-blur z-10">
+        <div className="font-medium text-sm md:text-base truncate max-w-[55%]">{me?.name ?? "—"}</div>
+        <div className="text-lg md:text-xl font-bold tracking-wider whitespace-nowrap">
           ₿ {fmt(me?.crypto ?? 0)}
         </div>
       </header>
 
-      <main className="px-3 md:px-6 pb-6">
+      <main className="flex-1 px-3 md:px-6 pb-4">
         {phase === "waiting" && (
-          <div className="text-center py-32">
-            <div className="text-2xl text-[hsl(120_100%_55%)] animate-pulse">{"> بانتظار المعلّم..."}</div>
+          <div className="text-center py-24 md:py-32">
+            <div className="text-xl md:text-2xl text-[hsl(120_100%_55%)] animate-pulse">{"> بانتظار المعلّم..."}</div>
             <p className="text-muted-foreground mt-3 text-sm">{students.length} لاعب متصل</p>
           </div>
         )}
@@ -187,17 +183,15 @@ const Game = () => {
         )}
 
         {(phase === "question" || phase === "answered") && currentQ && (
-          <div className="max-w-6xl mx-auto">
-            {/* Question banner */}
-            <div className="bg-black border-y-2 border-black px-6 py-10 md:py-16 text-center">
-              <p className="text-2xl md:text-4xl text-[hsl(120_100%_75%)] font-medium">
+          <div className="max-w-6xl mx-auto h-full flex flex-col">
+            <div className="bg-black border-y-2 border-black px-4 py-6 md:py-12 text-center">
+              <p className="text-xl md:text-3xl lg:text-4xl text-[hsl(120_100%_75%)] font-medium leading-relaxed">
                 {currentQ.text}
               </p>
               <div className="mt-3 text-xs text-[hsl(120_100%_45%)]">⏱ {timeLeft}s</div>
             </div>
 
-            {/* Big green answer tiles */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+            <div className="grid grid-cols-2 gap-2 mt-2 flex-1">
               {currentQ.options.map((opt, i) => {
                 const isCorrect = i === currentQ.correct_index;
                 const isPicked = picked === i;
@@ -208,7 +202,7 @@ const Game = () => {
                     disabled={picked !== null}
                     onClick={() => submit(i)}
                     className={cn(
-                      "min-h-[140px] md:min-h-[180px] px-4 py-6 text-center text-2xl text-black font-medium border-2 border-black transition-all",
+                      "min-h-[110px] md:min-h-[180px] px-3 py-4 md:py-6 text-center text-base md:text-2xl text-black font-medium border-2 border-black transition-all break-words active:scale-[0.98]",
                       "bg-[hsl(120_55%_55%)] hover:bg-[hsl(120_60%_62%)]",
                       showResult && isCorrect && "bg-[hsl(120_100%_50%)]",
                       showResult && isPicked && !isCorrect && "bg-[hsl(0_85%_55%)] text-white",
