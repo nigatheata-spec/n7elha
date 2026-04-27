@@ -23,13 +23,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     // Set up listener FIRST so we don't miss SIGNED_IN events
-    const { data: sub } = supabase.auth.onAuthStateChange((_evt, s) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((evt, s) => {
+      if (evt === "SIGNED_OUT") clearStoredAuth();
       setSession(s);
       setLoading(false);
     });
     // Then load existing session
-    supabase.auth.getSession().then(({ data }) => {
+    supabase.auth.getSession().then(({ data, error }) => {
+      if (error) clearStoredAuth();
       setSession(data.session);
+      setLoading(false);
+    }).catch(() => {
+      clearStoredAuth();
+      setSession(null);
       setLoading(false);
     });
     return () => sub.subscription.unsubscribe();
