@@ -138,30 +138,31 @@ const Join = () => {
   // ── UI
   if (stage === "code" || stage === "name") {
     return (
-      <div className="theme-game min-h-screen bg-background text-foreground bg-grid flex items-center justify-center p-4">
-        <div className="w-full max-w-md">
-          <div className="text-center mb-6">
-            <div className="font-mono text-4xl font-black text-primary text-glow-cyan">HASH</div>
-            <p className="text-muted-foreground mt-1 font-mono text-xs">{"> ENTER ACCESS CODE"}</p>
+      <div className="theme-game terminal-screen min-h-[100dvh] text-foreground flex items-center justify-center p-4 font-mono overflow-hidden">
+        <div className="pointer-events-none fixed inset-0 terminal-scanlines" />
+        <div className="relative w-full max-w-md">
+          <div className="mb-8">
+            <div className="text-4xl md:text-5xl font-black text-primary text-glow-cyan">HASH</div>
+            <p className="text-muted-foreground mt-2 text-xs">{stage === "code" ? "> أدخل رمز اللعبة" : "> أدخل اسم المستخدم"}</p>
           </div>
           {stage === "code" ? (
-            <form onSubmit={submitCode} className="space-y-4 border-glow rounded-2xl p-6 bg-card/60 backdrop-blur">
-              <label className="text-xs font-mono text-muted-foreground">GAME_CODE</label>
+            <form onSubmit={submitCode} className="space-y-5">
+              <label className="text-xs text-muted-foreground">GAME_CODE</label>
               <Input value={code} onChange={e => setCode(e.target.value.toUpperCase())} maxLength={4}
-                className="font-mono text-3xl text-center tracking-[0.5em] bg-background/60 border-primary/40 h-16 text-primary" />
+                className="font-mono text-3xl text-center tracking-[0.5em] bg-primary/10 border-2 border-primary/70 h-16 text-primary rounded-none shadow-[inset_0_0_18px_hsl(var(--primary)/0.15)]" />
               <Button type="submit" disabled={loading}
-                className="w-full h-12 bg-primary text-primary-foreground font-mono font-bold tracking-wider">
-                {loading ? "..." : "> CONNECT"}
+                className="w-full h-12 rounded-none bg-primary/90 text-primary-foreground font-mono font-bold tracking-wider hover:bg-primary">
+                {loading ? "..." : "> اتصال"}
               </Button>
             </form>
           ) : (
-            <form onSubmit={submitName} className="space-y-4 border-glow rounded-2xl p-6 bg-card/60 backdrop-blur">
-              <label className="text-xs font-mono text-muted-foreground">USERNAME</label>
+            <form onSubmit={submitName} className="space-y-5">
+              <label className="text-xs text-muted-foreground">USERNAME</label>
               <Input value={name} onChange={e => setName(e.target.value)} maxLength={24} autoFocus
-                className="font-mono bg-background/60 border-primary/40 h-12" placeholder="hacker_01" />
+                className="font-mono bg-primary/10 border-2 border-primary/70 h-12 text-primary rounded-none shadow-[inset_0_0_18px_hsl(var(--primary)/0.15)]" placeholder="hacker_01" />
               <Button type="submit"
-                className="w-full h-12 bg-primary text-primary-foreground font-mono font-bold tracking-wider">
-                {"> ENTER TERMINAL"}
+                className="w-full h-12 rounded-none bg-primary/90 text-primary-foreground font-mono font-bold tracking-wider hover:bg-primary">
+                {"> دخول النظام"}
               </Button>
             </form>
           )}
@@ -174,20 +175,10 @@ const Join = () => {
   return (
     <div
       ref={containerRef}
-      className="theme-game fixed inset-0 overflow-y-auto font-mono text-[hsl(120_100%_55%)]"
-      style={{
-        backgroundImage:
-          "radial-gradient(ellipse at center, rgba(0,80,0,0.55) 0%, rgba(0,30,0,0.95) 75%, rgba(0,15,0,1) 100%)",
-      }}
+      className="theme-game terminal-screen fixed inset-0 overflow-y-auto font-mono text-primary"
     >
       {/* scanlines */}
-      <div
-        className="pointer-events-none fixed inset-0 opacity-20"
-        style={{
-          backgroundImage:
-            "repeating-linear-gradient(0deg, rgba(0,0,0,0.35) 0px, rgba(0,0,0,0.35) 1px, transparent 1px, transparent 3px)",
-        }}
-      />
+      <div className="pointer-events-none fixed inset-0 terminal-scanlines" />
 
       <div className="relative min-h-full px-5 md:px-16 py-8 md:py-16">
         <h1 className="text-2xl md:text-6xl font-black tracking-wider mb-6 md:mb-8 drop-shadow-[0_0_12px_rgba(0,255,80,0.6)]">
