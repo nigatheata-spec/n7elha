@@ -9,8 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Slider } from "@/components/ui/slider";
-import { Plus, Trash2, Sparkles, Upload, Save, Check } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Plus, Trash2, Sparkles, Upload, Save, Check, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 
 type Q = { id?: string; text: string; options: string[]; correct_index: number; difficulty: "easy"|"medium"|"hard" };
@@ -171,47 +171,80 @@ const QuizEditor = () => {
       </div>
 
       {showAI && (
-        <Card className="p-6 border-accent/30 bg-gradient-hero animate-fade-in space-y-4">
-          <div className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-accent" /><h2 className="font-bold text-lg">{t("ai_generate")}</h2></div>
-
-          <div>
-            <Label className="mb-2 block">{t("upload_doc")}</Label>
-            <label className="flex items-center justify-center gap-2 h-24 rounded-xl border-2 border-dashed border-border hover:border-primary cursor-pointer bg-card/50 transition-colors">
-              <input type="file" accept=".pdf,.txt,.md" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onUpload(f); }} />
-              <Upload className="h-5 w-5 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">{uploading ? "..." : "PDF / TXT"}</span>
-            </label>
-            {docText && <div className="mt-2 text-xs text-muted-foreground">📄 {docText.length} حرف</div>}
+        <Card className="p-4 md:p-5 border-accent/30 bg-card/80 backdrop-blur animate-fade-in">
+          <div className="flex items-center gap-2 mb-3">
+            <Sparkles className="h-4 w-4 text-accent" />
+            <h2 className="font-bold text-sm">{t("ai_generate")}</h2>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-4">
-            <div>
-              <Label className="mb-2 block">{t("num_questions")}: {numQ}</Label>
-              <Slider value={[numQ]} onValueChange={([v]) => setNumQ(v)} min={5} max={30} step={1} />
+          <div className="rounded-2xl border border-border bg-background/60 p-3 space-y-3 shadow-sm">
+            <Textarea
+              value={topics}
+              onChange={e => setTopics(e.target.value)}
+              maxLength={400}
+              rows={3}
+              placeholder={t("focus_topics")}
+              className="border-0 bg-transparent focus-visible:ring-0 resize-none p-1 text-sm"
+            />
+
+            {docText && (
+              <div className="text-xs text-muted-foreground px-1">📄 {docText.length} حرف</div>
+            )}
+
+            <div className="flex items-center justify-between gap-2 flex-wrap pt-2 border-t border-border/50">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <label className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full border border-border hover:border-primary cursor-pointer text-xs transition-colors">
+                  <input type="file" accept=".pdf,.txt,.md" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onUpload(f); }} />
+                  <Upload className="h-3.5 w-3.5" />
+                  <span>{uploading ? "..." : "PDF / TXT"}</span>
+                </label>
+
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button type="button" className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full border border-border hover:border-primary text-xs transition-colors">
+                      <span className="text-muted-foreground">{t("difficulty")}:</span>
+                      <span className="font-semibold">{t(diff)}</span>
+                      <ChevronDown className="h-3 w-3 opacity-60" />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-44 p-1" align="start">
+                    {(["easy","medium","hard"] as const).map(d => (
+                      <button key={d} type="button" onClick={() => setDiff(d)}
+                        className={`w-full flex items-center justify-between px-2.5 py-2 rounded-md text-sm hover:bg-accent ${diff === d ? "bg-accent/50" : ""}`}>
+                        <span>{t(d)}</span>
+                        {diff === d && <Check className="h-3.5 w-3.5" />}
+                      </button>
+                    ))}
+                  </PopoverContent>
+                </Popover>
+
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button type="button" className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full border border-border hover:border-primary text-xs transition-colors">
+                      <span className="text-muted-foreground">{t("num_questions")}:</span>
+                      <span className="font-semibold">{numQ}</span>
+                      <ChevronDown className="h-3 w-3 opacity-60" />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-40 p-1 max-h-64 overflow-y-auto" align="start">
+                    {[5,10,15,20,25,30].map(n => (
+                      <button key={n} type="button" onClick={() => setNumQ(n)}
+                        className={`w-full flex items-center justify-between px-2.5 py-2 rounded-md text-sm hover:bg-accent ${numQ === n ? "bg-accent/50" : ""}`}>
+                        <span>{n}</span>
+                        {numQ === n && <Check className="h-3.5 w-3.5" />}
+                      </button>
+                    ))}
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                <Button variant="ghost" size="sm" onClick={() => setShowAI(false)} className="h-8 text-xs">{t("cancel")}</Button>
+                <Button onClick={generate} disabled={generating} size="sm" className="h-8 bg-gradient-cyan shadow-glow text-xs">
+                  <Sparkles className="h-3.5 w-3.5 me-1.5" />{generating ? "..." : t("generate")}
+                </Button>
+              </div>
             </div>
-            <div>
-              <Label className="mb-2 block">{t("difficulty")}</Label>
-              <Select value={diff} onValueChange={(v: any) => setDiff(v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="easy">{t("easy")}</SelectItem>
-                  <SelectItem value="medium">{t("medium")}</SelectItem>
-                  <SelectItem value="hard">{t("hard")}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div>
-            <Label className="mb-2 block">{t("focus_topics")}</Label>
-            <Input value={topics} onChange={e => setTopics(e.target.value)} maxLength={200} />
-          </div>
-
-          <div className="flex gap-2 justify-end">
-            <Button variant="ghost" onClick={() => setShowAI(false)}>{t("cancel")}</Button>
-            <Button onClick={generate} disabled={generating} className="bg-gradient-cyan shadow-glow">
-              <Sparkles className="h-4 w-4 me-2" />{generating ? "..." : t("generate")}
-            </Button>
           </div>
         </Card>
       )}
