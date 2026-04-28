@@ -6,8 +6,8 @@ import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Plus, ArrowUp, FileText, X, Loader2, Gauge, Hash, Gamepad2, Eye, Check, RefreshCw, Pencil } from "lucide-react";
-import { Slider } from "@/components/ui/slider";
+import { Sparkles, Plus, ArrowUp, FileText, X, Loader2, Gauge, Hash, Gamepad2, Eye, Check, RefreshCw, Pencil, ChevronDown } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
@@ -187,21 +187,55 @@ const Dashboard = () => {
             </div>
           )}
 
-          <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/60">
-            <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/60 gap-2 flex-wrap">
+            <div className="flex items-center gap-1.5 flex-wrap">
               <input ref={fileRef} type="file" multiple accept=".pdf,.txt,.md" className="hidden"
                 onChange={e => { handleFiles(e.target.files); if (fileRef.current) fileRef.current.value = ""; }} />
               <Button variant="ghost" size="icon" className="rounded-full h-9 w-9" onClick={() => fileRef.current?.click()}>
                 <Plus className="h-4 w-4" />
               </Button>
 
-              <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground px-2">
-                <Gauge className="h-3.5 w-3.5" />
-                <span>{ar ? cur.label_ar : cur.label_en}</span>
-                <span className="text-muted-foreground/50">·</span>
-                <Hash className="h-3.5 w-3.5" />
-                <span>{numQ}</span>
-              </div>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button type="button" className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full border border-border hover:border-primary text-xs transition-colors">
+                    <Gauge className="h-3.5 w-3.5" />
+                    <span className="font-semibold">{ar ? cur.label_ar : cur.label_en}</span>
+                    <ChevronDown className="h-3 w-3 opacity-60" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-56 p-1" align="start">
+                  {CREATIVITY.map((c, i) => (
+                    <button key={c.key} type="button" onClick={() => setCreativity(i)}
+                      className={`w-full flex items-start justify-between gap-2 px-2.5 py-2 rounded-md text-sm hover:bg-accent text-start ${creativity === i ? "bg-accent/50" : ""}`}>
+                      <div className="min-w-0">
+                        <div className="font-medium">{ar ? c.label_ar : c.label_en}</div>
+                        <div className="text-[11px] text-muted-foreground">{ar ? c.desc_ar : c.desc_en}</div>
+                      </div>
+                      {creativity === i && <Check className="h-3.5 w-3.5 shrink-0 mt-0.5" />}
+                    </button>
+                  ))}
+                </PopoverContent>
+              </Popover>
+
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button type="button" className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full border border-border hover:border-primary text-xs transition-colors">
+                    <Hash className="h-3.5 w-3.5" />
+                    <span className="font-semibold">{numQ}</span>
+                    <span className="text-muted-foreground">{ar ? "سؤال" : "Q"}</span>
+                    <ChevronDown className="h-3 w-3 opacity-60" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-32 p-1 max-h-64 overflow-y-auto" align="start">
+                  {[5,10,15,20,25,30,40].map(n => (
+                    <button key={n} type="button" onClick={() => setNumQ(n)}
+                      className={`w-full flex items-center justify-between px-2.5 py-2 rounded-md text-sm hover:bg-accent ${numQ === n ? "bg-accent/50" : ""}`}>
+                      <span>{n}</span>
+                      {numQ === n && <Check className="h-3.5 w-3.5" />}
+                    </button>
+                  ))}
+                </PopoverContent>
+              </Popover>
             </div>
 
             <Button
@@ -213,26 +247,6 @@ const Dashboard = () => {
               {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowUp className="h-4 w-4" />}
             </Button>
           </div>
-        </div>
-
-        {/* Controls */}
-        <div className="grid sm:grid-cols-2 gap-4 text-start max-w-3xl mx-auto">
-          <Card className="p-4 space-y-2">
-            <div className="flex items-center justify-between">
-              <div className="text-sm font-semibold flex items-center gap-2"><Gauge className="h-4 w-4 text-primary" />{ar ? "إبداع الذكاء" : "AI creativity"}</div>
-              <Badge variant="outline">{ar ? cur.label_ar : cur.label_en}</Badge>
-            </div>
-            <Slider value={[creativity]} min={0} max={2} step={1} onValueChange={([v]) => setCreativity(v)} />
-            <p className="text-xs text-muted-foreground">{ar ? cur.desc_ar : cur.desc_en}</p>
-          </Card>
-          <Card className="p-4 space-y-2">
-            <div className="flex items-center justify-between">
-              <div className="text-sm font-semibold flex items-center gap-2"><Hash className="h-4 w-4 text-primary" />{ar ? "عدد الأسئلة" : "Number of questions"}</div>
-              <Badge variant="outline">{numQ}</Badge>
-            </div>
-            <Slider value={[numQ]} min={5} max={40} step={1} onValueChange={([v]) => setNumQ(v)} />
-            <p className="text-xs text-muted-foreground">{ar ? "تتكرر عشوائياً حتى ينتهي الوقت" : "Loop randomly until time runs out"}</p>
-          </Card>
         </div>
 
         <div className="text-sm text-muted-foreground">
