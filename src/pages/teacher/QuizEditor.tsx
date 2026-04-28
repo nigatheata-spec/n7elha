@@ -9,8 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Slider } from "@/components/ui/slider";
-import { Plus, Trash2, Sparkles, Upload, Save, Check } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Plus, Trash2, Sparkles, Upload, Save, Check, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 
 type Q = { id?: string; text: string; options: string[]; correct_index: number; difficulty: "easy"|"medium"|"hard" };
