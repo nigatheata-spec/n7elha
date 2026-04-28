@@ -167,7 +167,7 @@ const Dashboard = () => {
           <textarea
             value={prompt}
             onChange={e => setPrompt(e.target.value)}
-            placeholder={ar ? "اطلب من هاش توليد اختبار... (مثال: اختبار عن الكسور للصف الخامس)" : "Ask Hash to create a quiz... (e.g. Fractions quiz for grade 5)"}
+            placeholder={ar ? "اطلب من نحلها توليد اختبار... (مثال: اختبار عن الكسور للصف الخامس)" : "Ask n7elha to create a quiz... (e.g. Fractions quiz for grade 5)"}
             rows={3}
             className="w-full resize-none bg-transparent outline-none text-lg placeholder:text-muted-foreground/70"
             maxLength={2000}
