@@ -34,9 +34,10 @@ const AppSidebar = () => {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader className="h-16 px-4 flex items-center justify-center border-b border-sidebar-border">
-        <Link to="/app" className="flex items-center">
-          {collapsed ? <span className="font-mono font-black text-primary text-xl">H</span> : <Logo />}
+      <SidebarHeader className="h-16 px-3 flex flex-row items-center gap-2 border-b border-sidebar-border">
+        <SidebarTrigger className="shrink-0" />
+        <Link to="/app" className="flex items-center min-w-0">
+          {collapsed ? <span className="font-mono font-black text-primary text-lg">n7</span> : <Logo />}
         </Link>
       </SidebarHeader>
       <SidebarContent>
@@ -83,8 +84,7 @@ export const TeacherLayout = () => {
       <div className="min-h-screen bg-background flex w-full">
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0">
-          <header className="h-14 border-b border-border bg-background/80 backdrop-blur sticky top-0 z-20 flex items-center justify-between px-3 md:px-6">
-            <SidebarTrigger />
+          <header className="h-14 border-b border-border bg-background/80 backdrop-blur sticky top-0 z-20 flex items-center justify-end px-3 md:px-6">
             <LangToggle />
           </header>
           <main className="flex-1 p-4 md:p-8">

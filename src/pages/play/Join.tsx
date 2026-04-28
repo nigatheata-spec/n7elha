@@ -142,7 +142,7 @@ const Join = () => {
         <div className="pointer-events-none fixed inset-0 terminal-scanlines" />
         <div className="relative w-full max-w-md">
           <div className="mb-8">
-            <div className="text-4xl md:text-5xl font-black text-primary text-glow-cyan">HASH</div>
+            <div className="text-4xl md:text-5xl font-black text-primary text-glow-cyan">N7ELHA</div>
             <p className="text-muted-foreground mt-2 text-xs">{stage === "code" ? "> أدخل رمز اللعبة" : "> أدخل اسم المستخدم"}</p>
           </div>
           {stage === "code" ? (

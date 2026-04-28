@@ -87,7 +87,7 @@ const Landing = () => {
 
       <footer className="border-t border-border/50 py-8">
         <div className="container text-center text-sm text-muted-foreground">
-          © {new Date().getFullYear()} Hash Platform
+          © {new Date().getFullYear()} n7elha Platform
         </div>
       </footer>
     </div>
