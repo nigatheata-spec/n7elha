@@ -1,5 +1,7 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
+import { useTranslation } from "react-i18next";
+import { LangToggle } from "@/components/LangToggle";
 import { ArrowUpRight, Play, User, TrendingDown, MoreHorizontal } from "lucide-react";
 
 /**
