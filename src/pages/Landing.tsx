@@ -1,97 +1,236 @@
 import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Logo } from "@/components/Logo";
-import { LangToggle } from "@/components/LangToggle";
-import { useTranslation } from "react-i18next";
 import { useAuth } from "@/lib/auth";
-import { ArrowRight, Sparkles, Activity, Shield, Zap } from "lucide-react";
+import { ArrowUpRight, Play, User, TrendingDown, MoreHorizontal } from "lucide-react";
 
+/**
+ * Landing page — replicated 1:1 from the provided reference image.
+ * Lavender page bg, white inner card, lime highlights on hero words,
+ * dark pill CTA, decorative cross/star pattern, purple preview square,
+ * floating "Mike Jones" tag and "Increase efficiency" card, avatar trio
+ * + "Play video" pill, brand logos row.
+ */
 const Landing = () => {
-  const { t } = useTranslation();
   const { user } = useAuth();
 
-  const features = [
-    { icon: Sparkles, title: t("ai_generate"), desc: "PDF · Word · PowerPoint" },
-    { icon: Activity, title: t("analytics"), desc: "Live monitoring · per-question stats" },
-    { icon: Shield, title: "Hack & Defense", desc: "8 mini-tasks · breach lockout" },
-    { icon: Zap, title: "Realtime", desc: "Instant leaderboard · zero lag" },
-  ];
-
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b border-border/50 bg-background/80 backdrop-blur sticky top-0 z-30">
-        <div className="container flex h-16 items-center justify-between">
-          <Logo />
+    <div
+      dir="ltr"
+      className="min-h-screen w-full p-4 md:p-8 lg:p-12 flex items-center justify-center"
+      style={{ background: "#E8DFF0", fontFamily: "'Inter', 'Tajawal', system-ui, sans-serif" }}
+    >
+      <div className="relative w-full max-w-[1280px] bg-white rounded-[28px] shadow-[0_30px_80px_-30px_rgba(60,40,90,0.25)] overflow-hidden">
+        {/* sparkle bottom-right of page (outside card area visually) */}
+        <span className="pointer-events-none absolute -bottom-6 -right-6 text-3xl text-[#C9B8DA] select-none">✦</span>
+
+        {/* ---------------- NAV ---------------- */}
+        <nav className="flex items-center justify-between px-8 md:px-14 pt-8">
+          {/* logo */}
+          <Link to="/" className="flex items-center gap-2">
+            <span className="h-3 w-3 rounded-full bg-black inline-block" />
+            <span className="text-[17px] font-medium tracking-tight text-black">n7elha</span>
+          </Link>
+
+          {/* center links */}
+          <ul className="hidden md:flex items-center gap-10 text-[13px] tracking-[0.18em] font-medium text-black/80">
+            <li><a href="#about" className="hover:text-black">ABOUT US</a></li>
+            <li><a href="#services" className="hover:text-black">SERVICES</a></li>
+            <li><a href="#partners" className="hover:text-black">PARTNERS</a></li>
+            <li className="text-black/40"><MoreHorizontal className="h-4 w-4" /></li>
+          </ul>
+
+          {/* auth buttons */}
           <div className="flex items-center gap-2">
-            <LangToggle />
             {user ? (
-              <Button asChild variant="default" size="sm" className="bg-gradient-cyan shadow-glow">
-                <Link to="/app">{t("dashboard")}</Link>
-              </Button>
+              <Link
+                to="/app"
+                className="px-5 py-2 rounded-full bg-black text-white text-[13px] tracking-wider font-medium"
+              >
+                DASHBOARD
+              </Link>
             ) : (
               <>
-                <Button asChild variant="ghost" size="sm"><Link to="/auth">{t("login")}</Link></Button>
-                <Button asChild size="sm" className="bg-gradient-cyan shadow-glow">
-                  <Link to="/auth?mode=signup">{t("signup")}</Link>
-                </Button>
+                <Link
+                  to="/auth"
+                  className="px-5 py-2 rounded-full bg-[#DCEB7A] text-black text-[13px] tracking-wider font-medium border border-black/5 hover:brightness-95 transition"
+                >
+                  LOG IN
+                </Link>
+                <Link
+                  to="/auth?mode=signup"
+                  className="px-5 py-2 rounded-full bg-black text-white text-[13px] tracking-wider font-medium hover:bg-black/85 transition"
+                >
+                  SIGN UP
+                </Link>
               </>
             )}
           </div>
-        </div>
-      </header>
+        </nav>
 
-      <main>
-        <section className="relative overflow-hidden">
-          <div className="absolute inset-0 bg-grid opacity-[0.04] pointer-events-none" />
-          <div className="absolute inset-0 bg-gradient-hero pointer-events-none" />
-          <div className="container relative py-24 md:py-32">
-            <div className="max-w-3xl mx-auto text-center animate-fade-in">
-              <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card/60 backdrop-blur px-4 py-1.5 text-sm text-muted-foreground mb-6">
-                <span className="h-2 w-2 rounded-full bg-success animate-pulse" />
-                {t("tagline")}
-              </div>
-              <h1 className="font-display text-5xl md:text-7xl font-black leading-tight tracking-tight">
-                {t("hero_title")}
-              </h1>
-              <p className="mt-6 text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
-                {t("hero_sub")}
-              </p>
-              <div className="mt-10 flex items-center justify-center gap-3 flex-wrap">
-                <Button asChild size="lg" className="bg-gradient-cyan shadow-glow text-base h-12 px-8">
-                  <Link to={user ? "/app" : "/auth?mode=signup"}>
-                    {t("get_started")} <ArrowRight className="ms-2 h-4 w-4 rtl:rotate-180" />
-                  </Link>
-                </Button>
-                <Button asChild size="lg" variant="outline" className="text-base h-12 px-8 border-2">
-                  <Link to="/play">انضم للعبة</Link>
-                </Button>
+        {/* ---------------- HERO ---------------- */}
+        <div className="relative grid grid-cols-1 lg:grid-cols-2 gap-8 px-8 md:px-14 pt-16 pb-12">
+          {/* LEFT */}
+          <div className="relative z-10">
+            <h1 className="text-black font-semibold leading-[1.05] tracking-tight text-[44px] md:text-[60px]">
+              <span className="block">It takes only</span>
+              <span className="block mt-3">
+                <Highlight>a wish</Highlight>{" "}
+                <span>to touch</span>
+              </span>
+              <span className="block mt-3">
+                <span>a great </span>
+                <Highlight>success</Highlight>
+              </span>
+            </h1>
+
+            <p className="mt-8 text-[14px] leading-relaxed text-black/70 max-w-md">
+              We own the full process, from coding to qa and final deployment,
+              <br className="hidden md:block" />
+              and transform your requirements into the finished product
+            </p>
+
+            <div className="mt-9 flex items-center gap-5">
+              <Link
+                to={user ? "/app" : "/auth?mode=signup"}
+                className="group inline-flex items-center gap-3 rounded-full bg-black text-white pl-6 pr-2 py-2 text-[15px] font-medium hover:bg-black/85 transition"
+              >
+                Let's collaborate
+                <span className="h-9 w-9 rounded-full bg-white text-black flex items-center justify-center transition group-hover:rotate-12">
+                  <ArrowUpRight className="h-4 w-4" strokeWidth={2.25} />
+                </span>
+              </Link>
+
+              <div className="h-[58px] px-5 rounded-full border border-black/15 flex flex-col items-center justify-center leading-tight">
+                <span className="text-[15px] font-semibold text-black">+120k</span>
+                <span className="text-[10px] text-black/55">customers</span>
               </div>
             </div>
-          </div>
-        </section>
 
-        <section className="container py-16 md:py-24">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {features.map((f) => (
-              <div key={f.title} className="rounded-2xl border border-border bg-card p-6 shadow-soft hover:shadow-glow transition-shadow">
-                <div className="h-11 w-11 rounded-xl bg-gradient-cyan flex items-center justify-center mb-4">
-                  <f.icon className="h-5 w-5 text-primary-foreground" />
-                </div>
-                <h3 className="font-bold text-lg mb-1">{f.title}</h3>
-                <p className="text-sm text-muted-foreground">{f.desc}</p>
+            {/* logos row */}
+            <div className="mt-14 flex items-center gap-10 opacity-80">
+              <div className="flex flex-col leading-none">
+                <span className="font-black italic text-[22px] tracking-tight text-black">YAHOO!</span>
+                <span className="text-[8px] tracking-[0.3em] text-black/60 mt-0.5">FINANCE</span>
               </div>
-            ))}
+              <div className="flex items-center gap-1.5">
+                <span className="inline-block h-5 w-5 rounded bg-black text-white text-[12px] font-black flex items-center justify-center">N</span>
+                <span className="text-[16px] font-semibold text-black">Nasdaq</span>
+              </div>
+              <div className="text-[16px] font-semibold tracking-tight text-black">PST<span className="inline-block">©</span>MPANY</div>
+            </div>
           </div>
-        </section>
-      </main>
 
-      <footer className="border-t border-border/50 py-8">
-        <div className="container text-center text-sm text-muted-foreground">
-          © {new Date().getFullYear()} n7elha Platform
+          {/* RIGHT */}
+          <div className="relative min-h-[460px]">
+            {/* decorative cross/plus pattern */}
+            <CrossPattern />
+
+            {/* purple preview square */}
+            <div className="absolute top-2 right-4 w-[78%] aspect-square rounded-[28px] bg-[#D9D6F2] shadow-[0_18px_50px_-20px_rgba(80,60,140,0.35)]">
+              <div className="absolute top-5 right-6 flex gap-1.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-black/40" />
+                <span className="h-1.5 w-1.5 rounded-full bg-black/40" />
+                <span className="h-1.5 w-1.5 rounded-full bg-black/40" />
+              </div>
+            </div>
+
+            {/* "Mike Jones" lime tag */}
+            <div className="absolute -top-2 right-2 flex flex-col items-end">
+              <div className="rounded-full bg-[#DCEB7A] px-4 py-1.5 text-[12px] font-medium text-black border border-black/5 shadow-sm">
+                Mike Jones
+              </div>
+              <div className="mt-2 me-3 text-[11px] font-medium text-black/70 [writing-mode:vertical-rl] rotate-180">
+                +25.5%
+              </div>
+            </div>
+
+            {/* avatars + play video pill */}
+            <div className="absolute bottom-4 left-2 md:left-6 flex items-center gap-3">
+              <div className="flex -space-x-2">
+                {["#F2C7B6", "#C9B8DA", "#B6D4F2"].map((c, i) => (
+                  <div
+                    key={i}
+                    className="h-9 w-9 rounded-full border-2 border-white flex items-center justify-center"
+                    style={{ background: c }}
+                  >
+                    <User className="h-4 w-4 text-black/50" />
+                  </div>
+                ))}
+              </div>
+              <button className="flex items-center gap-2 rounded-full border border-black/15 bg-white px-3 py-1.5 text-[12px] font-medium text-black">
+                Play video
+                <span className="h-6 w-6 rounded-full bg-[#DCEB7A] flex items-center justify-center">
+                  <Play className="h-3 w-3 text-black fill-black" />
+                </span>
+              </button>
+            </div>
+
+            {/* "Increase efficiency" floating card */}
+            <div className="absolute -bottom-2 right-0 w-[210px] rounded-2xl border border-black/10 bg-white p-4 shadow-[0_18px_40px_-20px_rgba(60,40,90,0.25)]">
+              <p className="text-[12px] font-semibold text-black leading-snug">
+                Increase
+                <br />
+                of the company's
+                <br />
+                efficiency
+              </p>
+              <div className="mt-3 space-y-1.5 text-[11px] text-black/70">
+                <div className="flex items-center gap-1.5">
+                  <User className="h-3 w-3" /> John
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <TrendingDown className="h-3 w-3" /> -25.5%
+                </div>
+              </div>
+              <button className="mt-3 w-full rounded-full border border-black/15 bg-[#EFEAFB] py-1.5 text-[11px] font-medium text-black">
+                See more
+              </button>
+            </div>
+          </div>
         </div>
-      </footer>
+      </div>
     </div>
   );
 };
+
+/* ---------- helpers ---------- */
+
+const Highlight = ({ children }: { children: React.ReactNode }) => (
+  <span className="relative inline-block px-3">
+    <span
+      aria-hidden
+      className="absolute inset-0 rounded-full bg-[#DCEB7A]"
+      style={{ transform: "skewX(-2deg)" }}
+    />
+    <span className="relative italic font-semibold text-black">{children}</span>
+  </span>
+);
+
+const CrossPattern = () => (
+  <svg
+    className="absolute inset-0 w-full h-full pointer-events-none"
+    viewBox="0 0 500 500"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    aria-hidden
+  >
+    {/* thin cross lines (4-pointed sparkles) */}
+    {[
+      [80, 60], [240, 60], [400, 60],
+      [80, 220], [400, 220],
+      [80, 380], [240, 380], [400, 380],
+    ].map(([x, y], i) => (
+      <g key={i} stroke="#1a1a1a" strokeWidth="1">
+        <line x1={x - 22} y1={y} x2={x + 22} y2={y} />
+        <line x1={x} y1={y - 22} x2={x} y2={y + 22} />
+        {/* small filled 4-point star at center */}
+        <path
+          d={`M ${x} ${y - 6} L ${x + 2} ${y} L ${x} ${y + 6} L ${x - 2} ${y} Z M ${x - 6} ${y} L ${x} ${y - 2} L ${x + 6} ${y} L ${x} ${y + 2} Z`}
+          fill="#1a1a1a"
+          stroke="none"
+        />
+      </g>
+    ))}
+  </svg>
+);
 
 export default Landing;
