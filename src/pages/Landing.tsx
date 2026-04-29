@@ -1,5 +1,7 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
+import { useTranslation } from "react-i18next";
+import { LangToggle } from "@/components/LangToggle";
 import { ArrowUpRight, Play, User, TrendingDown, MoreHorizontal } from "lucide-react";
 
 /**
@@ -11,6 +13,52 @@ import { ArrowUpRight, Play, User, TrendingDown, MoreHorizontal } from "lucide-r
  */
 const Landing = () => {
   const { user } = useAuth();
+  const { i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
+
+  const t = isAr
+    ? {
+        about: "من نحن",
+        services: "الخدمات",
+        partners: "الشركاء",
+        login: "دخول",
+        signup: "تسجيل",
+        dashboard: "لوحتي",
+        line1: "كل ما يلزمك",
+        line2a: "أمنية",
+        line2b: "لتلامس",
+        line3a: "نجاحاً",
+        line3b: "عظيماً",
+        sub: "نحلها يرافقك من فكرة الاختبار حتى تشغيله المباشر، ومن توليد الأسئلة بالذكاء الاصطناعي حتى تحليل أداء طلابك.",
+        cta: "ابدأ معنا",
+        customers: "معلم",
+        playVideo: "شاهد الفيديو",
+        increase: "ارتفاع",
+        company: "في كفاءة الفصل",
+        eff: "الدراسي",
+        seeMore: "اعرف أكثر",
+      }
+    : {
+        about: "ABOUT US",
+        services: "SERVICES",
+        partners: "PARTNERS",
+        login: "LOG IN",
+        signup: "SIGN UP",
+        dashboard: "DASHBOARD",
+        line1: "It takes only",
+        line2a: "a wish",
+        line2b: "to touch",
+        line3a: "a great",
+        line3b: "success",
+        sub: "We own the full process, from coding to qa and final deployment, and transform your requirements into the finished product",
+        cta: "Let's collaborate",
+        customers: "customers",
+        playVideo: "Play video",
+        increase: "Increase",
+        company: "of the company's",
+        eff: "efficiency",
+        seeMore: "See more",
+      };
 
   return (
     <div
@@ -19,33 +67,30 @@ const Landing = () => {
       style={{ background: "#E8DFF0", fontFamily: "'Inter', 'Tajawal', system-ui, sans-serif" }}
     >
       <div className="relative w-full max-w-[1280px] bg-white rounded-[28px] shadow-[0_30px_80px_-30px_rgba(60,40,90,0.25)] overflow-hidden">
-        {/* sparkle bottom-right of page (outside card area visually) */}
         <span className="pointer-events-none absolute -bottom-6 -right-6 text-3xl text-[#C9B8DA] select-none">✦</span>
 
         {/* ---------------- NAV ---------------- */}
         <nav className="flex items-center justify-between px-8 md:px-14 pt-8">
-          {/* logo */}
           <Link to="/" className="flex items-center gap-2">
             <span className="h-3 w-3 rounded-full bg-black inline-block" />
             <span className="text-[17px] font-medium tracking-tight text-black">n7elha</span>
           </Link>
 
-          {/* center links */}
           <ul className="hidden md:flex items-center gap-10 text-[13px] tracking-[0.18em] font-medium text-black/80">
-            <li><a href="#about" className="hover:text-black">ABOUT US</a></li>
-            <li><a href="#services" className="hover:text-black">SERVICES</a></li>
-            <li><a href="#partners" className="hover:text-black">PARTNERS</a></li>
+            <li><a href="#about" className="hover:text-black">{t.about}</a></li>
+            <li><a href="#services" className="hover:text-black">{t.services}</a></li>
+            <li><a href="#partners" className="hover:text-black">{t.partners}</a></li>
             <li className="text-black/40"><MoreHorizontal className="h-4 w-4" /></li>
           </ul>
 
-          {/* auth buttons */}
           <div className="flex items-center gap-2">
+            <LangToggle variant="pill" />
             {user ? (
               <Link
                 to="/app"
                 className="px-5 py-2 rounded-full bg-black text-white text-[13px] tracking-wider font-medium"
               >
-                DASHBOARD
+                {t.dashboard}
               </Link>
             ) : (
               <>
@@ -53,13 +98,13 @@ const Landing = () => {
                   to="/auth"
                   className="px-5 py-2 rounded-full bg-[#DCEB7A] text-black text-[13px] tracking-wider font-medium border border-black/5 hover:brightness-95 transition"
                 >
-                  LOG IN
+                  {t.login}
                 </Link>
                 <Link
                   to="/auth?mode=signup"
                   className="px-5 py-2 rounded-full bg-black text-white text-[13px] tracking-wider font-medium hover:bg-black/85 transition"
                 >
-                  SIGN UP
+                  {t.signup}
                 </Link>
               </>
             )}
@@ -68,24 +113,21 @@ const Landing = () => {
 
         {/* ---------------- HERO ---------------- */}
         <div className="relative grid grid-cols-1 lg:grid-cols-2 gap-8 px-8 md:px-14 pt-16 pb-12">
-          {/* LEFT */}
           <div className="relative z-10">
             <h1 className="text-black font-semibold leading-[1.05] tracking-tight text-[44px] md:text-[60px]">
-              <span className="block">It takes only</span>
+              <span className="block">{t.line1}</span>
               <span className="block mt-3">
-                <Highlight>a wish</Highlight>{" "}
-                <span>to touch</span>
+                <Highlight>{t.line2a}</Highlight>{" "}
+                <span>{t.line2b}</span>
               </span>
               <span className="block mt-3">
-                <span>a great </span>
-                <Highlight>success</Highlight>
+                <span>{t.line3a} </span>
+                <Highlight>{t.line3b}</Highlight>
               </span>
             </h1>
 
             <p className="mt-8 text-[14px] leading-relaxed text-black/70 max-w-md">
-              We own the full process, from coding to qa and final deployment,
-              <br className="hidden md:block" />
-              and transform your requirements into the finished product
+              {t.sub}
             </p>
 
             <div className="mt-9 flex items-center gap-5">
@@ -93,7 +135,7 @@ const Landing = () => {
                 to={user ? "/app" : "/auth?mode=signup"}
                 className="group inline-flex items-center gap-3 rounded-full bg-black text-white pl-6 pr-2 py-2 text-[15px] font-medium hover:bg-black/85 transition"
               >
-                Let's collaborate
+                {t.cta}
                 <span className="h-9 w-9 rounded-full bg-white text-black flex items-center justify-center transition group-hover:rotate-12">
                   <ArrowUpRight className="h-4 w-4" strokeWidth={2.25} />
                 </span>
@@ -101,7 +143,7 @@ const Landing = () => {
 
               <div className="h-[58px] px-5 rounded-full border border-black/15 flex flex-col items-center justify-center leading-tight">
                 <span className="text-[15px] font-semibold text-black">+120k</span>
-                <span className="text-[10px] text-black/55">customers</span>
+                <span className="text-[10px] text-black/55">{t.customers}</span>
               </div>
             </div>
 
@@ -157,7 +199,7 @@ const Landing = () => {
                 ))}
               </div>
               <button className="flex items-center gap-2 rounded-full border border-black/15 bg-white px-3 py-1.5 text-[12px] font-medium text-black">
-                Play video
+                {t.playVideo}
                 <span className="h-6 w-6 rounded-full bg-[#DCEB7A] flex items-center justify-center">
                   <Play className="h-3 w-3 text-black fill-black" />
                 </span>
@@ -167,11 +209,11 @@ const Landing = () => {
             {/* "Increase efficiency" floating card */}
             <div className="absolute -bottom-2 right-0 w-[210px] rounded-2xl border border-black/10 bg-white p-4 shadow-[0_18px_40px_-20px_rgba(60,40,90,0.25)]">
               <p className="text-[12px] font-semibold text-black leading-snug">
-                Increase
+                {t.increase}
                 <br />
-                of the company's
+                {t.company}
                 <br />
-                efficiency
+                {t.eff}
               </p>
               <div className="mt-3 space-y-1.5 text-[11px] text-black/70">
                 <div className="flex items-center gap-1.5">
@@ -182,7 +224,7 @@ const Landing = () => {
                 </div>
               </div>
               <button className="mt-3 w-full rounded-full border border-black/15 bg-[#EFEAFB] py-1.5 text-[11px] font-medium text-black">
-                See more
+                {t.seeMore}
               </button>
             </div>
           </div>
