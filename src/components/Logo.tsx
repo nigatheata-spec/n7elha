@@ -1,10 +1,9 @@
 import { cn } from "@/lib/utils";
+import logoMark from "@/assets/logo-mark.png";
 
 export const Logo = ({ className, withText = true }: { className?: string; withText?: boolean }) => (
   <div className={cn("flex items-center gap-2", className)}>
-    <div className="relative h-9 w-9 rounded-lg bg-gradient-cyan shadow-glow flex items-center justify-center">
-      <span className="font-mono text-lg font-bold text-primary-foreground">n7</span>
-    </div>
-    {withText && <span className="text-xl font-bold tracking-tight">n7elha</span>}
+    <img src={logoMark} alt="n7elha" className="h-9 w-9 object-contain" />
+    {withText && <span className="text-xl font-bold tracking-tight text-foreground">n7elha</span>}
   </div>
 );

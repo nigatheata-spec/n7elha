@@ -96,7 +96,7 @@ const Landing = () => {
               <>
                 <Link
                   to="/auth"
-                  className="px-5 py-2 rounded-full bg-[#DCEB7A] text-black text-[13px] tracking-wider font-medium border border-black/5 hover:brightness-95 transition"
+                  className="px-5 py-2 rounded-full bg-[#B87A4F] text-white text-[13px] tracking-wider font-medium border border-black/5 hover:brightness-95 transition"
                 >
                   {t.login}
                 </Link>
@@ -177,7 +177,7 @@ const Landing = () => {
 
             {/* "Mike Jones" lime tag */}
             <div className="absolute -top-2 right-2 flex flex-col items-end">
-              <div className="rounded-full bg-[#DCEB7A] px-4 py-1.5 text-[12px] font-medium text-black border border-black/5 shadow-sm">
+              <div className="rounded-full bg-[#B87A4F] px-4 py-1.5 text-[12px] font-medium text-white border border-black/5 shadow-sm">
                 Mike Jones
               </div>
               <div className="mt-2 me-3 text-[11px] font-medium text-black/70 [writing-mode:vertical-rl] rotate-180">
@@ -200,7 +200,7 @@ const Landing = () => {
               </div>
               <button className="flex items-center gap-2 rounded-full border border-black/15 bg-white px-3 py-1.5 text-[12px] font-medium text-black">
                 {t.playVideo}
-                <span className="h-6 w-6 rounded-full bg-[#DCEB7A] flex items-center justify-center">
+                <span className="h-6 w-6 rounded-full bg-[#B87A4F] flex items-center justify-center">
                   <Play className="h-3 w-3 text-black fill-black" />
                 </span>
               </button>
@@ -240,10 +240,10 @@ const Highlight = ({ children }: { children: React.ReactNode }) => (
   <span className="relative inline-block px-3">
     <span
       aria-hidden
-      className="absolute inset-0 rounded-full bg-[#DCEB7A]"
+      className="absolute inset-0 rounded-full bg-[#B87A4F]"
       style={{ transform: "skewX(-2deg)" }}
     />
-    <span className="relative italic font-semibold text-black">{children}</span>
+    <span className="relative italic font-semibold text-white">{children}</span>
   </span>
 );
 
