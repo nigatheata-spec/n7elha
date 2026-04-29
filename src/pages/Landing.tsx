@@ -127,9 +127,7 @@ const Landing = () => {
             </h1>
 
             <p className="mt-8 text-[14px] leading-relaxed text-black/70 max-w-md">
-              We own the full process, from coding to qa and final deployment,
-              <br className="hidden md:block" />
-              and transform your requirements into the finished product
+              {t.sub}
             </p>
 
             <div className="mt-9 flex items-center gap-5">
@@ -137,7 +135,7 @@ const Landing = () => {
                 to={user ? "/app" : "/auth?mode=signup"}
                 className="group inline-flex items-center gap-3 rounded-full bg-black text-white pl-6 pr-2 py-2 text-[15px] font-medium hover:bg-black/85 transition"
               >
-                Let's collaborate
+                {t.cta}
                 <span className="h-9 w-9 rounded-full bg-white text-black flex items-center justify-center transition group-hover:rotate-12">
                   <ArrowUpRight className="h-4 w-4" strokeWidth={2.25} />
                 </span>
@@ -145,7 +143,7 @@ const Landing = () => {
 
               <div className="h-[58px] px-5 rounded-full border border-black/15 flex flex-col items-center justify-center leading-tight">
                 <span className="text-[15px] font-semibold text-black">+120k</span>
-                <span className="text-[10px] text-black/55">customers</span>
+                <span className="text-[10px] text-black/55">{t.customers}</span>
               </div>
             </div>
 
@@ -201,7 +199,7 @@ const Landing = () => {
                 ))}
               </div>
               <button className="flex items-center gap-2 rounded-full border border-black/15 bg-white px-3 py-1.5 text-[12px] font-medium text-black">
-                Play video
+                {t.playVideo}
                 <span className="h-6 w-6 rounded-full bg-[#DCEB7A] flex items-center justify-center">
                   <Play className="h-3 w-3 text-black fill-black" />
                 </span>
@@ -211,11 +209,11 @@ const Landing = () => {
             {/* "Increase efficiency" floating card */}
             <div className="absolute -bottom-2 right-0 w-[210px] rounded-2xl border border-black/10 bg-white p-4 shadow-[0_18px_40px_-20px_rgba(60,40,90,0.25)]">
               <p className="text-[12px] font-semibold text-black leading-snug">
-                Increase
+                {t.increase}
                 <br />
-                of the company's
+                {t.company}
                 <br />
-                efficiency
+                {t.eff}
               </p>
               <div className="mt-3 space-y-1.5 text-[11px] text-black/70">
                 <div className="flex items-center gap-1.5">
