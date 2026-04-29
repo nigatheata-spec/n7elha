@@ -224,7 +224,7 @@ const Landing = () => {
                 </div>
               </div>
               <button className="mt-3 w-full rounded-full border border-black/15 bg-[#EFEAFB] py-1.5 text-[11px] font-medium text-black">
-                See more
+                {t.seeMore}
               </button>
             </div>
           </div>
