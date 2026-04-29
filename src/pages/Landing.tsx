@@ -177,7 +177,7 @@ const Landing = () => {
 
             {/* "Mike Jones" lime tag */}
             <div className="absolute -top-2 right-2 flex flex-col items-end">
-              <div className="rounded-full bg-[#B87A4F] px-4 py-1.5 text-[12px] font-medium text-black border border-black/5 shadow-sm">
+              <div className="rounded-full bg-[#B87A4F] px-4 py-1.5 text-[12px] font-medium text-white border border-black/5 shadow-sm">
                 Mike Jones
               </div>
               <div className="mt-2 me-3 text-[11px] font-medium text-black/70 [writing-mode:vertical-rl] rotate-180">
@@ -243,7 +243,7 @@ const Highlight = ({ children }: { children: React.ReactNode }) => (
       className="absolute inset-0 rounded-full bg-[#B87A4F]"
       style={{ transform: "skewX(-2deg)" }}
     />
-    <span className="relative italic font-semibold text-black">{children}</span>
+    <span className="relative italic font-semibold text-white">{children}</span>
   </span>
 );
 
