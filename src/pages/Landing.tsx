@@ -73,14 +73,14 @@ const Landing = () => {
         <nav className="flex items-center justify-between px-8 md:px-14 pt-8">
           <Link to="/" className="flex items-center gap-2">
             <span className="h-3 w-3 rounded-full bg-black inline-block" />
-            <span className="text-[17px] font-medium tracking-tight text-black">n7elha</span>
+            <span className="text-[17px] font-medium tracking-tight text-white">n7elha</span>
           </Link>
 
-          <ul className="hidden md:flex items-center gap-10 text-[13px] tracking-[0.18em] font-medium text-black/80">
-            <li><a href="#about" className="hover:text-black">{t.about}</a></li>
-            <li><a href="#services" className="hover:text-black">{t.services}</a></li>
-            <li><a href="#partners" className="hover:text-black">{t.partners}</a></li>
-            <li className="text-black/40"><MoreHorizontal className="h-4 w-4" /></li>
+          <ul className="hidden md:flex items-center gap-10 text-[13px] tracking-[0.18em] font-medium text-white/80">
+            <li><a href="#about" className="hover:text-white">{t.about}</a></li>
+            <li><a href="#services" className="hover:text-white">{t.services}</a></li>
+            <li><a href="#partners" className="hover:text-white">{t.partners}</a></li>
+            <li className="text-white/40"><MoreHorizontal className="h-4 w-4" /></li>
           </ul>
 
           <div className="flex items-center gap-2">
@@ -96,7 +96,7 @@ const Landing = () => {
               <>
                 <Link
                   to="/auth"
-                  className="px-5 py-2 rounded-full bg-[#DCEB7A] text-black text-[13px] tracking-wider font-medium border border-black/5 hover:brightness-95 transition"
+                  className="px-5 py-2 rounded-full bg-[#B87A4F] text-white text-[13px] tracking-wider font-medium border border-black/5 hover:brightness-95 transition"
                 >
                   {t.login}
                 </Link>
@@ -114,7 +114,7 @@ const Landing = () => {
         {/* ---------------- HERO ---------------- */}
         <div className="relative grid grid-cols-1 lg:grid-cols-2 gap-8 px-8 md:px-14 pt-16 pb-12">
           <div className="relative z-10">
-            <h1 className="text-black font-semibold leading-[1.05] tracking-tight text-[44px] md:text-[60px]">
+            <h1 className="text-white font-semibold leading-[1.05] tracking-tight text-[44px] md:text-[60px]">
               <span className="block">{t.line1}</span>
               <span className="block mt-3">
                 <Highlight>{t.line2a}</Highlight>{" "}
@@ -126,7 +126,7 @@ const Landing = () => {
               </span>
             </h1>
 
-            <p className="mt-8 text-[14px] leading-relaxed text-black/70 max-w-md">
+            <p className="mt-8 text-[14px] leading-relaxed text-white/70 max-w-md">
               {t.sub}
             </p>
 
@@ -136,28 +136,28 @@ const Landing = () => {
                 className="group inline-flex items-center gap-3 rounded-full bg-black text-white pl-6 pr-2 py-2 text-[15px] font-medium hover:bg-black/85 transition"
               >
                 {t.cta}
-                <span className="h-9 w-9 rounded-full bg-white text-black flex items-center justify-center transition group-hover:rotate-12">
+                <span className="h-9 w-9 rounded-full bg-white text-white flex items-center justify-center transition group-hover:rotate-12">
                   <ArrowUpRight className="h-4 w-4" strokeWidth={2.25} />
                 </span>
               </Link>
 
               <div className="h-[58px] px-5 rounded-full border border-black/15 flex flex-col items-center justify-center leading-tight">
-                <span className="text-[15px] font-semibold text-black">+120k</span>
-                <span className="text-[10px] text-black/55">{t.customers}</span>
+                <span className="text-[15px] font-semibold text-white">+120k</span>
+                <span className="text-[10px] text-white/55">{t.customers}</span>
               </div>
             </div>
 
             {/* logos row */}
             <div className="mt-14 flex items-center gap-10 opacity-80">
               <div className="flex flex-col leading-none">
-                <span className="font-black italic text-[22px] tracking-tight text-black">YAHOO!</span>
-                <span className="text-[8px] tracking-[0.3em] text-black/60 mt-0.5">FINANCE</span>
+                <span className="font-black italic text-[22px] tracking-tight text-white">YAHOO!</span>
+                <span className="text-[8px] tracking-[0.3em] text-white/60 mt-0.5">FINANCE</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="inline-block h-5 w-5 rounded bg-black text-white text-[12px] font-black flex items-center justify-center">N</span>
-                <span className="text-[16px] font-semibold text-black">Nasdaq</span>
+                <span className="text-[16px] font-semibold text-white">Nasdaq</span>
               </div>
-              <div className="text-[16px] font-semibold tracking-tight text-black">PST<span className="inline-block">©</span>MPANY</div>
+              <div className="text-[16px] font-semibold tracking-tight text-white">PST<span className="inline-block">©</span>MPANY</div>
             </div>
           </div>
 
@@ -177,10 +177,10 @@ const Landing = () => {
 
             {/* "Mike Jones" lime tag */}
             <div className="absolute -top-2 right-2 flex flex-col items-end">
-              <div className="rounded-full bg-[#DCEB7A] px-4 py-1.5 text-[12px] font-medium text-black border border-black/5 shadow-sm">
+              <div className="rounded-full bg-[#B87A4F] px-4 py-1.5 text-[12px] font-medium text-white border border-black/5 shadow-sm">
                 Mike Jones
               </div>
-              <div className="mt-2 me-3 text-[11px] font-medium text-black/70 [writing-mode:vertical-rl] rotate-180">
+              <div className="mt-2 me-3 text-[11px] font-medium text-white/70 [writing-mode:vertical-rl] rotate-180">
                 +25.5%
               </div>
             </div>
@@ -194,28 +194,28 @@ const Landing = () => {
                     className="h-9 w-9 rounded-full border-2 border-white flex items-center justify-center"
                     style={{ background: c }}
                   >
-                    <User className="h-4 w-4 text-black/50" />
+                    <User className="h-4 w-4 text-white/50" />
                   </div>
                 ))}
               </div>
-              <button className="flex items-center gap-2 rounded-full border border-black/15 bg-white px-3 py-1.5 text-[12px] font-medium text-black">
+              <button className="flex items-center gap-2 rounded-full border border-black/15 bg-white px-3 py-1.5 text-[12px] font-medium text-white">
                 {t.playVideo}
-                <span className="h-6 w-6 rounded-full bg-[#DCEB7A] flex items-center justify-center">
-                  <Play className="h-3 w-3 text-black fill-black" />
+                <span className="h-6 w-6 rounded-full bg-[#B87A4F] flex items-center justify-center">
+                  <Play className="h-3 w-3 text-white fill-black" />
                 </span>
               </button>
             </div>
 
             {/* "Increase efficiency" floating card */}
             <div className="absolute -bottom-2 right-0 w-[210px] rounded-2xl border border-black/10 bg-white p-4 shadow-[0_18px_40px_-20px_rgba(60,40,90,0.25)]">
-              <p className="text-[12px] font-semibold text-black leading-snug">
+              <p className="text-[12px] font-semibold text-white leading-snug">
                 {t.increase}
                 <br />
                 {t.company}
                 <br />
                 {t.eff}
               </p>
-              <div className="mt-3 space-y-1.5 text-[11px] text-black/70">
+              <div className="mt-3 space-y-1.5 text-[11px] text-white/70">
                 <div className="flex items-center gap-1.5">
                   <User className="h-3 w-3" /> John
                 </div>
@@ -223,7 +223,7 @@ const Landing = () => {
                   <TrendingDown className="h-3 w-3" /> -25.5%
                 </div>
               </div>
-              <button className="mt-3 w-full rounded-full border border-black/15 bg-[#EFEAFB] py-1.5 text-[11px] font-medium text-black">
+              <button className="mt-3 w-full rounded-full border border-black/15 bg-[#EFEAFB] py-1.5 text-[11px] font-medium text-white">
                 {t.seeMore}
               </button>
             </div>
@@ -240,10 +240,10 @@ const Highlight = ({ children }: { children: React.ReactNode }) => (
   <span className="relative inline-block px-3">
     <span
       aria-hidden
-      className="absolute inset-0 rounded-full bg-[#DCEB7A]"
+      className="absolute inset-0 rounded-full bg-[#B87A4F]"
       style={{ transform: "skewX(-2deg)" }}
     />
-    <span className="relative italic font-semibold text-black">{children}</span>
+    <span className="relative italic font-semibold text-white">{children}</span>
   </span>
 );
 
