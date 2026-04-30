@@ -3,6 +3,7 @@ import { useAuth } from "@/lib/auth";
 import { useTranslation } from "react-i18next";
 import { LangToggle } from "@/components/LangToggle";
 import { ArrowUpRight, Play, User, TrendingDown, MoreHorizontal } from "lucide-react";
+import heroPerson from "@/assets/hero-person.png";
 
 /**
  * Landing page — replicated 1:1 from the provided reference image.
@@ -24,11 +25,11 @@ const Landing = () => {
         login: "دخول",
         signup: "تسجيل",
         dashboard: "لوحتي",
-        line1: "كل ما يلزمك",
-        line2a: "أمنية",
-        line2b: "لتلامس",
-        line3a: "نجاحاً",
-        line3b: "عظيماً",
+        line1: "كل ما تحتاجه",
+        line2a: "لتصنع",
+        line2b: "اختباراً",
+        line3a: "يلامس",
+        line3b: "النجاح",
         sub: "نحلها يرافقك من فكرة الاختبار حتى تشغيله المباشر، ومن توليد الأسئلة بالذكاء الاصطناعي حتى تحليل أداء طلابك.",
         cta: "ابدأ معنا",
         customers: "معلم",
@@ -96,7 +97,7 @@ const Landing = () => {
               <>
                 <Link
                   to="/auth"
-                  className="px-5 py-2 rounded-full bg-[#B87A4F] text-white text-[13px] tracking-wider font-medium border border-black/5 hover:brightness-95 transition"
+                  className="px-5 py-2 rounded-full bg-[#A0301A] text-white text-[13px] tracking-wider font-medium border border-black/5 hover:brightness-95 transition"
                 >
                   {t.login}
                 </Link>
@@ -167,17 +168,22 @@ const Landing = () => {
             <CrossPattern />
 
             {/* purple preview square */}
-            <div className="absolute top-2 right-4 w-[78%] aspect-square rounded-[28px] bg-[#D9D6F2] shadow-[0_18px_50px_-20px_rgba(80,60,140,0.35)]">
-              <div className="absolute top-5 right-6 flex gap-1.5">
+            <div className="absolute top-2 right-4 w-[78%] aspect-square rounded-[28px] bg-[#D4B483] shadow-[0_18px_50px_-20px_rgba(120,80,40,0.35)] overflow-hidden">
+              <div className="absolute top-5 right-6 z-10 flex gap-1.5">
                 <span className="h-1.5 w-1.5 rounded-full bg-black/40" />
                 <span className="h-1.5 w-1.5 rounded-full bg-black/40" />
                 <span className="h-1.5 w-1.5 rounded-full bg-black/40" />
               </div>
+              <img
+                src={heroPerson}
+                alt="معلم نحلها"
+                className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[105%] w-auto object-contain object-bottom select-none pointer-events-none"
+              />
             </div>
 
             {/* "Mike Jones" lime tag */}
             <div className="absolute -top-2 right-2 flex flex-col items-end">
-              <div className="rounded-full bg-[#B87A4F] px-4 py-1.5 text-[12px] font-medium text-white border border-black/5 shadow-sm">
+              <div className="rounded-full bg-[#A0301A] px-4 py-1.5 text-[12px] font-medium text-white border border-black/5 shadow-sm">
                 Mike Jones
               </div>
               <div className="mt-2 me-3 text-[11px] font-medium text-black/70 [writing-mode:vertical-rl] rotate-180">
@@ -200,7 +206,7 @@ const Landing = () => {
               </div>
               <button className="flex items-center gap-2 rounded-full border border-black/15 bg-white px-3 py-1.5 text-[12px] font-medium text-black">
                 {t.playVideo}
-                <span className="h-6 w-6 rounded-full bg-[#B87A4F] flex items-center justify-center">
+                <span className="h-6 w-6 rounded-full bg-[#A0301A] flex items-center justify-center">
                   <Play className="h-3 w-3 text-black fill-black" />
                 </span>
               </button>
@@ -240,7 +246,7 @@ const Highlight = ({ children }: { children: React.ReactNode }) => (
   <span className="relative inline-block px-3">
     <span
       aria-hidden
-      className="absolute inset-0 rounded-full bg-[#B87A4F]"
+      className="absolute inset-0 rounded-full bg-[#A0301A]"
       style={{ transform: "skewX(-2deg)" }}
     />
     <span className="relative italic font-semibold text-white">{children}</span>
