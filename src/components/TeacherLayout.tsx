@@ -53,8 +53,8 @@ const AppSidebar = () => {
                       end={l.end}
                       className={({ isActive }) =>
                         cn(
-                          "flex items-center gap-3 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                          isActive && "bg-sidebar-primary text-sidebar-primary-foreground font-medium hover:bg-sidebar-primary hover:text-sidebar-primary-foreground"
+                          "flex items-center gap-3 text-black hover:bg-sidebar-accent hover:text-black",
+                          isActive && "bg-sidebar-primary text-black font-medium hover:bg-sidebar-primary hover:text-black"
                         )
                       }
                     >
