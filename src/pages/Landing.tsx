@@ -168,12 +168,17 @@ const Landing = () => {
             <CrossPattern />
 
             {/* purple preview square */}
-            <div className="absolute top-2 right-4 w-[78%] aspect-square rounded-[28px] bg-[#D9D6F2] shadow-[0_18px_50px_-20px_rgba(80,60,140,0.35)]">
-              <div className="absolute top-5 right-6 flex gap-1.5">
+            <div className="absolute top-2 right-4 w-[78%] aspect-square rounded-[28px] bg-[#D4B483] shadow-[0_18px_50px_-20px_rgba(120,80,40,0.35)] overflow-hidden">
+              <div className="absolute top-5 right-6 z-10 flex gap-1.5">
                 <span className="h-1.5 w-1.5 rounded-full bg-black/40" />
                 <span className="h-1.5 w-1.5 rounded-full bg-black/40" />
                 <span className="h-1.5 w-1.5 rounded-full bg-black/40" />
               </div>
+              <img
+                src={heroPerson}
+                alt="معلم نحلها"
+                className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[105%] w-auto object-contain object-bottom select-none pointer-events-none"
+              />
             </div>
 
             {/* "Mike Jones" lime tag */}
