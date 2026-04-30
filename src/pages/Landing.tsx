@@ -3,6 +3,7 @@ import { useAuth } from "@/lib/auth";
 import { useTranslation } from "react-i18next";
 import { LangToggle } from "@/components/LangToggle";
 import { ArrowUpRight, Play, User, TrendingDown, MoreHorizontal } from "lucide-react";
+import heroPerson from "@/assets/hero-person.png";
 
 /**
  * Landing page — replicated 1:1 from the provided reference image.
