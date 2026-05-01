@@ -6,8 +6,8 @@
 
 @layer base {
   :root {
-    /* n7elha palette — lavender bg, lime accent, black ink, white card */
-    --background: 280 35% 91%;       /* #E8DFF0 lavender */
+    /* n7elha palette — soft red-tinted cream bg, red accent, black ink, white card */
+    --background: 11 60% 95%;        /* light translucent red-cream */
     --foreground: 0 0% 7%;           /* near-black ink */
 
     --card: 0 0% 100%;
@@ -20,10 +20,10 @@
     --primary-foreground: 0 0% 100%;
     --primary-glow: 0 0% 20%;
 
-    --secondary: 280 30% 95%;        /* very pale lavender */
+    --secondary: 11 50% 96%;         /* very pale red-cream */
     --secondary-foreground: 0 0% 7%;
 
-    --muted: 280 20% 93%;
+    --muted: 11 40% 94%;
     --muted-foreground: 0 0% 40%;
 
     --accent: 11 72% 36%;            /* deep red from logo */
@@ -35,7 +35,7 @@
     --success-foreground: 0 0% 100%;
 
     --border: 0 0% 0% / 0.1;
-    --input: 280 20% 90%;
+    --input: 11 30% 90%;
     --ring: 11 72% 36%;
 
     --radius: 1rem;
