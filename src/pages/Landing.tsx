@@ -65,10 +65,10 @@ const Landing = () => {
     <div
       dir="ltr"
       className="min-h-screen w-full p-4 md:p-8 lg:p-12 flex items-center justify-center"
-      style={{ background: "#E8DFF0", fontFamily: "'Inter', 'Tajawal', system-ui, sans-serif" }}
+      style={{ background: "#FBE9E5", fontFamily: "'Inter', 'Tajawal', system-ui, sans-serif" }}
     >
       <div className="relative w-full max-w-[1280px] bg-white rounded-[28px] shadow-[0_30px_80px_-30px_rgba(60,40,90,0.25)] overflow-hidden">
-        <span className="pointer-events-none absolute -bottom-6 -right-6 text-3xl text-[#C9B8DA] select-none">✦</span>
+        <span className="pointer-events-none absolute -bottom-6 -right-6 text-3xl text-[#F2C2B6] select-none">✦</span>
 
         {/* ---------------- NAV ---------------- */}
         <nav className="flex items-center justify-between px-8 md:px-14 pt-8">
@@ -194,7 +194,7 @@ const Landing = () => {
             {/* avatars + play video pill */}
             <div className="absolute bottom-4 left-2 md:left-6 flex items-center gap-3">
               <div className="flex -space-x-2">
-                {["#F2C7B6", "#C9B8DA", "#B6D4F2"].map((c, i) => (
+                {["#F2C7B6", "#F2C2B6", "#F8D7CF"].map((c, i) => (
                   <div
                     key={i}
                     className="h-9 w-9 rounded-full border-2 border-white flex items-center justify-center"
@@ -229,7 +229,7 @@ const Landing = () => {
                   <TrendingDown className="h-3 w-3" /> -25.5%
                 </div>
               </div>
-              <button className="mt-3 w-full rounded-full border border-black/15 bg-[#EFEAFB] py-1.5 text-[11px] font-medium text-black">
+              <button className="mt-3 w-full rounded-full border border-black/15 bg-[#FBE9E5] py-1.5 text-[11px] font-medium text-black">
                 {t.seeMore}
               </button>
             </div>
