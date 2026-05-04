@@ -294,7 +294,7 @@ const Landing = () => {
               <img
                 src={heroPerson}
                 alt="معلم نحلها"
-                className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[105%] w-auto object-contain object-bottom select-none pointer-events-none"
+                className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[118%] w-auto object-contain object-bottom select-none pointer-events-none drop-shadow-xl"
               />
             </div>
 
