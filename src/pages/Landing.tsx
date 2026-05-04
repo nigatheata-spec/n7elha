@@ -281,7 +281,7 @@ const Landing = () => {
           </div>
 
           {/* RIGHT */}
-          <div className="relative min-h-[340px] sm:min-h-[460px]">
+          <div className="relative min-h-[420px] sm:min-h-[560px]">
             <CrossPattern />
 
             {/* preview square (background) */}
