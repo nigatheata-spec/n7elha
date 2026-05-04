@@ -305,7 +305,7 @@ const Landing = () => {
             <img
               src={heroPerson}
               alt="معلم نحلها"
-              className="absolute bottom-0 right-2 sm:right-4 w-[88%] sm:w-[78%] h-auto max-h-[125%] object-contain object-bottom select-none pointer-events-none drop-shadow-2xl z-20"
+              className="absolute bottom-14 sm:bottom-16 right-2 sm:right-4 w-[88%] sm:w-[78%] h-auto max-h-[115%] object-contain object-bottom select-none pointer-events-none drop-shadow-2xl z-20"
             />
 
             {/* avatars + play video pill */}
