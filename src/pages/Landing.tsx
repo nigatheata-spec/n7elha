@@ -284,19 +284,29 @@ const Landing = () => {
           <div className="relative min-h-[340px] sm:min-h-[460px]">
             <CrossPattern />
 
-            {/* preview square */}
+            {/* preview square (background) */}
             <div className="absolute top-2 right-2 sm:right-4 w-[88%] sm:w-[78%] aspect-square rounded-[24px] sm:rounded-[28px] bg-[#D4B483] shadow-[0_18px_50px_-20px_rgba(120,80,40,0.35)] overflow-hidden">
+              {/* soft radial glow so the figure feels grounded */}
+              <div
+                className="absolute inset-0"
+                style={{
+                  background:
+                    "radial-gradient(60% 55% at 50% 65%, rgba(255,236,210,0.85) 0%, rgba(212,180,131,0.55) 45%, rgba(160,48,26,0.18) 100%)",
+                }}
+              />
               <div className="absolute top-5 right-6 z-10 flex gap-1.5">
                 <span className="h-1.5 w-1.5 rounded-full bg-black/40" />
                 <span className="h-1.5 w-1.5 rounded-full bg-black/40" />
                 <span className="h-1.5 w-1.5 rounded-full bg-black/40" />
               </div>
-              <img
-                src={heroPerson}
-                alt="معلم نحلها"
-                className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[118%] w-auto object-contain object-bottom select-none pointer-events-none drop-shadow-xl"
-              />
             </div>
+
+            {/* hero figure — overflows the box so the head is never clipped */}
+            <img
+              src={heroPerson}
+              alt="معلم نحلها"
+              className="absolute bottom-0 right-2 sm:right-4 w-[88%] sm:w-[78%] h-auto max-h-[125%] object-contain object-bottom select-none pointer-events-none drop-shadow-2xl z-20"
+            />
 
             {/* avatars + play video pill */}
             <div className="absolute bottom-2 sm:bottom-4 left-2 sm:left-6 flex items-center gap-3">
