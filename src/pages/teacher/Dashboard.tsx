@@ -274,23 +274,6 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Review Draft Modal */}
-      {draft && (
-        <ReviewDraft
-          draft={draft}
-          ar={ar}
-          saving={saving}
-          busy={busy}
-          onTitleChange={(t) => setDraft({ ...draft, title: t })}
-          onUpdateQ={updateDraftQ}
-          onUpdateOpt={updateDraftOption}
-          onRemove={removeDraftQ}
-          onRegen={(extra) => generateDraft(extra)}
-          onConfirm={confirmAndHost}
-          onCancel={() => setDraft(null)}
-        />
-      )}
-
       {/* Past games */}
       <div>
         <div className="flex items-center justify-between mb-3">
