@@ -155,6 +155,25 @@ const Dashboard = () => {
 
   const cur = CREATIVITY[creativity];
 
+  // When a draft is ready, show the review as the full page (no modal, no nested scroll)
+  if (draft) {
+    return (
+      <ReviewDraft
+        draft={draft}
+        ar={ar}
+        saving={saving}
+        busy={busy}
+        onTitleChange={(t) => setDraft({ ...draft, title: t })}
+        onUpdateQ={updateDraftQ}
+        onUpdateOpt={updateDraftOption}
+        onRemove={removeDraftQ}
+        onRegen={(extra) => generateDraft(extra)}
+        onConfirm={confirmAndHost}
+        onCancel={() => setDraft(null)}
+      />
+    );
+  }
+
   return (
     <div className="space-y-10 max-w-5xl mx-auto pt-2">
       {/* Hero prompt */}
