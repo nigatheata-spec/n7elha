@@ -203,9 +203,9 @@ const Join = () => {
                   disabled={!!chosen}
                   className={cn(
                     "px-3 py-2 md:px-4 border-2 rounded-sm transition-all break-all",
-                    "border-[hsl(120_100%_45%)] text-[hsl(120_100%_70%)]",
-                    "hover:bg-[hsl(120_100%_45%)]/20 hover:shadow-[0_0_18px_rgba(0,255,80,0.45)]",
-                    selected && "bg-[hsl(120_100%_45%)]/30 shadow-[0_0_24px_rgba(0,255,80,0.7)]",
+                    "border-primary/70 text-primary",
+                    "hover:bg-primary/20 hover:shadow-[0_0_18px_hsl(var(--primary)/0.45)]",
+                    selected && "bg-primary/30 shadow-[0_0_24px_hsl(var(--primary)/0.7)]",
                     chosen && !selected && "opacity-30",
                   )}
                 >
