@@ -181,7 +181,7 @@ const Join = () => {
       <div className="pointer-events-none fixed inset-0 terminal-scanlines" />
 
       <div className="relative min-h-full px-5 md:px-16 py-8 md:py-16">
-        <h1 className="text-2xl md:text-6xl font-black tracking-wider mb-6 md:mb-8 drop-shadow-[0_0_12px_rgba(0,255,80,0.6)]">
+        <h1 className="text-2xl md:text-6xl font-black tracking-wider mb-6 md:mb-8 text-primary drop-shadow-[0_0_14px_hsl(var(--primary)/0.6)]">
           WELCOME HACKER
         </h1>
 
@@ -203,9 +203,9 @@ const Join = () => {
                   disabled={!!chosen}
                   className={cn(
                     "px-3 py-2 md:px-4 border-2 rounded-sm transition-all break-all",
-                    "border-[hsl(120_100%_45%)] text-[hsl(120_100%_70%)]",
-                    "hover:bg-[hsl(120_100%_45%)]/20 hover:shadow-[0_0_18px_rgba(0,255,80,0.45)]",
-                    selected && "bg-[hsl(120_100%_45%)]/30 shadow-[0_0_24px_rgba(0,255,80,0.7)]",
+                    "border-primary/70 text-primary",
+                    "hover:bg-primary/20 hover:shadow-[0_0_18px_hsl(var(--primary)/0.45)]",
+                    selected && "bg-primary/30 shadow-[0_0_24px_hsl(var(--primary)/0.7)]",
                     chosen && !selected && "opacity-30",
                   )}
                 >
