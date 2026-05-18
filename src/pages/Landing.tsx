@@ -286,18 +286,10 @@ const Landing = () => {
 
             {/* preview square (background) */}
             <div className="absolute top-2 right-2 sm:right-4 w-[88%] sm:w-[78%] aspect-square rounded-[24px] sm:rounded-[28px] bg-[#3F5A63] shadow-[0_18px_50px_-20px_rgba(63,90,99,0.35)] overflow-hidden">
-              {/* soft radial glow so the figure feels grounded */}
-              <div
-                className="absolute inset-0"
-                style={{
-                  background:
-                    "radial-gradient(60% 55% at 50% 65%, rgba(235,223,199,0.55) 0%, rgba(63,90,99,0.35) 45%, rgba(255,130,84,0.18) 100%)",
-                }}
-              />
               <div className="absolute top-5 right-6 z-10 flex gap-1.5">
-                <span className="h-1.5 w-1.5 rounded-full bg-black/40" />
-                <span className="h-1.5 w-1.5 rounded-full bg-black/40" />
-                <span className="h-1.5 w-1.5 rounded-full bg-black/40" />
+                <span className="h-1.5 w-1.5 rounded-full bg-white/40" />
+                <span className="h-1.5 w-1.5 rounded-full bg-white/40" />
+                <span className="h-1.5 w-1.5 rounded-full bg-white/40" />
               </div>
             </div>
 
