@@ -181,7 +181,7 @@ const Join = () => {
       <div className="pointer-events-none fixed inset-0 terminal-scanlines" />
 
       <div className="relative min-h-full px-5 md:px-16 py-8 md:py-16">
-        <h1 className="text-2xl md:text-6xl font-black tracking-wider mb-6 md:mb-8 drop-shadow-[0_0_12px_rgba(0,255,80,0.6)]">
+        <h1 className="text-2xl md:text-6xl font-black tracking-wider mb-6 md:mb-8 text-primary drop-shadow-[0_0_14px_hsl(var(--primary)/0.6)]">
           WELCOME HACKER
         </h1>
 
