@@ -84,8 +84,11 @@ export const TeacherLayout = () => {
       <div className="min-h-screen bg-background flex w-full">
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0">
-          <header className="h-14 border-b border-border bg-background/80 backdrop-blur sticky top-0 z-20 flex items-center justify-end px-3 md:px-6">
-            <LangToggle />
+          <header className="h-14 border-b border-border bg-background/80 backdrop-blur sticky top-0 z-20 flex items-center justify-between px-3 md:px-6">
+            <SidebarTrigger className="md:hidden" />
+            <div className="ms-auto">
+              <LangToggle />
+            </div>
           </header>
           <main className="flex-1 p-4 md:p-8">
             <Outlet />
