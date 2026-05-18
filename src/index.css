@@ -137,12 +137,12 @@
 }
 
 @layer utilities {
-  .text-glow-cyan { text-shadow: 0 0 12px hsl(189 100% 50% / 0.7); }
-  .text-glow-amber { text-shadow: 0 0 12px hsl(51 100% 50% / 0.7); }
-  .border-glow { box-shadow: 0 0 0 1px hsl(189 100% 50% / 0.3), 0 0 20px hsl(189 100% 50% / 0.25); }
+  .text-glow-cyan { text-shadow: 0 0 12px hsl(16 100% 66% / 0.75); }
+  .text-glow-amber { text-shadow: 0 0 12px hsl(16 100% 66% / 0.7); }
+  .border-glow { box-shadow: 0 0 0 1px hsl(16 100% 66% / 0.35), 0 0 20px hsl(16 100% 66% / 0.25); }
   .terminal-screen {
     background:
-      radial-gradient(ellipse at 35% 20%, hsl(126 100% 16% / 0.82) 0%, hsl(128 100% 9% / 0.96) 54%, hsl(132 100% 5%) 100%);
+      radial-gradient(ellipse at 35% 20%, hsl(199 28% 24% / 0.92) 0%, hsl(199 28% 18% / 0.98) 54%, hsl(199 32% 12%) 100%);
   }
   .terminal-scanlines {
     opacity: 0.24;
