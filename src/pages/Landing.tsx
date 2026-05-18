@@ -152,10 +152,10 @@ const Landing = () => {
     <div
       dir="ltr"
       className="min-h-screen w-full p-3 sm:p-6 lg:p-12 flex flex-col items-center"
-      style={{ background: "#FBE9E5", fontFamily: "'Inter', 'Tajawal', system-ui, sans-serif" }}
+      style={{ background: "#EBDFC7", fontFamily: "'Inter', 'Tajawal', system-ui, sans-serif" }}
     >
       <div className="relative w-full max-w-[1280px] bg-white rounded-[20px] sm:rounded-[28px] shadow-[0_30px_80px_-30px_rgba(60,40,90,0.25)] overflow-hidden">
-        <span className="pointer-events-none absolute -bottom-6 -right-6 text-3xl text-[#F2C2B6] select-none">✦</span>
+        <span className="pointer-events-none absolute -bottom-6 -right-6 text-3xl text-[#FFB89A] select-none">✦</span>
 
         {/* ---------------- NAV ---------------- */}
         <nav className="flex items-center justify-between px-5 sm:px-8 md:px-14 pt-6 sm:pt-8 gap-3">
@@ -186,7 +186,7 @@ const Landing = () => {
               <>
                 <Link
                   to="/auth"
-                  className="px-5 py-2 rounded-full bg-[#A0301A] text-white text-[13px] tracking-wider font-medium hover:brightness-95 transition"
+                  className="px-5 py-2 rounded-full bg-[#FF8254] text-white text-[13px] tracking-wider font-medium hover:brightness-95 transition"
                 >
                   {t.login}
                 </Link>
@@ -223,7 +223,7 @@ const Landing = () => {
               </Link>
             ) : (
               <>
-                <Link to="/auth" className="px-5 py-2 rounded-full bg-[#A0301A] text-white text-[13px] tracking-wider font-medium text-center">
+                <Link to="/auth" className="px-5 py-2 rounded-full bg-[#FF8254] text-white text-[13px] tracking-wider font-medium text-center">
                   {t.login}
                 </Link>
                 <Link to="/auth?mode=signup" className="px-5 py-2 rounded-full bg-black text-white text-[13px] tracking-wider font-medium text-center">
@@ -265,11 +265,11 @@ const Landing = () => {
 
               <Link
                 to="/play"
-                className="group inline-flex items-center gap-3 rounded-full bg-[#A0301A] text-white pl-6 pr-2 py-2 text-[15px] font-medium hover:brightness-95 transition"
+                className="group inline-flex items-center gap-3 rounded-full bg-[#FF8254] text-white pl-6 pr-2 py-2 text-[15px] font-medium hover:brightness-95 transition"
               >
                 {t.joinGame}
-                <span className="h-9 w-9 rounded-full bg-white text-[#A0301A] flex items-center justify-center">
-                  <Play className="h-4 w-4 fill-[#A0301A]" />
+                <span className="h-9 w-9 rounded-full bg-white text-[#FF8254] flex items-center justify-center">
+                  <Play className="h-4 w-4 fill-[#FF8254]" />
                 </span>
               </Link>
 
@@ -285,13 +285,13 @@ const Landing = () => {
             <CrossPattern />
 
             {/* preview square (background) */}
-            <div className="absolute top-2 right-2 sm:right-4 w-[88%] sm:w-[78%] aspect-square rounded-[24px] sm:rounded-[28px] bg-[#D4B483] shadow-[0_18px_50px_-20px_rgba(120,80,40,0.35)] overflow-hidden">
+            <div className="absolute top-2 right-2 sm:right-4 w-[88%] sm:w-[78%] aspect-square rounded-[24px] sm:rounded-[28px] bg-[#3F5A63] shadow-[0_18px_50px_-20px_rgba(63,90,99,0.35)] overflow-hidden">
               {/* soft radial glow so the figure feels grounded */}
               <div
                 className="absolute inset-0"
                 style={{
                   background:
-                    "radial-gradient(60% 55% at 50% 65%, rgba(255,236,210,0.85) 0%, rgba(212,180,131,0.55) 45%, rgba(160,48,26,0.18) 100%)",
+                    "radial-gradient(60% 55% at 50% 65%, rgba(235,223,199,0.55) 0%, rgba(63,90,99,0.35) 45%, rgba(255,130,84,0.18) 100%)",
                 }}
               />
               <div className="absolute top-5 right-6 z-10 flex gap-1.5">
@@ -311,7 +311,7 @@ const Landing = () => {
             {/* avatars + play video pill */}
             <div className="absolute bottom-2 sm:bottom-4 left-2 sm:left-6 flex items-center gap-3">
               <div className="flex -space-x-2">
-                {["#F2C7B6", "#F2C2B6", "#F8D7CF"].map((c, i) => (
+                {["#FFB89A", "#FFB89A", "#FFD3C0"].map((c, i) => (
                   <div
                     key={i}
                     className="h-9 w-9 rounded-full border-2 border-white flex items-center justify-center"
@@ -323,7 +323,7 @@ const Landing = () => {
               </div>
               <button className="flex items-center gap-2 rounded-full border border-black/15 bg-white px-3 py-1.5 text-[12px] font-medium text-black">
                 {t.playVideo}
-                <span className="h-6 w-6 rounded-full bg-[#A0301A] flex items-center justify-center">
+                <span className="h-6 w-6 rounded-full bg-[#FF8254] flex items-center justify-center">
                   <Play className="h-3 w-3 text-white fill-white" />
                 </span>
               </button>
@@ -334,7 +334,7 @@ const Landing = () => {
         {/* ---------------- FEATURES ---------------- */}
         <section id="features" className="px-5 sm:px-8 md:px-14 py-16 sm:py-24 border-t border-black/5">
           <div className="max-w-2xl">
-            <span className="text-[12px] tracking-[0.25em] font-semibold text-[#A0301A]">{t.featuresKicker}</span>
+            <span className="text-[12px] tracking-[0.25em] font-semibold text-[#FF8254]">{t.featuresKicker}</span>
             <h2 className="mt-3 text-[28px] sm:text-[40px] font-semibold tracking-tight text-black leading-[1.1]">
               {t.featuresTitle}
             </h2>
@@ -350,9 +350,9 @@ const Landing = () => {
         </section>
 
         {/* ---------------- HOW IT WORKS ---------------- */}
-        <section id="how" className="px-5 sm:px-8 md:px-14 py-16 sm:py-24 border-t border-black/5 bg-[#FBE9E5]/40">
+        <section id="how" className="px-5 sm:px-8 md:px-14 py-16 sm:py-24 border-t border-black/5 bg-[#EBDFC7]/40">
           <div className="max-w-2xl">
-            <span className="text-[12px] tracking-[0.25em] font-semibold text-[#A0301A]">{t.howKicker}</span>
+            <span className="text-[12px] tracking-[0.25em] font-semibold text-[#FF8254]">{t.howKicker}</span>
             <h2 className="mt-3 text-[28px] sm:text-[40px] font-semibold tracking-tight text-black leading-[1.1]">
               {t.howTitle}
             </h2>
@@ -368,7 +368,7 @@ const Landing = () => {
         {/* ---------------- CTA BANNER ---------------- */}
         <section className="px-5 sm:px-8 md:px-14 py-16 sm:py-20 border-t border-black/5">
           <div className="rounded-[24px] bg-black text-white p-8 sm:p-12 md:p-16 relative overflow-hidden">
-            <div className="absolute -top-10 -right-10 h-48 w-48 rounded-full bg-[#A0301A]/40 blur-3xl" />
+            <div className="absolute -top-10 -right-10 h-48 w-48 rounded-full bg-[#FF8254]/40 blur-3xl" />
             <div className="relative max-w-2xl">
               <h3 className="text-[26px] sm:text-[36px] font-semibold tracking-tight leading-[1.15]">
                 {t.ctaTitle}
@@ -384,7 +384,7 @@ const Landing = () => {
                 </Link>
                 <Link
                   to="/play"
-                  className="inline-flex items-center gap-2 rounded-full bg-[#A0301A] text-white px-6 py-3 text-[14px] font-semibold hover:brightness-95 transition"
+                  className="inline-flex items-center gap-2 rounded-full bg-[#FF8254] text-white px-6 py-3 text-[14px] font-semibold hover:brightness-95 transition"
                 >
                   {t.ctaJoin}
                   <Play className="h-4 w-4 fill-white" />
@@ -395,7 +395,7 @@ const Landing = () => {
         </section>
 
         {/* ---------------- FOOTER ---------------- */}
-        <footer id="footer" className="px-5 sm:px-8 md:px-14 pt-14 pb-10 border-t border-black/5 bg-[#FBE9E5]/60">
+        <footer id="footer" className="px-5 sm:px-8 md:px-14 pt-14 pb-10 border-t border-black/5 bg-[#EBDFC7]/60">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             <div className="col-span-2 md:col-span-1">
               <Link to="/" className="flex items-center gap-2">
@@ -458,14 +458,14 @@ const Landing = () => {
 
 const Highlight = ({ children }: { children: React.ReactNode }) => (
   <span className="relative inline-block px-3">
-    <span aria-hidden className="absolute inset-0 rounded-full bg-[#A0301A]" style={{ transform: "skewX(-2deg)" }} />
+    <span aria-hidden className="absolute inset-0 rounded-full bg-[#FF8254]" style={{ transform: "skewX(-2deg)" }} />
     <span className="relative italic font-semibold text-white">{children}</span>
   </span>
 );
 
 const Feature = ({ icon, title, desc }: { icon: React.ReactNode; title: string; desc: string }) => (
-  <div className="rounded-2xl border border-black/10 bg-white p-6 hover:border-[#A0301A]/40 hover:shadow-[0_18px_40px_-20px_rgba(160,48,26,0.25)] transition">
-    <div className="h-10 w-10 rounded-full bg-[#A0301A] text-white flex items-center justify-center">
+  <div className="rounded-2xl border border-black/10 bg-white p-6 hover:border-[#FF8254]/40 hover:shadow-[0_18px_40px_-20px_rgba(255,130,84,0.25)] transition">
+    <div className="h-10 w-10 rounded-full bg-[#FF8254] text-white flex items-center justify-center">
       {icon}
     </div>
     <h3 className="mt-5 text-[17px] font-semibold text-black">{title}</h3>
@@ -477,7 +477,7 @@ const Step = ({ n, icon, title, desc }: { n: string; icon: React.ReactNode; titl
   <div className="rounded-2xl bg-white border border-black/10 p-6">
     <div className="flex items-center justify-between">
       <span className="text-[12px] font-mono tracking-widest text-black/40">{n}</span>
-      <div className="h-9 w-9 rounded-full bg-[#FBE9E5] text-[#A0301A] flex items-center justify-center">{icon}</div>
+      <div className="h-9 w-9 rounded-full bg-[#EBDFC7] text-[#FF8254] flex items-center justify-center">{icon}</div>
     </div>
     <h3 className="mt-6 text-[18px] font-semibold text-black">{title}</h3>
     <p className="mt-2 text-[13.5px] leading-relaxed text-black/65">{desc}</p>
