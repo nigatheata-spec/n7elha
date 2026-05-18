@@ -174,12 +174,12 @@ const Landing = () => {
             <LangToggle variant="pill" />
             <Link
               to="/play"
-              className="px-4 py-2 rounded-full border border-black/15 bg-white text-black text-[13px] tracking-wider font-medium hover:bg-black hover:text-white transition"
+              className="px-4 py-2 rounded-full border border-black/15 bg-white text-[#3F5A63] text-[13px] tracking-wider font-medium hover:bg-[#3F5A63] hover:text-white transition"
             >
               {t.joinGame}
             </Link>
             {user ? (
-              <Link to="/app" className="px-5 py-2 rounded-full bg-black text-white text-[13px] tracking-wider font-medium">
+              <Link to="/app" className="px-5 py-2 rounded-full bg-[#3F5A63] text-white text-[13px] tracking-wider font-medium">
                 {t.dashboard}
               </Link>
             ) : (
@@ -192,7 +192,7 @@ const Landing = () => {
                 </Link>
                 <Link
                   to="/auth?mode=signup"
-                  className="px-5 py-2 rounded-full bg-black text-white text-[13px] tracking-wider font-medium hover:bg-black/85 transition"
+                  className="px-5 py-2 rounded-full bg-[#3F5A63] text-white text-[13px] tracking-wider font-medium hover:bg-[#3F5A63]/90 transition"
                 >
                   {t.signup}
                 </Link>
@@ -218,7 +218,7 @@ const Landing = () => {
               {t.joinGame}
             </Link>
             {user ? (
-              <Link to="/app" className="px-5 py-2 rounded-full bg-black text-white text-[13px] tracking-wider font-medium text-center">
+              <Link to="/app" className="px-5 py-2 rounded-full bg-[#3F5A63] text-white text-[13px] tracking-wider font-medium text-center">
                 {t.dashboard}
               </Link>
             ) : (
@@ -226,7 +226,7 @@ const Landing = () => {
                 <Link to="/auth" className="px-5 py-2 rounded-full bg-[#FF8254] text-white text-[13px] tracking-wider font-medium text-center">
                   {t.login}
                 </Link>
-                <Link to="/auth?mode=signup" className="px-5 py-2 rounded-full bg-black text-white text-[13px] tracking-wider font-medium text-center">
+                <Link to="/auth?mode=signup" className="px-5 py-2 rounded-full bg-[#3F5A63] text-white text-[13px] tracking-wider font-medium text-center">
                   {t.signup}
                 </Link>
               </>
@@ -255,7 +255,7 @@ const Landing = () => {
             <div className="mt-8 flex flex-wrap items-center gap-4">
               <Link
                 to={user ? "/app" : "/auth?mode=signup"}
-                className="group inline-flex items-center gap-3 rounded-full bg-black text-white pl-6 pr-2 py-2 text-[15px] font-medium hover:bg-black/85 transition"
+                className="group inline-flex items-center gap-3 rounded-full bg-[#3F5A63] text-white pl-6 pr-2 py-2 text-[15px] font-medium hover:bg-[#3F5A63]/90 transition"
               >
                 {t.cta}
                 <span className="h-9 w-9 rounded-full bg-white text-black flex items-center justify-center transition group-hover:rotate-12">
@@ -367,7 +367,7 @@ const Landing = () => {
 
         {/* ---------------- CTA BANNER ---------------- */}
         <section className="px-5 sm:px-8 md:px-14 py-16 sm:py-20 border-t border-black/5">
-          <div className="rounded-[24px] bg-black text-white p-8 sm:p-12 md:p-16 relative overflow-hidden">
+          <div className="rounded-[24px] bg-[#3F5A63] text-white p-8 sm:p-12 md:p-16 relative overflow-hidden">
             <div className="absolute -top-10 -right-10 h-48 w-48 rounded-full bg-[#FF8254]/40 blur-3xl" />
             <div className="relative max-w-2xl">
               <h3 className="text-[26px] sm:text-[36px] font-semibold tracking-tight leading-[1.15]">
