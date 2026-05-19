@@ -154,7 +154,7 @@ const Landing = () => {
       className="min-h-screen w-full p-3 sm:p-6 lg:p-12 flex flex-col items-center"
       style={{ background: "#EBDFC7", fontFamily: "'Inter', 'Tajawal', system-ui, sans-serif" }}
     >
-      <div className="relative w-full max-w-[1280px] rounded-[20px] sm:rounded-[28px] overflow-hidden" style={{ background: "#EBDFC7" }}>
+      <div className="relative w-full max-w-[1280px] rounded-[20px] sm:rounded-[28px] overflow-hidden shadow-[0_24px_70px_-38px_rgba(63,90,99,0.35)]" style={{ background: "hsl(var(--cream-panel))" }}>
         <span className="pointer-events-none absolute -bottom-6 -right-6 text-3xl text-[#FF8254] select-none">✦</span>
 
         {/* ---------------- NAV ---------------- */}
@@ -237,7 +237,7 @@ const Landing = () => {
         {/* ---------------- HERO ---------------- */}
         <div className="relative grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-8 px-5 sm:px-8 md:px-14 pt-10 sm:pt-16 pb-12">
           <div className="relative z-10">
-            <h1 className="text-black font-semibold leading-[1.05] tracking-tight text-[34px] sm:text-[44px] md:text-[60px]">
+            <h1 className="font-semibold leading-[1.05] tracking-tight text-[34px] sm:text-[44px] md:text-[60px]" style={{ color: "#FF8254" }}>
               <span className="block">{t.line1}</span>
               <span className="block mt-3">
                 <Highlight>{t.line2a}</Highlight> <span>{t.line2b}</span>
@@ -342,7 +342,7 @@ const Landing = () => {
         </section>
 
         {/* ---------------- HOW IT WORKS ---------------- */}
-        <section id="how" className="px-5 sm:px-8 md:px-14 py-16 sm:py-24 border-t border-black/5 bg-[#EBDFC7]/40">
+        <section id="how" className="px-5 sm:px-8 md:px-14 py-16 sm:py-24 border-t border-black/5 bg-background/40">
           <div className="max-w-2xl">
             <span className="text-[12px] tracking-[0.25em] font-semibold text-[#FF8254]">{t.howKicker}</span>
             <h2 className="mt-3 text-[28px] sm:text-[40px] font-semibold tracking-tight text-black leading-[1.1]">
