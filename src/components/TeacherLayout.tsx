@@ -2,7 +2,6 @@ import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/lib/auth";
 import { Logo } from "@/components/Logo";
-import { LangToggle } from "@/components/LangToggle";
 import { Button } from "@/components/ui/button";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
@@ -78,6 +77,22 @@ const AppSidebar = () => {
   );
 };
 
+const HeaderLanguageToggle = () => {
+  const { i18n } = useTranslation();
+  const next = i18n.language === "ar" ? "en" : "ar";
+  const label = next === "ar" ? "العربية" : "English";
+
+  return (
+    <button
+      onClick={() => i18n.changeLanguage(next)}
+      className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-primary hover:text-accent transition"
+    >
+      <Languages className="h-4 w-4" />
+      {label}
+    </button>
+  );
+};
+
 export const TeacherLayout = () => {
   return (
     <SidebarProvider>
@@ -86,9 +101,8 @@ export const TeacherLayout = () => {
         <div className="flex-1 flex flex-col min-w-0">
           <header className="h-14 border-b border-border bg-background sticky top-0 z-20 flex items-center justify-between px-3 md:px-6">
             <SidebarTrigger className="md:hidden text-primary hover:bg-primary/10" />
-            <div className="ms-auto flex items-center gap-2 text-primary">
-              <Languages className="h-4 w-4" />
-              <LangToggle />
+            <div className="ms-auto">
+              <HeaderLanguageToggle />
             </div>
           </header>
           <main className="flex-1 p-4 md:p-8">
