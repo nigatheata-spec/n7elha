@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/lib/auth";
@@ -36,7 +37,7 @@ const AppSidebar = () => {
       <SidebarHeader className="h-16 px-4 flex flex-row items-center gap-3 border-b border-sidebar-border">
         <SidebarTrigger className="shrink-0 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground" />
         <Link to="/app" className="flex items-center min-w-0">
-          {collapsed ? <span className="font-mono font-black text-accent text-lg">n7</span> : <Logo className="[&_span]:text-sidebar-foreground" />}
+          {collapsed ? <span className="font-mono font-black text-accent text-lg">n7</span> : <Logo className="[&_span]:text-accent" />}
         </Link>
       </SidebarHeader>
       <SidebarContent>
@@ -95,7 +96,7 @@ const HeaderLanguageToggle = () => {
 
 export const TeacherLayout = () => {
   return (
-    <SidebarProvider>
+    <SidebarProvider style={{ "--sidebar-width": "12.75rem" } as CSSProperties}>
       <div className="min-h-screen bg-background flex w-full">
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0">
