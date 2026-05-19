@@ -286,14 +286,14 @@ const Dashboard = () => {
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {games.map((g) => (
-              <Card key={g.id} className="p-4 bg-white border-black/5 hover:border-[#FF8254]/40 transition-colors group">
+              <Card key={g.id} className="p-4 bg-card border-border hover:border-accent/40 transition-colors group">
                 <div className="flex items-start justify-between gap-2 mb-3">
-                  <div className="font-semibold truncate text-[#3F5A63]">{g.quizzes?.title ?? "—"}</div>
+                  <div className="font-semibold truncate text-primary">{g.quizzes?.title ?? "—"}</div>
                   <Badge variant={g.status === "running" ? "default" : g.status === "lobby" ? "secondary" : "outline"} className="shrink-0">
                     {g.status === "lobby" ? (ar ? "ردهة" : "lobby") : g.status === "running" ? (ar ? "مباشر" : "live") : (ar ? "منتهية" : "ended")}
                   </Badge>
                 </div>
-                <div className="font-mono text-2xl font-black text-[#FF8254] mb-2 tracking-widest">{g.code}</div>
+                <div className="font-mono text-2xl font-black text-accent mb-2 tracking-widest">{g.code}</div>
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span>{new Date(g.created_at).toLocaleDateString(ar ? "ar" : "en")}</span>
                   {(g.status === "lobby" || g.status === "running") ? (
