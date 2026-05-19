@@ -7,7 +7,7 @@
 @layer base {
   :root {
     /* n7elha palette — sand-dune bg, coral-glow + dark-slate-grey accents */
-    --background: 37 46% 85%;        /* sand-dune #EBDFC7 */
+    --background: 40 47% 85%;        /* sand-dune #EBDFC7 */
     --foreground: 199 23% 18%;
 
     --card: 0 0% 100%;
