@@ -178,11 +178,11 @@ const Dashboard = () => {
     <div className="space-y-10 max-w-5xl mx-auto pt-2">
       {/* Hero prompt */}
       <div className="text-center space-y-6 animate-fade-in">
-        <h1 className="font-display text-4xl md:text-5xl font-bold tracking-tight text-[#FF8254]">
+        <h1 className="font-display text-4xl md:text-5xl font-bold tracking-tight text-accent">
           {ar ? "ماذا نُعلّم اليوم؟" : "What should we teach today?"}
         </h1>
 
-        <div className="rounded-3xl bg-white border border-black/5 shadow-[0_18px_50px_-30px_rgba(63,90,99,0.35)] p-4 md:p-5 text-start">
+        <div className="rounded-3xl bg-card border border-border shadow-[0_18px_50px_-30px_hsl(var(--primary)/0.35)] p-4 md:p-5 text-start">
           <textarea
             value={prompt}
             onChange={e => setPrompt(e.target.value)}
@@ -216,7 +216,7 @@ const Dashboard = () => {
 
               <Popover>
                 <PopoverTrigger asChild>
-                  <button type="button" className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full bg-[#3F5A63] text-white text-xs transition-colors hover:brightness-110">
+                  <button type="button" className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full bg-primary text-primary-foreground text-xs transition-colors hover:brightness-110">
                     <span className="font-semibold">{ar ? cur.label_ar : cur.label_en}</span>
                     <ChevronDown className="h-3 w-3 opacity-80" />
                   </button>
@@ -237,7 +237,7 @@ const Dashboard = () => {
 
               <Popover>
                 <PopoverTrigger asChild>
-                  <button type="button" className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full bg-[#FF8254] text-white text-xs transition-colors hover:brightness-110">
+                  <button type="button" className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full bg-accent text-accent-foreground text-xs transition-colors hover:brightness-110">
                     <span className="font-semibold">{numQ}</span>
                     <span className="opacity-90">{ar ? "سؤال" : "Q"}</span>
                     <ChevronDown className="h-3 w-3 opacity-80" />
@@ -258,7 +258,7 @@ const Dashboard = () => {
             <Button
               onClick={() => generateDraft()}
               disabled={busy}
-              className="rounded-full h-10 w-10 p-0 bg-[#FF8254] text-white hover:bg-[#FF8254]/90 shadow-md"
+              className="rounded-full h-10 w-10 p-0 bg-accent text-accent-foreground hover:bg-accent/90 shadow-md"
               aria-label="generate"
             >
               {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowUp className="h-4 w-4" />}
@@ -275,8 +275,8 @@ const Dashboard = () => {
       {/* Past games */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-xl font-bold flex items-center gap-2 text-[#FF8254]"><Gamepad2 className="h-5 w-5" />{ar ? "ألعابي السابقة" : "My past games"}</h2>
-          <Link to="/app/games" className="text-sm text-[#3F5A63]/70 hover:text-[#FF8254]">{ar ? "عرض الكل" : "View all"} →</Link>
+          <h2 className="text-xl font-bold flex items-center gap-2 text-accent"><Gamepad2 className="h-5 w-5" />{ar ? "ألعابي السابقة" : "My past games"}</h2>
+          <Link to="/app/games" className="text-sm text-primary/70 hover:text-accent">{ar ? "عرض الكل" : "View all"} →</Link>
         </div>
 
         {games.length === 0 ? (
