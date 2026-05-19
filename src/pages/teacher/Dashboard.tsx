@@ -258,7 +258,7 @@ const Dashboard = () => {
             <Button
               onClick={() => generateDraft()}
               disabled={busy}
-              className="rounded-full h-10 w-10 p-0 bg-foreground text-background hover:bg-foreground/90 shadow-md"
+              className="rounded-full h-10 w-10 p-0 bg-[#FF8254] text-white hover:bg-[#FF8254]/90 shadow-md"
               aria-label="generate"
             >
               {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowUp className="h-4 w-4" />}
