@@ -8,6 +8,7 @@
   :root {
     /* n7elha palette — sand-dune bg, coral-glow + dark-slate-grey accents */
     --background: 40 47% 85%;        /* sand-dune #EBDFC7 */
+    --cream-panel: 43 58% 94%;       /* soft creamy hero surface */
     --foreground: 199 23% 18%;
 
     --card: 0 0% 100%;
@@ -40,13 +41,13 @@
 
     --radius: 1rem;
 
-    --sidebar-background: 37 46% 88%;
-    --sidebar-foreground: 199 23% 18%;
+    --sidebar-background: 199 23% 32%;
+    --sidebar-foreground: 43 58% 94%;
     --sidebar-primary: 16 100% 66%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 37 46% 80%;
-    --sidebar-accent-foreground: 199 23% 18%;
-    --sidebar-border: 199 23% 32% / 0.25;
+    --sidebar-accent: 199 23% 27%;
+    --sidebar-accent-foreground: 43 58% 94%;
+    --sidebar-border: 43 58% 94% / 0.18;
     --sidebar-ring: 16 100% 66%;
 
     --gradient-hero: linear-gradient(135deg, hsl(199 23% 32%), hsl(16 100% 66%));
