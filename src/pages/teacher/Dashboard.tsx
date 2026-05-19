@@ -275,8 +275,8 @@ const Dashboard = () => {
       {/* Past games */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-xl font-bold flex items-center gap-2"><Gamepad2 className="h-5 w-5" />{ar ? "ألعابي السابقة" : "My past games"}</h2>
-          <Link to="/app/games" className="text-sm text-muted-foreground hover:text-foreground">{ar ? "عرض الكل" : "View all"} →</Link>
+          <h2 className="text-xl font-bold flex items-center gap-2 text-[#FF8254]"><Gamepad2 className="h-5 w-5" />{ar ? "ألعابي السابقة" : "My past games"}</h2>
+          <Link to="/app/games" className="text-sm text-[#3F5A63]/70 hover:text-[#FF8254]">{ar ? "عرض الكل" : "View all"} →</Link>
         </div>
 
         {games.length === 0 ? (
