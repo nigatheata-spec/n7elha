@@ -449,9 +449,8 @@ const Landing = () => {
 /* ---------- helpers ---------- */
 
 const Highlight = ({ children }: { children: React.ReactNode }) => (
-  <span className="relative inline-block px-3">
-    <span aria-hidden className="absolute inset-0 rounded-full bg-[#FF8254]" style={{ transform: "skewX(-2deg)" }} />
-    <span className="relative italic font-semibold text-white">{children}</span>
+  <span className="inline text-[#FF8254]">
+    <span className="italic font-semibold">{children}</span>
   </span>
 );
 
@@ -469,7 +468,7 @@ const Step = ({ n, icon, title, desc }: { n: string; icon: React.ReactNode; titl
   <div className="rounded-2xl bg-white border border-black/10 p-6">
     <div className="flex items-center justify-between">
       <span className="text-[12px] font-mono tracking-widest text-black/40">{n}</span>
-      <div className="h-9 w-9 rounded-full bg-[#EBDFC7] text-[#FF8254] flex items-center justify-center">{icon}</div>
+      <div className="h-9 w-9 rounded-full bg-background text-[#FF8254] flex items-center justify-center">{icon}</div>
     </div>
     <h3 className="mt-6 text-[18px] font-semibold text-black">{title}</h3>
     <p className="mt-2 text-[13.5px] leading-relaxed text-black/65">{desc}</p>
