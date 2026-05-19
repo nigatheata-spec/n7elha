@@ -216,10 +216,9 @@ const Dashboard = () => {
 
               <Popover>
                 <PopoverTrigger asChild>
-                  <button type="button" className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full border border-border hover:border-primary text-xs transition-colors">
-                    <Gauge className="h-3.5 w-3.5" />
+                  <button type="button" className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full bg-[#3F5A63] text-white text-xs transition-colors hover:brightness-110">
                     <span className="font-semibold">{ar ? cur.label_ar : cur.label_en}</span>
-                    <ChevronDown className="h-3 w-3 opacity-60" />
+                    <ChevronDown className="h-3 w-3 opacity-80" />
                   </button>
                 </PopoverTrigger>
                 <PopoverContent className="w-56 p-1" align="start">
