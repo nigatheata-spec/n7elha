@@ -237,11 +237,10 @@ const Dashboard = () => {
 
               <Popover>
                 <PopoverTrigger asChild>
-                  <button type="button" className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full border border-border hover:border-primary text-xs transition-colors">
-                    <Hash className="h-3.5 w-3.5" />
+                  <button type="button" className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full bg-[#FF8254] text-white text-xs transition-colors hover:brightness-110">
                     <span className="font-semibold">{numQ}</span>
-                    <span className="text-muted-foreground">{ar ? "سؤال" : "Q"}</span>
-                    <ChevronDown className="h-3 w-3 opacity-60" />
+                    <span className="opacity-90">{ar ? "سؤال" : "Q"}</span>
+                    <ChevronDown className="h-3 w-3 opacity-80" />
                   </button>
                 </PopoverTrigger>
                 <PopoverContent className="w-32 p-1 max-h-64 overflow-y-auto" align="start">
