@@ -343,6 +343,36 @@ const QuizEditor = () => {
               </div>
             </div>
             <Textarea value={q.text} onChange={e => updateQ(i, { text: e.target.value })} placeholder={t("question_text")} maxLength={500} rows={2} />
+
+            {q.image_url ? (
+              <div className="relative inline-block">
+                <img src={q.image_url} alt="" className="max-h-48 rounded-lg border border-border" />
+                <div className="absolute top-2 end-2 flex gap-1">
+                  <label className="h-7 px-2 rounded-md bg-background/90 border text-xs cursor-pointer inline-flex items-center gap-1 hover:bg-background">
+                    <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadQuestionImage(i, f); e.currentTarget.value = ""; }} />
+                    <Upload className="h-3 w-3" /> استبدال
+                  </label>
+                  <button type="button" onClick={() => updateQ(i, { image_url: null })}
+                    className="h-7 w-7 rounded-md bg-background/90 border inline-flex items-center justify-center hover:bg-background">
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-wrap items-center gap-2">
+                <label className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full border border-dashed border-border hover:border-primary cursor-pointer text-xs transition-colors">
+                  <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadQuestionImage(i, f); e.currentTarget.value = ""; }} />
+                  <ImageIcon className="h-3.5 w-3.5" />
+                  <span>{imgBusy === i ? "..." : "إضافة صورة"}</span>
+                </label>
+                <button type="button" onClick={() => aiGenerateImage(i)} disabled={imgBusy === i}
+                  className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full border border-dashed border-accent/50 hover:border-accent text-xs transition-colors disabled:opacity-50">
+                  <Wand2 className="h-3.5 w-3.5" />
+                  <span>{imgBusy === i ? "..." : "توليد بالذكاء"}</span>
+                </button>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               {q.options.map((opt, oi) => (
                 <button key={oi} type="button" onClick={() => updateQ(i, { correct_index: oi })}
