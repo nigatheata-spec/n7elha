@@ -53,6 +53,7 @@ const QuizEditor = () => {
         setQuestions(qs.map((q: any) => ({
           id: q.id, text: q.text, options: q.options as string[],
           correct_index: q.correct_index, difficulty: q.difficulty as any,
+          image_url: q.image_url ?? null,
         })));
       }
     })();
