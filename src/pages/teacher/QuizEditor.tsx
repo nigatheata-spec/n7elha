@@ -155,14 +155,14 @@ const QuizEditor = () => {
   };
 
   const generate = async () => {
-    if (!docText.trim() && !topics.trim()) {
-      toast.error("ارفع مستنداً أو اكتب موضوعاً");
+    if (!docText.trim() && !topics.trim() && !docImages.length) {
+      toast.error("ارفع مستنداً أو صورة أو اكتب موضوعاً");
       return;
     }
     setGenerating(true);
     try {
       const { data, error } = await supabase.functions.invoke("generate-quiz", {
-        body: { content: docText, numQuestions: numQ, difficulty: diff, topics, language: document.documentElement.lang || "ar" },
+        body: { content: docText, images: docImages, numQuestions: numQ, difficulty: diff, topics, language: document.documentElement.lang || "ar" },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
