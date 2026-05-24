@@ -67,20 +67,30 @@ const QuizEditor = () => {
   const updateOpt = (i: number, oi: number, v: string) =>
     setQuestions(qs => qs.map((q, idx) => idx === i ? { ...q, options: q.options.map((o, j) => j === oi ? v : o) } : q));
 
+  const fileToDataUrl = (file: File) => new Promise<string>((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result as string);
+    r.onerror = () => rej(r.error);
+    r.readAsDataURL(file);
+  });
+
   const onUpload = async (file: File) => {
     setUploading(true);
     try {
-      // Extract text from PDF/Word/PowerPoint client-side via simple text extraction
-      // For PDFs we read as text, for others we use FileReader
       const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
+      const isImage = file.type.startsWith("image/") || ["png","jpg","jpeg","webp","gif"].includes(ext);
+      if (isImage) {
+        const url = await fileToDataUrl(file);
+        setDocImages(imgs => [...imgs, url]);
+        toast.success(`${file.name} ✓`);
+        return;
+      }
       let text = "";
       if (ext === "txt" || ext === "md") {
         text = await file.text();
       } else if (ext === "pdf") {
-        // dynamic import pdfjs
-        const pdfjs = await import("pdfjs-dist");
-        // @ts-ignore
-        pdfjs.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@5.4.149/build/pdf.worker.min.mjs";
+        const pdfjs: any = await import("pdfjs-dist");
+        pdfjs.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
         const buf = await file.arrayBuffer();
         const pdf = await pdfjs.getDocument({ data: buf }).promise;
         for (let p = 1; p <= Math.min(pdf.numPages, 30); p++) {
@@ -89,7 +99,6 @@ const QuizEditor = () => {
           text += content.items.map((it: any) => it.str).join(" ") + "\n\n";
         }
       } else {
-        // fallback: send raw text view; for docx/pptx we'll just use filename + ask user to paste
         toast.info("للمستندات المعقدة الصق المحتوى يدوياً");
         text = await file.text().catch(() => "");
       }
@@ -99,6 +108,49 @@ const QuizEditor = () => {
       toast.error(e.message || "Error");
     } finally {
       setUploading(false);
+    }
+  };
+
+  const uploadQuestionImage = async (i: number, file: File) => {
+    setImgBusy(i);
+    try {
+      const ext = file.name.split(".").pop() || "png";
+      const path = `${user?.id}/${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;
+      const { error } = await supabase.storage.from("question-images").upload(path, file, { upsert: false, contentType: file.type });
+      if (error) throw error;
+      const { data } = supabase.storage.from("question-images").getPublicUrl(path);
+      updateQ(i, { image_url: data.publicUrl });
+      toast.success("✓");
+    } catch (e: any) {
+      toast.error(e.message || "Error");
+    } finally {
+      setImgBusy(null);
+    }
+  };
+
+  const aiGenerateImage = async (i: number) => {
+    const q = questions[i];
+    if (!q.text.trim()) { toast.error("اكتب نص السؤال أولاً"); return; }
+    setImgBusy(i);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-question-image", {
+        body: { prompt: q.text },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      // data.image is a data URL; upload to bucket so it persists cheaply
+      const res = await fetch(data.image);
+      const blob = await res.blob();
+      const path = `${user?.id}/${Date.now()}-ai.png`;
+      const { error: upErr } = await supabase.storage.from("question-images").upload(path, blob, { contentType: blob.type || "image/png" });
+      if (upErr) throw upErr;
+      const { data: pub } = supabase.storage.from("question-images").getPublicUrl(path);
+      updateQ(i, { image_url: pub.publicUrl });
+      toast.success("✓");
+    } catch (e: any) {
+      toast.error(e.message || "Error");
+    } finally {
+      setImgBusy(null);
     }
   };
 
