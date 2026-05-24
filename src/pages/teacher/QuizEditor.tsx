@@ -35,11 +35,13 @@ const QuizEditor = () => {
   // AI panel
   const [showAI, setShowAI] = useState(aiMode);
   const [docText, setDocText] = useState("");
+  const [docImages, setDocImages] = useState<string[]>([]);
   const [numQ, setNumQ] = useState(10);
   const [diff, setDiff] = useState<"easy"|"medium"|"hard">("medium");
   const [topics, setTopics] = useState("");
   const [generating, setGenerating] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [imgBusy, setImgBusy] = useState<number | null>(null);
 
   useEffect(() => {
     if (!id) return;
