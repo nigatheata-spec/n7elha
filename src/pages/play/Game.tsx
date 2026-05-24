@@ -175,6 +175,9 @@ const Game = () => {
         {(phase === "question" || phase === "answered") && currentQ && (
           <div className="max-w-6xl mx-auto h-full flex flex-col">
             <div className="border-y-2 border-primary/40 bg-primary/5 px-4 py-6 md:py-12 text-center shadow-[inset_0_0_30px_hsl(var(--primary)/0.12)]">
+              {(currentQ as any).image_url && (
+                <img src={(currentQ as any).image_url} alt="" className="mx-auto mb-4 max-h-40 md:max-h-56 rounded-md border border-primary/30" />
+              )}
               <p className="text-xl md:text-3xl lg:text-4xl text-[hsl(120_100%_75%)] font-medium leading-relaxed">
                 {currentQ.text}
               </p>

@@ -9,7 +9,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { content, numQuestions = 10, difficulty = "medium", topics = "", language = "ar", creativity = "balanced" } = await req.json();
+    const { content, numQuestions = 10, difficulty = "medium", topics = "", language = "ar", creativity = "balanced", images = [] } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY missing");
 
@@ -24,9 +24,14 @@ serve(async (req) => {
 
     const systemPrompt = `You are an expert quiz generator for teachers. Generate exactly ${n} multiple-choice questions in ${lang}. Each question has exactly 4 distinct plausible options and ONE correct answer. Difficulty: ${difficulty}. ${topics ? `Teacher's request / focus: ${topics}.` : ""} ${creativityRule} Output via the provided tool only.`;
 
-    const userPrompt = content?.trim()
+    const textPart = content?.trim()
       ? `Source content:\n\n${String(content).slice(0, 25000)}`
       : `Topic(s): ${topics || "general knowledge"}`;
+    const imgs = Array.isArray(images) ? images.filter((u: any) => typeof u === "string" && u.startsWith("data:image")) : [];
+    const userContent: any = imgs.length
+      ? [{ type: "text", text: textPart + (imgs.length ? "\n\nAlso use the attached image(s) as source material." : "") },
+         ...imgs.map((url: string) => ({ type: "image_url", image_url: { url } }))]
+      : textPart;
 
     const tools = [{
       type: "function",
@@ -65,7 +70,7 @@ serve(async (req) => {
         model: "google/gemini-3-flash-preview",
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
+          { role: "user", content: userContent },
         ],
         tools,
         tool_choice: { type: "function", function: { name: "create_quiz" } },

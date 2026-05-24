@@ -235,6 +235,7 @@ export type Database = {
           created_at: string
           difficulty: string
           id: string
+          image_url: string | null
           options: Json
           position: number
           quiz_id: string
@@ -245,6 +246,7 @@ export type Database = {
           created_at?: string
           difficulty?: string
           id?: string
+          image_url?: string | null
           options: Json
           position?: number
           quiz_id: string
@@ -255,6 +257,7 @@ export type Database = {
           created_at?: string
           difficulty?: string
           id?: string
+          image_url?: string | null
           options?: Json
           position?: number
           quiz_id?: string

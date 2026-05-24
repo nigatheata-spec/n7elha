@@ -10,12 +10,12 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Plus, Trash2, Sparkles, Upload, Save, Check, ChevronDown } from "lucide-react";
+import { Plus, Trash2, Sparkles, Upload, Save, Check, ChevronDown, Image as ImageIcon, X, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 
-type Q = { id?: string; text: string; options: string[]; correct_index: number; difficulty: "easy"|"medium"|"hard" };
+type Q = { id?: string; text: string; options: string[]; correct_index: number; difficulty: "easy"|"medium"|"hard"; image_url?: string | null };
 
-const blank = (): Q => ({ text: "", options: ["", "", "", ""], correct_index: 0, difficulty: "medium" });
+const blank = (): Q => ({ text: "", options: ["", "", "", ""], correct_index: 0, difficulty: "medium", image_url: null });
 
 const QuizEditor = () => {
   const { id } = useParams();
@@ -35,11 +35,13 @@ const QuizEditor = () => {
   // AI panel
   const [showAI, setShowAI] = useState(aiMode);
   const [docText, setDocText] = useState("");
+  const [docImages, setDocImages] = useState<string[]>([]);
   const [numQ, setNumQ] = useState(10);
   const [diff, setDiff] = useState<"easy"|"medium"|"hard">("medium");
   const [topics, setTopics] = useState("");
   const [generating, setGenerating] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [imgBusy, setImgBusy] = useState<number | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -53,6 +55,7 @@ const QuizEditor = () => {
         setQuestions(qs.map((q: any) => ({
           id: q.id, text: q.text, options: q.options as string[],
           correct_index: q.correct_index, difficulty: q.difficulty as any,
+          image_url: q.image_url ?? null,
         })));
       }
     })();
@@ -64,20 +67,30 @@ const QuizEditor = () => {
   const updateOpt = (i: number, oi: number, v: string) =>
     setQuestions(qs => qs.map((q, idx) => idx === i ? { ...q, options: q.options.map((o, j) => j === oi ? v : o) } : q));
 
+  const fileToDataUrl = (file: File) => new Promise<string>((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result as string);
+    r.onerror = () => rej(r.error);
+    r.readAsDataURL(file);
+  });
+
   const onUpload = async (file: File) => {
     setUploading(true);
     try {
-      // Extract text from PDF/Word/PowerPoint client-side via simple text extraction
-      // For PDFs we read as text, for others we use FileReader
       const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
+      const isImage = file.type.startsWith("image/") || ["png","jpg","jpeg","webp","gif"].includes(ext);
+      if (isImage) {
+        const url = await fileToDataUrl(file);
+        setDocImages(imgs => [...imgs, url]);
+        toast.success(`${file.name} ✓`);
+        return;
+      }
       let text = "";
       if (ext === "txt" || ext === "md") {
         text = await file.text();
       } else if (ext === "pdf") {
-        // dynamic import pdfjs
-        const pdfjs = await import("pdfjs-dist");
-        // @ts-ignore
-        pdfjs.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@5.4.149/build/pdf.worker.min.mjs";
+        const pdfjs: any = await import("pdfjs-dist");
+        pdfjs.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
         const buf = await file.arrayBuffer();
         const pdf = await pdfjs.getDocument({ data: buf }).promise;
         for (let p = 1; p <= Math.min(pdf.numPages, 30); p++) {
@@ -86,7 +99,6 @@ const QuizEditor = () => {
           text += content.items.map((it: any) => it.str).join(" ") + "\n\n";
         }
       } else {
-        // fallback: send raw text view; for docx/pptx we'll just use filename + ask user to paste
         toast.info("للمستندات المعقدة الصق المحتوى يدوياً");
         text = await file.text().catch(() => "");
       }
@@ -99,15 +111,58 @@ const QuizEditor = () => {
     }
   };
 
+  const uploadQuestionImage = async (i: number, file: File) => {
+    setImgBusy(i);
+    try {
+      const ext = file.name.split(".").pop() || "png";
+      const path = `${user?.id}/${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;
+      const { error } = await supabase.storage.from("question-images").upload(path, file, { upsert: false, contentType: file.type });
+      if (error) throw error;
+      const { data } = supabase.storage.from("question-images").getPublicUrl(path);
+      updateQ(i, { image_url: data.publicUrl });
+      toast.success("✓");
+    } catch (e: any) {
+      toast.error(e.message || "Error");
+    } finally {
+      setImgBusy(null);
+    }
+  };
+
+  const aiGenerateImage = async (i: number) => {
+    const q = questions[i];
+    if (!q.text.trim()) { toast.error("اكتب نص السؤال أولاً"); return; }
+    setImgBusy(i);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-question-image", {
+        body: { prompt: q.text },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      // data.image is a data URL; upload to bucket so it persists cheaply
+      const res = await fetch(data.image);
+      const blob = await res.blob();
+      const path = `${user?.id}/${Date.now()}-ai.png`;
+      const { error: upErr } = await supabase.storage.from("question-images").upload(path, blob, { contentType: blob.type || "image/png" });
+      if (upErr) throw upErr;
+      const { data: pub } = supabase.storage.from("question-images").getPublicUrl(path);
+      updateQ(i, { image_url: pub.publicUrl });
+      toast.success("✓");
+    } catch (e: any) {
+      toast.error(e.message || "Error");
+    } finally {
+      setImgBusy(null);
+    }
+  };
+
   const generate = async () => {
-    if (!docText.trim() && !topics.trim()) {
-      toast.error("ارفع مستنداً أو اكتب موضوعاً");
+    if (!docText.trim() && !topics.trim() && !docImages.length) {
+      toast.error("ارفع مستنداً أو صورة أو اكتب موضوعاً");
       return;
     }
     setGenerating(true);
     try {
       const { data, error } = await supabase.functions.invoke("generate-quiz", {
-        body: { content: docText, numQuestions: numQ, difficulty: diff, topics, language: document.documentElement.lang || "ar" },
+        body: { content: docText, images: docImages, numQuestions: numQ, difficulty: diff, topics, language: document.documentElement.lang || "ar" },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
@@ -147,7 +202,7 @@ const QuizEditor = () => {
       }
       const rows = questions.map((q, i) => ({
         quiz_id: quizId!, position: i, text: q.text, options: q.options,
-        correct_index: q.correct_index, difficulty: q.difficulty,
+        correct_index: q.correct_index, difficulty: q.difficulty, image_url: q.image_url ?? null,
       }));
       const { error } = await supabase.from("questions").insert(rows);
       if (error) throw error;
@@ -190,13 +245,26 @@ const QuizEditor = () => {
             {docText && (
               <div className="text-xs text-muted-foreground px-1">📄 {docText.length} حرف</div>
             )}
+            {docImages.length > 0 && (
+              <div className="flex flex-wrap gap-2 px-1">
+                {docImages.map((src, idx) => (
+                  <div key={idx} className="relative">
+                    <img src={src} alt="" className="h-14 w-14 object-cover rounded-md border" />
+                    <button type="button" onClick={() => setDocImages(imgs => imgs.filter((_, j) => j !== idx))}
+                      className="absolute -top-1.5 -end-1.5 h-5 w-5 rounded-full bg-foreground text-background flex items-center justify-center">
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
 
             <div className="flex items-center justify-between gap-2 flex-wrap pt-2 border-t border-border/50">
               <div className="flex items-center gap-1.5 flex-wrap">
                 <label className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full border border-border hover:border-primary cursor-pointer text-xs transition-colors">
-                  <input type="file" accept=".pdf,.txt,.md" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onUpload(f); }} />
+                  <input type="file" accept=".pdf,.txt,.md,image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onUpload(f); e.currentTarget.value = ""; }} />
                   <Upload className="h-3.5 w-3.5" />
-                  <span>{uploading ? "..." : "PDF / TXT"}</span>
+                  <span>{uploading ? "..." : "PDF / TXT / صور"}</span>
                 </label>
 
                 <Popover>
@@ -275,6 +343,36 @@ const QuizEditor = () => {
               </div>
             </div>
             <Textarea value={q.text} onChange={e => updateQ(i, { text: e.target.value })} placeholder={t("question_text")} maxLength={500} rows={2} />
+
+            {q.image_url ? (
+              <div className="relative inline-block">
+                <img src={q.image_url} alt="" className="max-h-48 rounded-lg border border-border" />
+                <div className="absolute top-2 end-2 flex gap-1">
+                  <label className="h-7 px-2 rounded-md bg-background/90 border text-xs cursor-pointer inline-flex items-center gap-1 hover:bg-background">
+                    <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadQuestionImage(i, f); e.currentTarget.value = ""; }} />
+                    <Upload className="h-3 w-3" /> استبدال
+                  </label>
+                  <button type="button" onClick={() => updateQ(i, { image_url: null })}
+                    className="h-7 w-7 rounded-md bg-background/90 border inline-flex items-center justify-center hover:bg-background">
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-wrap items-center gap-2">
+                <label className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full border border-dashed border-border hover:border-primary cursor-pointer text-xs transition-colors">
+                  <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadQuestionImage(i, f); e.currentTarget.value = ""; }} />
+                  <ImageIcon className="h-3.5 w-3.5" />
+                  <span>{imgBusy === i ? "..." : "إضافة صورة"}</span>
+                </label>
+                <button type="button" onClick={() => aiGenerateImage(i)} disabled={imgBusy === i}
+                  className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full border border-dashed border-accent/50 hover:border-accent text-xs transition-colors disabled:opacity-50">
+                  <Wand2 className="h-3.5 w-3.5" />
+                  <span>{imgBusy === i ? "..." : "توليد بالذكاء"}</span>
+                </button>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               {q.options.map((opt, oi) => (
                 <button key={oi} type="button" onClick={() => updateQ(i, { correct_index: oi })}
