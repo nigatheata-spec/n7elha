@@ -245,13 +245,26 @@ const QuizEditor = () => {
             {docText && (
               <div className="text-xs text-muted-foreground px-1">📄 {docText.length} حرف</div>
             )}
+            {docImages.length > 0 && (
+              <div className="flex flex-wrap gap-2 px-1">
+                {docImages.map((src, idx) => (
+                  <div key={idx} className="relative">
+                    <img src={src} alt="" className="h-14 w-14 object-cover rounded-md border" />
+                    <button type="button" onClick={() => setDocImages(imgs => imgs.filter((_, j) => j !== idx))}
+                      className="absolute -top-1.5 -end-1.5 h-5 w-5 rounded-full bg-foreground text-background flex items-center justify-center">
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
 
             <div className="flex items-center justify-between gap-2 flex-wrap pt-2 border-t border-border/50">
               <div className="flex items-center gap-1.5 flex-wrap">
                 <label className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full border border-border hover:border-primary cursor-pointer text-xs transition-colors">
-                  <input type="file" accept=".pdf,.txt,.md" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onUpload(f); }} />
+                  <input type="file" accept=".pdf,.txt,.md,image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onUpload(f); e.currentTarget.value = ""; }} />
                   <Upload className="h-3.5 w-3.5" />
-                  <span>{uploading ? "..." : "PDF / TXT"}</span>
+                  <span>{uploading ? "..." : "PDF / TXT / صور"}</span>
                 </label>
 
                 <Popover>
