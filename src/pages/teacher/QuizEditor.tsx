@@ -202,7 +202,7 @@ const QuizEditor = () => {
       }
       const rows = questions.map((q, i) => ({
         quiz_id: quizId!, position: i, text: q.text, options: q.options,
-        correct_index: q.correct_index, difficulty: q.difficulty,
+        correct_index: q.correct_index, difficulty: q.difficulty, image_url: q.image_url ?? null,
       }));
       const { error } = await supabase.from("questions").insert(rows);
       if (error) throw error;
