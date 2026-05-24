@@ -10,12 +10,12 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Plus, Trash2, Sparkles, Upload, Save, Check, ChevronDown } from "lucide-react";
+import { Plus, Trash2, Sparkles, Upload, Save, Check, ChevronDown, Image as ImageIcon, X, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 
-type Q = { id?: string; text: string; options: string[]; correct_index: number; difficulty: "easy"|"medium"|"hard" };
+type Q = { id?: string; text: string; options: string[]; correct_index: number; difficulty: "easy"|"medium"|"hard"; image_url?: string | null };
 
-const blank = (): Q => ({ text: "", options: ["", "", "", ""], correct_index: 0, difficulty: "medium" });
+const blank = (): Q => ({ text: "", options: ["", "", "", ""], correct_index: 0, difficulty: "medium", image_url: null });
 
 const QuizEditor = () => {
   const { id } = useParams();
