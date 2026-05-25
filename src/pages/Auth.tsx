@@ -96,8 +96,6 @@ const Auth = () => {
             </g>
           ))}
         </svg>
-        {/* coral glow blob */}
-        <div className="absolute -bottom-24 -left-16 h-72 w-72 rounded-full bg-[#FF8254]/25 blur-3xl pointer-events-none" />
 
         <Link to="/" className="relative z-10 flex items-center gap-2 shrink-0">
           <span className="h-3 w-3 rounded-full bg-white/80 inline-block" />

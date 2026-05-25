@@ -128,8 +128,8 @@ const HostGame = () => {
 
         <Card className="p-6 space-y-5">
           <h2 className="font-bold text-lg">{t("game_code")}</h2>
-          <div className="rounded-2xl border-2 border-primary/40 bg-gradient-hero p-6 text-center shadow-glow">
-            <div className="font-mono text-6xl font-black tracking-widest text-primary text-glow-cyan">{code}</div>
+          <div className="rounded-2xl border border-border bg-muted/40 p-6 text-center">
+            <div className="font-mono text-6xl font-black tracking-widest text-accent">{code}</div>
             <div className="mt-2 text-xs text-muted-foreground">{ar ? "شارك مع طلابك" : "Share with your students"}</div>
           </div>
           <div className="flex gap-2">

@@ -360,7 +360,6 @@ const Landing = () => {
         {/* ---------------- CTA BANNER ---------------- */}
         <section className="px-5 sm:px-8 md:px-14 py-16 sm:py-20 border-t border-black/5">
           <div className="rounded-[24px] bg-[#3F5A63] text-white p-8 sm:p-12 md:p-16 relative overflow-hidden">
-            <div className="absolute -top-10 -right-10 h-48 w-48 rounded-full bg-[#FF8254]/40 blur-3xl" />
             <div className="relative max-w-2xl">
               <h3 className="text-[26px] sm:text-[36px] font-semibold tracking-tight leading-[1.15]">
                 {t.ctaTitle}

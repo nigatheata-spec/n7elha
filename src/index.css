@@ -50,10 +50,10 @@
     --sidebar-border: 43 58% 94% / 0.18;
     --sidebar-ring: 16 100% 66%;
 
-    --gradient-hero: linear-gradient(135deg, hsl(199 23% 32%), hsl(16 100% 66%));
-    --gradient-cyan: linear-gradient(135deg, hsl(16 100% 66%), hsl(16 100% 56%));
+    --gradient-hero: hsl(199 23% 30%);
+    --gradient-cyan: hsl(16 100% 60%);
     --shadow-soft: 0 8px 30px -12px hsl(199 23% 18% / 0.18);
-    --shadow-glow: 0 0 30px hsl(16 100% 66% / 0.45);
+    --shadow-glow: none;
   }
 
   .dark {
@@ -138,9 +138,9 @@
 }
 
 @layer utilities {
-  .text-glow-cyan { text-shadow: 0 0 12px hsl(16 100% 66% / 0.75); }
-  .text-glow-amber { text-shadow: 0 0 12px hsl(16 100% 66% / 0.7); }
-  .border-glow { box-shadow: 0 0 0 1px hsl(16 100% 66% / 0.35), 0 0 20px hsl(16 100% 66% / 0.25); }
+  .text-glow-cyan { text-shadow: none; }
+  .text-glow-amber { text-shadow: none; }
+  .border-glow { box-shadow: none; }
   .terminal-screen {
     background:
       radial-gradient(ellipse at 35% 20%, hsl(199 28% 24% / 0.92) 0%, hsl(199 28% 18% / 0.98) 54%, hsl(199 32% 12%) 100%);
