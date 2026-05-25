@@ -1,29 +1,28 @@
 import { useEffect, useRef, useState } from "react";
-import { useTranslation } from "react-i18next";
+import { onLangTransition } from "@/lib/langTransitionBus";
 import logoMark from "@/assets/logo-mark.png";
 
 export const LangTransitionOverlay = () => {
-  const { i18n } = useTranslation();
   const [visible, setVisible] = useState(false);
   const [fading, setFading] = useState(false);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   useEffect(() => {
-    const clearAll = () => timers.current.forEach(clearTimeout);
+    const clearAll = () => { timers.current.forEach(clearTimeout); timers.current = []; };
 
-    const handler = () => {
+    const unsub = onLangTransition(() => {
       clearAll();
       setFading(false);
       setVisible(true);
 
-      const t1 = setTimeout(() => setFading(true), 1100);
-      const t2 = setTimeout(() => { setVisible(false); setFading(false); }, 1500);
-      timers.current = [t1, t2];
-    };
+      timers.current = [
+        setTimeout(() => setFading(true), 1100),
+        setTimeout(() => { setVisible(false); setFading(false); }, 1500),
+      ];
+    });
 
-    i18n.on("languageChanged", handler);
-    return () => { i18n.off("languageChanged", handler); clearAll(); };
-  }, [i18n]);
+    return () => { unsub(); clearAll(); };
+  }, []);
 
   if (!visible) return null;
 
@@ -60,10 +59,7 @@ export const LangTransitionOverlay = () => {
           <span
             key={i}
             className="h-2 w-2 rounded-full"
-            style={{
-              background: "#FF8254",
-              animation: `dot-pulse 1.1s ease-in-out ${delay}ms infinite`,
-            }}
+            style={{ background: "#FF8254", animation: `dot-pulse 1.1s ease-in-out ${delay}ms infinite` }}
           />
         ))}
       </div>
