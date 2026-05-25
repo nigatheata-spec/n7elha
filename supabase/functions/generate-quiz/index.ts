@@ -10,8 +10,8 @@ serve(async (req) => {
 
   try {
     const { content, numQuestions = 10, difficulty = "medium", topics = "", language = "ar", creativity = "balanced", images = [] } = await req.json();
-    const GOOGLE_API_KEY = Deno.env.get("GOOGLE_API_KEY");
-    if (!GOOGLE_API_KEY) throw new Error("GOOGLE_API_KEY missing");
+    const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY");
+    if (!OPENROUTER_API_KEY) throw new Error("OPENROUTER_API_KEY missing");
 
     const n = Math.max(3, Math.min(50, Number(numQuestions) || 10));
     const lang = language === "en" ? "English" : "Arabic";
@@ -63,14 +63,16 @@ serve(async (req) => {
       },
     }];
 
-    const resp = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
+    const resp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${GOOGLE_API_KEY}`,
+        Authorization: `Bearer ${OPENROUTER_API_KEY}`,
         "Content-Type": "application/json",
+        "HTTP-Referer": "https://n7elha-2.vercel.app",
+        "X-Title": "Knowledge Hack",
       },
       body: JSON.stringify({
-        model: "gemini-2.0-flash",
+        model: "google/gemini-2.0-flash-001",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userContent },
