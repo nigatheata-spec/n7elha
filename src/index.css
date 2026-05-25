@@ -131,8 +131,8 @@
     font-family: 'Almarai', system-ui, sans-serif;
     font-feature-settings: "ss01";
   }
-  html[lang="en"] body { font-family: 'Outfit', 'Almarai', system-ui, sans-serif; }
-  html[lang="ar"] body { font-family: 'Almarai', system-ui, sans-serif; }
+  html[lang="en"] body { font-family: 'Outfit', 'Almarai', system-ui, sans-serif; line-height: 1.55; }
+  html[lang="ar"] body { font-family: 'Almarai', system-ui, sans-serif; line-height: 1.55; }
 
   .font-mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
 }

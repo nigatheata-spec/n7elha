@@ -492,7 +492,7 @@ const Step = ({ n, icon, title, desc }: { n: string; icon: React.ReactNode; titl
 const FooterCol = ({ title, items }: { title: string; items: { label: string; href: string }[] }) => (
   <div>
     <h4 className="text-[12px] tracking-[0.2em] font-semibold text-black/80">{title}</h4>
-    <ul className="mt-4 space-y-2.5">
+    <ul className="mt-3 space-y-1.5">
       {items.map((it) => (
         <li key={it.label}>
           <a href={it.href} className="text-[13px] text-black/65 hover:text-black transition">
