@@ -11,6 +11,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+// @ts-ignore — Vite ?url import resolves to a string at build time
+import pdfjsWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 
 const CREATIVITY = [
   { value: 0, key: "strict", label_ar: "حرفي", label_en: "Strict", desc_ar: "التزام تام بالمحتوى", desc_en: "Stay 100% with the source" },
@@ -60,9 +62,9 @@ const Dashboard = () => {
           text = await f.text();
         } else if (ext === "pdf") {
           const pdfjs: any = await import("pdfjs-dist");
-          pdfjs.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+          pdfjs.GlobalWorkerOptions.workerSrc = pdfjsWorkerUrl;
           const buf = await f.arrayBuffer();
-          const pdf = await pdfjs.getDocument({ data: buf }).promise;
+          const pdf = await pdfjs.getDocument({ data: new Uint8Array(buf) }).promise;
           for (let p = 1; p <= Math.min(pdf.numPages, 40); p++) {
             const page = await pdf.getPage(p);
             const content = await page.getTextContent();
