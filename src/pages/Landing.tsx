@@ -152,7 +152,7 @@ const Landing = () => {
     <div
       dir="ltr"
       className="min-h-screen w-full p-3 sm:p-6 lg:p-12 flex flex-col items-center"
-      style={{ background: "#EBDFC7", fontFamily: "'Inter', 'Tajawal', system-ui, sans-serif" }}
+      style={{ background: "#EBDFC7", fontFamily: "'Outfit', 'Almarai', system-ui, sans-serif" }}
     >
       <div className="relative w-full max-w-[1280px] rounded-[20px] sm:rounded-[28px] overflow-hidden shadow-[0_24px_70px_-38px_rgba(63,90,99,0.35)]" style={{ background: "hsl(var(--cream-panel))" }}>
         <span className="pointer-events-none absolute -bottom-4 -right-4 h-8 w-8 rounded-full border-2 border-[#FF8254]/40 select-none" />

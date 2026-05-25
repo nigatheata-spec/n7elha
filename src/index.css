@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Tajawal:wght@400;500;700;900&family=Cairo:wght@400;600;700;900&family=JetBrains+Mono:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Almarai:wght@300;400;700;800&family=JetBrains+Mono:wght@400;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -128,11 +128,11 @@
   * { @apply border-border; }
   body {
     @apply bg-background text-foreground;
-    font-family: 'Tajawal', 'Cairo', system-ui, sans-serif;
+    font-family: 'Almarai', system-ui, sans-serif;
     font-feature-settings: "ss01";
   }
-  html[dir="rtl"] body { font-family: 'Tajawal', 'Cairo', sans-serif; }
-  html[dir="ltr"] body { font-family: 'Outfit', 'Tajawal', system-ui, sans-serif; }
+  html[lang="en"] body { font-family: 'Outfit', 'Almarai', system-ui, sans-serif; }
+  html[lang="ar"] body { font-family: 'Almarai', system-ui, sans-serif; }
 
   .font-mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
 }
@@ -149,6 +149,16 @@
     opacity: 0.24;
     background-image: repeating-linear-gradient(0deg, hsl(0 0% 0% / 0.34) 0px, hsl(0 0% 0% / 0.34) 1px, transparent 1px, transparent 4px);
   }
+  @keyframes dot-pulse {
+    0%, 80%, 100% { opacity: 0.2; transform: scale(0.75); }
+    40%            { opacity: 1;   transform: scale(1); }
+  }
+
+  @keyframes lang-logo-in {
+    from { opacity: 0; transform: translateY(10px) scale(0.95); }
+    to   { opacity: 1; transform: translateY(0)    scale(1); }
+  }
+
   @keyframes fade-up {
     from { opacity: 0; transform: translateY(18px); }
     to   { opacity: 1; transform: translateY(0); }

@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import "@/lib/i18n";
 import { AuthProvider } from "@/lib/auth";
+import { LangTransitionOverlay } from "@/components/LangTransitionOverlay";
 import { RequireAuth } from "@/components/RequireAuth";
 import { TeacherLayout } from "@/components/TeacherLayout";
 import Landing from "./pages/Landing";
@@ -28,6 +29,7 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
+      <LangTransitionOverlay />
       <BrowserRouter>
         <AuthProvider>
           <Routes>
