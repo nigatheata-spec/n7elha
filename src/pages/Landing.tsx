@@ -155,7 +155,7 @@ const Landing = () => {
       style={{ background: "#EBDFC7", fontFamily: "'Inter', 'Tajawal', system-ui, sans-serif" }}
     >
       <div className="relative w-full max-w-[1280px] rounded-[20px] sm:rounded-[28px] overflow-hidden shadow-[0_24px_70px_-38px_rgba(63,90,99,0.35)]" style={{ background: "hsl(var(--cream-panel))" }}>
-        <span className="pointer-events-none absolute -bottom-6 -right-6 text-3xl text-[#FF8254] select-none">✦</span>
+        <span className="pointer-events-none absolute -bottom-4 -right-4 h-8 w-8 rounded-full border-2 border-[#FF8254]/40 select-none" />
 
         {/* ---------------- NAV ---------------- */}
         <nav className="flex items-center justify-between px-5 sm:px-8 md:px-14 pt-6 sm:pt-8 gap-3">
@@ -237,7 +237,7 @@ const Landing = () => {
         {/* ---------------- HERO ---------------- */}
         <div className="relative grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-8 px-5 sm:px-8 md:px-14 pt-10 sm:pt-16 pb-12">
           <div className="relative z-10">
-            <h1 className="font-semibold leading-[1.05] tracking-tight text-[34px] sm:text-[44px] md:text-[60px]" style={{ color: "#FF8254" }}>
+            <h1 className="font-semibold leading-[1.05] tracking-tight text-[34px] sm:text-[44px] md:text-[60px] animate-fade-up" style={{ color: "#FF8254" }}>
               <span className="block">{t.line1}</span>
               <span className="block mt-3">
                 <Highlight>{t.line2a}</Highlight> <span>{t.line2b}</span>
@@ -248,11 +248,11 @@ const Landing = () => {
               </span>
             </h1>
 
-            <p className="mt-6 sm:mt-8 text-[14px] sm:text-[15px] leading-relaxed text-black/70 max-w-md">
+            <p className="mt-6 sm:mt-8 text-[14px] sm:text-[15px] leading-relaxed text-black/70 max-w-md animate-fade-up animation-delay-200">
               {t.sub}
             </p>
 
-            <div className="mt-8 flex flex-wrap items-center gap-4">
+            <div className="mt-8 flex flex-wrap items-center gap-4 animate-fade-up animation-delay-300">
               <Link
                 to={user ? "/app" : "/auth?mode=signup"}
                 className="group inline-flex items-center gap-3 rounded-full bg-[#3F5A63] text-white pl-6 pr-2 py-2 text-[15px] font-medium hover:bg-[#3F5A63]/90 transition"
@@ -333,11 +333,11 @@ const Landing = () => {
             <p className="mt-4 text-[15px] text-black/65 leading-relaxed">{t.featuresSub}</p>
           </div>
 
-          <div className="mt-10 sm:mt-14 grid grid-cols-1 sm:grid-cols-2 gap-5">
-            <Feature icon={<Sparkles className="h-5 w-5" />} title={t.f1Title} desc={t.f1Desc} />
+          <div className="mt-10 sm:mt-14 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <FeatureLarge icon={<Sparkles className="h-6 w-6" />} title={t.f1Title} desc={t.f1Desc} />
             <Feature icon={<FileText className="h-5 w-5" />} title={t.f2Title} desc={t.f2Desc} />
             <Feature icon={<Radio className="h-5 w-5" />} title={t.f3Title} desc={t.f3Desc} />
-            <Feature icon={<BarChart3 className="h-5 w-5" />} title={t.f4Title} desc={t.f4Desc} />
+            <FeatureLarge icon={<BarChart3 className="h-6 w-6" />} title={t.f4Title} desc={t.f4Desc} />
           </div>
         </section>
 
@@ -438,7 +438,7 @@ const Landing = () => {
 
           <div className="mt-12 pt-6 border-t border-black/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-[12px] text-black/55">
             <span>{t.footerRights}</span>
-            <span className="tracking-wider">Made with ♥ for teachers.</span>
+            <span className="tracking-wider">Built for teachers.</span>
           </div>
         </footer>
       </div>
@@ -454,12 +454,26 @@ const Highlight = ({ children }: { children: React.ReactNode }) => (
   </span>
 );
 
+const FeatureLarge = ({ icon, title, desc }: { icon: React.ReactNode; title: string; desc: string }) => (
+  <div className="md:col-span-2 rounded-2xl border border-black/10 bg-white p-7 hover:border-[#FF8254]/40 hover:shadow-[0_20px_50px_-20px_rgba(255,130,84,0.22)] transition-all group active:scale-[0.995]">
+    <div className="flex items-start gap-5">
+      <div className="h-12 w-12 rounded-2xl bg-[#FF8254] text-white flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+        {icon}
+      </div>
+      <div>
+        <h3 className="text-[18px] font-semibold text-black leading-tight">{title}</h3>
+        <p className="mt-2 text-[14px] leading-relaxed text-black/65 max-w-lg">{desc}</p>
+      </div>
+    </div>
+  </div>
+);
+
 const Feature = ({ icon, title, desc }: { icon: React.ReactNode; title: string; desc: string }) => (
-  <div className="rounded-2xl border border-black/10 bg-white p-6 hover:border-[#FF8254]/40 hover:shadow-[0_18px_40px_-20px_rgba(255,130,84,0.25)] transition">
-    <div className="h-10 w-10 rounded-full bg-[#FF8254] text-white flex items-center justify-center">
+  <div className="rounded-2xl border border-black/10 bg-white p-6 hover:border-[#FF8254]/40 hover:shadow-[0_18px_40px_-20px_rgba(255,130,84,0.22)] transition-all group active:scale-[0.995]">
+    <div className="h-10 w-10 rounded-2xl bg-[#FF8254]/10 text-[#FF8254] flex items-center justify-center group-hover:bg-[#FF8254] group-hover:text-white transition-colors">
       {icon}
     </div>
-    <h3 className="mt-5 text-[17px] font-semibold text-black">{title}</h3>
+    <h3 className="mt-5 text-[17px] font-semibold text-black leading-tight">{title}</h3>
     <p className="mt-2 text-[13.5px] leading-relaxed text-black/65">{desc}</p>
   </div>
 );

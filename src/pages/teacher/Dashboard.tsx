@@ -280,29 +280,37 @@ const Dashboard = () => {
         </div>
 
         {games.length === 0 ? (
-          <Card className="p-10 text-center text-muted-foreground bg-muted/30">
-            {ar ? "ابدأ لعبتك الأولى من الأعلى ☝️" : "Host your first game from above ☝️"}
-          </Card>
+          <div className="py-14 flex flex-col items-center gap-3 text-center rounded-2xl border border-dashed border-border">
+            <div className="h-14 w-14 rounded-2xl bg-muted/60 flex items-center justify-center">
+              <Gamepad2 className="h-6 w-6 opacity-30" />
+            </div>
+            <p className="text-sm text-muted-foreground max-w-xs">
+              {ar ? "ولّد اختباراً من الأعلى لتستضيف أول لعبة" : "Generate a quiz above to host your first game"}
+            </p>
+          </div>
         ) : (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="grid sm:grid-cols-2 gap-3">
             {games.map((g) => (
-              <Card key={g.id} className="p-4 bg-card border-border hover:border-accent/40 transition-colors group">
-                <div className="flex items-start justify-between gap-2 mb-3">
-                  <div className="font-semibold truncate text-primary">{g.quizzes?.title ?? "—"}</div>
-                  <Badge variant={g.status === "running" ? "default" : g.status === "lobby" ? "secondary" : "outline"} className="shrink-0">
+              <Link
+                key={g.id}
+                to={g.status === "lobby" || g.status === "running" ? `/app/games/${g.id}/monitor` : `/app/games/${g.id}/results`}
+                className="group flex items-center gap-4 p-4 rounded-2xl border border-border bg-card hover:border-accent/50 hover:shadow-[0_8px_24px_-10px_hsl(var(--accent)/0.18)] transition-all"
+              >
+                <div className="shrink-0 w-[72px]">
+                  <div className="font-mono text-[22px] font-black text-accent tracking-widest leading-none">{g.code}</div>
+                  <div className="text-[11px] text-muted-foreground mt-1 font-mono">{new Date(g.created_at).toLocaleDateString(ar ? "ar" : "en")}</div>
+                </div>
+                <div className="flex-1 min-w-0 border-l border-border ps-4">
+                  <div className="font-semibold text-foreground truncate text-sm">{g.quizzes?.title ?? "—"}</div>
+                  <Badge
+                    variant={g.status === "running" ? "default" : g.status === "lobby" ? "secondary" : "outline"}
+                    className="mt-1.5 text-[10px] h-5 px-2"
+                  >
                     {g.status === "lobby" ? (ar ? "ردهة" : "lobby") : g.status === "running" ? (ar ? "مباشر" : "live") : (ar ? "منتهية" : "ended")}
                   </Badge>
                 </div>
-                <div className="font-mono text-2xl font-black text-accent mb-2 tracking-widest">{g.code}</div>
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>{new Date(g.created_at).toLocaleDateString(ar ? "ar" : "en")}</span>
-                  {(g.status === "lobby" || g.status === "running") ? (
-                    <Button asChild size="sm" variant="ghost" className="h-7"><Link to={`/app/games/${g.id}/monitor`}><Eye className="h-3 w-3 me-1" />{ar ? "افتح" : "Open"}</Link></Button>
-                  ) : (
-                    <Button asChild size="sm" variant="ghost" className="h-7"><Link to={`/app/games/${g.id}/results`}>{ar ? "النتائج" : "Results"}</Link></Button>
-                  )}
-                </div>
-              </Card>
+                <Eye className="h-4 w-4 text-muted-foreground/40 group-hover:text-accent transition-colors shrink-0" />
+              </Link>
             ))}
           </div>
         )}
