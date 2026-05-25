@@ -221,7 +221,7 @@ const QuizEditor = () => {
         <h1 className="font-display text-3xl font-bold">{id ? t("edit") : t("create_quiz")}</h1>
         <div className="flex gap-2">
           {!showAI && <Button variant="outline" onClick={() => setShowAI(true)} className="border-accent/40"><Sparkles className="h-4 w-4 me-2" />{t("ai_generate")}</Button>}
-          <Button onClick={save} disabled={saving} className="bg-gradient-cyan shadow-glow"><Save className="h-4 w-4 me-2" />{saving ? "..." : t("save_quiz")}</Button>
+          <Button onClick={save} disabled={saving} className="bg-accent text-white hover:bg-accent/90"><Save className="h-4 w-4 me-2" />{saving ? "..." : t("save_quiz")}</Button>
         </div>
       </div>
 
@@ -308,7 +308,7 @@ const QuizEditor = () => {
 
               <div className="flex items-center gap-1.5">
                 <Button variant="ghost" size="sm" onClick={() => setShowAI(false)} className="h-8 text-xs">{t("cancel")}</Button>
-                <Button onClick={generate} disabled={generating} size="sm" className="h-8 bg-gradient-cyan shadow-glow text-xs">
+                <Button onClick={generate} disabled={generating} size="sm" className="h-8 bg-accent text-white hover:bg-accent/90 text-xs">
                   <Sparkles className="h-3.5 w-3.5 me-1.5" />{generating ? "..." : t("generate")}
                 </Button>
               </div>

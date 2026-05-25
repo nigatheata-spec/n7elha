@@ -34,7 +34,7 @@ const HostedGames = () => {
                 <span className="font-mono text-xl text-primary">{g.code}</span>
                 <Badge variant={g.status === "running" ? "default" : g.status === "finished" ? "outline" : "secondary"}>{g.status}</Badge>
                 {g.status === "running" || g.status === "lobby" ? (
-                  <Button asChild size="sm" className="bg-gradient-cyan"><Link to={`/app/games/${g.id}/monitor`}>مراقبة</Link></Button>
+                  <Button asChild size="sm" className="bg-accent text-white hover:bg-accent/90"><Link to={`/app/games/${g.id}/monitor`}>مراقبة</Link></Button>
                 ) : g.status === "finished" ? (
                   <Button asChild size="sm" variant="outline"><Link to={`/app/games/${g.id}/results`}>النتائج</Link></Button>
                 ) : null}

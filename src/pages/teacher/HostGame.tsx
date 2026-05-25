@@ -138,7 +138,7 @@ const HostGame = () => {
           </div>
 
           {!sessionId ? (
-            <Button onClick={openLobby} className="w-full h-12 bg-gradient-cyan shadow-glow text-base">
+            <Button onClick={openLobby} className="w-full h-12 bg-accent text-white hover:bg-accent/90 text-base">
               <Users className="h-5 w-5 me-2" />{t("open_lobby")}
             </Button>
           ) : (
@@ -161,7 +161,7 @@ const HostGame = () => {
                   </div>
                 )}
               </div>
-              <Button onClick={startGame} disabled={students.length < 1} className="w-full h-12 bg-gradient-cyan shadow-glow text-base">
+              <Button onClick={startGame} disabled={students.length < 1} className="w-full h-12 bg-accent text-white hover:bg-accent/90 text-base">
                 <Play className="h-5 w-5 me-2" />{t("start_game")}
               </Button>
             </>
