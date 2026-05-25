@@ -6,7 +6,7 @@ import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Plus, ArrowUp, FileText, X, Loader2, Gauge, Hash, Gamepad2, Eye, Check, RefreshCw, Pencil, ChevronDown } from "lucide-react";
+import { Sparkles, Plus, ArrowUp, FileText, X, Loader2, Gauge, Hash, Gamepad2, Eye, Check, RefreshCw, Pencil, ChevronDown, Play } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -106,7 +106,7 @@ const Dashboard = () => {
     }
   };
 
-  const confirmAndHost = async () => {
+  const saveQuiz = async (host: boolean) => {
     if (!user || !draft) return;
     setSaving(true);
     try {
@@ -121,7 +121,8 @@ const Dashboard = () => {
       const { error: ierr } = await supabase.from("questions").insert(rows);
       if (ierr) throw ierr;
       toast.success(ar ? "تم الحفظ" : "Saved");
-      nav(`/app/host/${quiz.id}`);
+      if (host) nav(`/app/host/${quiz.id}`);
+      else nav("/app/quizzes");
     } catch (e: any) {
       toast.error(e.message);
     } finally {
@@ -163,7 +164,8 @@ const Dashboard = () => {
         onUpdateOpt={updateDraftOption}
         onRemove={removeDraftQ}
         onRegen={(extra) => generateDraft(extra)}
-        onConfirm={confirmAndHost}
+        onSave={() => saveQuiz(false)}
+        onConfirm={() => saveQuiz(true)}
         onCancel={() => setDraft(null)}
       />
     );
@@ -315,7 +317,7 @@ const Dashboard = () => {
 };
 
 const ReviewDraft = ({
-  draft, ar, saving, busy, onTitleChange, onUpdateQ, onUpdateOpt, onRemove, onRegen, onConfirm, onCancel,
+  draft, ar, saving, busy, onTitleChange, onUpdateQ, onUpdateOpt, onRemove, onRegen, onSave, onConfirm, onCancel,
 }: {
   draft: { title: string; questions: any[] };
   ar: boolean;
@@ -326,6 +328,7 @@ const ReviewDraft = ({
   onUpdateOpt: (i: number, oi: number, val: string) => void;
   onRemove: (i: number) => void;
   onRegen: (extra: string) => void;
+  onSave: () => void;
   onConfirm: () => void;
   onCancel: () => void;
 }) => {
@@ -401,9 +404,13 @@ const ReviewDraft = ({
             {busy ? <Loader2 className="h-4 w-4 animate-spin me-2" /> : <RefreshCw className="h-4 w-4 me-2" />}
             {ar ? "إعادة التوليد" : "Regenerate"}
           </Button>
-          <Button onClick={onConfirm} disabled={saving || busy} className="bg-success text-success-foreground hover:bg-success/90">
+          <Button variant="outline" onClick={onSave} disabled={saving || busy}>
             {saving ? <Loader2 className="h-4 w-4 animate-spin me-2" /> : <Check className="h-4 w-4 me-2" />}
-            {ar ? "تأكيد واستضافة" : "Confirm & host"}
+            {ar ? "حفظ" : "Save"}
+          </Button>
+          <Button onClick={onConfirm} disabled={saving || busy} className="bg-success text-success-foreground hover:bg-success/90">
+            {saving ? <Loader2 className="h-4 w-4 animate-spin me-2" /> : <Play className="h-4 w-4 me-2" />}
+            {ar ? "حفظ واستضافة" : "Save & host"}
           </Button>
         </div>
       </Card>
