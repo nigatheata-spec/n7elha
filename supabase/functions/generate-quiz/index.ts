@@ -10,8 +10,8 @@ serve(async (req) => {
 
   try {
     const { content, numQuestions = 10, difficulty = "medium", topics = "", language = "ar", creativity = "balanced", images = [] } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY missing");
+    const GOOGLE_API_KEY = Deno.env.get("GOOGLE_API_KEY");
+    if (!GOOGLE_API_KEY) throw new Error("GOOGLE_API_KEY missing");
 
     const n = Math.max(3, Math.min(50, Number(numQuestions) || 10));
     const lang = language === "en" ? "English" : "Arabic";
@@ -29,7 +29,7 @@ serve(async (req) => {
       : `Topic(s): ${topics || "general knowledge"}`;
     const imgs = Array.isArray(images) ? images.filter((u: any) => typeof u === "string" && u.startsWith("data:image")) : [];
     const userContent: any = imgs.length
-      ? [{ type: "text", text: textPart + (imgs.length ? "\n\nAlso use the attached image(s) as source material." : "") },
+      ? [{ type: "text", text: textPart + "\n\nAlso use the attached image(s) as source material." },
          ...imgs.map((url: string) => ({ type: "image_url", image_url: { url } }))]
       : textPart;
 
@@ -63,11 +63,14 @@ serve(async (req) => {
       },
     }];
 
-    const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const resp = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
       method: "POST",
-      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+      headers: {
+        Authorization: `Bearer ${GOOGLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "gemini-2.0-flash",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userContent },
@@ -82,13 +85,9 @@ serve(async (req) => {
         return new Response(JSON.stringify({ error: "Rate limit exceeded, try again shortly." }),
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
-      if (resp.status === 402) {
-        return new Response(JSON.stringify({ error: "AI credits exhausted. Add funds in workspace settings." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      }
       const t = await resp.text();
       console.error("AI error", resp.status, t);
-      throw new Error(`AI gateway ${resp.status}`);
+      throw new Error(`AI error ${resp.status}`);
     }
 
     const data = await resp.json();
