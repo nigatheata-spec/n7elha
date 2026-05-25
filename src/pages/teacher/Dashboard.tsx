@@ -60,7 +60,7 @@ const Dashboard = () => {
           text = await f.text();
         } else if (ext === "pdf") {
           const pdfjs: any = await import("pdfjs-dist");
-          pdfjs.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@5.4.149/build/pdf.worker.min.mjs";
+          pdfjs.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
           const buf = await f.arrayBuffer();
           const pdf = await pdfjs.getDocument({ data: buf }).promise;
           for (let p = 1; p <= Math.min(pdf.numPages, 40); p++) {
