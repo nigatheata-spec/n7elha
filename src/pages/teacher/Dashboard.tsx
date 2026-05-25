@@ -155,6 +155,7 @@ const Dashboard = () => {
 
   const cur = CREATIVITY[creativity];
 
+  // When a draft is ready, show the review as the full page (no modal, no nested scroll)
   if (draft) {
     return (
       <ReviewDraft
@@ -174,163 +175,145 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="max-w-5xl mx-auto pt-2">
-      <div className="grid md:grid-cols-[1fr_320px] gap-10 items-start">
+    <div className="space-y-10 max-w-5xl mx-auto pt-2">
+      {/* Hero prompt */}
+      <div className="text-center space-y-6 animate-fade-in">
+        <h1 className="font-display text-4xl md:text-5xl font-bold tracking-tight text-accent">
+          {ar ? "ماذا نُعلّم اليوم؟" : "What should we teach today?"}
+        </h1>
 
-        {/* ── Left: prompt generator ── */}
-        <div className="space-y-4">
-          <h1 className="font-display text-4xl md:text-5xl font-bold text-accent animate-fade-up">
-            {ar ? "ماذا نُعلّم اليوم؟" : "What should we teach today?"}
-          </h1>
+        <div className="rounded-3xl bg-card border border-border shadow-[0_18px_50px_-30px_hsl(var(--primary)/0.35)] p-4 md:p-5 text-start">
+          <textarea
+            value={prompt}
+            onChange={e => setPrompt(e.target.value)}
+            placeholder={ar ? "اطلب من نحلها توليد اختبار... (مثال: اختبار عن الكسور للصف الخامس)" : "Ask n7elha to create a quiz... (e.g. Fractions quiz for grade 5)"}
+            rows={3}
+            className="w-full resize-none bg-transparent outline-none text-lg placeholder:text-muted-foreground/70"
+            maxLength={2000}
+          />
 
-          <div className="animate-fade-up animation-delay-100 rounded-3xl bg-card border border-border shadow-soft p-4 md:p-5 text-start">
-            <textarea
-              value={prompt}
-              onChange={e => setPrompt(e.target.value)}
-              placeholder={ar
-                ? "اطلب من نحلها توليد اختبار... (مثال: اختبار عن الكسور للصف الخامس)"
-                : "Ask n7elha to create a quiz… (e.g. Fractions quiz for grade 5)"}
-              rows={4}
-              className="w-full resize-none bg-transparent outline-none text-base placeholder:text-muted-foreground/60"
-              maxLength={2000}
-            />
-
-            {files.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-2">
-                {files.map((f, i) => (
-                  <Badge key={i} variant="secondary" className="gap-1.5 py-1.5 ps-2 pe-1">
-                    <FileText className="h-3 w-3" />
-                    <span className="max-w-[180px] truncate">{f.name}</span>
-                    <button onClick={() => setFiles(p => p.filter((_, j) => j !== i))} className="hover:bg-background/60 rounded p-0.5">
-                      <X className="h-3 w-3" />
-                    </button>
-                  </Badge>
-                ))}
-              </div>
-            )}
-
-            <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/50 gap-2 flex-wrap">
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <input ref={fileRef} type="file" multiple accept=".pdf,.txt,.md" className="hidden"
-                  onChange={e => { handleFiles(e.target.files); if (fileRef.current) fileRef.current.value = ""; }} />
-                <Button
-                  variant="ghost" size="icon"
-                  className="rounded-full h-8 w-8 transition-transform duration-100 active:scale-95"
-                  onClick={() => fileRef.current?.click()}
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
-
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <button type="button" className="inline-flex items-center gap-1.5 h-7 px-3 rounded-full bg-primary text-primary-foreground text-xs transition-transform duration-100 hover:brightness-105 active:scale-[0.97]">
-                      <span className="font-semibold">{ar ? cur.label_ar : cur.label_en}</span>
-                      <ChevronDown className="h-3 w-3 opacity-80" />
-                    </button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-56 p-1" align="start">
-                    {CREATIVITY.map((c, i) => (
-                      <button key={c.key} type="button" onClick={() => setCreativity(i)}
-                        className={`w-full flex items-start justify-between gap-2 px-2.5 py-2 rounded-md text-sm hover:bg-accent text-start ${creativity === i ? "bg-accent/50" : ""}`}>
-                        <div className="min-w-0">
-                          <div className="font-medium">{ar ? c.label_ar : c.label_en}</div>
-                          <div className="text-[11px] text-muted-foreground">{ar ? c.desc_ar : c.desc_en}</div>
-                        </div>
-                        {creativity === i && <Check className="h-3.5 w-3.5 shrink-0 mt-0.5" />}
-                      </button>
-                    ))}
-                  </PopoverContent>
-                </Popover>
-
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <button type="button" className="inline-flex items-center gap-1.5 h-7 px-3 rounded-full bg-accent text-accent-foreground text-xs transition-transform duration-100 hover:brightness-105 active:scale-[0.97]">
-                      <span className="font-semibold">{numQ}</span>
-                      <span className="opacity-90">{ar ? "سؤال" : "Q"}</span>
-                      <ChevronDown className="h-3 w-3 opacity-80" />
-                    </button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-32 p-1 max-h-64 overflow-y-auto" align="start">
-                    {[5,10,15,20,25,30,40].map(n => (
-                      <button key={n} type="button" onClick={() => setNumQ(n)}
-                        className={`w-full flex items-center justify-between px-2.5 py-2 rounded-md text-sm hover:bg-accent ${numQ === n ? "bg-accent/50" : ""}`}>
-                        <span>{n}</span>
-                        {numQ === n && <Check className="h-3.5 w-3.5" />}
-                      </button>
-                    ))}
-                  </PopoverContent>
-                </Popover>
-              </div>
-
-              <Button
-                onClick={() => generateDraft()}
-                disabled={busy}
-                className="rounded-full h-10 w-10 p-0 bg-accent text-accent-foreground hover:bg-accent/90 shadow-md transition-transform duration-100 active:scale-90"
-                aria-label="generate"
-              >
-                {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowUp className="h-4 w-4" />}
-              </Button>
-            </div>
-          </div>
-
-          <p className="animate-fade-up animation-delay-200 text-sm text-center text-muted-foreground">
-            {ar ? "أو" : "or"}{" "}
-            <Link to="/app/quizzes/new" className="underline underline-offset-4 hover:text-foreground transition-colors">
-              {ar ? "أنشئ يدوياً" : "build manually"}
-            </Link>
-          </p>
-        </div>
-
-        {/* ── Right: past games ── */}
-        <div className="animate-fade-up animation-delay-200 space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="font-semibold text-foreground flex items-center gap-1.5 text-sm">
-              <Gamepad2 className="h-4 w-4 text-muted-foreground/60" />
-              {ar ? "ألعابي السابقة" : "My past games"}
-            </h2>
-            <Link to="/app/games" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
-              {ar ? "عرض الكل" : "View all"} →
-            </Link>
-          </div>
-
-          {games.length === 0 ? (
-            <div className="py-10 flex flex-col items-center gap-2.5 text-center rounded-xl border border-dashed border-border/60">
-              <div className="h-10 w-10 rounded-xl bg-muted/40 flex items-center justify-center">
-                <Gamepad2 className="h-5 w-5 opacity-20" />
-              </div>
-              <p className="text-xs text-muted-foreground max-w-[180px] leading-relaxed">
-                {ar ? "ولّد اختباراً من الأعلى لتستضيف أول لعبة" : "Generate a quiz above to host your first game"}
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {games.map((g, idx) => (
-                <Link
-                  key={g.id}
-                  to={g.status === "lobby" || g.status === "running" ? `/app/games/${g.id}/monitor` : `/app/games/${g.id}/results`}
-                  style={{ animationDelay: `${200 + idx * 40}ms` }}
-                  className="animate-fade-up group flex flex-col gap-0.5 p-3 rounded-xl border border-border bg-card/60
-                             hover:border-accent/40 hover:bg-card hover:-translate-y-px
-                             transition-[transform,border-color,background-color] duration-150
-                             active:scale-[0.98]"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-mono text-sm font-black text-accent tracking-widest">{g.code}</span>
-                    <Badge
-                      variant={g.status === "running" ? "default" : g.status === "lobby" ? "secondary" : "outline"}
-                      className="text-[10px] h-5 px-1.5 shrink-0"
-                    >
-                      {g.status === "lobby" ? (ar ? "ردهة" : "lobby") : g.status === "running" ? (ar ? "مباشر" : "live") : (ar ? "منتهية" : "ended")}
-                    </Badge>
-                  </div>
-                  <div className="font-medium text-sm text-foreground truncate leading-snug">{g.quizzes?.title ?? "—"}</div>
-                  <div className="text-[11px] text-muted-foreground">{new Date(g.created_at).toLocaleDateString(ar ? "ar" : "en")}</div>
-                </Link>
+          {files.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-2">
+              {files.map((f, i) => (
+                <Badge key={i} variant="secondary" className="gap-1.5 py-1.5 ps-2 pe-1">
+                  <FileText className="h-3 w-3" />
+                  <span className="max-w-[180px] truncate">{f.name}</span>
+                  <button onClick={() => setFiles(p => p.filter((_, j) => j !== i))} className="hover:bg-background/60 rounded p-0.5">
+                    <X className="h-3 w-3" />
+                  </button>
+                </Badge>
               ))}
             </div>
           )}
+
+          <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/60 gap-2 flex-wrap">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <input ref={fileRef} type="file" multiple accept=".pdf,.txt,.md" className="hidden"
+                onChange={e => { handleFiles(e.target.files); if (fileRef.current) fileRef.current.value = ""; }} />
+              <Button variant="ghost" size="icon" className="rounded-full h-9 w-9" onClick={() => fileRef.current?.click()}>
+                <Plus className="h-4 w-4" />
+              </Button>
+
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button type="button" className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full bg-primary text-primary-foreground text-xs transition-colors hover:brightness-110">
+                    <span className="font-semibold">{ar ? cur.label_ar : cur.label_en}</span>
+                    <ChevronDown className="h-3 w-3 opacity-80" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-56 p-1" align="start">
+                  {CREATIVITY.map((c, i) => (
+                    <button key={c.key} type="button" onClick={() => setCreativity(i)}
+                      className={`w-full flex items-start justify-between gap-2 px-2.5 py-2 rounded-md text-sm hover:bg-accent text-start ${creativity === i ? "bg-accent/50" : ""}`}>
+                      <div className="min-w-0">
+                        <div className="font-medium">{ar ? c.label_ar : c.label_en}</div>
+                        <div className="text-[11px] text-muted-foreground">{ar ? c.desc_ar : c.desc_en}</div>
+                      </div>
+                      {creativity === i && <Check className="h-3.5 w-3.5 shrink-0 mt-0.5" />}
+                    </button>
+                  ))}
+                </PopoverContent>
+              </Popover>
+
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button type="button" className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full bg-accent text-accent-foreground text-xs transition-colors hover:brightness-110">
+                    <span className="font-semibold">{numQ}</span>
+                    <span className="opacity-90">{ar ? "سؤال" : "Q"}</span>
+                    <ChevronDown className="h-3 w-3 opacity-80" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-32 p-1 max-h-64 overflow-y-auto" align="start">
+                  {[5,10,15,20,25,30,40].map(n => (
+                    <button key={n} type="button" onClick={() => setNumQ(n)}
+                      className={`w-full flex items-center justify-between px-2.5 py-2 rounded-md text-sm hover:bg-accent ${numQ === n ? "bg-accent/50" : ""}`}>
+                      <span>{n}</span>
+                      {numQ === n && <Check className="h-3.5 w-3.5" />}
+                    </button>
+                  ))}
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            <Button
+              onClick={() => generateDraft()}
+              disabled={busy}
+              className="rounded-full h-10 w-10 p-0 bg-accent text-accent-foreground hover:bg-accent/90 shadow-md"
+              aria-label="generate"
+            >
+              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowUp className="h-4 w-4" />}
+            </Button>
+          </div>
         </div>
 
+        <div className="text-sm text-muted-foreground">
+          {ar ? "أو" : "or"}{" "}
+          <Link to="/app/quizzes/new" className="underline underline-offset-4 hover:text-foreground">{ar ? "أنشئ يدوياً" : "build manually"}</Link>
+        </div>
+      </div>
+
+      {/* Past games */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-xl font-bold flex items-center gap-2 text-accent"><Gamepad2 className="h-5 w-5" />{ar ? "ألعابي السابقة" : "My past games"}</h2>
+          <Link to="/app/games" className="text-sm text-primary/70 hover:text-accent">{ar ? "عرض الكل" : "View all"} →</Link>
+        </div>
+
+        {games.length === 0 ? (
+          <div className="py-14 flex flex-col items-center gap-3 text-center rounded-2xl border border-dashed border-border">
+            <div className="h-14 w-14 rounded-2xl bg-muted/60 flex items-center justify-center">
+              <Gamepad2 className="h-6 w-6 opacity-30" />
+            </div>
+            <p className="text-sm text-muted-foreground max-w-xs">
+              {ar ? "ولّد اختباراً من الأعلى لتستضيف أول لعبة" : "Generate a quiz above to host your first game"}
+            </p>
+          </div>
+        ) : (
+          <div className="grid sm:grid-cols-2 gap-3">
+            {games.map((g) => (
+              <Link
+                key={g.id}
+                to={g.status === "lobby" || g.status === "running" ? `/app/games/${g.id}/monitor` : `/app/games/${g.id}/results`}
+                className="group flex items-center gap-4 p-4 rounded-2xl border border-border bg-card hover:border-accent/50 hover:shadow-[0_8px_24px_-10px_hsl(var(--accent)/0.18)] transition-all"
+              >
+                <div className="shrink-0 w-[72px]">
+                  <div className="font-mono text-[22px] font-black text-accent tracking-widest leading-none">{g.code}</div>
+                  <div className="text-[11px] text-muted-foreground mt-1 font-mono">{new Date(g.created_at).toLocaleDateString(ar ? "ar" : "en")}</div>
+                </div>
+                <div className="flex-1 min-w-0 border-l border-border ps-4">
+                  <div className="font-semibold text-foreground truncate text-sm">{g.quizzes?.title ?? "—"}</div>
+                  <Badge
+                    variant={g.status === "running" ? "default" : g.status === "lobby" ? "secondary" : "outline"}
+                    className="mt-1.5 text-[10px] h-5 px-2"
+                  >
+                    {g.status === "lobby" ? (ar ? "ردهة" : "lobby") : g.status === "running" ? (ar ? "مباشر" : "live") : (ar ? "منتهية" : "ended")}
+                  </Badge>
+                </div>
+                <Eye className="h-4 w-4 text-muted-foreground/40 group-hover:text-accent transition-colors shrink-0" />
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
