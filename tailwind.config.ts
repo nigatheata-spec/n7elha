@@ -11,6 +11,7 @@ export default {
         sans: ['Tajawal', 'Cairo', 'system-ui', 'sans-serif'],
         display: ['Cairo', 'Tajawal', 'system-ui', 'sans-serif'],
         mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
+        handwritten: ['Caveat', 'cursive'],
       },
       colors: {
         border: "hsl(var(--border))",

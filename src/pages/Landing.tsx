@@ -6,7 +6,6 @@ import {
   ArrowUpRight,
   Play,
   User,
-  MoreHorizontal,
   Menu,
   X,
   Sparkles,
@@ -23,6 +22,8 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import heroPerson from "@/assets/hero-person.png";
+import { HandWrittenTitle } from "@/components/ui/hand-writing-text";
+import { CreativePricing } from "@/components/ui/creative-pricing";
 
 const Landing = () => {
   const { user } = useAuth();
@@ -244,7 +245,10 @@ const Landing = () => {
               </span>
               <span className="block mt-3">
                 <span>{t.line3a} </span>
-                <Highlight>{t.line3b}</Highlight>
+                <HandWrittenTitle
+                  text={t.line3b}
+                  className="font-handwritten text-[#3F5A63] italic"
+                />
               </span>
             </h1>
 
@@ -356,6 +360,9 @@ const Landing = () => {
             <Step n="03" icon={<Trophy className="h-5 w-5" />} title={t.s3} desc={t.s3d} />
           </div>
         </section>
+
+        {/* ---------------- PRICING ---------------- */}
+        <CreativePricing isAr={isAr} />
 
         {/* ---------------- CTA BANNER ---------------- */}
         <section className="px-5 sm:px-8 md:px-14 py-16 sm:py-20 border-t border-black/5">
