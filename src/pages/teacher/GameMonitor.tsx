@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Bitcoin, Square, Maximize, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import DodgeballMonitor from "./DodgeballMonitor";
 
 const fmt = (n: number) => n.toLocaleString();
 
@@ -83,6 +84,11 @@ const GameMonitor = () => {
   };
 
   if (!session) return <div className="theme-game min-h-screen bg-background text-foreground flex items-center justify-center font-mono">...</div>;
+
+  // Route to mode-specific monitor
+  if (session.settings?.mode === "dodgeball") {
+    return <DodgeballMonitor session={session} sessionId={sessionId!} />;
+  }
 
   if (session.status === "finished") {
     nav(`/app/games/${session.id}/results`, { replace: true });

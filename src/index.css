@@ -122,6 +122,33 @@
     --ring: 16 100% 66%;
   }
   .theme-game .text-glow-cyan { text-shadow: 0 0 14px hsl(16 100% 66% / 0.75); }
+
+  /* Dodgeball theme — deep crimson arena */
+  .theme-dodgeball {
+    --background: 0 45% 8%;             /* near-black red */
+    --foreground: 10 100% 78%;          /* warm orange-red text */
+    --card: 0 40% 12%;
+    --card-foreground: 10 100% 78%;
+    --popover: 0 40% 12%;
+    --popover-foreground: 10 100% 78%;
+    --primary: 9 100% 58%;              /* orange-red */
+    --primary-foreground: 0 45% 8%;
+    --secondary: 0 35% 16%;
+    --secondary-foreground: 10 100% 78%;
+    --muted: 0 30% 18%;
+    --muted-foreground: 10 40% 68%;
+    --accent: 9 100% 58%;
+    --accent-foreground: 0 45% 8%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 142 70% 45%;
+    --success-foreground: 0 0% 100%;
+    --border: 9 100% 58% / 0.35;
+    --input: 0 45% 6%;
+    --ring: 9 100% 58%;
+  }
+  .theme-dodgeball .text-glow-red { text-shadow: 0 0 18px hsl(9 100% 58% / 0.8); }
+  .theme-dodgeball .text-glow-green { text-shadow: 0 0 14px hsl(142 70% 45% / 0.8); }
 }
 
 @layer base {

@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { HackingFlow } from "@/components/game/HackingFlow";
 import { BreachModal } from "@/components/game/BreachModal";
 import { OutputCards, OutputResult } from "@/components/game/OutputCards";
+import DodgeballGame from "./DodgeballGame";
 
 type Q = { id: string; text: string; options: string[]; correct_index: number; position: number };
 
@@ -144,6 +145,11 @@ const Game = () => {
   };
 
   if (!session) return <div className="theme-game terminal-screen min-h-screen text-foreground flex items-center justify-center font-mono">...</div>;
+
+  // Route to mode-specific game
+  if (session.settings?.mode === "dodgeball" && studentId) {
+    return <DodgeballGame sessionId={sessionId!} studentId={studentId} />;
+  }
 
   return (
     <div className="theme-game terminal-screen min-h-[100dvh] text-foreground font-mono flex flex-col overflow-hidden">

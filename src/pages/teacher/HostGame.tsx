@@ -8,13 +8,37 @@ import { Card } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Copy, Play, Users, Trash2, Clock, Coins } from "lucide-react";
+import { Copy, Play, Users, Trash2, Clock, Coins, Zap, Target } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 const genCode = () => {
   const c = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
   return Array.from({ length: 4 }, () => c[Math.floor(Math.random() * c.length)]).join("");
 };
+
+type GameMode = "crypto_rush" | "dodgeball";
+
+const MODES: { id: GameMode; icon: React.ReactNode; label: string; labelAr: string; desc: string; descAr: string; color: string }[] = [
+  {
+    id: "crypto_rush",
+    icon: <Zap className="h-7 w-7" />,
+    label: "Crypto Rush",
+    labelAr: "كريبتو رَش",
+    desc: "Answer questions, earn crypto, hack rivals",
+    descAr: "أجب على الأسئلة، اكسب كريبتو، اخترق منافسيك",
+    color: "#00ff88",
+  },
+  {
+    id: "dodgeball",
+    icon: <Target className="h-7 w-7" />,
+    label: "Dodgeball",
+    labelAr: "دودجبول",
+    desc: "Wrong answer = eliminated. Last one standing wins",
+    descAr: "إجابة خاطئة = حذف. المتبقي الأخير يفوز",
+    color: "#ff4422",
+  },
+];
 
 const HostGame = () => {
   const { quizId } = useParams();
@@ -24,16 +48,20 @@ const HostGame = () => {
   const { user } = useAuth();
 
   const [quiz, setQuiz] = useState<any>(null);
+  const [mode, setMode] = useState<GameMode | null>(null);
   const [code, setCode] = useState(genCode());
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [students, setStudents] = useState<any[]>([]);
 
-  // Limits: at least one of (minutes, cryptoCap) must be enabled.
+  // Crypto Rush settings
   const [useTimer, setUseTimer] = useState(true);
   const [useCap, setUseCap] = useState(true);
   const [minutes, setMinutes] = useState(7);
-  const [cryptoCap, setCryptoCap] = useState(2000); // grand total for the room
+  const [cryptoCap, setCryptoCap] = useState(2000);
   const [maxStudents, setMaxStudents] = useState(40);
+
+  // Dodgeball settings
+  const [dbMaxStudents, setDbMaxStudents] = useState(40);
 
   useEffect(() => {
     if (!quizId) return;
@@ -54,12 +82,24 @@ const HostGame = () => {
   }, [sessionId]);
 
   const openLobby = async () => {
-    if (!user || !quizId) return;
-    if (!useTimer && !useCap) { toast.error(ar ? "اختر حدًا واحدًا على الأقل (وقت أو كريبتو)" : "Pick at least one limit"); return; }
+    if (!user || !quizId || !mode) return;
+    if (mode === "crypto_rush" && !useTimer && !useCap) {
+      toast.error(ar ? "اختر حدًا واحدًا على الأقل (وقت أو كريبتو)" : "Pick at least one limit");
+      return;
+    }
     try {
-      const settings: any = { maxStudents };
-      if (useTimer) settings.minutes = minutes;
-      if (useCap) settings.cryptoCap = cryptoCap;
+      const settings: any = { mode };
+      if (mode === "crypto_rush") {
+        settings.maxStudents = maxStudents;
+        if (useTimer) settings.minutes = minutes;
+        if (useCap) settings.cryptoCap = cryptoCap;
+      } else {
+        settings.maxStudents = dbMaxStudents;
+        settings.timerActive = false;
+        settings.timerRoundId = null;
+        settings.timerStartedAt = null;
+        settings.timerWinnerId = null;
+      }
       const { data, error } = await supabase.from("game_sessions")
         .insert({ teacher_id: user.id, quiz_id: quizId, code, status: "lobby", settings }).select().single();
       if (error) throw error;
@@ -90,42 +130,116 @@ const HostGame = () => {
     await supabase.from("game_students").delete().eq("id", id);
   };
 
+  // ── Mode picker ──────────────────────────────────────────────────────────
+  if (!mode) {
+    return (
+      <div className="space-y-6 max-w-3xl mx-auto">
+        <div>
+          <h1 className="font-display text-3xl font-bold">{ar ? "اختر وضع اللعبة" : "Choose Game Mode"}</h1>
+          {quiz && <p className="text-muted-foreground mt-1">{quiz.title}</p>}
+        </div>
+        <div className="grid sm:grid-cols-2 gap-4">
+          {MODES.map(m => (
+            <button
+              key={m.id}
+              onClick={() => setMode(m.id)}
+              className="group text-left rounded-2xl border-2 border-border bg-card p-6 hover:border-accent transition-all hover:shadow-lg hover:-translate-y-0.5"
+            >
+              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl"
+                style={{ background: `${m.color}22`, color: m.color }}>
+                {m.icon}
+              </div>
+              <div className="font-bold text-xl mb-1">{ar ? m.labelAr : m.label}</div>
+              <div className="text-sm text-muted-foreground leading-relaxed">{ar ? m.descAr : m.desc}</div>
+              <div className="mt-4 flex items-center gap-1 text-xs font-semibold"
+                style={{ color: m.color }}>
+                {ar ? "اختر ←" : "Select →"}
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // ── Settings + lobby ────────────────────────────────────────────────────
+  const selectedMode = MODES.find(m => m.id === mode)!;
+
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
+      <div className="flex items-center gap-3">
+        <button onClick={() => { setMode(null); setSessionId(null); setStudents([]); }}
+          className="text-muted-foreground hover:text-foreground text-sm underline underline-offset-2">
+          {ar ? "← تغيير الوضع" : "← Change mode"}
+        </button>
+        <div className="flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold"
+          style={{ background: `${selectedMode.color}22`, color: selectedMode.color }}>
+          {selectedMode.icon && <span className="h-3 w-3">{selectedMode.icon}</span>}
+          {ar ? selectedMode.labelAr : selectedMode.label}
+        </div>
+      </div>
+
       <div>
         <h1 className="font-display text-3xl font-bold">{t("host_game")}</h1>
         {quiz && <p className="text-muted-foreground mt-1">{quiz.title}</p>}
       </div>
 
       <div className="grid md:grid-cols-2 gap-6">
+        {/* Settings card */}
         <Card className="p-6 space-y-5">
           <h2 className="font-bold text-lg">{ar ? "إعدادات اللعبة" : "Game settings"}</h2>
 
-          <p className="text-xs text-muted-foreground">{ar ? "اختر حدًا واحدًا على الأقل لإنهاء اللعبة" : "Pick at least one limit to end the game"}</p>
+          {mode === "crypto_rush" && (
+            <>
+              <p className="text-xs text-muted-foreground">{ar ? "اختر حدًا واحدًا على الأقل لإنهاء اللعبة" : "Pick at least one limit to end the game"}</p>
 
-          <div className={`rounded-lg border p-3 ${useTimer ? "border-primary/50 bg-primary/5" : "border-border opacity-60"}`}>
-            <label className="flex items-center justify-between mb-2 cursor-pointer">
-              <span className="flex items-center gap-2 font-medium"><Clock className="h-4 w-4 text-primary" />{ar ? "مدة اللعبة (دقائق)" : "Game duration (minutes)"}: {minutes}</span>
-              <input type="checkbox" checked={useTimer} onChange={e => setUseTimer(e.target.checked)} className="h-4 w-4 accent-primary" />
-            </label>
-            <Slider value={[minutes]} onValueChange={([v]) => setMinutes(v)} min={2} max={30} step={1} disabled={!useTimer} />
-          </div>
+              <div className={`rounded-lg border p-3 ${useTimer ? "border-primary/50 bg-primary/5" : "border-border opacity-60"}`}>
+                <label className="flex items-center justify-between mb-2 cursor-pointer">
+                  <span className="flex items-center gap-2 font-medium">
+                    <Clock className="h-4 w-4 text-primary" />
+                    {ar ? "مدة اللعبة (دقائق)" : "Game duration (minutes)"}: {minutes}
+                  </span>
+                  <input type="checkbox" checked={useTimer} onChange={e => setUseTimer(e.target.checked)} className="h-4 w-4 accent-primary" />
+                </label>
+                <Slider value={[minutes]} onValueChange={([v]) => setMinutes(v)} min={2} max={30} step={1} disabled={!useTimer} />
+              </div>
 
-          <div className={`rounded-lg border p-3 ${useCap ? "border-primary/50 bg-primary/5" : "border-border opacity-60"}`}>
-            <label className="flex items-center justify-between mb-2 cursor-pointer">
-              <span className="flex items-center gap-2 font-medium"><Coins className="h-4 w-4 text-primary" />{ar ? "إجمالي الكريبتو للغرفة" : "Total room crypto goal"}: {cryptoCap}</span>
-              <input type="checkbox" checked={useCap} onChange={e => setUseCap(e.target.checked)} className="h-4 w-4 accent-primary" />
-            </label>
-            <Slider value={[cryptoCap]} onValueChange={([v]) => setCryptoCap(v)} min={500} max={20000} step={500} disabled={!useCap} />
-            <p className="text-xs text-muted-foreground mt-1">{ar ? "ينتهي عند وصول مجموع الغرفة لهذا الرقم" : "Ends when the room's combined crypto reaches this"}</p>
-          </div>
+              <div className={`rounded-lg border p-3 ${useCap ? "border-primary/50 bg-primary/5" : "border-border opacity-60"}`}>
+                <label className="flex items-center justify-between mb-2 cursor-pointer">
+                  <span className="flex items-center gap-2 font-medium">
+                    <Coins className="h-4 w-4 text-primary" />
+                    {ar ? "إجمالي الكريبتو للغرفة" : "Total room crypto goal"}: {cryptoCap}
+                  </span>
+                  <input type="checkbox" checked={useCap} onChange={e => setUseCap(e.target.checked)} className="h-4 w-4 accent-primary" />
+                </label>
+                <Slider value={[cryptoCap]} onValueChange={([v]) => setCryptoCap(v)} min={500} max={20000} step={500} disabled={!useCap} />
+                <p className="text-xs text-muted-foreground mt-1">{ar ? "ينتهي عند وصول مجموع الغرفة لهذا الرقم" : "Ends when the room's combined crypto reaches this"}</p>
+              </div>
 
-          <div>
-            <Label className="mb-2 block">{t("max_students")}</Label>
-            <Input type="number" min={2} max={100} value={maxStudents} onChange={e => setMaxStudents(Number(e.target.value))} />
-          </div>
+              <div>
+                <Label className="mb-2 block">{t("max_students")}</Label>
+                <Input type="number" min={2} max={100} value={maxStudents} onChange={e => setMaxStudents(Number(e.target.value))} />
+              </div>
+            </>
+          )}
+
+          {mode === "dodgeball" && (
+            <div className="space-y-4">
+              <div className="rounded-lg border border-border/60 bg-muted/30 p-4 text-sm text-muted-foreground space-y-2">
+                <p>🎯 {ar ? "كل لاعب يبدأ بـ ❤️ حياة واحدة" : "Each player starts with ❤️ 1 life"}</p>
+                <p>💀 {ar ? "إجابة خاطئة = تُحذف" : "Wrong answer = eliminated"}</p>
+                <p>⏱️ {ar ? "كل 4-7 أسئلة: سباق التوقيت — الأقرب لـ 10 ثوانٍ يكسب حياة إضافية" : "Every 4-7 questions: timer race — closest to 10s wins an extra life"}</p>
+                <p>🏆 {ar ? "آخر لاعب يفوز" : "Last player standing wins"}</p>
+              </div>
+              <div>
+                <Label className="mb-2 block">{t("max_students")}</Label>
+                <Input type="number" min={2} max={100} value={dbMaxStudents} onChange={e => setDbMaxStudents(Number(e.target.value))} />
+              </div>
+            </div>
+          )}
         </Card>
 
+        {/* Code + lobby card */}
         <Card className="p-6 space-y-5">
           <h2 className="font-bold text-lg">{t("game_code")}</h2>
           <div className="rounded-2xl border border-border bg-muted/40 p-6 text-center">
@@ -145,7 +259,9 @@ const HostGame = () => {
             <>
               <div className="rounded-xl border border-border bg-card/50 p-4">
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm font-medium">{students.length} / {maxStudents} {t("students_connected")}</span>
+                  <span className="text-sm font-medium">
+                    {students.length} / {mode === "crypto_rush" ? maxStudents : dbMaxStudents} {t("students_connected")}
+                  </span>
                   <span className="h-2 w-2 rounded-full bg-success animate-pulse" />
                 </div>
                 {students.length === 0 ? (
