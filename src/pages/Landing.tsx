@@ -247,7 +247,7 @@ const Landing = () => {
                 <span>{t.line3a} </span>
                 <HandWrittenTitle
                   text={t.line3b}
-                  className="font-handwritten text-[#3F5A63] italic"
+                  className={isAr ? "font-display text-[#3F5A63] italic" : "font-handwritten text-[#3F5A63] italic"}
                 />
               </span>
             </h1>
