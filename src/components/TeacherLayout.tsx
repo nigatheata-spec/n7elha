@@ -9,7 +9,7 @@ import {
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger,
   SidebarHeader, SidebarFooter, useSidebar,
 } from "@/components/ui/sidebar";
-import { LayoutDashboard, FileQuestion, Gamepad2, BarChart3, Settings, LogOut, Languages } from "lucide-react";
+import { LayoutDashboard, FileQuestion, Gamepad2, BarChart3, Settings, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const links = [
@@ -78,33 +78,15 @@ const AppSidebar = () => {
   );
 };
 
-const HeaderLanguageToggle = () => {
-  const { i18n } = useTranslation();
-  const next = i18n.language === "ar" ? "en" : "ar";
-  const label = next === "ar" ? "العربية" : "English";
-
-  return (
-    <button
-      onClick={() => i18n.changeLanguage(next)}
-      className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-primary hover:text-accent transition"
-    >
-      <Languages className="h-4 w-4" />
-      {label}
-    </button>
-  );
-};
-
 export const TeacherLayout = () => {
   return (
     <SidebarProvider style={{ "--sidebar-width": "12.75rem" } as CSSProperties}>
       <div className="min-h-screen bg-background flex w-full">
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0">
-          <header className="h-14 border-b border-border bg-background sticky top-0 z-20 flex items-center justify-between px-3 md:px-6">
-            <SidebarTrigger className="md:hidden text-primary hover:bg-primary/10" />
-            <div className="ms-auto">
-              <HeaderLanguageToggle />
-            </div>
+          {/* Mobile-only top bar for sidebar trigger */}
+          <header className="h-14 border-b border-border bg-background sticky top-0 z-20 flex items-center px-3 md:hidden">
+            <SidebarTrigger className="text-primary hover:bg-primary/10" />
           </header>
           <main className="flex-1 p-4 md:p-8">
             <Outlet />
