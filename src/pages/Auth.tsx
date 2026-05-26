@@ -1,14 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/Logo";
 import { LangToggle } from "@/components/LangToggle";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { z } from "zod";
+import { Loader2 } from "lucide-react";
 
 const loginSchema = z.object({
   email: z.string().trim().email().max(255),
@@ -84,11 +82,11 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-[100dvh] grid lg:grid-cols-2">
-      {/* ── Left brand panel (desktop only) ── */}
+    <div className="min-h-[100dvh] grid lg:grid-cols-2" style={{ fontFamily: "'Outfit', 'Tajawal', system-ui, sans-serif" }}>
+
+      {/* ── Left brand panel ── */}
       <div className="hidden lg:flex flex-col bg-[#3F5A63] p-12 relative overflow-hidden">
-        {/* subtle cross grid */}
-        <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-20" aria-hidden>
+        <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-15" aria-hidden>
           {[[80,80],[240,80],[400,80],[80,240],[400,240],[80,400],[240,400],[400,400]].map(([x,y],i)=>(
             <g key={i} stroke="#fff" strokeWidth="1">
               <line x1={x-18} y1={y} x2={x+18} y2={y}/>
@@ -104,7 +102,7 @@ const Auth = () => {
 
         <div className="relative z-10 flex-1 flex flex-col justify-center">
           <blockquote className="space-y-5">
-            <p className="text-[#FFE8DC] text-[21px] leading-relaxed font-medium">
+            <p className="text-[#FFE8DC] text-[22px] leading-relaxed font-medium">
               {t("hero_title")}
             </p>
             <footer className="flex items-center gap-3">
@@ -120,57 +118,92 @@ const Auth = () => {
       </div>
 
       {/* ── Right form panel ── */}
-      <div className="flex flex-col bg-background">
+      <div className="flex flex-col" style={{ background: "#FAFAF8" }}>
         <header className="flex items-center justify-between px-6 lg:px-10 pt-6 lg:pt-8">
           <Link to="/" className="lg:hidden"><Logo /></Link>
           <div className="lg:ms-auto"><LangToggle /></div>
         </header>
 
         <main className="flex-1 flex items-center justify-center px-6 pb-10">
-          <div className="w-full max-w-[400px] animate-fade-up">
+          <div className="w-full max-w-[400px]">
+
+            {/* Heading */}
             <div className="mb-8">
-              <h1 className="text-[28px] font-bold tracking-tight text-foreground">
+              <h1 className="text-[28px] font-bold tracking-tight" style={{ color: "#1a2b30" }}>
                 {mode === "signup" ? t("signup") : t("welcome_back")}
               </h1>
-              <p className="mt-1.5 text-sm text-muted-foreground">
+              <p className="mt-1.5 text-[14px]" style={{ color: "#6b8089" }}>
                 {mode === "signup" ? t("hero_sub") : t("tagline")}
               </p>
             </div>
 
+            {/* Mode toggle pills */}
+            <div className="flex gap-1 p-1 rounded-xl mb-7" style={{ background: "#ede8df" }}>
+              {(["login", "signup"] as const).map(m => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => switchMode(m)}
+                  className="flex-1 py-2 text-[13px] font-semibold rounded-lg transition-all"
+                  style={mode === m
+                    ? { background: "#fff", color: "#3F5A63", boxShadow: "0 1px 4px rgba(0,0,0,0.10)" }
+                    : { background: "transparent", color: "#7a8e93" }
+                  }
+                >
+                  {m === "login" ? t("login") : t("signup")}
+                </button>
+              ))}
+            </div>
+
             <form onSubmit={submit} className="space-y-4">
               {mode === "signup" && (
-                <div className="space-y-1.5">
-                  <Label>{t("display_name")}</Label>
-                  <Input value={name} onChange={(e) => setName(e.target.value)} maxLength={100} required />
-                </div>
+                <Field label={t("display_name")}>
+                  <AuthInput
+                    value={name}
+                    onChange={e => setName(e.target.value)}
+                    maxLength={100}
+                    required
+                    placeholder={t("display_name")}
+                  />
+                </Field>
               )}
-              <div className="space-y-1.5">
-                <Label>{t("email")}</Label>
-                <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-              </div>
-              <div className="space-y-1.5">
-                <Label>{t("password")}</Label>
-                <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} minLength={6} required />
-              </div>
-              <Button
+              <Field label={t("email")}>
+                <AuthInput
+                  type="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  required
+                  placeholder="you@example.com"
+                />
+              </Field>
+              <Field label={t("password")}>
+                <AuthInput
+                  type="password"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  minLength={6}
+                  required
+                  placeholder="••••••••"
+                />
+              </Field>
+
+              <button
                 type="submit"
                 disabled={loading}
-                className="w-full h-11 bg-[#3F5A63] hover:bg-[#3F5A63]/90 text-white font-semibold rounded-xl active:-translate-y-px transition-all"
+                className="w-full h-11 rounded-xl font-semibold text-white text-[15px] flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
+                style={{ background: "#3F5A63" }}
               >
-                {loading ? (
-                  <span className="flex items-center gap-2">
-                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
-                    {mode === "signup" ? t("signup") : t("login")}
-                  </span>
-                ) : mode === "signup" ? t("signup") : t("login")}
-              </Button>
+                {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+                {mode === "signup" ? t("signup") : t("login")}
+              </button>
             </form>
 
-            <p className="mt-6 text-sm text-center text-muted-foreground">
+            <p className="mt-6 text-[13px] text-center" style={{ color: "#7a8e93" }}>
               {mode === "signup" ? t("have_account") : t("no_account")}{" "}
               <button
                 type="button"
-                className="text-[#FF8254] font-medium hover:underline underline-offset-4"
+                className="font-semibold hover:underline underline-offset-4 transition"
+                style={{ color: "#FF8254" }}
                 onClick={() => switchMode(mode === "signup" ? "login" : "signup")}
               >
                 {mode === "signup" ? t("login") : t("signup")}
@@ -182,5 +215,28 @@ const Auth = () => {
     </div>
   );
 };
+
+/* ── Field wrapper ─────────────────────────────────────────────────────── */
+const Field = ({ label, children }: { label: string; children: React.ReactNode }) => (
+  <div className="space-y-1.5">
+    <label className="block text-[13px] font-semibold" style={{ color: "#2c3e44" }}>{label}</label>
+    {children}
+  </div>
+);
+
+/* ── Input ─────────────────────────────────────────────────────────────── */
+const AuthInput = (props: React.InputHTMLAttributes<HTMLInputElement>) => (
+  <input
+    {...props}
+    className="w-full h-11 rounded-xl px-4 text-[14px] outline-none transition-all"
+    style={{
+      background: "#fff",
+      border: "1.5px solid #d4cec6",
+      color: "#1a2b30",
+    }}
+    onFocus={e => { e.currentTarget.style.borderColor = "#3F5A63"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(63,90,99,0.12)"; }}
+    onBlur={e => { e.currentTarget.style.borderColor = "#d4cec6"; e.currentTarget.style.boxShadow = "none"; }}
+  />
+);
 
 export default Auth;
