@@ -2,18 +2,24 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Bitcoin, Square, Maximize, X } from "lucide-react";
+import { Bitcoin, Square, Maximize, ArrowRight, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import DodgeballMonitor from "./DodgeballMonitor";
 
 const fmt = (n: number) => n.toLocaleString();
 
-// Cute monster avatars assigned by name hash
-const AVATARS = ["👾","🐱","🐶","🐼","🦊","🐸","🐵","🦁","🐯","🐰","🐻","🐨","🐷","🐮","🦄","🐲","🦉","🐺","🐙","🦝"];
-const avatarFor = (name: string) => {
+// Letter avatar (no emojis)
+const AV_COLORS = ["#2563eb","#16a34a","#b45309","#dc2626","#7c3aed","#0891b2","#c2410c","#0f766e"];
+const MonitorAvatar = ({ name }: { name: string }) => {
   let h = 0;
   for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xffffffff;
-  return AVATARS[Math.abs(h) % AVATARS.length];
+  const bg = AV_COLORS[Math.abs(h) % AV_COLORS.length];
+  return (
+    <div style={{ background: bg }}
+      className="h-10 w-10 rounded-full flex items-center justify-center font-black text-white text-sm select-none shrink-0 font-mono">
+      {(name.charAt(0) || "?").toUpperCase()}
+    </div>
+  );
 };
 
 const ord = (n: number) => {
@@ -137,7 +143,7 @@ const GameMonitor = () => {
                 <span className="font-mono text-success font-black text-2xl w-16 shrink-0">
                   {ord(i + 1).slice(0, -2)}<sup className="text-sm">{ord(i + 1).slice(-2)}</sup>
                 </span>
-                <span className="text-3xl">{avatarFor(s.name)}</span>
+                <MonitorAvatar name={s.name} />
                 <span className="font-mono text-success text-2xl font-bold flex-1 truncate text-glow-cyan">{s.name}</span>
                 <span className="font-mono text-success text-2xl font-black tabular-nums">
                   {fmt(s.crypto)}
@@ -164,9 +170,12 @@ const GameMonitor = () => {
                   const tg = students.find(x => x.id === h.target_id)?.name ?? "?";
                   return (
                     <div key={h.id} className="flex items-start gap-2 font-mono text-success text-sm leading-tight">
-                      <span className="shrink-0 mt-0.5">{h.success ? "💰" : "🔒"}</span>
+                      {h.success
+                        ? <ArrowRight className="h-4 w-4 shrink-0 mt-0.5 text-success" />
+                        : <Lock className="h-4 w-4 shrink-0 mt-0.5 text-success/40" />
+                      }
                       <span className="flex-1">
-                        <b>{hk}</b> {h.success ? `just took ${fmt(h.crypto_transferred)} crypto from` : `failed to hack`} <b>{tg}</b>
+                        <b>{hk}</b> {h.success ? `took ${fmt(h.crypto_transferred)} from` : `failed to hack`} <b>{tg}</b>
                       </span>
                     </div>
                   );

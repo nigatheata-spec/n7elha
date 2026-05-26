@@ -201,4 +201,24 @@
                       linear-gradient(90deg, hsl(var(--border)) 1px, transparent 1px);
     background-size: 32px 32px;
   }
+
+  /* Results page cinematic animations */
+  @keyframes result-crash-in {
+    0%   { opacity: 0; transform: translateY(-56px) scale(1.12); filter: blur(8px); }
+    62%  { opacity: 1; transform: translateY(4px)   scale(0.99); filter: blur(0); }
+    100% { opacity: 1; transform: translateY(0)     scale(1);    filter: blur(0); }
+  }
+  @keyframes result-scan {
+    0%   { clip-path: inset(0 100% 0 0); opacity: 1; }
+    65%  { clip-path: inset(0 0%   0 0); opacity: 1; }
+    100% { clip-path: inset(0 0%   0 0); opacity: 0; }
+  }
+  @keyframes result-grow-x {
+    from { transform: scaleX(0); transform-origin: left; }
+    to   { transform: scaleX(1); transform-origin: left; }
+  }
+  @keyframes result-fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
 }

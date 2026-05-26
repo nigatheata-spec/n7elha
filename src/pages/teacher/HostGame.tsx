@@ -8,7 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Copy, Play, Users, Trash2, Clock, Coins, Zap, Target } from "lucide-react";
+import { Copy, Play, Users, Trash2, Clock, Coins, Zap, Target, Heart, Skull, Timer, Trophy } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -225,11 +225,23 @@ const HostGame = () => {
 
           {mode === "dodgeball" && (
             <div className="space-y-4">
-              <div className="rounded-lg border border-border/60 bg-muted/30 p-4 text-sm text-muted-foreground space-y-2">
-                <p>🎯 {ar ? "كل لاعب يبدأ بـ ❤️ حياة واحدة" : "Each player starts with ❤️ 1 life"}</p>
-                <p>💀 {ar ? "إجابة خاطئة = تُحذف" : "Wrong answer = eliminated"}</p>
-                <p>⏱️ {ar ? "كل 4-7 أسئلة: سباق التوقيت — الأقرب لـ 10 ثوانٍ يكسب حياة إضافية" : "Every 4-7 questions: timer race — closest to 10s wins an extra life"}</p>
-                <p>🏆 {ar ? "آخر لاعب يفوز" : "Last player standing wins"}</p>
+              <div className="rounded-lg border border-border/60 bg-muted/30 p-4 text-sm text-muted-foreground space-y-2.5">
+                <p className="flex items-center gap-2">
+                  <Heart className="h-4 w-4 text-red-500 fill-current shrink-0" />
+                  {ar ? "كل لاعب يبدأ بحياة واحدة" : "Each player starts with 1 life"}
+                </p>
+                <p className="flex items-center gap-2">
+                  <Skull className="h-4 w-4 shrink-0" />
+                  {ar ? "إجابة خاطئة = تُحذف" : "Wrong answer = eliminated"}
+                </p>
+                <p className="flex items-center gap-2">
+                  <Timer className="h-4 w-4 shrink-0" />
+                  {ar ? "كل 4-7 أسئلة: سباق التوقيت — الأقرب لـ 10 ثوانٍ يكسب حياة إضافية" : "Every 4-7 questions: timer race — closest to 10s wins a life"}
+                </p>
+                <p className="flex items-center gap-2">
+                  <Trophy className="h-4 w-4 text-amber-500 shrink-0" />
+                  {ar ? "آخر لاعب يفوز" : "Last player standing wins"}
+                </p>
               </div>
               <div>
                 <Label className="mb-2 block">{t("max_students")}</Label>

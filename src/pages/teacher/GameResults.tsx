@@ -1,26 +1,52 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Download, Trophy } from "lucide-react";
+import { Download, Trophy, Check, Clock, Users, Target } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const fmt = (n: number) => n.toLocaleString();
+const pct = (n: number) => `${n.toFixed(0)}%`;
 
+// ── Letter avatar ────────────────────────────────────────────────────────────
+const AV_COLORS = ["#2563eb","#16a34a","#b45309","#dc2626","#7c3aed","#0891b2","#c2410c","#0f766e"];
+const av = (name: string) => {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xffffffff;
+  return { bg: AV_COLORS[Math.abs(h) % AV_COLORS.length], letter: (name.charAt(0) || "?").toUpperCase() };
+};
+
+const Avatar = ({ name, size = "md" }: { name: string; size?: "sm" | "md" | "xl" }) => {
+  const { bg, letter } = av(name);
+  const cls = size === "xl"
+    ? "h-20 w-20 text-3xl"
+    : size === "md"
+    ? "h-10 w-10 text-base"
+    : "h-8 w-8 text-xs";
+  return (
+    <div style={{ background: bg }}
+      className={cn("rounded-full flex items-center justify-center font-black text-white select-none shrink-0 font-mono", cls)}>
+      {letter}
+    </div>
+  );
+};
+
+// ── Component ────────────────────────────────────────────────────────────────
 const GameResults = () => {
   const { sessionId } = useParams();
-  const [session, setSession] = useState<any>(null);
+  const [session, setSession]     = useState<any>(null);
   const [questions, setQuestions] = useState<any[]>([]);
-  const [students, setStudents] = useState<any[]>([]);
+  const [students, setStudents]   = useState<any[]>([]);
   const [responses, setResponses] = useState<any[]>([]);
-  const [hacks, setHacks] = useState<any[]>([]);
+  const [hacks, setHacks]         = useState<any[]>([]);
+  const [phase, setPhase]         = useState<"loading" | "cinematic" | "results">("loading");
+  const [tab, setTab]             = useState<"rank" | "qa" | "hacks">("rank");
 
   useEffect(() => {
     if (!sessionId) return;
     (async () => {
-      const { data: s } = await supabase.from("game_sessions").select("*, quizzes(title)").eq("id", sessionId).maybeSingle();
+      const { data: s } = await supabase
+        .from("game_sessions").select("*, quizzes(title)").eq("id", sessionId).maybeSingle();
       setSession(s);
       if (s?.quiz_id) {
         const { data: qs } = await supabase.from("questions").select("*").eq("quiz_id", s.quiz_id).order("position");
@@ -31,139 +57,437 @@ const GameResults = () => {
         supabase.from("question_responses").select("*").eq("session_id", sessionId),
         supabase.from("hack_events").select("*").eq("session_id", sessionId),
       ]);
-      setStudents(ss ?? []); setResponses(rs ?? []); setHacks(hs ?? []);
+      setStudents(ss ?? []);
+      setResponses(rs ?? []);
+      setHacks(hs ?? []);
+      setPhase("cinematic");
     })();
   }, [sessionId]);
 
+  // Auto-advance reveal after 4.8 s
+  useEffect(() => {
+    if (phase !== "cinematic") return;
+    const t = setTimeout(() => setPhase("results"), 4800);
+    return () => clearTimeout(t);
+  }, [phase]);
+
+  const mode = session?.settings?.mode ?? "crypto_rush";
+
+  const ranked = useMemo(() => {
+    if (mode === "dodgeball") {
+      return [...students].sort((a, b) => {
+        if (!a.eliminated && b.eliminated) return -1;
+        if (a.eliminated && !b.eliminated) return 1;
+        if (a.eliminated_at && b.eliminated_at)
+          return new Date(b.eliminated_at).getTime() - new Date(a.eliminated_at).getTime();
+        return 0;
+      });
+    }
+    return students;
+  }, [students, mode]);
+
   const stats = useMemo(() => {
-    const totalAns = responses.length;
-    const correct = responses.filter(r => r.is_correct).length;
+    const total = responses.length;
+    const ok = responses.filter(r => r.is_correct).length;
     const succHacks = hacks.filter(h => h.success).length;
-    const winner = students[0];
     const dur = session?.started_at && session?.ended_at
-      ? Math.round((new Date(session.ended_at).getTime() - new Date(session.started_at).getTime())/1000) : 0;
+      ? Math.round((new Date(session.ended_at).getTime() - new Date(session.started_at).getTime()) / 1000) : 0;
     return {
-      avgAcc: totalAns ? (correct/totalAns)*100 : 0,
+      avgAcc: total ? (ok / total) * 100 : 0,
       succHacks, failHacks: hacks.length - succHacks,
-      winner, durationMin: Math.floor(dur/60), durationSec: dur%60,
+      mm: Math.floor(dur / 60), ss: dur % 60,
     };
-  }, [responses, hacks, students, session]);
+  }, [responses, hacks, session]);
+
+  const winner = ranked[0];
 
   const exportCsv = () => {
-    const rows = [["Rank","Name","Crypto","Correct","Total","Accuracy%","HacksMade","HacksReceived"]];
-    students.forEach((s,i) => {
-      const acc = s.total_answers ? (s.correct_answers/s.total_answers)*100 : 0;
-      rows.push([String(i+1), s.name, String(s.crypto), String(s.correct_answers), String(s.total_answers), acc.toFixed(0), String(s.hacks_made), String(s.hacks_received)]);
+    const header = ["Rank","Name", mode === "crypto_rush" ? "Crypto" : "Status", "Correct","Total","Accuracy%"];
+    const rows = ranked.map((s, i) => {
+      const a = s.total_answers ? (s.correct_answers / s.total_answers) * 100 : 0;
+      const metric = mode === "crypto_rush" ? String(s.crypto) : (s.eliminated ? "Eliminated" : "Survived");
+      return [String(i + 1), s.name, metric, String(s.correct_answers), String(s.total_answers), a.toFixed(0)];
     });
-    const csv = rows.map(r => r.map(c => `"${c}"`).join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a"); a.href = url; a.download = `${session?.quizzes?.title || "game"}-results.csv`; a.click();
-    URL.revokeObjectURL(url);
+    const csv = [header, ...rows].map(r => r.map(c => `"${c}"`).join(",")).join("\n");
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+    a.download = `${session?.quizzes?.title || "game"}-results.csv`;
+    a.click();
   };
 
-  if (!session) return <div>...</div>;
+  // ── Loading ──────────────────────────────────────────────────────────────
+  if (phase === "loading") {
+    return (
+      <div className="theme-game fixed inset-0 bg-background flex items-center justify-center">
+        <span className="font-mono text-primary/50 text-sm animate-pulse tracking-widest">LOADING...</span>
+      </div>
+    );
+  }
 
-  return (
-    <div className="space-y-5 max-w-6xl">
-      <Card className="p-6">
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div><div className="text-xs text-muted-foreground">اللعبة</div><div className="font-bold">{session.quizzes?.title}</div></div>
-          <div><div className="text-xs text-muted-foreground">المدة</div><div className="font-bold font-mono">{stats.durationMin}m {stats.durationSec}s</div></div>
-          <div><div className="text-xs text-muted-foreground">الطلاب</div><div className="font-bold">{students.length}</div></div>
-          <div><div className="text-xs text-muted-foreground">متوسط الدقة</div><div className="font-bold text-primary">{stats.avgAcc.toFixed(0)}%</div></div>
-          <div><div className="text-xs text-muted-foreground">الفائز 🏆</div><div className="font-bold text-accent">{stats.winner?.name ?? "—"}</div></div>
-          <div><div className="text-xs text-muted-foreground">إجمالي الاختراقات</div><div className="font-bold">{hacks.length} ({stats.succHacks}✓ / {stats.failHacks}✗)</div></div>
+  // ── Cinematic reveal ────────────────────────────────────────────────────
+  if (phase === "cinematic") {
+    const second = ranked[1];
+    const third  = ranked[2];
+    return (
+      <div className="theme-game fixed inset-0 overflow-hidden font-mono flex flex-col items-center justify-center"
+        style={{ background: "hsl(199 32% 8%)" }}>
+
+        {/* Grid */}
+        <div className="pointer-events-none absolute inset-0 bg-grid opacity-[0.07]" />
+        {/* Scanlines */}
+        <div className="pointer-events-none absolute inset-0 terminal-scanlines opacity-10" />
+
+        {/* GAME OVER label */}
+        <div className="absolute top-10 inset-x-0 text-center"
+          style={{ animation: "result-fade-in 0.5s 0.3s both" }}>
+          <span className="text-[10px] tracking-[0.6em] text-primary/40 uppercase">
+            Game Over
+          </span>
         </div>
-      </Card>
 
-      <Tabs defaultValue="rank">
-        <TabsList>
-          <TabsTrigger value="rank">الترتيب</TabsTrigger>
-          <TabsTrigger value="qa">تحليل الأسئلة</TabsTrigger>
-          <TabsTrigger value="hk">ملخص الاختراقات</TabsTrigger>
-        </TabsList>
+        {/* Scan sweep line */}
+        <div className="absolute inset-x-0 h-px bg-primary/50 top-1/2"
+          style={{ animation: "result-scan 0.9s 0.85s both" }} />
 
-        <TabsContent value="rank">
-          <div className="flex justify-end mb-2">
-            <Button onClick={exportCsv} variant="outline"><Download className="h-4 w-4 me-2" />تصدير CSV</Button>
+        {/* Winner block — crash in */}
+        {winner && (
+          <div className="relative z-10 flex flex-col items-center gap-5 px-8 text-center">
+            <div style={{ animation: "result-crash-in 0.75s 1.15s cubic-bezier(0.16,1,0.3,1) both" }}>
+              <Avatar name={winner.name} size="xl" />
+            </div>
+            <div style={{ animation: "result-crash-in 0.75s 1.35s cubic-bezier(0.16,1,0.3,1) both" }}>
+              <div className="text-[clamp(2.4rem,9vw,6.5rem)] font-black tracking-tighter text-primary leading-none"
+                style={{ textShadow: "0 0 100px hsl(16 100% 66% / 0.45)" }}>
+                {winner.name}
+              </div>
+            </div>
+            <div style={{ animation: "result-fade-in 0.5s 1.95s both", opacity: 0 }}>
+              <span className="text-[10px] tracking-[0.4em] text-primary/45 uppercase">
+                1st Place
+                {session?.quizzes?.title ? ` · ${session.quizzes.title}` : ""}
+              </span>
+            </div>
           </div>
-          <Card className="overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-secondary/50"><tr>
-                <th className="p-3 text-start">#</th><th className="p-3 text-start">الاسم</th>
-                <th className="p-3">كريبتو</th><th className="p-3">صحيحة</th><th className="p-3">دقة</th>
-                <th className="p-3">اخترق</th><th className="p-3">تم اختراقه</th>
-              </tr></thead>
-              <tbody>{students.map((s,i)=>{
-                const acc = s.total_answers?(s.correct_answers/s.total_answers)*100:0;
-                return <tr key={s.id} className="border-t border-border">
-                  <td className="p-3 font-mono">{i+1}{i===0&&<Trophy className="inline h-4 w-4 ms-1 text-accent" />}</td>
-                  <td className="p-3 font-medium">{s.name}</td>
-                  <td className="p-3 text-center font-mono text-accent">{fmt(s.crypto)}</td>
-                  <td className="p-3 text-center">{s.correct_answers}/{s.total_answers}</td>
-                  <td className="p-3 text-center">{acc.toFixed(0)}%</td>
-                  <td className="p-3 text-center">{s.hacks_made}</td>
-                  <td className="p-3 text-center">{s.hacks_received}</td>
-                </tr>;
-              })}</tbody>
-            </table>
-          </Card>
-        </TabsContent>
+        )}
 
-        <TabsContent value="qa">
-          <div className="space-y-3">
-            {questions.map((q, idx) => {
-              const rs = responses.filter(r => r.question_index === idx);
-              const correct = rs.filter(r => r.is_correct).length;
-              const acc = rs.length ? (correct/rs.length)*100 : 0;
-              const dist = [0,0,0,0]; rs.forEach(r => { if(r.answer_index<4) dist[r.answer_index]++; });
-              return (
-                <Card key={q.id} className={cn("p-5", acc < 50 && "border-destructive/40")}>
-                  <div className="flex items-start justify-between gap-3 mb-3">
-                    <p className="font-medium">{idx+1}. {q.text}</p>
-                    <div className={cn("font-mono text-sm", acc<50?"text-destructive":"text-success")}>{acc.toFixed(0)}%</div>
+        {/* Separator */}
+        <div className="absolute bottom-28 inset-x-16 h-px bg-primary/15 origin-left"
+          style={{ animation: "result-grow-x 0.5s 2.4s cubic-bezier(0.16,1,0.3,1) both" }} />
+
+        {/* 2nd & 3rd */}
+        {(second || third) && (
+          <div className="absolute bottom-14 flex items-center gap-10"
+            style={{ animation: "fade-up 0.5s 2.8s both", opacity: 0 }}>
+            {second && (
+              <div className="flex items-center gap-2.5">
+                <Avatar name={second.name} size="sm" />
+                <div>
+                  <div className="text-[9px] tracking-widest text-primary/30 uppercase">2nd</div>
+                  <div className="text-sm font-bold text-primary/65">{second.name}</div>
+                </div>
+              </div>
+            )}
+            {second && third && <div className="h-8 w-px bg-primary/15" />}
+            {third && (
+              <div className="flex items-center gap-2.5">
+                <Avatar name={third.name} size="sm" />
+                <div>
+                  <div className="text-[9px] tracking-widest text-primary/30 uppercase">3rd</div>
+                  <div className="text-sm font-bold text-primary/65">{third.name}</div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Skip */}
+        <button onClick={() => setPhase("results")}
+          className="absolute bottom-5 right-6 text-[10px] tracking-[0.4em] text-primary/25 hover:text-primary/55 transition-colors uppercase"
+          style={{ animation: "result-fade-in 0.4s 3.5s both", opacity: 0 }}>
+          Skip
+        </button>
+      </div>
+    );
+  }
+
+  // ── Full results ─────────────────────────────────────────────────────────
+  return (
+    <div className="theme-game min-h-[100dvh] bg-background text-foreground font-mono">
+      <div className="pointer-events-none fixed inset-0 bg-grid opacity-[0.06]" />
+      <div className="pointer-events-none fixed inset-0 terminal-scanlines opacity-[0.07]" />
+
+      <div className="relative max-w-7xl mx-auto px-4 py-8 space-y-6"
+        style={{ animation: "fade-up 0.45s both" }}>
+
+        {/* ── Header ── */}
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <div className="text-[10px] tracking-[0.5em] text-primary/40 uppercase mb-1">Results</div>
+            <h1 className="text-2xl md:text-3xl font-black tracking-tight text-primary leading-none">
+              {session?.quizzes?.title ?? "Game"}
+            </h1>
+          </div>
+          <div className="flex items-center gap-5 shrink-0">
+            <Stat icon={<Clock className="h-3 w-3" />} label="Duration"
+              value={`${stats.mm}:${String(stats.ss).padStart(2, "0")}`} />
+            <Stat icon={<Users className="h-3 w-3" />} label="Players" value={String(ranked.length)} />
+            <Stat icon={<Target className="h-3 w-3" />} label="Accuracy" value={pct(stats.avgAcc)} />
+          </div>
+        </div>
+
+        {/* ── Podium row ── */}
+        {ranked.length > 0 && (
+          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)] gap-4">
+            {/* Winner */}
+            {winner && (
+              <div className="rounded-2xl border-2 border-primary bg-primary/8 p-7 flex flex-col items-center justify-center text-center gap-4"
+                style={{ boxShadow: "0 0 70px -12px hsl(16 100% 66% / 0.22)" }}>
+                <div className="text-[10px] tracking-[0.5em] text-primary/40 uppercase flex items-center gap-2">
+                  <Trophy className="h-3 w-3 text-amber-400" />
+                  Champion
+                </div>
+                <Avatar name={winner.name} size="xl" />
+                <div className="text-2xl md:text-3xl font-black tracking-tight text-primary leading-none">
+                  {winner.name}
+                </div>
+                {mode === "crypto_rush" ? (
+                  <div className="text-3xl md:text-4xl font-black tabular-nums text-primary"
+                    style={{ textShadow: "0 0 24px hsl(16 100% 66% / 0.4)" }}>
+                    {fmt(winner.crypto)}
                   </div>
-                  <div className="space-y-1.5">
-                    {q.options.map((o:string, i:number) => {
-                      const c = dist[i]; const p = rs.length ? (c/rs.length)*100 : 0;
-                      const isC = i === q.correct_index;
-                      return (
-                        <div key={i}>
-                          <div className="text-xs flex justify-between mb-0.5"><span>{String.fromCharCode(65+i)}. {o} {isC&&"✓"}</span><span className="font-mono">{c} ({p.toFixed(0)}%)</span></div>
-                          <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
-                            <div className={cn("h-full", isC?"bg-success":"bg-primary/50")} style={{width:`${p}%`}} />
+                ) : (
+                  <div className="text-xs tracking-[0.35em] text-primary/60 uppercase font-bold">Last Standing</div>
+                )}
+              </div>
+            )}
+
+            {/* 2–5 */}
+            <div className="flex flex-col gap-2">
+              {ranked.slice(1, 6).map((s, idx) => {
+                const rank = idx + 2;
+                const acc = s.total_answers ? (s.correct_answers / s.total_answers) * 100 : 0;
+                return (
+                  <div key={s.id}
+                    className="rounded-xl border border-primary/18 bg-primary/5 px-4 py-3 flex items-center gap-3"
+                    style={{ animation: `fade-up 0.4s ${idx * 70}ms both` }}>
+                    <span className="text-primary/35 font-black tabular-nums text-sm w-5 shrink-0">{rank}</span>
+                    <Avatar name={s.name} size="sm" />
+                    <span className="font-bold text-primary flex-1 truncate min-w-0">{s.name}</span>
+                    <span className="text-xs text-primary/35 tabular-nums shrink-0">{pct(acc)}</span>
+                    {mode === "crypto_rush"
+                      ? <span className="font-black tabular-nums text-primary/75 text-sm shrink-0">{fmt(s.crypto)}</span>
+                      : <span className={cn("text-[10px] font-bold tracking-widest shrink-0",
+                          s.eliminated ? "text-destructive/50" : "text-primary/50")}>
+                          {s.eliminated ? "OUT" : "ALIVE"}
+                        </span>
+                    }
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* ── Tabs ── */}
+        <div>
+          <div className="flex items-center justify-between gap-4 mb-4">
+            <div className="flex gap-1 rounded-lg border border-primary/20 p-1">
+              {(["rank", "qa", "hacks"] as const).map(t => (
+                <button key={t} onClick={() => setTab(t)}
+                  className={cn(
+                    "px-4 py-1.5 rounded-md text-[10px] tracking-[0.35em] uppercase font-bold transition-all",
+                    tab === t
+                      ? "bg-primary text-primary-foreground"
+                      : "text-primary/40 hover:text-primary/70"
+                  )}>
+                  {t === "rank" ? "Leaderboard" : t === "qa" ? "Questions" : "Hacks"}
+                </button>
+              ))}
+            </div>
+            <Button onClick={exportCsv} variant="outline" size="sm"
+              className="border-primary/25 text-primary/55 hover:text-primary hover:border-primary/50 text-[10px] tracking-widest uppercase">
+              <Download className="h-3 w-3 me-1.5" />Export
+            </Button>
+          </div>
+
+          {/* Leaderboard */}
+          {tab === "rank" && (
+            <div className="rounded-xl border border-primary/18 overflow-hidden">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-primary/15 bg-primary/5">
+                    {["#", "Player",
+                      mode === "crypto_rush" ? "Crypto" : "Status",
+                      "Correct", "Accuracy",
+                      ...(mode === "crypto_rush" ? ["Hacks"] : [])
+                    ].map(h => (
+                      <th key={h} className="px-4 py-3 text-[10px] tracking-widest text-primary/35 text-start first:text-start text-center first-of-type:text-start">
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {ranked.map((s, i) => {
+                    const acc = s.total_answers ? (s.correct_answers / s.total_answers) * 100 : 0;
+                    return (
+                      <tr key={s.id}
+                        className={cn("border-t border-primary/8 transition-colors hover:bg-primary/4",
+                          i === 0 && "bg-primary/8")}>
+                        <td className="px-4 py-3 font-bold text-primary/35 tabular-nums">{i + 1}</td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2.5">
+                            <Avatar name={s.name} size="sm" />
+                            <span className={cn("font-bold truncate max-w-[140px]",
+                              i === 0 ? "text-primary" : "text-primary/70")}>{s.name}</span>
+                            {i === 0 && <Trophy className="h-3.5 w-3.5 text-amber-400 shrink-0" />}
                           </div>
+                        </td>
+                        {mode === "crypto_rush"
+                          ? <td className="px-4 py-3 text-center font-black tabular-nums text-primary/80">{fmt(s.crypto)}</td>
+                          : <td className="px-4 py-3 text-center">
+                              <span className={cn("text-[10px] font-bold tracking-widest",
+                                s.eliminated ? "text-destructive/55" : "text-primary")}>
+                                {s.eliminated ? "ELIMINATED" : "CHAMPION"}
+                              </span>
+                            </td>
+                        }
+                        <td className="px-4 py-3 text-center tabular-nums text-primary/50">
+                          {s.correct_answers ?? 0}/{s.total_answers ?? 0}
+                        </td>
+                        <td className="px-4 py-3 text-center tabular-nums text-primary/50">{pct(acc)}</td>
+                        {mode === "crypto_rush" &&
+                          <td className="px-4 py-3 text-center text-primary/35 text-xs">
+                            {s.hacks_made ?? 0}/{s.hacks_received ?? 0}
+                          </td>
+                        }
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Questions */}
+          {tab === "qa" && (
+            <div className="space-y-3">
+              {questions.length === 0 && (
+                <div className="rounded-xl border border-primary/18 py-16 text-center text-primary/30 text-sm">
+                  No question data available
+                </div>
+              )}
+              {questions.map((q, idx) => {
+                const rs = responses.filter(r => r.question_index === idx);
+                const correct = rs.filter(r => r.is_correct).length;
+                const a = rs.length ? (correct / rs.length) * 100 : 0;
+                const dist = [0, 0, 0, 0];
+                rs.forEach(r => { if (r.answer_index < 4) dist[r.answer_index]++; });
+                return (
+                  <div key={q.id} className={cn(
+                    "rounded-xl border p-5",
+                    a < 50 ? "border-destructive/30 bg-destructive/5" : "border-primary/18 bg-primary/5"
+                  )}>
+                    <div className="flex items-start justify-between gap-3 mb-4">
+                      <p className="text-sm font-bold text-primary leading-relaxed">{idx + 1}. {q.text}</p>
+                      <div className={cn("text-xl font-black tabular-nums shrink-0", a < 50 ? "text-destructive" : "text-primary")}>
+                        {pct(a)}
+                      </div>
+                    </div>
+                    <div className="space-y-2.5">
+                      {q.options.map((o: string, i: number) => {
+                        const c = dist[i];
+                        const p = rs.length ? (c / rs.length) * 100 : 0;
+                        const isC = i === q.correct_index;
+                        return (
+                          <div key={i}>
+                            <div className="flex items-center justify-between text-xs mb-1 gap-2">
+                              <span className={cn("flex items-center gap-1.5 truncate",
+                                isC ? "text-primary font-bold" : "text-primary/45")}>
+                                {isC && <Check className="h-3 w-3 shrink-0" />}
+                                {String.fromCharCode(65 + i)}. {o}
+                              </span>
+                              <span className="font-mono text-primary/35 shrink-0 tabular-nums">
+                                {c} ({pct(p)})
+                              </span>
+                            </div>
+                            <div className="h-1.5 rounded-full bg-primary/10 overflow-hidden">
+                              <div className={cn("h-full rounded-full", isC ? "bg-primary" : "bg-primary/30")}
+                                style={{ width: `${p}%` }} />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Hacks */}
+          {tab === "hacks" && (
+            <div className="space-y-3">
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  { label: "Total Hacks", val: hacks.length, accent: false },
+                  { label: "Successful",  val: stats.succHacks, accent: true },
+                  { label: "Failed",      val: stats.failHacks, accent: false },
+                ].map(item => (
+                  <div key={item.label} className="rounded-xl border border-primary/18 bg-primary/5 p-4 text-center">
+                    <div className="text-[9px] tracking-[0.4em] text-primary/35 uppercase mb-1">{item.label}</div>
+                    <div className={cn("text-3xl font-black tabular-nums",
+                      item.accent ? "text-primary" : "text-primary/60")}>
+                      {item.val}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {hacks.length === 0
+                ? <div className="rounded-xl border border-primary/18 py-14 text-center text-primary/30 text-sm">
+                    No hack events recorded
+                  </div>
+                : (
+                  <div className="rounded-xl border border-primary/18 overflow-hidden max-h-[52vh] overflow-y-auto">
+                    {hacks.map(h => {
+                      const hk = students.find(x => x.id === h.hacker_id)?.name ?? "?";
+                      const tg = students.find(x => x.id === h.target_id)?.name ?? "?";
+                      return (
+                        <div key={h.id}
+                          className={cn(
+                            "px-4 py-3 text-xs font-mono border-b border-primary/8 last:border-0 flex items-center gap-3",
+                            h.success ? "text-primary/75" : "text-primary/25"
+                          )}>
+                          <span className="text-primary/20 tabular-nums shrink-0">
+                            {new Date(h.created_at).toLocaleTimeString()}
+                          </span>
+                          <span className="flex-1 truncate">{hk} &rarr; {tg}</span>
+                          <span className={cn("font-bold tracking-widest text-[10px] shrink-0",
+                            h.success ? "text-primary" : "text-destructive/50")}>
+                            {h.success ? `+${fmt(h.crypto_transferred)}` : "FAILED"}
+                          </span>
                         </div>
                       );
                     })}
                   </div>
-                </Card>
-              );
-            })}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="hk">
-          <div className="grid sm:grid-cols-3 gap-3">
-            <Card className="p-5"><div className="text-xs text-muted-foreground">إجمالي</div><div className="text-3xl font-bold">{hacks.length}</div></Card>
-            <Card className="p-5 border-success/40"><div className="text-xs text-muted-foreground">ناجح</div><div className="text-3xl font-bold text-success">{stats.succHacks}</div></Card>
-            <Card className="p-5 border-destructive/40"><div className="text-xs text-muted-foreground">فاشل</div><div className="text-3xl font-bold text-destructive">{stats.failHacks}</div></Card>
-          </div>
-          <Card className="mt-3 max-h-[50vh] overflow-auto">
-            <ul className="divide-y divide-border">
-              {hacks.map(h => {
-                const hk = students.find(x=>x.id===h.hacker_id)?.name ?? "?";
-                const tg = students.find(x=>x.id===h.target_id)?.name ?? "?";
-                return <li key={h.id} className={cn("p-3 text-sm font-mono", h.success?"text-success":"text-destructive")}>
-                  {new Date(h.created_at).toLocaleTimeString()} — {hk} → {tg} {h.success?`(+${fmt(h.crypto_transferred)})`:"(فشل)"}
-                </li>;
-              })}
-            </ul>
-          </Card>
-        </TabsContent>
-      </Tabs>
+                )
+              }
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 };
+
+// ── Tiny stat chip ────────────────────────────────────────────────────────────
+const Stat = ({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) => (
+  <div className="text-center">
+    <div className="flex items-center justify-center gap-1 text-[9px] tracking-widest text-primary/35 uppercase mb-0.5">
+      {icon}{label}
+    </div>
+    <div className="font-black tabular-nums text-primary text-sm">{value}</div>
+  </div>
+);
+
 export default GameResults;
