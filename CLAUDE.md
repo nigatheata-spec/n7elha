@@ -5,16 +5,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
-npm run dev          # Start dev server on http://localhost:8080
-npm run build        # Production build
-npm run lint         # ESLint
-npm run test         # Run tests once (vitest)
-npm run test:watch   # Watch mode
+npm run dev -- --port 8080   # Start dev server (project symlinked at ~/knowledge-hack → /tmp/knowledge-hack)
+npm run build                # Production build
+npm run lint                 # ESLint
+npm run test                 # Run tests once (vitest)
+npm run test:watch           # Watch mode
 ```
 
 Single test file: `npx vitest run src/test/example.test.ts`
 
-Supabase (requires CLI at `~/.npm-global/bin/supabase` and `SUPABASE_ACCESS_TOKEN` env var):
+Supabase (requires CLI and `SUPABASE_ACCESS_TOKEN` env var):
 ```bash
 supabase db push                                    # Apply new migrations
 supabase functions deploy generate-quiz             # Deploy quiz AI function
@@ -22,9 +22,14 @@ supabase functions deploy generate-question-image   # Deploy image AI function
 supabase secrets set KEY=value                      # Set edge function secrets
 ```
 
+> **DB migrations**: `supabase db push` often fails without a valid PAT. Run new `.sql` files manually in the Supabase Dashboard SQL editor instead — "Success. No rows returned" is correct output.
+
 ## What this app is
 
-**n7elha** is an Arabic-first classroom quiz game platform. Teachers create quizzes, host live game sessions with a room code, and students join on their phones. The game has a hacking/crypto theme — correct answers earn "crypto", and a special power-up lets students hack rivals to steal their crypto. The teacher watches everything in real time on a projector screen.
+**n7elha** is an Arabic-first classroom quiz game platform. Teachers create quizzes, host live sessions with a 4-char room code, and students join on their phones. Two game modes:
+
+- **Crypto Rush** — hacking/crypto theme. Correct answers earn crypto. Power-up lets players hack rivals to steal crypto.
+- **Dodgeball** — wrong answers cost lives (start with 1). Teacher fires stop-the-clock "timer rounds"; closest tap to 10s wins a bonus life (keep or gift to another player). Last player standing wins.
 
 Two languages (Arabic default, English toggle), always LTR layout regardless of language.
 
@@ -32,73 +37,101 @@ Two languages (Arabic default, English toggle), always LTR layout regardless of 
 
 ### Data flow
 
-All state lives in Supabase. The frontend never talks to a separate backend — everything is either a direct Supabase table operation or a Supabase Edge Function call for AI.
-
-Realtime is driven by `supabase.channel()` with `postgres_changes` subscriptions. Every live view (lobby, game, monitor) has its own channel that refreshes local state on any DB change.
+All state lives in Supabase — no separate backend. Everything is either a direct Supabase table operation or an Edge Function call for AI. Realtime uses `supabase.channel()` with `postgres_changes` subscriptions.
 
 ### Route structure
 
-Two completely separate user experiences share the same codebase:
-
-**Teacher (`/app/*`)** — requires auth, wrapped in `TeacherLayout` with sidebar:
+**Teacher (`/app/*`)** — requires auth, wrapped in `TeacherLayout` (fixed sidebar, `collapsible="none"`, 5.5rem wide, icon-above-label style):
 - `/app` → Dashboard
-- `/app/quizzes` → list, `/app/quizzes/new?ai=1` → AI mode, `/app/quizzes/:id/edit` → edit
-- `/app/host/:quizId` → configure and open lobby, then redirects to monitor
-- `/app/games/:sessionId/monitor` → full-screen projector view (no sidebar)
-- `/app/games/:sessionId/results` → post-game results
+- `/app/quizzes` → list; `/app/quizzes/new?ai=1` → AI builder; `/app/quizzes/:id/edit` → manual editor
+- `/app/host/:quizId` → mode picker (Crypto Rush / Dodgeball) then lobby config
+- `/app/games/:sessionId/monitor` → projector view — routes internally to `GameMonitor` or `DodgeballMonitor`
+- `/app/games/:sessionId/results` → cinematic results screen
+- `/app/settings` → account (display name, password) + language switcher
 
-**Student (`/play/*`)** — no auth, uses localStorage for identity:
+**Student (`/play/*`)** — no auth, identity in `localStorage`:
 - `/play` → join with room code
-- `/play/:sessionId` → the game itself
+- `/play/:sessionId` → `Game.tsx` (Crypto Rush) or `DodgeballGame.tsx`, routed by `session.settings.mode`
 
 ### Database schema (key tables)
 
-- `quizzes` — owned by teacher (`created_by`), has `title`, `subject`, `grade_level`, `source` (manual|ai)
-- `questions` — belong to a quiz, `position`-ordered, have `options` (jsonb array), `correct_index`, `image_url`
-- `game_sessions` — has `code` (4-char room code), `status` (lobby→running→finished), `settings` (jsonb with `minutes`, `cryptoCap`, `maxStudents`), `teacher_id`, `quiz_id`
-- `game_students` — one row per player per session, tracks `crypto`, `correct_answers`, `total_answers`, `hacks_made`, `hacks_received`, `is_breached`, `password` (the "hackable" password shown to other players)
-- `hack_events` — log of hacking attempts: `hacker_id`, `target_id`, `success`, `crypto_transferred`
-- `question_responses` — individual answer records per student per question
+- `quizzes` — `title`, `subject`, `grade_level`, `source` (manual|ai), owned by `created_by`
+- `questions` — `options` (jsonb array), `correct_index`, `image_url`, `position`-ordered
+- `game_sessions` — `code`, `status` (lobby→running→finished), `settings` jsonb:
+  - shared: `mode`, `minutes`, `maxStudents`, `timePerQ`
+  - Crypto Rush: `cryptoCap`
+  - Dodgeball: `timerActive`, `timerWinnerId`, `timerRoundId`, `timerStartedAt`
+- `game_students` — per-player per-session; shared: `correct_answers`, `total_answers`; Crypto Rush: `crypto`, `hacks_made`, `hacks_received`, `is_breached`, `password`; Dodgeball: `lives`, `eliminated`, `eliminated_at`
+- `hack_events` — Crypto Rush hack log
+- `question_responses` — per-student per-question answer records
+- `dodgeball_timer_taps` — one row per player per timer round: `elapsed_ms`, `timer_round_id` (unique constraint prevents duplicates)
 
-### Game loop (student side)
+### Game loop: Crypto Rush
 
-`Game.tsx` manages a local `phase` state machine: `waiting → question → answered → output → hacking → breach → question → ...`
+`Game.tsx` phase machine: `waiting → question → answered → output → hacking → breach → question → ...`
 
-- Questions are picked **randomly client-side** from the full quiz question set each round (not server-driven)
-- Correct answer → `output` phase: `OutputCards` shows a random reward card (flat crypto, multiplier, or hack power-up)
-- Hack power-up → `hacking` phase: `HackingFlow` picks a weighted random target and shows 5 password choices (1 real, 4 decoys from other players)
-- If targeted, player enters `breach` phase: `BreachModal` plays a breach animation
+- Questions picked randomly client-side each round (not server-driven)
+- Correct → `output` phase: `OutputCards` shows reward card (flat crypto, multiplier, or hack power-up)
+- Hack power-up → `hacking` phase: `HackingFlow` picks weighted random target, shows 5 password choices (1 real + 4 decoys)
+- If targeted → `breach` phase: `BreachModal` animation
+- `GameMonitor.tsx` auto-ends game: polls every 500ms, sets `status = "finished"` when time or crypto cap hit
 
-### Game end conditions
+### Game loop: Dodgeball
 
-Configured by teacher in `HostGame.tsx`: time limit (minutes) and/or crypto cap. `GameMonitor.tsx` handles auto-end — it polls `now` every 500ms and triggers `status = "finished"` when either limit is hit.
+`DodgeballGame.tsx` phase machine: `waiting → question → answered → timer → tapped → life_gift → eliminated → revived → done`
+
+- Wrong answer → lose a life; 0 lives → `eliminated`
+- Teacher fires timer rounds from `DodgeballMonitor.tsx`; broadcast via `session.settings.timerActive/timerRoundId/timerStartedAt`
+- Timer winner gets +1 life → `life_gift` phase: keep or gift to any player (gifting eliminated player revives them)
+- **Critical implementation detail**: `handleAnswer` uses `pickedRef` (sync ref, not state) as a double-execution guard. Phase transition fires immediately via `setTimeout` — DB updates are fire-and-forget (`.catch(() => {})`). This pattern is required: awaiting DB before transitioning phase caused the game to freeze when Supabase was slow.
+
+### Results page
+
+`GameResults.tsx`: `loading → cinematic → results`. Cinematic is pure CSS `@keyframes` (no framer-motion) with staggered `animation-delay`. Keyframes defined in `src/index.css`: `result-crash-in`, `result-scan`, `result-grow-x`, `result-fade-in`. Mode-aware sorting: Crypto Rush by `crypto` desc, Dodgeball by `!eliminated` then `eliminated_at` desc.
 
 ### AI edge functions
 
-- `generate-quiz` → OpenRouter (`gemini-2.0-flash-001`) — takes document text + images + config, returns structured quiz via function calling
-- `generate-question-image` → Google AI native API (`gemini-2.0-flash-exp-image-generation`) — returns base64 inline image, immediately uploaded to the `question-images` storage bucket
+- `generate-quiz` → OpenRouter (`gemini-2.0-flash-001`) — document text + images → structured quiz via function calling
+- `generate-question-image` → Google AI (`gemini-2.0-flash-exp-image-generation`) → base64 image, uploaded to `question-images` storage bucket
 
 ### Auth
 
-`AuthProvider` in `src/lib/auth.tsx` wraps the app. `useAuth()` returns `{ user, session, loading, signOut }`. `RequireAuth` component redirects unauthenticated users to `/auth`. Students bypass auth entirely — their identity is stored in `localStorage` as `hash_student_${sessionId}`.
+`AuthProvider` in `src/lib/auth.tsx`. `useAuth()` → `{ user, session, loading, signOut }`. Students bypass auth — identity in `localStorage` as `hash_student_${sessionId}`.
 
 ### i18n
 
-All UI strings go through `useTranslation()` / `t("key")`. Keys are defined inline in `src/lib/i18n.ts` (no separate JSON files). Default language is Arabic (`fallbackLng: "ar"`), toggled via `LangToggle` stored in `localStorage` as `hash_lang`. Layout is always LTR — only text content translates.
+`useTranslation()` / `t("key")`. Keys defined inline in `src/lib/i18n.ts` (no JSON files). Default: Arabic (`fallbackLng: "ar"`). Language stored in `localStorage` as `hash_lang`. Layout always LTR.
 
-### Styling
+**Always call `triggerLangTransition()` from `src/lib/langTransitionBus.ts` before `i18n.changeLanguage()`** — the animated overlay won't play otherwise.
 
-Tailwind with a custom dark terminal theme. CSS variables for colors in `src/index.css`. Custom classes like `bg-gradient-cyan`, `shadow-glow`, `text-glow-cyan`, `terminal-screen`, `terminal-scanlines`, `bg-grid` are defined there. The game view (`/play/:sessionId` and `/monitor`) uses `theme-game` class for the green-on-black terminal aesthetic. The teacher dashboard uses the default dark theme.
+### Styling conventions
+
+CSS variables and custom classes in `src/index.css`:
+- `theme-game` — dark teal/coral for Crypto Rush game views
+- `theme-dodgeball` — dark crimson/orange-red for Dodgeball views
+- `terminal-screen`, `terminal-scanlines`, `bg-grid` — projector/monitor screens
+
+**No emojis anywhere.** Use Lucide icons or the letter avatar system instead. Letter avatars use a deterministic color hash:
+```ts
+const AV_COLORS = ["#2563eb","#16a34a","#b45309","#dc2626","#7c3aed","#0891b2","#c2410c","#0f766e"];
+const av = (name: string) => {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xffffffff;
+  return { bg: AV_COLORS[Math.abs(h) % AV_COLORS.length], letter: (name.charAt(0) || "?").toUpperCase() };
+};
+```
+
+`font-handwritten` uses Caveat (Latin only). `HandWrittenTitle` (`src/components/ui/hand-writing-text.tsx`) detects Arabic text via `/[؀-ۿ]/` and animates the whole word as one unit — Arabic cannot be split per-character because the shaping engine needs adjacent characters to determine letter forms.
 
 ## Environment
 
 ```
-VITE_SUPABASE_URL          # Supabase project URL
-VITE_SUPABASE_PUBLISHABLE_KEY  # Supabase anon key
+VITE_SUPABASE_URL              # Supabase project URL
+VITE_SUPABASE_PUBLISHABLE_KEY  # Supabase anon key — never use the service role key in frontend code
 ```
 
-Edge function secrets (set via `supabase secrets set`):
+Edge function secrets:
 ```
-OPENROUTER_API_KEY   # For generate-quiz
-GOOGLE_API_KEY       # For generate-question-image
+OPENROUTER_API_KEY   # generate-quiz
+GOOGLE_API_KEY       # generate-question-image
 ```
