@@ -55,6 +55,7 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
   const timerStartRef = useRef(0);
   const timerRafRef  = useRef<number | null>(null);
   const askedRef     = useRef(0);
+  const pickedRef    = useRef<number | null>(null); // prevents double-execution
 
   // ── Initial load ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -145,6 +146,7 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
     const next = questions[Math.floor(Math.random() * questions.length)];
     setCurrentQ(next);
     setPicked(null);
+    pickedRef.current = null; // allow next answer through
     askedRef.current += 1;
     qStartRef.current = Date.now();
   }, [phase, qSeed, questions.length]);
@@ -157,7 +159,8 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
       const elapsed = (Date.now() - qStartRef.current) / 1000;
       const left = Math.max(0, Math.ceil(duration - elapsed));
       setTimeLeft(left);
-      if (left <= 0) { clearInterval(t); handleAnswer(-1); }
+      // Only fire timeout if student hasn't already picked
+      if (left <= 0 && pickedRef.current === null) { clearInterval(t); handleAnswer(-1); }
     }, 200);
     return () => clearInterval(t);
   }, [phase, currentQ, duration]);
@@ -177,38 +180,39 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
   }, [phase]);
 
   // ── Answer handler ────────────────────────────────────────────────────────
-  const handleAnswer = useCallback(async (idx: number) => {
+  const handleAnswer = useCallback((idx: number) => {
     if (!currentQ || !me) return;
+    // Guard: only the first call per question goes through
+    if (pickedRef.current !== null) return;
+    pickedRef.current = idx;
+
     const correct = idx === currentQ.correct_index;
     setPicked(idx);
 
-    await supabase.from("question_responses").insert({
+    // ── Calculate outcome immediately ─────────────────────────────────────
+    const newLives   = correct ? (me.lives ?? 1) : Math.max(0, (me.lives ?? 1) - 1);
+    const eliminated = !correct && newLives <= 0;
+
+    // ── Phase transition is NEVER blocked by DB calls ─────────────────────
+    setTimeout(() => setPhase(eliminated ? "eliminated" : "answered"), 700);
+
+    // ── DB updates fire-and-forget in background ──────────────────────────
+    supabase.from("question_responses").insert({
       session_id: sessionId, student_id: me.id, question_id: currentQ.id,
       question_index: askedRef.current, answer_index: idx, is_correct: correct,
     }).catch(() => {});
 
+    const updates: any = { total_answers: (me.total_answers ?? 0) + 1 };
     if (correct) {
-      await supabase.from("game_students").update({
-        total_answers: (me.total_answers ?? 0) + 1,
-        correct_answers: (me.correct_answers ?? 0) + 1,
-      }).eq("id", me.id);
-      setTimeout(() => setPhase("answered"), 700);
+      updates.correct_answers = (me.correct_answers ?? 0) + 1;
     } else {
-      const newLives = Math.max(0, (me.lives ?? 1) - 1);
-      const updates: any = {
-        total_answers: (me.total_answers ?? 0) + 1,
-        lives: newLives,
-      };
-      if (newLives <= 0) { updates.eliminated = true; updates.eliminated_at = new Date().toISOString(); }
-      await supabase.from("game_students").update(updates).eq("id", me.id);
-      setTimeout(() => {
-        if (newLives <= 0) setPhase("eliminated");
-        else setPhase("answered");
-      }, 800);
+      updates.lives = newLives;
+      if (eliminated) { updates.eliminated = true; updates.eliminated_at = new Date().toISOString(); }
     }
+    supabase.from("game_students").update(updates).eq("id", me.id).catch(() => {});
   }, [currentQ, me, sessionId]);
 
-  const submit = (idx: number) => { if (picked !== null) return; handleAnswer(idx); };
+  const submit = (idx: number) => { if (pickedRef.current !== null) return; handleAnswer(idx); };
 
   const tapTimer = async () => {
     if (hasTapped || !session?.settings?.timerRoundId) return;
