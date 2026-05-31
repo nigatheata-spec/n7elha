@@ -5,12 +5,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
-npm run dev -- --port 8080   # Start dev server (project symlinked at ~/knowledge-hack → /tmp/knowledge-hack)
+npm run dev -- --port 8082   # Start dev server
 npm run build                # Production build
 npm run lint                 # ESLint
 npm run test                 # Run tests once (vitest)
 npm run test:watch           # Watch mode
 ```
+
+> **`/tmp` wipe warning:** The project lives at `/tmp/knowledge-hack-v2` which is wiped on every Mac reboot. After a reboot you must recreate `.env.local` — credentials are saved in Claude memory (`project_supabase_credentials.md`). Always commit and push before shutting down. GitHub repo: `https://github.com/nigatheata-spec/knowledge-hack`
 
 Single test file: `npx vitest run src/test/example.test.ts`
 
