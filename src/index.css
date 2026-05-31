@@ -149,6 +149,60 @@
   }
   .theme-dodgeball .text-glow-red { text-shadow: 0 0 18px hsl(9 100% 58% / 0.8); }
   .theme-dodgeball .text-glow-green { text-shadow: 0 0 14px hsl(142 70% 45% / 0.8); }
+
+  /* Hot Potato theme — molten orange/amber */
+  .theme-hotpotato {
+    --background: 22 55% 7%;
+    --foreground: 30 30% 92%;
+    --card: 22 45% 11%;
+    --card-foreground: 30 30% 92%;
+    --popover: 22 45% 11%;
+    --popover-foreground: 30 30% 92%;
+    --primary: 25 100% 58%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 14 80% 45%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 22 25% 22%;
+    --muted-foreground: 30 15% 65%;
+    --accent: 45 100% 55%;
+    --accent-foreground: 22 55% 7%;
+    --destructive: 0 85% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 45 100% 55%;
+    --success-foreground: 22 55% 7%;
+    --border: 25 60% 30%;
+    --input: 22 45% 14%;
+    --ring: 25 100% 58%;
+  }
+  .theme-hotpotato .text-glow-fire { text-shadow: 0 0 18px hsl(25 100% 58% / 0.85); }
+  .theme-hotpotato .text-glow-gold { text-shadow: 0 0 14px hsl(45 100% 55% / 0.8); }
+
+  /* Lava Floor theme — deep volcanic red */
+  .theme-lavafloor {
+    --background: 14 50% 8%;
+    --foreground: 20 20% 92%;
+    --card: 14 40% 12%;
+    --card-foreground: 20 20% 92%;
+    --popover: 14 40% 12%;
+    --popover-foreground: 20 20% 92%;
+    --primary: 14 100% 55%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 25 90% 50%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 14 25% 22%;
+    --muted-foreground: 20 15% 65%;
+    --accent: 35 100% 50%;
+    --accent-foreground: 14 50% 8%;
+    --destructive: 0 85% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 142 65% 42%;
+    --success-foreground: 0 0% 100%;
+    --border: 14 60% 32%;
+    --input: 14 40% 14%;
+    --ring: 14 100% 55%;
+  }
+  .theme-lavafloor .text-glow-lava { text-shadow: 0 0 20px hsl(14 100% 55% / 0.9); }
+  .theme-lavafloor .text-glow-green { text-shadow: 0 0 14px hsl(142 65% 42% / 0.8); }
 }
 
 @layer base {
@@ -167,6 +221,38 @@
 @layer utilities {
   .text-glow-cyan { text-shadow: none; }
   .text-glow-amber { text-shadow: none; }
+
+  /* Hot Potato + Lava Floor animations */
+  @keyframes hp-explode {
+    0%   { opacity: 1; transform: scale(1) rotate(0deg); }
+    15%  { transform: scale(1.4) rotate(-8deg); filter: brightness(3); }
+    30%  { transform: scale(0.85) rotate(6deg); }
+    50%  { transform: scale(1.2) rotate(-4deg); filter: brightness(2); }
+    70%  { transform: scale(0.95) rotate(2deg); }
+    100% { opacity: 1; transform: scale(1) rotate(0deg); filter: brightness(1); }
+  }
+  @keyframes hp-bomb-pulse {
+    0%, 100% { box-shadow: 0 0 12px hsl(25 100% 58% / 0.4); }
+    50%      { box-shadow: 0 0 30px hsl(25 100% 58% / 0.9), 0 0 50px hsl(0 100% 50% / 0.4); }
+  }
+  .animate-hp-explode    { animation: hp-explode 0.6s ease-out; }
+  .animate-hp-bomb-pulse { animation: hp-bomb-pulse 1.2s ease-in-out infinite; }
+
+  @keyframes lava-shift {
+    0%, 100% { background-position: 0% 50%; }
+    50%      { background-position: 100% 50%; }
+  }
+  @keyframes lava-bubble {
+    0%, 100% { transform: translateY(0) scaleX(1); }
+    25%      { transform: translateY(-3px) scaleX(1.02); }
+    75%      { transform: translateY(2px) scaleX(0.99); }
+  }
+  .lava-fill {
+    background: linear-gradient(90deg, #c0392b, #e74c3c, #ff6b35, #e74c3c, #c0392b);
+    background-size: 400% 100%;
+    animation: lava-shift 3s ease-in-out infinite;
+  }
+  .lava-fill-anim { animation: lava-bubble 2.5s ease-in-out infinite; }
   .border-glow { box-shadow: none; }
   .terminal-screen {
     background:

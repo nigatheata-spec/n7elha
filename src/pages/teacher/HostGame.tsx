@@ -8,7 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Copy, Play, Users, Trash2, Clock, Coins, Zap, Target, Heart, Skull, Timer, Trophy } from "lucide-react";
+import { Copy, Play, Users, Trash2, Clock, Coins, Zap, Target, Heart, Skull, Timer, Trophy, Flame } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -17,7 +17,7 @@ const genCode = () => {
   return Array.from({ length: 4 }, () => c[Math.floor(Math.random() * c.length)]).join("");
 };
 
-type GameMode = "crypto_rush" | "dodgeball";
+type GameMode = "crypto_rush" | "dodgeball" | "hotpotato" | "lavafloor";
 
 const MODES: { id: GameMode; icon: React.ReactNode; label: string; labelAr: string; desc: string; descAr: string; color: string }[] = [
   {
@@ -37,6 +37,24 @@ const MODES: { id: GameMode; icon: React.ReactNode; label: string; labelAr: stri
     desc: "Wrong answer = eliminated. Last one standing wins",
     descAr: "إجابة خاطئة = حذف. المتبقي الأخير يفوز",
     color: "#ff4422",
+  },
+  {
+    id: "hotpotato",
+    icon: <Timer className="h-7 w-7" />,
+    label: "Hot Potato",
+    labelAr: "البطاطا الحارة",
+    desc: "Pass the bomb before it explodes",
+    descAr: "مرّر القنبلة قبل أن تنفجر",
+    color: "#ff8800",
+  },
+  {
+    id: "lavafloor",
+    icon: <Flame className="h-7 w-7" />,
+    label: "Lava Floor",
+    labelAr: "أرضية الحمم",
+    desc: "Survive together before the lava rises",
+    descAr: "اصمدوا معاً قبل أن تبتلعكم الحمم",
+    color: "#e74c3c",
   },
 ];
 
@@ -93,12 +111,17 @@ const HostGame = () => {
         settings.maxStudents = maxStudents;
         if (useTimer) settings.minutes = minutes;
         if (useCap) settings.cryptoCap = cryptoCap;
-      } else {
+      } else if (mode === "dodgeball") {
         settings.maxStudents = dbMaxStudents;
         settings.timerActive = false;
         settings.timerRoundId = null;
         settings.timerStartedAt = null;
         settings.timerWinnerId = null;
+      } else {
+        // hotpotato + lavafloor
+        settings.maxStudents = dbMaxStudents;
+        settings.minutes = minutes;
+        settings.timePerQ = 20;
       }
       const { data, error } = await supabase.from("game_sessions")
         .insert({ teacher_id: user.id, quiz_id: quizId, code, status: "lobby", settings }).select().single();
@@ -242,6 +265,34 @@ const HostGame = () => {
                   <Trophy className="h-4 w-4 text-amber-500 shrink-0" />
                   {ar ? "آخر لاعب يفوز" : "Last player standing wins"}
                 </p>
+              </div>
+              <div>
+                <Label className="mb-2 block">{t("max_students")}</Label>
+                <Input type="number" min={2} max={100} value={dbMaxStudents} onChange={e => setDbMaxStudents(Number(e.target.value))} />
+              </div>
+            </div>
+          )}
+
+          {(mode === "hotpotato" || mode === "lavafloor") && (
+            <div className="space-y-4">
+              <div className="rounded-lg border border-border/60 bg-muted/30 p-4 text-sm text-muted-foreground space-y-2.5">
+                {mode === "hotpotato" ? (
+                  <>
+                    <p className="flex items-center gap-2"><Timer className="h-4 w-4 shrink-0" />{ar ? "قنبلة تنتقل بين اللاعبين — أجب صح لتمررها" : "A bomb passes between players — answer right to pass it"}</p>
+                    <p className="flex items-center gap-2"><Zap className="h-4 w-4 shrink-0" />{ar ? "من يحملها عند الانفجار تُصفّر نقاطه" : "Whoever holds it on explosion loses their score"}</p>
+                  </>
+                ) : (
+                  <>
+                    <p className="flex items-center gap-2"><Flame className="h-4 w-4 text-orange-500 shrink-0" />{ar ? "الحمم ترتفع — أجيبوا صح لإبطائها" : "Lava rises — answer correctly to slow it"}</p>
+                    <p className="flex items-center gap-2"><Trophy className="h-4 w-4 text-amber-500 shrink-0" />{ar ? "اصمدوا حتى ينتهي الوقت لتفوزوا" : "Survive until time runs out to win"}</p>
+                  </>
+                )}
+              </div>
+              <div>
+                <Label className="mb-2 block">
+                  {ar ? "مدة اللعبة (دقائق)" : "Game duration (minutes)"}: {minutes}
+                </Label>
+                <Slider value={[minutes]} onValueChange={([v]) => setMinutes(v)} min={2} max={30} step={1} />
               </div>
               <div>
                 <Label className="mb-2 block">{t("max_students")}</Label>

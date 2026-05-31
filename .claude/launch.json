@@ -1,11 +1,1 @@
-{
-  "version": "0.0.1",
-  "configurations": [
-    {
-      "name": "knowledge-hack",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev", "--", "--port", "8080"],
-      "port": 8080
-    }
-  ]
-}
+{"version":"0.0.1","configurations":[{"name":"knowledge-hack-v2","runtimeExecutable":"npm","runtimeArgs":["run","dev"],"port":8082}]}

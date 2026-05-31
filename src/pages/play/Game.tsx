@@ -8,6 +8,8 @@ import { HackingFlow } from "@/components/game/HackingFlow";
 import { BreachModal } from "@/components/game/BreachModal";
 import { OutputCards, OutputResult } from "@/components/game/OutputCards";
 import DodgeballGame from "./DodgeballGame";
+import HotPotatoGame from "./HotPotatoGame";
+import LavaFloorGame from "./LavaFloorGame";
 
 type Q = { id: string; text: string; options: string[]; correct_index: number; position: number };
 
@@ -149,6 +151,12 @@ const Game = () => {
   // Route to mode-specific game
   if (session.settings?.mode === "dodgeball" && studentId) {
     return <DodgeballGame sessionId={sessionId!} studentId={studentId} />;
+  }
+  if (session.settings?.mode === "hotpotato" && studentId) {
+    return <HotPotatoGame sessionId={sessionId!} studentId={studentId} />;
+  }
+  if (session.settings?.mode === "lavafloor" && studentId) {
+    return <LavaFloorGame sessionId={sessionId!} studentId={studentId} />;
   }
 
   return (

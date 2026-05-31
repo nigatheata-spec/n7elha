@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Bitcoin, Square, Maximize, ArrowRight, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import DodgeballMonitor from "./DodgeballMonitor";
+import HotPotatoMonitor from "./HotPotatoMonitor";
+import LavaFloorMonitor from "./LavaFloorMonitor";
 
 const fmt = (n: number) => n.toLocaleString();
 
@@ -94,6 +96,12 @@ const GameMonitor = () => {
   // Route to mode-specific monitor
   if (session.settings?.mode === "dodgeball") {
     return <DodgeballMonitor session={session} sessionId={sessionId!} />;
+  }
+  if (session.settings?.mode === "hotpotato") {
+    return <HotPotatoMonitor session={session} sessionId={sessionId!} />;
+  }
+  if (session.settings?.mode === "lavafloor") {
+    return <LavaFloorMonitor session={session} sessionId={sessionId!} />;
   }
 
   if (session.status === "finished") {
