@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { Bitcoin, Target, Flame, Zap, type LucideIcon } from "lucide-react";
 
 // ─── Password pool (Crypto Rush only) ──────────────────────────────────────
 const PASSWORD_POOL = [
@@ -13,28 +14,65 @@ const PASSWORD_POOL = [
 ];
 
 // ─── Mode themes ────────────────────────────────────────────────────────────
-const MODES = {
+type ModeTheme = {
+  bg: string;
+  glow: string;        // radial gradient for splash backgrounds
+  accent: string;
+  accentDim: string;
+  accentBorder: string;
+  label: string;
+  tagline: string;
+  btnColor: string;
+  icon: LucideIcon;
+};
+
+const MODES: Record<string, ModeTheme> = {
   crypto_rush: {
     bg: "#06110d",
+    glow: "radial-gradient(ellipse at 50% 30%, #0c2b1f 0%, #06110d 70%)",
     accent: "#00ff88",
     accentDim: "#00ff8825",
     accentBorder: "#00ff8845",
     label: "Crypto Rush",
     tagline: "اخترق · اسرق · ابقَ في القمة",
     btnColor: "#000",
+    icon: Bitcoin,
   },
   dodgeball: {
     bg: "#110609",
+    glow: "radial-gradient(ellipse at 50% 30%, #2b0a10 0%, #110609 70%)",
     accent: "#ff3d1f",
     accentDim: "#ff3d1f22",
     accentBorder: "#ff3d1f45",
     label: "Dodgeball",
     tagline: "أجب أو تُحذف",
     btnColor: "#fff",
+    icon: Target,
   },
-} as const;
+  hotpotato: {
+    bg: "#140b04",
+    glow: "radial-gradient(ellipse at 50% 30%, #3a1d07 0%, #140b04 70%)",
+    accent: "#ff8c1a",
+    accentDim: "#ff8c1a22",
+    accentBorder: "#ff8c1a45",
+    label: "Hot Potato",
+    tagline: "مرّر القنبلة قبل أن تنفجر",
+    btnColor: "#000",
+    icon: Zap,
+  },
+  lavafloor: {
+    bg: "#120605",
+    glow: "radial-gradient(ellipse at 50% 110%, #3a0f0a 0%, #120605 60%)",
+    accent: "#ff4422",
+    accentDim: "#ff442222",
+    accentBorder: "#ff442245",
+    label: "Lava Floor",
+    tagline: "اصمدوا قبل أن تبتلعكم الحمم",
+    btnColor: "#fff",
+    icon: Flame,
+  },
+};
 
-type Mode = keyof typeof MODES;
 type Stage = "code" | "reveal" | "name" | "boot" | "launch" | "arena";
 
 // ─── Join ───────────────────────────────────────────────────────────────────
@@ -61,9 +99,10 @@ const Join = () => {
   const [bootCurrent, setBootCurrent] = useState("");
   const [launchLines, setLaunchLines] = useState<string[]>([]);
 
-  const code   = cells.join("");
-  const mode: Mode   = (session?.settings?.mode as Mode) ?? "crypto_rush";
-  const theme  = MODES[mode] ?? MODES.crypto_rush;
+  const code  = cells.join("");
+  const mode  = (session?.settings?.mode as string) ?? "crypto_rush";
+  const theme = MODES[mode] ?? MODES.crypto_rush;
+  const Icon  = theme.icon;
 
   const passwordChoices = useMemo(
     () => [...PASSWORD_POOL].sort(() => Math.random() - 0.5).slice(0, 5),
@@ -182,7 +221,7 @@ const Join = () => {
     return () => { cancelled = true; };
   }, [stage]);
 
-  // ── Dodgeball: brief arena entry then navigate ────────────────
+  // ── Non-crypto modes: brief themed entry then navigate ────────
   useEffect(() => {
     if (stage !== "arena" || !session) return;
     const snap = { session, name };
@@ -225,7 +264,6 @@ const Join = () => {
         className="fixed inset-0 flex flex-col items-center justify-center p-6 overflow-hidden"
         style={{ background: "radial-gradient(ellipse at 50% 35%, #141928 0%, #080a10 70%)" }}
       >
-        {/* subtle grid */}
         <div
           className="absolute inset-0 opacity-[0.04] pointer-events-none"
           style={{
@@ -236,13 +274,11 @@ const Join = () => {
         />
 
         <div className="relative z-10 w-full max-w-xs text-center space-y-12 animate-fade-up">
-          {/* Brand */}
           <div className="space-y-1.5">
             <div className="text-5xl font-black text-white tracking-tight">n7elha</div>
             <div className="text-white/30 text-sm tracking-wide">أدخل رمز اللعبة</div>
           </div>
 
-          {/* 4-box code input */}
           <div className="space-y-6">
             <div className="flex gap-3 justify-center" onPaste={handlePaste}>
               {cells.map((c, i) => (
@@ -281,20 +317,18 @@ const Join = () => {
   // ── Mode reveal splash (2s) ───────────────────────────────────
   if (stage === "reveal") {
     return (
-      <div
-        className="fixed inset-0 flex flex-col items-center justify-center"
-        style={{ background: theme.bg }}
-      >
-        <div className="text-center space-y-5 animate-fade-up">
+      <div className="fixed inset-0 flex flex-col items-center justify-center overflow-hidden" style={{ background: theme.glow }}>
+        <div className="text-center space-y-6 animate-fade-up">
           <div
-            className="text-[clamp(4rem,15vw,8rem)] font-black text-white leading-none tracking-tight"
+            className="mx-auto flex h-24 w-24 items-center justify-center rounded-3xl"
+            style={{ background: theme.accentDim, border: `2px solid ${theme.accentBorder}` }}
           >
+            <Icon className="h-12 w-12" style={{ color: theme.accent }} strokeWidth={2} />
+          </div>
+          <div className="text-[clamp(3.5rem,14vw,7rem)] font-black text-white leading-none tracking-tight">
             {theme.label}
           </div>
-          <div
-            className="font-mono text-base tracking-widest"
-            style={{ color: theme.accent }}
-          >
+          <div className="font-mono text-base tracking-widest" style={{ color: theme.accent }}>
             {theme.tagline}
           </div>
         </div>
@@ -305,16 +339,14 @@ const Join = () => {
   // ── Name entry (mode-themed) ──────────────────────────────────
   if (stage === "name") {
     return (
-      <div
-        className="fixed inset-0 flex flex-col items-center justify-center p-6"
-        style={{ background: theme.bg }}
-      >
+      <div className="fixed inset-0 flex flex-col items-center justify-center p-6 overflow-hidden" style={{ background: theme.glow }}>
         <div className="w-full max-w-sm space-y-8 animate-fade-up">
-          <div className="space-y-1">
+          <div className="space-y-3">
             <div
-              className="text-xs font-mono tracking-[0.2em] uppercase"
-              style={{ color: theme.accent }}
+              className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-mono tracking-[0.2em] uppercase"
+              style={{ background: theme.accentDim, color: theme.accent, border: `1px solid ${theme.accentBorder}` }}
             >
+              <Icon className="h-3.5 w-3.5" strokeWidth={2} />
               {theme.label}
             </div>
             <h1 className="text-4xl font-black text-white">اسمك في اللعبة؟</h1>
@@ -336,8 +368,10 @@ const Join = () => {
             />
             <button
               type="submit"
+              disabled={!name.trim()}
               className="w-full h-14 rounded-2xl font-black text-lg
-                         transition-transform active:scale-[0.97] hover:brightness-110"
+                         transition-transform active:scale-[0.97] hover:brightness-110
+                         disabled:opacity-40 disabled:active:scale-100"
               style={{ background: theme.accent, color: theme.btnColor }}
             >
               دخول
@@ -352,26 +386,16 @@ const Join = () => {
   if (stage === "boot") {
     const cr = MODES.crypto_rush;
     return (
-      <div
-        className="fixed inset-0 font-mono overflow-y-auto"
-        style={{ background: cr.bg, color: cr.accent }}
-      >
+      <div className="fixed inset-0 font-mono overflow-y-auto" style={{ background: cr.bg, color: cr.accent }}>
         <div className="pointer-events-none fixed inset-0 terminal-scanlines opacity-[0.18]" />
         <div className="relative p-6 md:p-16 py-12 min-h-full">
-          <h1
-            className="text-3xl md:text-5xl font-black tracking-wider mb-8"
-            style={{ filter: `drop-shadow(0 0 18px ${cr.accent}70)` }}
-          >
+          <h1 className="text-3xl md:text-5xl font-black tracking-wider mb-8" style={{ filter: `drop-shadow(0 0 18px ${cr.accent}70)` }}>
             WELCOME HACKER
           </h1>
 
           <div className="space-y-2 text-base md:text-xl">
             {bootLines.map((l, i) => <div key={i}>{l}</div>)}
-            {bootCurrent && (
-              <div>
-                {bootCurrent}<span className="animate-pulse">▌</span>
-              </div>
-            )}
+            {bootCurrent && <div>{bootCurrent}<span className="animate-pulse">▌</span></div>}
           </div>
 
           {showPasswords && (
@@ -380,12 +404,8 @@ const Join = () => {
                 <button
                   key={p}
                   onClick={() => { setChosen(p); setStage("launch"); }}
-                  className="px-4 py-2 border-2 rounded text-sm md:text-base break-all
-                             transition-all active:scale-[0.96]"
-                  style={{
-                    borderColor: cr.accentBorder,
-                    color: cr.accent,
-                  }}
+                  className="px-4 py-2 border-2 rounded text-sm md:text-base break-all transition-all active:scale-[0.96]"
+                  style={{ borderColor: cr.accentBorder, color: cr.accent }}
                   onMouseEnter={e => (e.currentTarget.style.background = cr.accentDim)}
                   onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
                 >
@@ -403,10 +423,7 @@ const Join = () => {
   if (stage === "launch") {
     const cr = MODES.crypto_rush;
     return (
-      <div
-        className="fixed inset-0 font-mono p-6 md:p-16 py-12"
-        style={{ background: cr.bg, color: cr.accent }}
-      >
+      <div className="fixed inset-0 font-mono p-6 md:p-16 py-12" style={{ background: cr.bg, color: cr.accent }}>
         <div className="pointer-events-none fixed inset-0 terminal-scanlines opacity-[0.18]" />
         <div className="relative space-y-3 text-base md:text-xl">
           {launchLines.map((l, i) => <div key={i}>{l}</div>)}
@@ -416,35 +433,24 @@ const Join = () => {
     );
   }
 
-  // ── Dodgeball: arena entry ────────────────────────────────────
+  // ── Non-crypto modes: themed entry splash ─────────────────────
   if (stage === "arena") {
-    const db = MODES.dodgeball;
     return (
-      <div
-        className="fixed inset-0 flex flex-col items-center justify-center overflow-hidden"
-        style={{ background: db.bg }}
-      >
-        {/* pulsing rings */}
+      <div className="fixed inset-0 flex flex-col items-center justify-center overflow-hidden" style={{ background: theme.glow }}>
+        {/* concentric pulsing rings tinted to the mode */}
+        <div className="absolute w-[28rem] h-[28rem] rounded-full animate-ping" style={{ border: `2px solid ${theme.accent}30` }} />
+        <div className="absolute w-72 h-72 rounded-full" style={{ border: `2px solid ${theme.accent}50` }} />
         <div
-          className="absolute w-[28rem] h-[28rem] rounded-full animate-ping"
-          style={{ border: `2px solid ${db.accent}30` }}
-        />
-        <div
-          className="absolute w-72 h-72 rounded-full"
-          style={{ border: `2px solid ${db.accent}50` }}
-        />
-        <div
-          className="absolute w-40 h-40 rounded-full"
-          style={{ border: `3px solid ${db.accent}70` }}
-        />
+          className="absolute flex h-40 w-40 items-center justify-center rounded-full"
+          style={{ border: `3px solid ${theme.accent}70`, background: theme.accentDim }}
+        >
+          <Icon className="h-16 w-16" style={{ color: theme.accent }} strokeWidth={1.75} />
+        </div>
 
-        <div className="relative text-center space-y-5 animate-fade-up z-10">
-          <div className="text-6xl md:text-7xl font-black text-white">{name}</div>
-          <div
-            className="font-mono text-sm tracking-widest animate-pulse"
-            style={{ color: db.accent }}
-          >
-            {"> الدخول إلى الملعب..."}
+        <div className="relative text-center space-y-4 animate-fade-up z-10 mt-[22rem]">
+          <div className="text-5xl md:text-6xl font-black text-white">{name}</div>
+          <div className="font-mono text-sm tracking-widest animate-pulse" style={{ color: theme.accent }}>
+            {"> الدخول إلى اللعبة..."}
           </div>
         </div>
       </div>
