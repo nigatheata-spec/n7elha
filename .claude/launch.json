@@ -1,1 +1,1 @@
-{"version":"0.0.1","configurations":[{"name":"knowledge-hack-v2","runtimeExecutable":"npm","runtimeArgs":["run","dev"],"port":8082}]}
+{"version":"0.0.1","configurations":[{"name":"knowledge-hack-v2","runtimeExecutable":"npx","runtimeArgs":["vite","--port","8083"],"port":8083}]}

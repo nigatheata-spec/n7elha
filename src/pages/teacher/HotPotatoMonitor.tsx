@@ -45,7 +45,6 @@ interface Props { session: any; sessionId: string; }
 const randomBombMs = () => 30_000 + Math.random() * 60_000;
 
 const HotPotatoMonitor = ({ session, sessionId }: Props) => {
-  console.error("HPM-A: component entry, session?.status=", session?.status, "settings=", JSON.stringify(session?.settings).slice(0,200));
   const nav = useNavigate();
   const [students, setStudents] = useState<any[]>([]);
   const [explosionFeed, setExplosionFeed] = useState<{ name: string; at: string }[]>([]);
@@ -195,13 +194,9 @@ const HotPotatoMonitor = ({ session, sessionId }: Props) => {
 
   const bombHolder = students.find(s => s.id === bombHolderId);
 
-  console.error("HPM-B: pre-render, students.length=", students.length, "left=", left, "bombHolder=", bombHolder?.name);
-
-  // DEBUG: catch the actual error
-  try { return (
+  return (
     <div className="theme-hotpotato fixed inset-0 bg-background text-foreground overflow-hidden"
       style={{ background: "radial-gradient(ellipse at 30% 0%, hsl(22 60% 11%) 0%, hsl(22 55% 7%) 100%)", fontFamily: "monospace" }}>
-      {(()=>{console.error("HPM-C: topbar start");return null;})()}
       {/* Top bar */}
       <div className="absolute top-3 inset-x-3 z-20 flex items-center justify-between text-xs gap-3">
         <div className="text-muted-foreground font-mono">
@@ -223,7 +218,6 @@ const HotPotatoMonitor = ({ session, sessionId }: Props) => {
       </div>
 
       <div className="h-full grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-4 p-4 pt-14">
-        {(()=>{console.error("HPM-D: leaderboard start");return null;})()}
         {/* LEADERBOARD */}
         <div className="space-y-2 overflow-hidden flex flex-col">
           {students.length === 0 ? (
@@ -265,11 +259,9 @@ const HotPotatoMonitor = ({ session, sessionId }: Props) => {
           )}
         </div>
 
-        {(()=>{console.error("HPM-E: right col start");return null;})()}
         {/* RIGHT: bomb status + explosion feed */}
         <div className="grid grid-rows-[auto_1fr] gap-4 overflow-hidden">
 
-          {(()=>{console.error("HPM-F: bomb holder card");return null;})()}
           {/* Bomb holder card */}
           <div className={cn(
             "rounded-2xl border-2 p-5 flex items-center gap-4",
@@ -288,7 +280,6 @@ const HotPotatoMonitor = ({ session, sessionId }: Props) => {
             </div>
           </div>
 
-          {(()=>{console.error("HPM-G: explosion feed");return null;})()}
           {/* Explosion feed */}
           <div className="rounded-2xl border-2 border-primary/30 bg-primary/5 p-4 overflow-hidden flex flex-col">
             <div className="font-mono text-primary/70 text-xs mb-3 flex items-center justify-between">
@@ -310,46 +301,28 @@ const HotPotatoMonitor = ({ session, sessionId }: Props) => {
               )}
             </div>
 
-            {(()=>{console.error("HPM-H: score summary");return null;})()}
             {/* Score summary */}
-            {(()=>{console.error("HPM-H1: pre-trophy");return null;})()}
             <div className="mt-4 pt-4 border-t border-primary/20 flex items-center gap-3">
-              {(()=>{console.error("HPM-H2: inside outer div, pre-Trophy");return null;})()}
               <Trophy className="h-8 w-8 text-success shrink-0" />
-              {(()=>{console.error("HPM-H3: post-Trophy, pre-div");return null;})()}
               <div>
-                {(()=>{console.error("HPM-H4: inside inner div, pre-Math.max");return null;})()}
                 <div className="font-mono text-success font-black text-xl">
-                  {(()=>{
-                    const maxScore = Math.max(...students.map(s => s.crypto ?? 0), 0);
-                    console.error("HPM-H5: Math.max result=", maxScore);
-                    return fmt(maxScore);
-                  })()}
+                  {fmt(Math.max(...students.map(s => s.crypto ?? 0), 0))}
                 </div>
                 <div className="text-xs text-muted-foreground font-mono">top score · {students.length} players</div>
               </div>
-              {(()=>{console.error("HPM-H6: post-inner-div, pre-ms-auto");return null;})()}
               <div className="ms-auto">
                 <div className="flex items-center gap-1 text-primary font-bold text-sm">
                   <Zap className="h-4 w-4" />
-                  {(()=>{
-                    const total = students.reduce((a, s) => a + (s.crypto ?? 0), 0);
-                    console.error("HPM-H7: reduce total=", total);
-                    return total.toLocaleString();
-                  })()}
+                  {students.reduce((a, s) => a + (s.crypto ?? 0), 0).toLocaleString()}
                   {" total pts"}
                 </div>
               </div>
-              {(()=>{console.error("HPM-H8: end of score summary div");return null;})()}
             </div>
           </div>
         </div>
       </div>
     </div>
-  ); } catch (renderErr: any) {
-    console.error("HPM-CATCH: ACTUAL ERROR:", renderErr?.message, renderErr?.stack);
-    return <div style={{color:"red",padding:40,fontFamily:"monospace"}}>{String(renderErr)}</div>;
-  }
+  );
 };
 
 export default HotPotatoMonitor;
