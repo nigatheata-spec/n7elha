@@ -6,7 +6,8 @@ import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Plus, ArrowUp, FileText, X, Loader2, Gauge, Hash, Gamepad2, Eye, Check, RefreshCw, Pencil, ChevronDown, Play } from "lucide-react";
+import { Sparkles, Plus, ArrowUp, FileText, X, Loader2, Gauge, Hash, Gamepad2, Eye, Check, RefreshCw, Pencil, ChevronDown, Play, Upload, Image as ImageIcon, Trash2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -34,6 +35,24 @@ const Dashboard = () => {
   // Review step
   const [draft, setDraft] = useState<{ title: string; questions: any[] } | null>(null);
   const [saving, setSaving] = useState(false);
+  const [imgBusy, setImgBusy] = useState<number | null>(null);
+
+  const uploadQuestionImage = async (i: number, file: File) => {
+    setImgBusy(i);
+    try {
+      const ext = file.name.split(".").pop() || "png";
+      const path = `${user?.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      const { error } = await supabase.storage.from("question-images").upload(path, file, { upsert: false, contentType: file.type });
+      if (error) throw error;
+      const { data } = supabase.storage.from("question-images").getPublicUrl(path);
+      updateDraftQ(i, { image_url: data.publicUrl });
+      toast.success("✓");
+    } catch (e: any) {
+      toast.error(e.message || "Error");
+    } finally {
+      setImgBusy(null);
+    }
+  };
 
   const [games, setGames] = useState<any[]>([]);
 
@@ -117,6 +136,7 @@ const Dashboard = () => {
       const rows = draft.questions.map((q: any, i: number) => ({
         quiz_id: quiz.id, position: i, text: q.text, options: q.options,
         correct_index: q.correct_index, difficulty: q.difficulty || "medium",
+        image_url: q.image_url ?? null,
       }));
       const { error: ierr } = await supabase.from("questions").insert(rows);
       if (ierr) throw ierr;
@@ -159,10 +179,13 @@ const Dashboard = () => {
         ar={ar}
         saving={saving}
         busy={busy}
+        imgBusy={imgBusy}
         onTitleChange={(t) => setDraft({ ...draft, title: t })}
         onUpdateQ={updateDraftQ}
         onUpdateOpt={updateDraftOption}
         onRemove={removeDraftQ}
+        onAddQ={() => setDraft({ ...draft, questions: [...draft.questions, { text: "", options: ["", "", "", ""], correct_index: 0, difficulty: "medium", image_url: null }] })}
+        onUploadImage={uploadQuestionImage}
         onRegen={(extra) => generateDraft(extra)}
         onSave={() => saveQuiz(false)}
         onConfirm={() => saveQuiz(true)}
@@ -317,16 +340,21 @@ const Dashboard = () => {
 };
 
 const ReviewDraft = ({
-  draft, ar, saving, busy, onTitleChange, onUpdateQ, onUpdateOpt, onRemove, onRegen, onSave, onConfirm, onCancel,
+  draft, ar, saving, busy, imgBusy,
+  onTitleChange, onUpdateQ, onUpdateOpt, onRemove, onAddQ, onUploadImage,
+  onRegen, onSave, onConfirm, onCancel,
 }: {
   draft: { title: string; questions: any[] };
   ar: boolean;
   saving: boolean;
   busy: boolean;
+  imgBusy: number | null;
   onTitleChange: (t: string) => void;
   onUpdateQ: (i: number, patch: Partial<any>) => void;
   onUpdateOpt: (i: number, oi: number, val: string) => void;
   onRemove: (i: number) => void;
+  onAddQ: () => void;
+  onUploadImage: (i: number, file: File) => void;
   onRegen: (extra: string) => void;
   onSave: () => void;
   onConfirm: () => void;
@@ -350,42 +378,86 @@ const ReviewDraft = ({
 
       <div className="space-y-3">
         {draft.questions.map((q, i) => (
-          <Card key={i} className="p-4 space-y-3">
-            <div className="flex items-start justify-between gap-2">
-              <Badge variant="secondary">#{i + 1}</Badge>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onRemove(i)}>
-                <X className="h-3.5 w-3.5" />
-              </Button>
+          <Card key={i} className="p-5 space-y-3">
+            {/* Header row */}
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-sm font-bold text-primary">#{i + 1}</span>
+              <div className="flex items-center gap-2">
+                <Select value={q.difficulty || "medium"} onValueChange={(v) => onUpdateQ(i, { difficulty: v })}>
+                  <SelectTrigger className="h-8 w-28 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="easy">{ar ? "سهل" : "Easy"}</SelectItem>
+                    <SelectItem value="medium">{ar ? "متوسط" : "Medium"}</SelectItem>
+                    <SelectItem value="hard">{ar ? "صعب" : "Hard"}</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onRemove(i)}>
+                  <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                </Button>
+              </div>
             </div>
+
+            {/* Question text */}
             <Textarea
               value={q.text}
               onChange={(e) => onUpdateQ(i, { text: e.target.value })}
               rows={2}
               className="text-sm"
               placeholder={ar ? "نص السؤال" : "Question text"}
+              maxLength={500}
             />
+
+            {/* Image */}
+            {q.image_url ? (
+              <div className="relative inline-block">
+                <img src={q.image_url} alt="" className="max-h-48 rounded-lg border border-border" />
+                <div className="absolute top-2 end-2 flex gap-1">
+                  <label className="h-7 px-2 rounded-md bg-background/90 border text-xs cursor-pointer inline-flex items-center gap-1 hover:bg-background">
+                    <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onUploadImage(i, f); e.currentTarget.value = ""; }} />
+                    <Upload className="h-3 w-3" />{ar ? "استبدال" : "Replace"}
+                  </label>
+                  <button type="button" onClick={() => onUpdateQ(i, { image_url: null })}
+                    className="h-7 w-7 rounded-md bg-background/90 border inline-flex items-center justify-center hover:bg-background">
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <label className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full border border-dashed border-border hover:border-primary cursor-pointer text-xs transition-colors">
+                <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onUploadImage(i, f); e.currentTarget.value = ""; }} />
+                <ImageIcon className="h-3.5 w-3.5" />
+                <span>{imgBusy === i ? "..." : (ar ? "إضافة صورة" : "Add image")}</span>
+              </label>
+            )}
+
+            {/* Options */}
             <div className="grid sm:grid-cols-2 gap-2">
               {(q.options || []).map((opt: string, oi: number) => (
-                <div key={oi} className={`flex items-center gap-2 p-2 rounded-lg border ${q.correct_index === oi ? "border-success bg-success/10" : "border-border"}`}>
-                  <button
-                    onClick={() => onUpdateQ(i, { correct_index: oi })}
-                    className={`shrink-0 h-5 w-5 rounded-full border-2 flex items-center justify-center ${q.correct_index === oi ? "border-success bg-success text-white" : "border-muted-foreground/40"}`}
-                    title={ar ? "اجعلها الإجابة الصحيحة" : "Mark correct"}
-                  >
-                    {q.correct_index === oi && <Check className="h-3 w-3" />}
-                  </button>
+                <button key={oi} type="button" onClick={() => onUpdateQ(i, { correct_index: oi })}
+                  className={`flex items-center gap-2 p-2 rounded-lg border text-start transition-all ${q.correct_index === oi ? "border-success bg-success/10" : "border-border"}`}>
+                  <div className={`h-6 w-6 rounded shrink-0 flex items-center justify-center text-xs font-bold ${q.correct_index === oi ? "bg-success text-success-foreground" : "bg-muted"}`}>
+                    {q.correct_index === oi ? <Check className="h-3.5 w-3.5" /> : ["A","B","C","D"][oi]}
+                  </div>
                   <Input
                     value={opt}
-                    onChange={(e) => onUpdateOpt(i, oi, e.target.value)}
+                    onChange={(e) => { e.stopPropagation(); onUpdateOpt(i, oi, e.target.value); }}
+                    onClick={(e) => e.stopPropagation()}
                     className="border-0 bg-transparent h-7 px-1 text-sm"
                     placeholder={`${ar ? "خيار" : "Option"} ${["A","B","C","D"][oi] ?? oi + 1}`}
+                    maxLength={200}
                   />
-                </div>
+                </button>
               ))}
             </div>
           </Card>
         ))}
       </div>
+
+      {/* Add question */}
+      <button type="button" onClick={onAddQ}
+        className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-dashed border-border hover:border-primary text-sm text-muted-foreground hover:text-foreground transition-colors">
+        <Plus className="h-4 w-4" />{ar ? "إضافة سؤال" : "Add question"}
+      </button>
 
       <Card className="p-4 md:p-5 space-y-3">
         <label className="text-xs text-muted-foreground flex items-center gap-2">
