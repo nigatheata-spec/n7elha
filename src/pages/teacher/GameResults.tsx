@@ -219,12 +219,12 @@ const GameResults = () => {
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex items-center gap-4">
             <button onClick={() => nav("/app")}
-              className="flex items-center gap-1.5 text-[10px] tracking-[0.35em] text-primary/40 hover:text-primary/70 uppercase transition-colors font-bold">
+              className="flex items-center gap-1.5 text-[10px] tracking-[0.35em] text-primary/60 hover:text-primary uppercase transition-colors font-bold">
               <ArrowLeft className="h-3 w-3" />Dashboard
             </button>
-            <div className="h-4 w-px bg-primary/15" />
+            <div className="h-4 w-px bg-primary/25" />
             <div>
-              <div className="text-[10px] tracking-[0.5em] text-primary/40 uppercase mb-1">Results</div>
+              <div className="text-[10px] tracking-[0.5em] text-primary/60 uppercase mb-1">Results</div>
               <h1 className="text-2xl md:text-3xl font-black tracking-tight text-primary leading-none">
                 {session?.quizzes?.title ?? "Game"}
               </h1>
@@ -245,7 +245,7 @@ const GameResults = () => {
             {winner && (
               <div className="rounded-2xl border-2 border-primary bg-primary/8 p-7 flex flex-col items-center justify-center text-center gap-4"
                 style={{ boxShadow: "0 0 70px -12px hsl(16 100% 66% / 0.22)" }}>
-                <div className="text-[10px] tracking-[0.5em] text-primary/40 uppercase flex items-center gap-2">
+                <div className="text-[10px] tracking-[0.5em] text-primary/70 uppercase flex items-center gap-2">
                   <Trophy className="h-3 w-3 text-amber-400" />
                   Champion
                 </div>
@@ -255,11 +255,11 @@ const GameResults = () => {
                 </div>
                 {mode === "crypto_rush" ? (
                   <div className="text-3xl md:text-4xl font-black tabular-nums text-primary"
-                    style={{ textShadow: "0 0 24px hsl(16 100% 66% / 0.4)" }}>
+                    style={{ textShadow: "0 0 24px hsl(16 100% 66% / 0.5)" }}>
                     {fmt(winner.crypto)}
                   </div>
                 ) : (
-                  <div className="text-xs tracking-[0.35em] text-primary/60 uppercase font-bold">Last Standing</div>
+                  <div className="text-xs tracking-[0.35em] text-primary/80 uppercase font-bold">Last Standing</div>
                 )}
               </div>
             )}
@@ -271,16 +271,16 @@ const GameResults = () => {
                 const acc = s.total_answers ? (s.correct_answers / s.total_answers) * 100 : 0;
                 return (
                   <div key={s.id}
-                    className="rounded-xl border border-primary/18 bg-primary/5 px-4 py-3 flex items-center gap-3"
+                    className="rounded-xl border border-primary/30 bg-primary/8 px-4 py-3 flex items-center gap-3"
                     style={{ animation: `fade-up 0.4s ${idx * 70}ms both` }}>
-                    <span className="text-primary/35 font-black tabular-nums text-sm w-5 shrink-0">{rank}</span>
+                    <span className="text-primary/60 font-black tabular-nums text-sm w-5 shrink-0">{rank}</span>
                     <Avatar name={s.name} size="sm" />
                     <span className="font-bold text-primary flex-1 truncate min-w-0">{s.name}</span>
-                    <span className="text-xs text-primary/35 tabular-nums shrink-0">{pct(acc)}</span>
+                    <span className="text-xs text-primary/65 tabular-nums shrink-0">{pct(acc)}</span>
                     {mode === "crypto_rush"
-                      ? <span className="font-black tabular-nums text-primary/75 text-sm shrink-0">{fmt(s.crypto)}</span>
+                      ? <span className="font-black tabular-nums text-primary text-sm shrink-0">{fmt(s.crypto)}</span>
                       : <span className={cn("text-[10px] font-bold tracking-widest shrink-0",
-                          s.eliminated ? "text-destructive/50" : "text-primary/50")}>
+                          s.eliminated ? "text-destructive/80" : "text-primary/80")}>
                           {s.eliminated ? "OUT" : "ALIVE"}
                         </span>
                     }
@@ -294,37 +294,37 @@ const GameResults = () => {
         {/* ── Tabs ── */}
         <div>
           <div className="flex items-center justify-between gap-4 mb-4">
-            <div className="flex gap-1 rounded-lg border border-primary/20 p-1">
+            <div className="flex gap-1 rounded-lg border border-primary/30 p-1">
               {(["rank", "qa"] as const).map(t => (
                 <button key={t} onClick={() => setTab(t)}
                   className={cn(
                     "px-4 py-1.5 rounded-md text-[10px] tracking-[0.35em] uppercase font-bold transition-all",
                     tab === t
                       ? "bg-primary text-primary-foreground"
-                      : "text-primary/40 hover:text-primary/70"
+                      : "text-primary/60 hover:text-primary"
                   )}>
                   {t === "rank" ? "Leaderboard" : "Questions"}
                 </button>
               ))}
             </div>
             <Button onClick={exportCsv} variant="outline" size="sm"
-              className="border-primary/25 text-primary/55 hover:text-primary hover:border-primary/50 text-[10px] tracking-widest uppercase">
+              className="border-primary/40 text-primary/75 hover:text-primary hover:border-primary text-[10px] tracking-widest uppercase">
               <Download className="h-3 w-3 me-1.5" />Export
             </Button>
           </div>
 
           {/* Leaderboard */}
           {tab === "rank" && (
-            <div className="rounded-xl border border-primary/18 overflow-hidden">
+            <div className="rounded-xl border border-primary/30 overflow-hidden">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-primary/15 bg-primary/5">
+                  <tr className="border-b border-primary/25 bg-primary/10">
                     {["#", "Player",
                       mode === "crypto_rush" ? "Crypto" : "Status",
                       "Correct", "Accuracy",
                       ...(mode === "crypto_rush" ? ["Hacks"] : [])
                     ].map(h => (
-                      <th key={h} className="px-4 py-3 text-[10px] tracking-widest text-primary/35 text-start first:text-start text-center first-of-type:text-start">
+                      <th key={h} className="px-4 py-3 text-[10px] tracking-widest text-primary/70 text-start first:text-start text-center first-of-type:text-start font-bold">
                         {h}
                       </th>
                     ))}
@@ -335,32 +335,32 @@ const GameResults = () => {
                     const acc = s.total_answers ? (s.correct_answers / s.total_answers) * 100 : 0;
                     return (
                       <tr key={s.id}
-                        className={cn("border-t border-primary/8 transition-colors hover:bg-primary/4",
-                          i === 0 && "bg-primary/8")}>
-                        <td className="px-4 py-3 font-bold text-primary/35 tabular-nums">{i + 1}</td>
+                        className={cn("border-t border-primary/15 transition-colors hover:bg-primary/8",
+                          i === 0 && "bg-primary/12")}>
+                        <td className="px-4 py-3 font-bold text-primary/60 tabular-nums">{i + 1}</td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2.5">
                             <Avatar name={s.name} size="sm" />
                             <span className={cn("font-bold truncate max-w-[140px]",
-                              i === 0 ? "text-primary" : "text-primary/70")}>{s.name}</span>
+                              i === 0 ? "text-primary" : "text-foreground")}>{s.name}</span>
                             {i === 0 && <Trophy className="h-3.5 w-3.5 text-amber-400 shrink-0" />}
                           </div>
                         </td>
                         {mode === "crypto_rush"
-                          ? <td className="px-4 py-3 text-center font-black tabular-nums text-primary/80">{fmt(s.crypto)}</td>
+                          ? <td className="px-4 py-3 text-center font-black tabular-nums text-primary">{fmt(s.crypto)}</td>
                           : <td className="px-4 py-3 text-center">
                               <span className={cn("text-[10px] font-bold tracking-widest",
-                                s.eliminated ? "text-destructive/55" : "text-primary")}>
+                                s.eliminated ? "text-destructive/80" : "text-primary")}>
                                 {s.eliminated ? "ELIMINATED" : "CHAMPION"}
                               </span>
                             </td>
                         }
-                        <td className="px-4 py-3 text-center tabular-nums text-primary/50">
+                        <td className="px-4 py-3 text-center tabular-nums text-foreground/80">
                           {s.correct_answers ?? 0}/{s.total_answers ?? 0}
                         </td>
-                        <td className="px-4 py-3 text-center tabular-nums text-primary/50">{pct(acc)}</td>
+                        <td className="px-4 py-3 text-center tabular-nums text-foreground/80">{pct(acc)}</td>
                         {mode === "crypto_rush" &&
-                          <td className="px-4 py-3 text-center text-primary/35 text-xs">
+                          <td className="px-4 py-3 text-center text-primary/60 text-xs">
                             {s.hacks_made ?? 0}/{s.hacks_received ?? 0}
                           </td>
                         }
@@ -389,10 +389,10 @@ const GameResults = () => {
                 return (
                   <div key={q.id} className={cn(
                     "rounded-xl border p-5",
-                    a < 50 ? "border-destructive/30 bg-destructive/5" : "border-primary/18 bg-primary/5"
+                    a < 50 ? "border-destructive/50 bg-destructive/8" : "border-primary/30 bg-primary/8"
                   )}>
                     <div className="flex items-start justify-between gap-3 mb-4">
-                      <p className="text-sm font-bold text-primary leading-relaxed">{idx + 1}. {q.text}</p>
+                      <p className="text-sm font-bold text-foreground leading-relaxed">{idx + 1}. {q.text}</p>
                       <div className={cn("text-xl font-black tabular-nums shrink-0", a < 50 ? "text-destructive" : "text-primary")}>
                         {pct(a)}
                       </div>
@@ -406,16 +406,16 @@ const GameResults = () => {
                           <div key={i}>
                             <div className="flex items-center justify-between text-xs mb-1 gap-2">
                               <span className={cn("flex items-center gap-1.5 truncate",
-                                isC ? "text-primary font-bold" : "text-primary/45")}>
+                                isC ? "text-primary font-bold" : "text-foreground/65")}>
                                 {isC && <Check className="h-3 w-3 shrink-0" />}
                                 {String.fromCharCode(65 + i)}. {o}
                               </span>
-                              <span className="font-mono text-primary/35 shrink-0 tabular-nums">
+                              <span className="font-mono text-foreground/60 shrink-0 tabular-nums">
                                 {c} ({pct(p)})
                               </span>
                             </div>
-                            <div className="h-1.5 rounded-full bg-primary/10 overflow-hidden">
-                              <div className={cn("h-full rounded-full", isC ? "bg-primary" : "bg-primary/30")}
+                            <div className="h-1.5 rounded-full bg-primary/15 overflow-hidden">
+                              <div className={cn("h-full rounded-full", isC ? "bg-primary" : "bg-primary/40")}
                                 style={{ width: `${p}%` }} />
                             </div>
                           </div>
@@ -437,7 +437,7 @@ const GameResults = () => {
 // ── Tiny stat chip ────────────────────────────────────────────────────────────
 const Stat = ({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) => (
   <div className="text-center">
-    <div className="flex items-center justify-center gap-1 text-[9px] tracking-widest text-primary/35 uppercase mb-0.5">
+    <div className="flex items-center justify-center gap-1 text-[9px] tracking-widest text-primary/65 uppercase mb-0.5">
       {icon}{label}
     </div>
     <div className="font-black tabular-nums text-primary text-sm">{value}</div>
