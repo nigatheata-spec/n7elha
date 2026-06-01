@@ -219,7 +219,7 @@ const GameResults = () => {
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex items-center gap-4">
             <button onClick={() => nav("/app")}
-              className="flex items-center gap-1.5 text-[10px] tracking-[0.35em] text-primary/60 hover:text-primary uppercase transition-colors font-bold">
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-primary/50 bg-primary/10 hover:bg-primary/20 text-primary text-[10px] tracking-[0.3em] uppercase transition-all font-bold">
               <ArrowLeft className="h-3 w-3" />Dashboard
             </button>
             <div className="h-4 w-px bg-primary/25" />
@@ -294,23 +294,23 @@ const GameResults = () => {
         {/* ── Tabs ── */}
         <div>
           <div className="flex items-center justify-between gap-4 mb-4">
-            <div className="flex gap-1 rounded-lg border border-primary/30 p-1">
+            <div className="flex gap-1 rounded-lg border border-primary/40 bg-primary/5 p-1">
               {(["rank", "qa"] as const).map(t => (
                 <button key={t} onClick={() => setTab(t)}
                   className={cn(
-                    "px-4 py-1.5 rounded-md text-[10px] tracking-[0.35em] uppercase font-bold transition-all",
+                    "px-5 py-2 rounded-md text-[10px] tracking-[0.35em] uppercase font-black transition-all",
                     tab === t
-                      ? "bg-primary text-primary-foreground"
-                      : "text-primary/60 hover:text-primary"
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "text-primary hover:bg-primary/15"
                   )}>
                   {t === "rank" ? "Leaderboard" : "Questions"}
                 </button>
               ))}
             </div>
-            <Button onClick={exportCsv} variant="outline" size="sm"
-              className="border-primary/40 text-primary/75 hover:text-primary hover:border-primary text-[10px] tracking-widest uppercase">
-              <Download className="h-3 w-3 me-1.5" />Export
-            </Button>
+            <button onClick={exportCsv}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-primary bg-transparent text-primary text-[10px] tracking-widest uppercase font-bold hover:bg-primary/15 transition-all">
+              <Download className="h-3.5 w-3.5" />Export
+            </button>
           </div>
 
           {/* Leaderboard */}
