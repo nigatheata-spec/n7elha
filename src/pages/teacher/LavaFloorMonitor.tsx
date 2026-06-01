@@ -343,7 +343,7 @@ const LavaFloorMonitor = ({ session, sessionId }: Props) => {
           </div>
         </div>
       </div>
-      </div> {/* end z-index wrapper */}
+      </div>
     </div>
   );
 };

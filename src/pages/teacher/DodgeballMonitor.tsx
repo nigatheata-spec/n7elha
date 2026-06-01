@@ -149,7 +149,7 @@ const DodgeballMonitor = ({ session, sessionId }: Props) => {
 
   return (
     <div className="theme-dodgeball fixed inset-0 bg-background text-foreground overflow-hidden"
-      style={{ background: "radial-gradient(ellipse at 30% 20%, hsl(0 40% 12%) 0%, hsl(0 45% 8%) 100%)" }}>
+      style={{ background: "radial-gradient(ellipse at 30% 20%, hsl(240 45% 12%) 0%, hsl(240 50% 6%) 100%)" }}>
       <div className="pointer-events-none fixed inset-0 opacity-10"
         style={{ backgroundImage: "repeating-linear-gradient(0deg,hsl(0 0% 0%/0.5) 0px,hsl(0 0% 0%/0.5) 1px,transparent 1px,transparent 4px)" }} />
 
@@ -196,7 +196,7 @@ const DodgeballMonitor = ({ session, sessionId }: Props) => {
                   </div>
                   <div className="flex gap-0.5 flex-wrap">
                     {Array.from({ length: Math.max(s.lives ?? 1, 0) }).map((_, i) => (
-                      <Heart key={i} className="h-4 w-4 fill-current text-red-500" />
+                      <Heart key={i} className="h-4 w-4 fill-current" style={{ color: "hsl(190 100% 60%)" }} />
                     ))}
                   </div>
                 </div>
@@ -234,7 +234,7 @@ const DodgeballMonitor = ({ session, sessionId }: Props) => {
             {timerActive ? (
               <div className="space-y-3">
                 <div className="text-center font-mono font-black text-5xl text-primary tabular-nums"
-                  style={{ textShadow: "0 0 30px hsl(9 100% 58% / 0.9)" }}>
+                  style={{ textShadow: "0 0 30px hsl(190 100% 60% / 0.9)" }}>
                   {timerSec}s
                 </div>
                 <div className="text-center text-xs text-muted-foreground font-mono">

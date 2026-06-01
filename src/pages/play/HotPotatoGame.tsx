@@ -239,7 +239,7 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
 
   return (
     <div className="theme-hotpotato min-h-[100dvh] bg-background text-foreground font-mono flex flex-col overflow-hidden"
-      style={{ background: "radial-gradient(ellipse at 40% 0%, hsl(22 60% 12%) 0%, hsl(22 55% 7%) 100%)" }}>
+      style={{ background: "radial-gradient(ellipse at 40% 0%, hsl(0 0% 13%) 0%, hsl(0 0% 6%) 100%)" }}>
       <div className="pointer-events-none fixed inset-0 opacity-10"
         style={{ backgroundImage: "repeating-linear-gradient(0deg,hsl(0 0% 0%/0.5) 0px,hsl(0 0% 0%/0.5) 1px,transparent 1px,transparent 4px)" }} />
 

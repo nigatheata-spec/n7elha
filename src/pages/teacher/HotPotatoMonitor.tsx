@@ -196,7 +196,7 @@ const HotPotatoMonitor = ({ session, sessionId }: Props) => {
 
   return (
     <div className="theme-hotpotato fixed inset-0 bg-background text-foreground overflow-hidden"
-      style={{ background: "radial-gradient(ellipse at 30% 0%, hsl(22 60% 11%) 0%, hsl(22 55% 7%) 100%)", fontFamily: "monospace" }}>
+      style={{ background: "radial-gradient(ellipse at 30% 0%, hsl(0 0% 13%) 0%, hsl(0 0% 6%) 100%)", fontFamily: "monospace" }}>
       {/* Top bar */}
       <div className="absolute top-3 inset-x-3 z-20 flex items-center justify-between text-xs gap-3">
         <div className="text-muted-foreground font-mono">

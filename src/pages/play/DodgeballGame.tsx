@@ -252,7 +252,7 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
 
   return (
     <div className="theme-dodgeball min-h-[100dvh] bg-background text-foreground font-mono flex flex-col overflow-hidden"
-      style={{ background: "radial-gradient(ellipse at 30% 10%, hsl(0 40% 12%) 0%, hsl(0 45% 8%) 100%)" }}>
+      style={{ background: "radial-gradient(ellipse at 30% 10%, hsl(240 45% 12%) 0%, hsl(240 50% 6%) 100%)" }}>
       <div className="pointer-events-none fixed inset-0 opacity-10"
         style={{ backgroundImage: "repeating-linear-gradient(0deg,hsl(0 0% 0%/0.5) 0px,hsl(0 0% 0%/0.5) 1px,transparent 1px,transparent 4px)" }} />
 
@@ -262,8 +262,9 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
         <div className="flex items-center gap-1">
           {lives > 0
             ? Array.from({ length: lives }).map((_, i) =>
-                <Heart key={i} className="h-5 w-5 fill-current text-red-500" />)
-            : <Skull className="h-5 w-5 text-muted-foreground" />
+                <Heart key={i} className="h-5 w-5 fill-current"
+                  style={{ color: "hsl(190 100% 60%)", filter: "drop-shadow(0 0 8px hsl(190 100% 60% / 0.7))" }} />)
+            : <Skull className="h-5 w-5" style={{ color: "hsl(270 50% 50%)" }} />
           }
         </div>
         <div className="text-xs text-muted-foreground tabular-nums">
@@ -315,7 +316,7 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
         {/* REVIVED */}
         {phase === "revived" && (
           <div className="flex-1 flex flex-col items-center justify-center text-center gap-4 animate-pulse">
-            <Heart className="h-20 w-20 text-red-500 fill-current" style={{ filter: "drop-shadow(0 0 20px red)" }} />
+            <Heart className="h-20 w-20 fill-current" style={{ color: "hsl(190 100% 60%)", filter: "drop-shadow(0 0 24px hsl(190 100% 60% / 0.8))" }} />
             <h2 className="text-2xl font-black text-primary">تم إنعاشك!</h2>
             <p className="text-sm text-muted-foreground">عد إلى الحلبة...</p>
           </div>
@@ -333,8 +334,9 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
             </div>
 
             {lives === 1 && phase === "question" && (
-              <div className="text-center text-xs text-red-400 font-bold mb-2 animate-pulse">
-                حياة أخيرة — أجب بحذر
+              <div className="text-center text-xs font-bold mb-2 animate-pulse"
+                style={{ color: "hsl(270 80% 75%)", textShadow: "0 0 12px hsl(270 80% 65% / 0.6)" }}>
+                بلورة الزمن الأخيرة — أجب بحذر
               </div>
             )}
 
@@ -366,20 +368,20 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
             <div className="text-center">
               <div className="text-[10px] tracking-[0.5em] text-muted-foreground mb-1 uppercase">Stop closest to</div>
               <div className="text-6xl font-black text-primary tabular-nums"
-                style={{ textShadow: "0 0 30px hsl(9 100% 58% / 0.9)" }}>
+                style={{ textShadow: "0 0 30px hsl(190 100% 60% / 0.9)" }}>
                 10.00s
               </div>
             </div>
 
             <div className="text-5xl font-black tabular-nums text-foreground"
-              style={{ textShadow: phase === "timer" ? "0 0 20px hsl(9 100% 58% / 0.6)" : "none" }}>
+              style={{ textShadow: phase === "timer" ? "0 0 20px hsl(190 100% 60% / 0.6)" : "none" }}>
               {timerSec}s
             </div>
 
             {phase === "timer" ? (
               <button onClick={tapTimer}
                 className="h-40 w-40 rounded-full border-4 border-primary bg-primary/20 font-black text-2xl text-primary active:scale-95 transition-all tracking-widest"
-                style={{ boxShadow: "0 0 40px hsl(9 100% 58% / 0.5)", textShadow: "0 0 10px hsl(9 100% 58%)" }}>
+                style={{ boxShadow: "0 0 40px hsl(190 100% 60% / 0.5)", textShadow: "0 0 10px hsl(190 100% 60%)" }}>
                 STOP
               </button>
             ) : (
@@ -434,7 +436,7 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
                   ) : (
                     <div className="flex gap-0.5">
                       {Array.from({ length: s.lives ?? 1 }).map((_: any, i: number) => (
-                        <Heart key={i} className="h-3 w-3 fill-current text-red-500" />
+                        <Heart key={i} className="h-3 w-3 fill-current" style={{ color: "hsl(190 100% 60%)" }} />
                       ))}
                     </div>
                   )}
