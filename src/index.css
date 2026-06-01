@@ -254,6 +254,20 @@
   }
   .lava-fill-anim { animation: lava-bubble 2.5s ease-in-out infinite; }
   .border-glow { box-shadow: none; }
+
+  @keyframes lava-wave-x {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); }
+  }
+  @keyframes ember-float {
+    0%   { transform: translateY(0) scale(1);       opacity: 0.9; }
+    60%  { opacity: 0.5; }
+    100% { transform: translateY(-72px) scale(0.1); opacity: 0; }
+  }
+  @keyframes heat-flicker {
+    0%, 100% { opacity: 0.02; }
+    50%      { opacity: 0.07; }
+  }
   .terminal-screen {
     background:
       radial-gradient(ellipse at 35% 20%, hsl(199 28% 24% / 0.92) 0%, hsl(199 28% 18% / 0.98) 54%, hsl(199 32% 12%) 100%);
