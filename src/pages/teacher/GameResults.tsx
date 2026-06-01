@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Download, Trophy, Check, Clock, Users, Target } from "lucide-react";
+import { ArrowLeft, Download, Trophy, Check, Clock, Users, Target } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const fmt = (n: number) => n.toLocaleString();
@@ -38,9 +38,9 @@ const GameResults = () => {
   const [questions, setQuestions] = useState<any[]>([]);
   const [students, setStudents]   = useState<any[]>([]);
   const [responses, setResponses] = useState<any[]>([]);
-  const [hacks, setHacks]         = useState<any[]>([]);
   const [phase, setPhase]         = useState<"loading" | "cinematic" | "results">("loading");
-  const [tab, setTab]             = useState<"rank" | "qa" | "hacks">("rank");
+  const [tab, setTab]             = useState<"rank" | "qa">("rank");
+  const nav = useNavigate();
 
   useEffect(() => {
     if (!sessionId) return;
@@ -52,14 +52,12 @@ const GameResults = () => {
         const { data: qs } = await supabase.from("questions").select("*").eq("quiz_id", s.quiz_id).order("position");
         setQuestions(qs ?? []);
       }
-      const [{ data: ss }, { data: rs }, { data: hs }] = await Promise.all([
+      const [{ data: ss }, { data: rs }] = await Promise.all([
         supabase.from("game_students").select("*").eq("session_id", sessionId).order("crypto", { ascending: false }),
         supabase.from("question_responses").select("*").eq("session_id", sessionId),
-        supabase.from("hack_events").select("*").eq("session_id", sessionId),
       ]);
       setStudents(ss ?? []);
       setResponses(rs ?? []);
-      setHacks(hs ?? []);
       setPhase("cinematic");
     })();
   }, [sessionId]);
@@ -89,15 +87,13 @@ const GameResults = () => {
   const stats = useMemo(() => {
     const total = responses.length;
     const ok = responses.filter(r => r.is_correct).length;
-    const succHacks = hacks.filter(h => h.success).length;
     const dur = session?.started_at && session?.ended_at
       ? Math.round((new Date(session.ended_at).getTime() - new Date(session.started_at).getTime()) / 1000) : 0;
     return {
       avgAcc: total ? (ok / total) * 100 : 0,
-      succHacks, failHacks: hacks.length - succHacks,
       mm: Math.floor(dur / 60), ss: dur % 60,
     };
-  }, [responses, hacks, session]);
+  }, [responses, session]);
 
   const winner = ranked[0];
 
@@ -221,11 +217,18 @@ const GameResults = () => {
 
         {/* ── Header ── */}
         <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <div className="text-[10px] tracking-[0.5em] text-primary/40 uppercase mb-1">Results</div>
-            <h1 className="text-2xl md:text-3xl font-black tracking-tight text-primary leading-none">
-              {session?.quizzes?.title ?? "Game"}
-            </h1>
+          <div className="flex items-center gap-4">
+            <button onClick={() => nav("/app")}
+              className="flex items-center gap-1.5 text-[10px] tracking-[0.35em] text-primary/40 hover:text-primary/70 uppercase transition-colors font-bold">
+              <ArrowLeft className="h-3 w-3" />Dashboard
+            </button>
+            <div className="h-4 w-px bg-primary/15" />
+            <div>
+              <div className="text-[10px] tracking-[0.5em] text-primary/40 uppercase mb-1">Results</div>
+              <h1 className="text-2xl md:text-3xl font-black tracking-tight text-primary leading-none">
+                {session?.quizzes?.title ?? "Game"}
+              </h1>
+            </div>
           </div>
           <div className="flex items-center gap-5 shrink-0">
             <Stat icon={<Clock className="h-3 w-3" />} label="Duration"
@@ -292,7 +295,7 @@ const GameResults = () => {
         <div>
           <div className="flex items-center justify-between gap-4 mb-4">
             <div className="flex gap-1 rounded-lg border border-primary/20 p-1">
-              {(["rank", "qa", "hacks"] as const).map(t => (
+              {(["rank", "qa"] as const).map(t => (
                 <button key={t} onClick={() => setTab(t)}
                   className={cn(
                     "px-4 py-1.5 rounded-md text-[10px] tracking-[0.35em] uppercase font-bold transition-all",
@@ -300,7 +303,7 @@ const GameResults = () => {
                       ? "bg-primary text-primary-foreground"
                       : "text-primary/40 hover:text-primary/70"
                   )}>
-                  {t === "rank" ? "Leaderboard" : t === "qa" ? "Questions" : "Hacks"}
+                  {t === "rank" ? "Leaderboard" : "Questions"}
                 </button>
               ))}
             </div>
@@ -425,55 +428,6 @@ const GameResults = () => {
             </div>
           )}
 
-          {/* Hacks */}
-          {tab === "hacks" && (
-            <div className="space-y-3">
-              <div className="grid grid-cols-3 gap-3">
-                {[
-                  { label: "Total Hacks", val: hacks.length, accent: false },
-                  { label: "Successful",  val: stats.succHacks, accent: true },
-                  { label: "Failed",      val: stats.failHacks, accent: false },
-                ].map(item => (
-                  <div key={item.label} className="rounded-xl border border-primary/18 bg-primary/5 p-4 text-center">
-                    <div className="text-[9px] tracking-[0.4em] text-primary/35 uppercase mb-1">{item.label}</div>
-                    <div className={cn("text-3xl font-black tabular-nums",
-                      item.accent ? "text-primary" : "text-primary/60")}>
-                      {item.val}
-                    </div>
-                  </div>
-                ))}
-              </div>
-              {hacks.length === 0
-                ? <div className="rounded-xl border border-primary/18 py-14 text-center text-primary/30 text-sm">
-                    No hack events recorded
-                  </div>
-                : (
-                  <div className="rounded-xl border border-primary/18 overflow-hidden max-h-[52vh] overflow-y-auto">
-                    {hacks.map(h => {
-                      const hk = students.find(x => x.id === h.hacker_id)?.name ?? "?";
-                      const tg = students.find(x => x.id === h.target_id)?.name ?? "?";
-                      return (
-                        <div key={h.id}
-                          className={cn(
-                            "px-4 py-3 text-xs font-mono border-b border-primary/8 last:border-0 flex items-center gap-3",
-                            h.success ? "text-primary/75" : "text-primary/25"
-                          )}>
-                          <span className="text-primary/20 tabular-nums shrink-0">
-                            {new Date(h.created_at).toLocaleTimeString()}
-                          </span>
-                          <span className="flex-1 truncate">{hk} &rarr; {tg}</span>
-                          <span className={cn("font-bold tracking-widest text-[10px] shrink-0",
-                            h.success ? "text-primary" : "text-destructive/50")}>
-                            {h.success ? `+${fmt(h.crypto_transferred)}` : "FAILED"}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )
-              }
-            </div>
-          )}
         </div>
       </div>
     </div>
