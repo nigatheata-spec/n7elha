@@ -31,6 +31,9 @@ const Game = () => {
   const studentId = sessionId ? localStorage.getItem(`hash_student_${sessionId}`) : null;
   const startedAtRef = useRef<number>(0);
   const askedCount = useRef(0);
+  // Keep a ref to students so hack_events callback can read current names
+  // without causing the realtime channel to tear down on every score update.
+  const studentsRef = useRef<any[]>([]);
 
   // initial load
   useEffect(() => {
@@ -48,7 +51,11 @@ const Game = () => {
     })();
   }, [sessionId, studentId]);
 
-  // realtime
+  // Keep studentsRef in sync every render so closures always see current list
+  studentsRef.current = students;
+
+  // realtime — deps contain only stable values so the channel is created once
+  // and never torn down mid-game due to score updates changing `students`.
   useEffect(() => {
     if (!sessionId) return;
     const ch = supabase.channel(`game-${sessionId}`)
@@ -64,15 +71,16 @@ const Game = () => {
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "hack_events", filter: `session_id=eq.${sessionId}` },
         (p: any) => {
           const ev = p.new;
-          const hacker = students.find(x => x.id === ev.hacker_id)?.name ?? "?";
-          const target = students.find(x => x.id === ev.target_id)?.name ?? "?";
+          // Use ref — not state — so this callback never causes channel re-creation
+          const hacker = studentsRef.current.find((x: any) => x.id === ev.hacker_id)?.name ?? "?";
+          const target = studentsRef.current.find((x: any) => x.id === ev.target_id)?.name ?? "?";
           if (ev.success) {
             if (ev.target_id === studentId) setPhase("breach");
           }
         })
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, [sessionId, studentId, students]);
+  }, [sessionId, studentId]); // ← `students` removed: channel stays alive for the whole session
 
   // status sync
   useEffect(() => {

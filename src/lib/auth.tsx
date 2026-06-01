@@ -22,22 +22,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Set up listener FIRST so we don't miss SIGNED_IN events
+    // Resolve the initial session FIRST, then mark loading done.
+    // onAuthStateChange must NOT set loading=false — it fires before
+    // getSession resolves on cold load, which would briefly show no-user
+    // and trigger RequireAuth to redirect before the real session arrives.
+    let initialised = false;
+
     const { data: sub } = supabase.auth.onAuthStateChange((evt, s) => {
       if (evt === "SIGNED_OUT") clearStoredAuth();
       setSession(s);
-      setLoading(false);
+      // Only unblock loading after the first getSession() has already run.
+      // Subsequent auth changes (sign-in, token refresh) can clear loading freely.
+      if (initialised) setLoading(false);
     });
-    // Then load existing session
+
     supabase.auth.getSession().then(({ data, error }) => {
       if (error) clearStoredAuth();
       setSession(data.session);
+      initialised = true;
       setLoading(false);
     }).catch(() => {
       clearStoredAuth();
       setSession(null);
+      initialised = true;
       setLoading(false);
     });
+
     return () => sub.subscription.unsubscribe();
   }, []);
 
