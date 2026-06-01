@@ -59,6 +59,8 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
   const askedRef     = useRef(0);
   const pickedRef    = useRef<number | null>(null);
   const passedRef    = useRef(false);
+  const studentsRef  = useRef<any[]>([]);
+  studentsRef.current = students;
   const lastExplosionAtRef = useRef<string | null>(null);
   const passTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -199,7 +201,7 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
 
       if (hasBomb) {
         // Pick 3 random pass targets
-        const others = students.filter(s => s.id !== studentId);
+        const others = studentsRef.current.filter((s: any) => s.id !== studentId);
         const shuffled = [...others].sort(() => Math.random() - 0.5).slice(0, 3);
         setPassTargets(shuffled);
         setTimeout(() => setPhase("passing"), 600);
@@ -217,7 +219,7 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
       session_id: sessionId, student_id: me.id, question_id: currentQ.id,
       question_index: askedRef.current, answer_index: idx, is_correct: correct,
     }).catch(() => {});
-  }, [currentQ, me, hasBomb, students, studentId, sessionId]);
+  }, [currentQ, me, hasBomb, studentId, sessionId]);
 
   const submit = (idx: number) => { if (pickedRef.current !== null) return; handleAnswer(idx); };
 

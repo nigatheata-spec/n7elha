@@ -53,6 +53,10 @@ const HotPotatoMonitor = ({ session, sessionId }: Props) => {
 
   const lastProcessedExplosionRef = useRef<string | null>(null);
   const initializedRef = useRef(false);
+  const studentsRef = useRef<any[]>([]);
+  const sessionRef = useRef<any>(null);
+  studentsRef.current = students;
+  sessionRef.current = session;
 
   const settings        = session?.settings ?? {};
   const maxExplosions   = settings.maxExplosions ?? 5;
@@ -121,7 +125,7 @@ const HotPotatoMonitor = ({ session, sessionId }: Props) => {
           .select("settings").eq("id", sessionId).single();
         const live = (fresh?.settings ?? settings) as Record<string, any>;
 
-        const victim = students.find(s => s.id === bombHolderId);
+        const victim = studentsRef.current.find((s: any) => s.id === bombHolderId);
         if (!victim) return;
 
         const newCount = (live.explosionCount ?? 0) + 1;
@@ -139,7 +143,7 @@ const HotPotatoMonitor = ({ session, sessionId }: Props) => {
           return;
         }
 
-        const others = students.filter(s => s.id !== bombHolderId);
+        const others = studentsRef.current.filter((s: any) => s.id !== bombHolderId);
         const nextHolder = others.length > 0
           ? others[Math.floor(Math.random() * others.length)]
           : victim;
@@ -162,23 +166,19 @@ const HotPotatoMonitor = ({ session, sessionId }: Props) => {
     };
 
     triggerExplosion();
-  }, [now, bombExplodesAt, bombHolderId, students]);
+  }, [now, bombExplodesAt, bombHolderId]);
 
   // ── Auto-end: time up ─────────────────────────────────────────────────────
   useEffect(() => {
-    if (!session || session.status !== "running") return;
+    const sess = sessionRef.current;
+    if (!sess || sess.status !== "running") return;
+    if (!startedAt) return; // timer not initialized yet — don't fire
     if (left === 0 && !ending) {
       setEnding(true);
       supabase.from("game_sessions").update({ status: "finished", ended_at: new Date().toISOString() }).eq("id", sessionId);
     }
-  }, [left, session, ending]);
+  }, [left, startedAt, sessionId, ending]);
 
-  // ── Navigate to results when finished ────────────────────────────────────
-  useEffect(() => {
-    if (session?.status === "finished") {
-      nav(`/app/games/${session.id}/results`, { replace: true });
-    }
-  }, [session?.status]);
 
   const endNow = async () => {
     if (!session) return;
@@ -193,6 +193,18 @@ const HotPotatoMonitor = ({ session, sessionId }: Props) => {
   };
 
   const bombHolder = students.find(s => s.id === bombHolderId);
+
+  if (session?.status === "finished") {
+    return (
+      <div className="theme-hotpotato fixed inset-0 flex flex-col items-center justify-center gap-6"
+        style={{ background: "hsl(0 0% 6%)", fontFamily: "monospace" }}>
+        <div className="text-5xl font-black text-primary">GAME OVER</div>
+        <Button onClick={() => nav(`/app/games/${session.id}/results`)} className="text-lg px-8 py-4 font-mono font-bold">
+          <Trophy className="h-5 w-5 me-2" /> View Results
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="theme-hotpotato fixed inset-0 bg-background text-foreground overflow-hidden"
