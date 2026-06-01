@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
-import { Trophy, Skull, Shield, Flame } from "lucide-react";
+import { Trophy, Shield, Flame } from "lucide-react";
 
 type Q = { id: string; text: string; options: string[]; correct_index: number; image_url?: string };
 type Phase = "waiting" | "question" | "answered" | "done";
@@ -63,7 +63,6 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
 
   const settings = session?.settings ?? {};
   const bricks   = me?.crypto ?? 0;
-  const lavaWon  = settings.lavaWon;
   const lavaPct  = Math.min(100, displayLava);
   const danger   = lavaPct > 60;
   const critical = lavaPct > 82;
@@ -335,21 +334,17 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
           {/* DONE */}
           {phase === "done" && (
             <div className="flex-1 flex flex-col items-center justify-center text-center gap-5">
-              {lavaWon !== false ? (
-                <>
-                  <Trophy className="h-16 w-16" style={{ color: "hsl(142 65% 55%)", filter: "drop-shadow(0 0 18px hsl(142 65% 40%))" }} />
-                  <div className="font-black text-2xl tracking-tight" style={{ color: "hsl(142 65% 65%)" }}>نجح الفصل!</div>
-                  <p className="text-sm" style={{ color: "hsl(30 15% 58%)" }}>صمدتم معاً حتى انتهى الوقت</p>
-                </>
-              ) : (
-                <>
-                  <Skull className="h-16 w-16" style={{ color: "hsl(14 100% 65%)", filter: "drop-shadow(0 0 18px hsl(14 100% 50%))" }} />
-                  <div className="font-black text-2xl tracking-tight" style={{ color: "hsl(14 100% 65%)" }}>ابتلعتكم الحمم</div>
-                  <p className="text-sm" style={{ color: "hsl(30 15% 58%)" }}>حاولوا أكثر المرة القادمة</p>
-                </>
-              )}
-              <p className="text-xs tabular-nums" style={{ color: "hsl(30 12% 50%)" }}>
-                {me?.correct_answers ?? 0} إجابة صحيحة · {bricks} طوب مكتسب
+              <Trophy className="h-16 w-16" style={{ color: "hsl(35 100% 62%)", filter: "drop-shadow(0 0 18px hsl(35 100% 50% / 0.6))" }} />
+              <div className="font-black text-2xl tracking-tight" style={{ color: "hsl(35 100% 68%)" }}>انتهت الجولة!</div>
+              <div style={{ color: "hsl(30 15% 58%)" }} className="text-sm">النتيجة النهائية</div>
+              <div className="flex items-center gap-3">
+                <Shield className="h-8 w-8" style={{ color: "hsl(35 100% 62%)" }} />
+                <span className="font-black text-5xl tabular-nums" style={{ color: "hsl(35 100% 68%)", textShadow: "0 0 24px hsl(35 100% 55% / 0.5)" }}>
+                  {bricks}
+                </span>
+              </div>
+              <p className="text-xs tabular-nums" style={{ color: "hsl(30 12% 48%)" }}>
+                {me?.correct_answers ?? 0} إجابة صحيحة
               </p>
               <button onClick={() => navigate("/play")}
                 className="mt-1 px-6 py-2.5 rounded-xl font-black text-sm transition-all active:scale-[0.97]"

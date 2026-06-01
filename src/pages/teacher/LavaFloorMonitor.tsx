@@ -38,12 +38,14 @@ const LavaFloorMonitor = ({ session, sessionId }: Props) => {
   const [ending, setEnding]     = useState(false);
   const [spiking, setSpiking]   = useState(false);
 
-  const lavaRef       = useRef(0);
-  const dbWriteRef    = useRef(0);
-  const prevTotals    = useRef({ wrong: 0, bricksSpent: 0 });
+  const lavaRef        = useRef(0);
+  const dbWriteRef     = useRef(0);
+  const prevTotals     = useRef({ wrong: 0, bricksSpent: 0 });
   const initializedRef = useRef(false);
+  const settingsRef    = useRef<any>({});
 
   const settings    = session?.settings ?? {};
+  settingsRef.current = settings; // always up-to-date inside closures
   const lavaRate    = settings.lavaRate ?? 0.08;
   const minutes     = settings.minutes ?? 8;
   const startedAt   = session?.started_at ? new Date(session.started_at).getTime() : 0;
@@ -109,17 +111,17 @@ const LavaFloorMonitor = ({ session, sessionId }: Props) => {
       if (n - dbWriteRef.current >= 3000) {
         dbWriteRef.current = n;
         supabase.from("game_sessions").update({
-          settings: { ...settings, lavaLevel: lavaRef.current, lavaSnapshotAt: new Date().toISOString() }
+          settings: { ...settingsRef.current, lavaLevel: lavaRef.current, lavaSnapshotAt: new Date().toISOString() }
         }).eq("id", sessionId).catch(() => {});
       }
 
-      // Check if lava reached top → class loses
+      // Lava reached 100% → auto-end
       if (lavaRef.current >= 100 && !ending) {
         setEnding(true);
         supabase.from("game_sessions").update({
           status: "finished",
           ended_at: new Date().toISOString(),
-          settings: { ...settings, lavaLevel: 100, lavaWon: false },
+          settings: { ...settingsRef.current, lavaLevel: 100 },
         }).eq("id", sessionId).catch(() => {});
       }
 
@@ -128,7 +130,7 @@ const LavaFloorMonitor = ({ session, sessionId }: Props) => {
     return () => clearInterval(t);
   }, [session?.status, lavaRate, ending]);
 
-  // ── Timer end → class wins ────────────────────────────────────────────────
+  // ── Timer end ─────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!session || session.status !== "running") return;
     if (left === 0 && !ending) {
@@ -136,7 +138,7 @@ const LavaFloorMonitor = ({ session, sessionId }: Props) => {
       supabase.from("game_sessions").update({
         status: "finished",
         ended_at: new Date().toISOString(),
-        settings: { ...settings, lavaWon: true },
+        settings: { ...settingsRef.current },
       }).eq("id", sessionId).catch(() => {});
     }
   }, [left, session, ending]);
@@ -152,7 +154,7 @@ const LavaFloorMonitor = ({ session, sessionId }: Props) => {
     if (!session || !confirm("End the game now?")) return;
     await supabase.from("game_sessions").update({
       status: "finished", ended_at: new Date().toISOString(),
-      settings: { ...settings, lavaWon: lavaRef.current < 100 },
+      settings: { ...settingsRef.current },
     }).eq("id", sessionId);
     nav(`/app/games/${session.id}/results`);
   };
@@ -178,9 +180,39 @@ const LavaFloorMonitor = ({ session, sessionId }: Props) => {
   const critical    = lavaDisplay >= 92;
   const totalBricks = students.reduce((a, s) => a + (s.crypto ?? 0), 0);
 
+  const WAVE = "M0,22 C75,0 225,44 300,22 C375,0 525,44 600,22 C675,0 825,44 900,22 C975,0 1125,44 1200,22 C1275,0 1425,44 1500,22 C1575,0 1725,44 1800,22 C1875,0 2025,44 2100,22 C2175,0 2325,44 2400,22 L2400,60 L0,60 Z";
+
   return (
-    <div className="theme-lavafloor fixed inset-0 bg-background text-foreground overflow-hidden font-mono"
-      style={{ background: "radial-gradient(ellipse at 50% 110%, hsl(14 50% 9%) 0%, hsl(0 0% 6%) 55%)" }}>
+    <div className="theme-lavafloor fixed inset-0 text-foreground overflow-hidden font-mono"
+      style={{ background: "radial-gradient(ellipse at 50% 120%, hsl(14 70% 8%) 0%, hsl(0 0% 4%) 58%)" }}>
+
+      {/* ── Rising lava body (GPU translateY, behind all content) ─────── */}
+      <div className="absolute inset-x-0 bottom-0 h-full pointer-events-none"
+        style={{ transform: `translateY(${100 - lavaDisplay}%)`, transition: "transform 0.6s cubic-bezier(0.25,0.46,0.45,0.94)", willChange: "transform", zIndex: 1 }}>
+        {/* Dual wave at surface */}
+        <div className="absolute inset-x-0 -top-9 h-[60px] overflow-hidden">
+          <svg className="absolute top-0 left-0 h-full" style={{ width: "200%", animation: "lava-wave-x 5s linear infinite" }} viewBox="0 0 2400 60" preserveAspectRatio="none">
+            <path d={WAVE} fill="#bf3a20" />
+          </svg>
+          <svg className="absolute top-1 left-0 h-full opacity-50" style={{ width: "200%", animation: "lava-wave-x 3.8s linear infinite reverse" }} viewBox="0 0 2400 60" preserveAspectRatio="none">
+            <path d={WAVE} fill="#e74c3c" />
+          </svg>
+          <div className="absolute inset-x-0 top-0 h-px" style={{ background: "hsl(35 100% 78% / 0.65)", boxShadow: "0 0 10px 3px hsl(35 100% 62% / 0.4)" }} />
+        </div>
+        <div className="absolute inset-0 lava-fill lava-fill-anim" />
+      </div>
+
+      {/* Ambient heat glow rising up */}
+      <div className="absolute inset-x-0 bottom-0 pointer-events-none transition-all duration-700"
+        style={{ height: `${Math.min(50, lavaDisplay * 0.65)}%`, background: "linear-gradient(to top, hsl(14 90% 16% / 0.55), transparent)", zIndex: 2 }} />
+
+      {/* Critical flash */}
+      {critical && (
+        <div className="absolute inset-0 pointer-events-none" style={{ background: "hsl(0 90% 45% / 0.05)", animation: "heat-flicker 1.1s ease-in-out infinite", zIndex: 2 }} />
+      )}
+
+      {/* All existing UI sits above the lava */}
+      <div className="absolute inset-0 overflow-hidden" style={{ zIndex: 3 }}>
 
       {/* Top bar */}
       <div className="absolute top-3 inset-x-3 z-20 flex items-center justify-between text-xs gap-3">
@@ -311,6 +343,7 @@ const LavaFloorMonitor = ({ session, sessionId }: Props) => {
           </div>
         </div>
       </div>
+      </div> {/* end z-index wrapper */}
     </div>
   );
 };
