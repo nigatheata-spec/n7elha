@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Heart, Skull, Trophy, Timer, Square, Maximize, Zap, AlertTriangle } from "lucide-react";
+import { Trophy, Timer, Square, Maximize, Zap, AlertTriangle } from "lucide-react";
 
 // ── Letter avatar ─────────────────────────────────────────────────────────────
 const AV_COLORS = ["#2563eb","#16a34a","#b45309","#dc2626","#7c3aed","#0891b2","#c2410c","#0f766e"];
@@ -25,6 +25,30 @@ const Avatar = ({ name, size = "md", dim = false }: { name: string; size?: "sm" 
   );
 };
 
+// Arcane crystal icon — same as student screen
+const CrystalIcon = ({ className, dim = false }: { className?: string; dim?: boolean }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <polygon points="12,2 20,9 12,22 4,9"
+      fill={dim ? "hsl(240 20% 35%)" : "hsl(190 100% 65%)"}
+      opacity={dim ? 0.35 : 0.85} />
+    <polygon points="12,2 20,9 12,8 4,9"
+      fill={dim ? "hsl(240 15% 55%)" : "hsl(200 100% 92%)"}
+      opacity={dim ? 0.25 : 0.7} />
+    <line x1="12" y1="2" x2="12" y2="8" stroke="white" strokeWidth="0.6" opacity="0.5" />
+    {!dim && <circle cx="12" cy="2" r="1.2" fill="hsl(200 100% 96%)" opacity="0.9" />}
+  </svg>
+);
+
+// Stable starfield — same seed as student screen
+const STARS = Array.from({ length: 40 }, (_, i) => ({
+  x:        (i * 37 + 11) % 100,
+  y:        (i * 53 + 17) % 100,
+  size:     1 + (i % 3),
+  color:    i % 6 === 0 ? "hsl(290 80% 82%)" : i % 4 === 0 ? "hsl(200 100% 88%)" : "hsl(260 50% 92%)",
+  duration: 2.5 + (i % 4) * 0.7,
+  delay:    (i * 0.31) % 4,
+}));
+
 interface Props { session: any; sessionId: string; }
 
 const TIMER_MAX_MS = 15_000;
@@ -38,9 +62,9 @@ const DodgeballMonitor = ({ session, sessionId }: Props) => {
   const timerRafRef   = useRef<number | null>(null);
   const timerStartRef = useRef<number>(0);
 
-  const settings      = session?.settings || {};
-  const timerActive: boolean      = settings.timerActive   ?? false;
-  const timerRoundId: string|null = settings.timerRoundId  ?? null;
+  const settings       = session?.settings || {};
+  const timerActive: boolean       = settings.timerActive   ?? false;
+  const timerRoundId: string|null  = settings.timerRoundId  ?? null;
   const timerWinnerId: string|null = settings.timerWinnerId ?? null;
 
   // ── Load + subscribe ──────────────────────────────────────────────────────
@@ -148,10 +172,23 @@ const DodgeballMonitor = ({ session, sessionId }: Props) => {
   const winnerName = timerWinnerId ? students.find(s => s.id === timerWinnerId)?.name : null;
 
   return (
-    <div className="theme-dodgeball fixed inset-0 bg-background text-foreground overflow-hidden"
-      style={{ background: "radial-gradient(ellipse at 30% 20%, hsl(240 45% 12%) 0%, hsl(240 50% 6%) 100%)" }}>
-      <div className="pointer-events-none fixed inset-0 opacity-10"
-        style={{ backgroundImage: "repeating-linear-gradient(0deg,hsl(0 0% 0%/0.5) 0px,hsl(0 0% 0%/0.5) 1px,transparent 1px,transparent 4px)" }} />
+    <div className="theme-dodgeball fixed inset-0 text-foreground overflow-hidden relative"
+      style={{ background: "radial-gradient(ellipse at 50% -10%, hsl(270 50% 14%) 0%, hsl(255 40% 7%) 55%, hsl(240 35% 5%) 100%)" }}>
+
+      {/* Starfield — same as student screen */}
+      {STARS.map((s, i) => (
+        <div key={i} className="absolute rounded-full pointer-events-none"
+          style={{
+            left: `${s.x}%`, top: `${s.y}%`,
+            width: s.size, height: s.size,
+            background: s.color,
+            animation: `star-twinkle ${s.duration}s ease-in-out ${s.delay}s infinite`,
+          }} />
+      ))}
+
+      {/* Ambient arcane glow — same as student screen */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-96"
+        style={{ background: "radial-gradient(ellipse at 50% 0%, hsl(270 60% 28% / 0.28) 0%, transparent 70%)" }} />
 
       {/* Top bar */}
       <div className="absolute top-3 inset-x-3 z-20 flex items-center justify-between font-mono text-xs gap-3">
@@ -173,7 +210,7 @@ const DodgeballMonitor = ({ session, sessionId }: Props) => {
         </div>
       </div>
 
-      <div className="h-full grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-4 p-4 pt-14">
+      <div className="h-full grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-4 p-4 pt-14 relative">
 
         {/* Player grid */}
         <div className="overflow-y-auto">
@@ -187,27 +224,31 @@ const DodgeballMonitor = ({ session, sessionId }: Props) => {
                 <div key={s.id} className={cn(
                   "rounded-xl border-2 p-3 flex flex-col gap-1.5 transition-all",
                   s.lives >= 2
-                    ? "border-primary bg-primary/12 shadow-[0_0_20px_-5px_hsl(9_100%_58%/0.5)]"
-                    : "border-primary/50 bg-primary/6"
-                )}>
+                    ? "border-primary bg-primary/12 shadow-[0_0_20px_-5px_hsl(190_100%_60%/0.4)]"
+                    : "border-primary/40 bg-primary/6"
+                )}
+                  style={{ backdropFilter: "blur(4px)", background: s.lives >= 2 ? "hsl(255 40% 11% / 0.9)" : "hsl(255 40% 8% / 0.7)" }}>
                   <div className="flex items-center gap-2">
                     <Avatar name={s.name} size="sm" />
                     <span className="font-mono text-primary font-bold text-sm truncate flex-1">{s.name}</span>
                   </div>
                   <div className="flex gap-0.5 flex-wrap">
-                    {Array.from({ length: Math.max(s.lives ?? 1, 0) }).map((_, i) => (
-                      <Heart key={i} className="h-4 w-4 fill-current" style={{ color: "hsl(190 100% 60%)" }} />
+                    {Array.from({ length: Math.min(Math.max(s.lives ?? 1, 0), 8) }).map((_, i) => (
+                      <div key={i} style={{ filter: "drop-shadow(0 0 4px hsl(190 100% 60% / 0.7))" }}>
+                        <CrystalIcon className="h-4 w-4" />
+                      </div>
                     ))}
                   </div>
                 </div>
               ))}
               {eliminated.map(s => (
-                <div key={s.id} className="rounded-xl border-2 border-border/20 bg-muted/5 p-3 flex flex-col gap-1.5 opacity-35">
+                <div key={s.id} className="rounded-xl border-2 border-border/20 p-3 flex flex-col gap-1.5 opacity-30"
+                  style={{ background: "hsl(255 30% 7% / 0.6)" }}>
                   <div className="flex items-center gap-2">
                     <Avatar name={s.name} size="sm" dim />
                     <span className="font-mono text-muted-foreground font-bold text-sm truncate flex-1 line-through">{s.name}</span>
                   </div>
-                  <Skull className="h-4 w-4 text-muted-foreground" />
+                  <CrystalIcon className="h-4 w-4" dim />
                 </div>
               ))}
             </div>
@@ -221,9 +262,13 @@ const DodgeballMonitor = ({ session, sessionId }: Props) => {
           <div className={cn(
             "rounded-2xl border-2 p-5 transition-all",
             timerActive
-              ? "border-primary bg-primary/10 shadow-[0_0_40px_-5px_hsl(9_100%_58%/0.7)]"
-              : "border-border/40 bg-muted/8"
-          )}>
+              ? "border-primary shadow-[0_0_40px_-5px_hsl(190_100%_60%/0.5)]"
+              : "border-border/40"
+          )}
+            style={{
+              background: timerActive ? "hsl(255 45% 11% / 0.9)" : "hsl(255 40% 8% / 0.7)",
+              backdropFilter: "blur(6px)",
+            }}>
             <div className="flex items-center justify-between mb-3">
               <span className="font-mono text-xs text-muted-foreground flex items-center gap-2">
                 <Timer className="h-3 w-3" /> TIMER CHALLENGE
@@ -233,24 +278,40 @@ const DodgeballMonitor = ({ session, sessionId }: Props) => {
 
             {timerActive ? (
               <div className="space-y-3">
-                {/* Radial arc matching the student STOP button experience */}
                 {(() => {
                   const arcPct   = Math.min(100, (timerMs / 10_000) * 100);
                   const arcColor = timerMs < 9_000 ? "hsl(190 100% 60%)"
                     : timerMs <= 10_500 ? "hsl(140 100% 55%)" : "hsl(0 90% 60%)";
                   const circ = 376.99; // 2π × 60
+                  // Rune ticks matching student STOP button
+                  const ticks = Array.from({ length: 12 }, (_, i) => {
+                    const ang = (i / 12) * Math.PI * 2 - Math.PI / 2;
+                    const ri = 54, ro = 62;
+                    return {
+                      x1: 70 + ri * Math.cos(ang), y1: 70 + ri * Math.sin(ang),
+                      x2: 70 + ro * Math.cos(ang), y2: 70 + ro * Math.sin(ang),
+                      major: i % 3 === 0,
+                    };
+                  });
                   return (
                     <div className="relative flex items-center justify-center my-1">
                       <svg width="140" height="140" viewBox="0 0 140 140">
-                        <circle cx="70" cy="70" r="60" fill="none" stroke={`${arcColor}22`} strokeWidth="6" />
+                        <circle cx="70" cy="70" r="64" fill="none" stroke={arcColor} strokeWidth="1" opacity="0.1" />
+                        {ticks.map((t, i) => (
+                          <line key={i} x1={t.x1} y1={t.y1} x2={t.x2} y2={t.y2}
+                            stroke={arcColor} strokeWidth={t.major ? 2 : 1}
+                            opacity={t.major ? 0.65 : 0.28} strokeLinecap="round" />
+                        ))}
+                        <circle cx="70" cy="70" r="60" fill="none" stroke={`${arcColor}20`} strokeWidth="6" />
                         <circle cx="70" cy="70" r="60" fill="none"
                           stroke={arcColor} strokeWidth="6"
                           strokeDasharray={circ}
                           strokeDashoffset={circ - (arcPct / 100) * circ}
                           strokeLinecap="round"
                           transform="rotate(-90 70 70)"
-                          style={{ transition: "stroke-dashoffset 0.05s linear, stroke 0.25s ease", filter: `drop-shadow(0 0 8px ${arcColor})` }}
-                        />
+                          style={{ transition: "stroke-dashoffset 0.05s linear, stroke 0.25s ease",
+                                   filter: `drop-shadow(0 0 8px ${arcColor})` }} />
+                        <circle cx="70" cy="70" r="3" fill={arcColor} opacity="0.2" />
                       </svg>
                       <div className="absolute text-center">
                         <div className="font-mono font-black text-3xl tabular-nums leading-none"
@@ -289,7 +350,7 @@ const DodgeballMonitor = ({ session, sessionId }: Props) => {
               <div className="text-center space-y-2">
                 <Trophy className="h-10 w-10 mx-auto text-amber-400" />
                 <div className="font-mono font-black text-xl text-primary">{winnerName}</div>
-                <div className="text-xs text-muted-foreground font-mono">won the timer round — +1 life</div>
+                <div className="text-xs text-muted-foreground font-mono">won the timer round — +1 crystal</div>
                 <Button onClick={fireTimer} disabled={!canFireTimer}
                   className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-mono font-bold disabled:opacity-35">
                   <Zap className="h-4 w-4 me-1" />
@@ -311,9 +372,11 @@ const DodgeballMonitor = ({ session, sessionId }: Props) => {
           </div>
 
           {/* Stats */}
-          <div className="rounded-2xl border-2 border-primary/35 bg-primary/5 p-4 flex items-center justify-around font-mono">
+          <div className="rounded-2xl border-2 border-primary/30 p-4 flex items-center justify-around font-mono"
+            style={{ background: "hsl(255 40% 8% / 0.7)", backdropFilter: "blur(6px)" }}>
             <div className="text-center">
-              <div className="text-3xl font-black text-primary tabular-nums">{alive.length}</div>
+              <div className="text-3xl font-black text-primary tabular-nums"
+                style={{ textShadow: "0 0 16px hsl(190 100% 60% / 0.5)" }}>{alive.length}</div>
               <div className="text-[10px] tracking-widest text-muted-foreground uppercase">Alive</div>
             </div>
             <div className="h-10 w-px bg-border" />
