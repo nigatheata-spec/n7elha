@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -37,6 +37,8 @@ const GameMonitor = () => {
   const [hacks, setHacks] = useState<any[]>([]);
   const [now, setNow] = useState(Date.now());
   const [ending, setEnding] = useState(false);
+  const sessionRef = useRef<any>(null);
+  sessionRef.current = session;
 
   useEffect(() => {
     if (!sessionId) return;
@@ -68,16 +70,19 @@ const GameMonitor = () => {
   const left = minutes ? Math.max(0, totalSecs - elapsed) : null;
   const reachedCap = cap != null && totalCrypto >= cap;
 
-  // auto-end (only when the configured limit is hit)
+  // auto-end (only for the default mode — hotpotato/dodgeball/lavafloor handle their own)
   useEffect(() => {
-    if (!session || session.status !== "running") return;
+    const sess = sessionRef.current;
+    if (!sess || sess.status !== "running") return;
+    const mode = sess.settings?.mode;
+    if (mode === "hotpotato" || mode === "dodgeball" || mode === "lavafloor") return;
     const timeUp = minutes != null && left === 0;
     if (timeUp || reachedCap) {
       if (ending) return;
       setEnding(true);
-      supabase.from("game_sessions").update({ status: "finished", ended_at: new Date().toISOString() }).eq("id", session.id);
+      supabase.from("game_sessions").update({ status: "finished", ended_at: new Date().toISOString() }).eq("id", sess.id);
     }
-  }, [left, reachedCap, session, ending, minutes]);
+  }, [left, reachedCap, ending, minutes]);
 
   const endNow = async () => {
     if (!session) return;
