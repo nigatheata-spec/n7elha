@@ -181,11 +181,11 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
 
   // ── Spend bricks ──────────────────────────────────────────────────────────
   const spendBricks = () => {
-    if (!me || bricks < SPEND_COST) return;
+    if (!me || bricks < SPEND_COST || phase !== "question") return;
     supabase.from("game_students").update({
       crypto: Math.max(0, bricks - SPEND_COST),
       hacks_made: (me.hacks_made ?? 0) + SPEND_COST,
-    }).eq("id", me.id).catch(() => {});
+    }).eq("id", me.id).then(undefined, () => {});
     setSpendFlash(true);
     setTimeout(() => setSpendFlash(false), 600);
   };
@@ -200,6 +200,42 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
       style={{ fontFamily: "'JetBrains Mono', monospace", background: "radial-gradient(ellipse at 50% 120%, hsl(14 70% 8%) 0%, hsl(0 0% 4%) 58%)",
         boxShadow: danger ? `inset 0 0 ${critical ? 80 : 40}px hsl(14 100% ${critical ? 45 : 35}% / ${critical ? 0.6 : 0.35})` : "none",
         transition: "box-shadow 0.8s ease" }}>
+
+      {/* ── SPEND BRICKS — fixed floating button, never affects layout ── */}
+      {(() => {
+        const canSpend = bricks >= SPEND_COST && phase === "question";
+        const fillPct  = Math.min(100, (bricks / SPEND_COST) * 100);
+        const btnColor = canSpend
+          ? (spendFlash ? "hsl(142 60% 45%)" : "hsl(142 45% 35%)")
+          : "hsl(0 0% 22%)";
+        return (
+          <button
+            onClick={spendBricks}
+            disabled={!canSpend}
+            className="fixed right-3 z-30 flex flex-col items-center gap-1 rounded-2xl px-3 py-2.5 transition-all active:scale-95"
+            style={{
+              top: "50%", transform: "translateY(-50%)",
+              background: canSpend ? (spendFlash ? "hsl(142 55% 12%)" : "hsl(142 40% 8%)") : "hsl(0 0% 7%)",
+              border: `2px solid ${btnColor}`,
+              boxShadow: canSpend ? `0 0 18px hsl(142 55% 30% / 0.5)` : "none",
+              color: canSpend ? "hsl(142 65% 60%)" : "hsl(0 0% 32%)",
+              minWidth: 56,
+              cursor: canSpend ? "pointer" : "default",
+              transition: "background 0.25s, border-color 0.25s, box-shadow 0.25s, color 0.25s",
+            }}>
+            <Shield className="h-5 w-5 shrink-0" />
+            {/* Brick progress */}
+            <div className="w-full rounded-full overflow-hidden" style={{ height: 3, background: "hsl(0 0% 15%)" }}>
+              <div className="h-full rounded-full transition-all duration-300"
+                style={{ width: `${fillPct}%`, background: canSpend ? "hsl(142 55% 45%)" : "hsl(0 0% 30%)" }} />
+            </div>
+            <span className="text-[10px] font-black tabular-nums leading-none">{bricks}/{SPEND_COST}</span>
+            {canSpend && (
+              <span className="text-[9px] font-bold leading-none opacity-80">−{SPEND_LAVA_REDUCTION}%</span>
+            )}
+          </button>
+        );
+      })()}
 
       {/* ── VOLCANIC CRACKS background texture ───────────────────────── */}
       <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-[0.04]" xmlns="http://www.w3.org/2000/svg">
@@ -515,27 +551,6 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
                 })}
               </div>
 
-              {/* Spend bricks — cooling mechanism */}
-              {phase === "question" && (
-                <button onClick={spendBricks} disabled={bricks < SPEND_COST}
-                  className={cn(
-                    "shrink-0 w-full h-11 rounded-xl flex items-center justify-center gap-2 text-xs font-bold transition-all active:scale-[0.97]"
-                  )}
-                  style={{
-                    background: spendFlash
-                      ? "hsl(142 55% 12%)"
-                      : bricks >= SPEND_COST ? "hsl(142 40% 7%)" : "hsl(0 0% 6%)",
-                    border: `1.5px solid ${spendFlash ? "hsl(142 60% 45%)" : bricks >= SPEND_COST ? "hsl(142 45% 28%)" : "hsl(0 0% 12%)"}`,
-                    color: bricks >= SPEND_COST ? "hsl(142 65% 58%)" : "hsl(0 0% 28%)",
-                    cursor: bricks < SPEND_COST ? "not-allowed" : "pointer",
-                    transition: "background 0.2s, border-color 0.2s, color 0.2s",
-                  }}>
-                  <Shield className="h-3.5 w-3.5 shrink-0" />
-                  {bricks >= SPEND_COST
-                    ? `أنفق ${SPEND_COST} طوب — حمم ${SPEND_LAVA_REDUCTION}%-`
-                    : `تحتاج ${SPEND_COST} طوب (لديك ${bricks})`}
-                </button>
-              )}
             </div>
           )}
         </main>
