@@ -380,7 +380,16 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
 
         {/* QUESTION */}
         {(phase === "question" || phase === "answered") && currentQ && (
-          <div className="flex-1 flex flex-col max-w-2xl mx-auto w-full pt-3">
+          <div key={qSeed} className="flex-1 flex flex-col max-w-2xl mx-auto w-full pt-3 animate-question-in">
+
+            {/* Non-bomb holder: subtle indicator showing who's sweating */}
+            {!hasBomb && bombHolder && phase === "question" && (
+              <div className="mb-2 flex items-center gap-2 px-3 py-1.5 rounded-lg border border-primary/20 bg-primary/8 text-xs text-primary/60 font-mono">
+                <BombIcon className="h-3.5 w-3.5 shrink-0 text-primary/70" />
+                <span className="flex-1 truncate">{bombHolder.name} يحمل القنبلة</span>
+                <span className="tabular-nums" style={{ color: fuseColor }}>{Math.ceil(fuseMs / 1000)}s</span>
+              </div>
+            )}
 
             {hasBomb && phase === "question" && (
               <div className="mb-3 rounded-xl bg-primary/15 border border-primary/40 overflow-hidden">

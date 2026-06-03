@@ -193,6 +193,9 @@ const HotPotatoMonitor = ({ session, sessionId }: Props) => {
   };
 
   const bombHolder = students.find(s => s.id === bombHolderId);
+  const fuseMs    = bombExplodesAt ? Math.max(0, new Date(bombExplodesAt).getTime() - now) : 0;
+  const fusePct   = bombExplodesAt ? Math.min(100, (fuseMs / 90_000) * 100) : 100;
+  const fuseColor = fuseMs > 30_000 ? "hsl(45 100% 55%)" : fuseMs > 12_000 ? "hsl(25 100% 55%)" : "hsl(0 100% 55%)";
 
   if (session?.status === "finished") {
     return (
@@ -285,7 +288,16 @@ const HotPotatoMonitor = ({ session, sessionId }: Props) => {
             <div className="min-w-0">
               <div className="text-xs text-muted-foreground font-mono tracking-widest uppercase mb-1">Bomb Holder</div>
               {bombHolder ? (
-                <div className="font-black text-xl text-primary truncate text-glow-fire">{bombHolder.name}</div>
+                <>
+                  <div className="font-black text-xl text-primary truncate text-glow-fire">{bombHolder.name}</div>
+                  <div className="text-xs font-mono tabular-nums mt-0.5" style={{ color: fuseColor }}>
+                    {Math.ceil(fuseMs / 1000)}s until explosion
+                  </div>
+                  <div className="mt-2 h-2 w-full bg-primary/10 rounded-full overflow-hidden">
+                    <div className="h-full rounded-full transition-all duration-300"
+                      style={{ width: `${fusePct}%`, background: fuseColor, boxShadow: `0 0 8px ${fuseColor}` }} />
+                  </div>
+                </>
               ) : (
                 <div className="text-muted-foreground text-sm font-mono">Assigning...</div>
               )}

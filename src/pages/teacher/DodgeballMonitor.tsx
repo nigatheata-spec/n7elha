@@ -233,12 +233,37 @@ const DodgeballMonitor = ({ session, sessionId }: Props) => {
 
             {timerActive ? (
               <div className="space-y-3">
-                <div className="text-center font-mono font-black text-5xl text-primary tabular-nums"
-                  style={{ textShadow: "0 0 30px hsl(190 100% 60% / 0.9)" }}>
-                  {timerSec}s
-                </div>
+                {/* Radial arc matching the student STOP button experience */}
+                {(() => {
+                  const arcPct   = Math.min(100, (timerMs / 10_000) * 100);
+                  const arcColor = timerMs < 9_000 ? "hsl(190 100% 60%)"
+                    : timerMs <= 10_500 ? "hsl(140 100% 55%)" : "hsl(0 90% 60%)";
+                  const circ = 376.99; // 2π × 60
+                  return (
+                    <div className="relative flex items-center justify-center my-1">
+                      <svg width="140" height="140" viewBox="0 0 140 140">
+                        <circle cx="70" cy="70" r="60" fill="none" stroke={`${arcColor}22`} strokeWidth="6" />
+                        <circle cx="70" cy="70" r="60" fill="none"
+                          stroke={arcColor} strokeWidth="6"
+                          strokeDasharray={circ}
+                          strokeDashoffset={circ - (arcPct / 100) * circ}
+                          strokeLinecap="round"
+                          transform="rotate(-90 70 70)"
+                          style={{ transition: "stroke-dashoffset 0.05s linear, stroke 0.25s ease", filter: `drop-shadow(0 0 8px ${arcColor})` }}
+                        />
+                      </svg>
+                      <div className="absolute text-center">
+                        <div className="font-mono font-black text-3xl tabular-nums leading-none"
+                          style={{ color: arcColor, textShadow: `0 0 20px ${arcColor}` }}>
+                          {timerSec}s
+                        </div>
+                        <div className="text-[10px] text-muted-foreground font-mono mt-1">TARGET 10s</div>
+                      </div>
+                    </div>
+                  );
+                })()}
                 <div className="text-center text-xs text-muted-foreground font-mono">
-                  TARGET: 10.00s · {taps.length} tap{taps.length !== 1 ? "s" : ""} in
+                  {taps.length} tap{taps.length !== 1 ? "s" : ""} in
                 </div>
                 <div className="space-y-1 max-h-32 overflow-y-auto">
                   {taps.map(tap => {
