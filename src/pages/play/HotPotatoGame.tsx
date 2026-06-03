@@ -292,14 +292,81 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
         )}
 
         {/* DONE */}
-        {phase === "done" && (
-          <div className="flex-1 flex flex-col items-center justify-center text-center gap-4">
-            <Trophy className="h-20 w-20 text-success" style={{ filter: "drop-shadow(0 0 20px hsl(45 100% 55%))" }} />
-            <h2 className="text-3xl font-black text-primary">انتهت اللعبة</h2>
-            <p className="text-success text-2xl font-black tabular-nums">{fmt(points)} نقطة</p>
-            <Button onClick={() => navigate("/play")} className="mt-4 bg-primary text-primary-foreground">خروج</Button>
-          </div>
-        )}
+        {phase === "done" && (() => {
+          const sorted = [...students].sort((a, b) => (b.crypto ?? 0) - (a.crypto ?? 0));
+          const rank   = sorted.findIndex(s => s.id === studentId) + 1 || sorted.length;
+          const medalC = rank === 1 ? "hsl(45 100% 55%)" : rank === 2 ? "hsl(210 20% 72%)" : rank === 3 ? "hsl(25 80% 52%)" : "hsl(0 0% 55%)";
+          const top5   = sorted.slice(0, 5);
+          const rankLabel = (n: number) => { const s = ["th","st","nd","rd"], v = n%100; return n+(s[(v-20)%10]||s[v]||s[0]); };
+
+          return (
+            <div className="flex-1 flex flex-col items-center pt-6 pb-4 px-4 gap-5 overflow-y-auto">
+
+              {/* Rank crash-in */}
+              <div style={{ animation: "result-crash-in 0.55s cubic-bezier(0.34,1.4,0.64,1) both" }} className="text-center">
+                <div className="text-[80px] leading-none font-black tabular-nums"
+                  style={{ color: medalC, textShadow: `0 0 50px ${medalC}cc, 0 0 100px ${medalC}55` }}>
+                  #{rank}
+                </div>
+                <div className="text-sm font-mono tracking-widest mt-1" style={{ color: medalC }}>
+                  {rankLabel(rank)} place
+                </div>
+              </div>
+
+              {/* Score */}
+              <div className="animate-fade-up text-center" style={{ animationDelay: "0.15s" }}>
+                <div className="text-4xl font-black tabular-nums text-success"
+                  style={{ textShadow: "0 0 20px hsl(120 100% 55% / 0.5)" }}>
+                  {fmt(points)}
+                </div>
+                <div className="text-xs text-muted-foreground mt-0.5 tracking-widest">نقطة</div>
+              </div>
+
+              {/* Divider */}
+              <div className="w-full max-w-xs h-px bg-primary/20 animate-fade-up" style={{ animationDelay: "0.25s" }} />
+
+              {/* Leaderboard */}
+              <div className="w-full max-w-xs space-y-1.5 animate-fade-up" style={{ animationDelay: "0.3s" }}>
+                {top5.map((s, i) => {
+                  const isMe = s.id === studentId;
+                  const mc   = i === 0 ? "hsl(45 100% 55%)" : i === 1 ? "hsl(210 20% 72%)" : i === 2 ? "hsl(25 80% 52%)" : "hsl(0 0% 50%)";
+                  return (
+                    <div key={s.id} className={cn(
+                      "flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-all",
+                      isMe ? "border-primary/70 bg-primary/12" : "border-white/8 bg-white/4"
+                    )}>
+                      <span className="font-mono text-sm font-black w-5 text-center shrink-0" style={{ color: mc }}>
+                        {i + 1}
+                      </span>
+                      <span className={cn("flex-1 text-sm font-bold truncate", isMe ? "text-primary" : "text-foreground/80")}>
+                        {s.name}
+                      </span>
+                      <span className="font-mono text-sm tabular-nums text-muted-foreground">{fmt(s.crypto ?? 0)}</span>
+                    </div>
+                  );
+                })}
+
+                {/* Show student row if outside top 5 */}
+                {rank > 5 && (
+                  <>
+                    <div className="text-center text-muted-foreground/40 text-xs py-0.5">···</div>
+                    <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-primary/70 bg-primary/12">
+                      <span className="font-mono text-sm font-black w-5 text-center shrink-0 text-primary">{rank}</span>
+                      <span className="flex-1 text-sm font-bold truncate text-primary">{me?.name}</span>
+                      <span className="font-mono text-sm tabular-nums text-muted-foreground">{fmt(points)}</span>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              <Button onClick={() => navigate("/play")}
+                className="mt-auto bg-primary text-primary-foreground px-8 animate-fade-up"
+                style={{ animationDelay: "0.4s" }}>
+                خروج
+              </Button>
+            </div>
+          );
+        })()}
 
         {/* EXPLODED */}
         {phase === "exploded" && (
