@@ -282,6 +282,45 @@
   }
   .animate-question-in { animation: question-slide-in 0.22s ease-out both; }
 
+  /* Pass It — screen shake when fuse is critical */
+  @keyframes screen-shake {
+    0%, 100% { transform: translate3d(0, 0, 0); }
+    10%  { transform: translate3d(-3px, 1px, 0); }
+    20%  { transform: translate3d(3px, -2px, 0); }
+    30%  { transform: translate3d(-2px, 3px, 0); }
+    40%  { transform: translate3d(2px, -1px, 0); }
+    50%  { transform: translate3d(-3px, 2px, 0); }
+    60%  { transform: translate3d(3px, -2px, 0); }
+    70%  { transform: translate3d(-1px, 3px, 0); }
+    80%  { transform: translate3d(2px, -2px, 0); }
+    90%  { transform: translate3d(-2px, 1px, 0); }
+  }
+  .animate-screen-shake { animation: screen-shake 0.35s ease-in-out infinite; }
+
+  /* Time Wizard — star twinkle (used via inline animation string) */
+  @keyframes star-twinkle {
+    0%, 100% { opacity: 0.1;  transform: scale(1); }
+    50%      { opacity: 0.75; transform: scale(1.5); }
+  }
+
+  /* Time Wizard — freeze flash on STOP tap */
+  @keyframes freeze-flash {
+    0%   { opacity: 0; }
+    12%  { opacity: 1; }
+    50%  { opacity: 0.4; }
+    100% { opacity: 0; }
+  }
+  .animate-freeze-flash { animation: freeze-flash 0.65s ease-out forwards; }
+
+  /* Time Wizard — crystal burst for revived / win */
+  @keyframes crystal-burst {
+    0%   { transform: scale(0.4) rotate(-15deg); opacity: 0; filter: brightness(4); }
+    40%  { transform: scale(1.15) rotate(3deg); opacity: 1; }
+    70%  { transform: scale(0.96) rotate(-1deg); }
+    100% { transform: scale(1) rotate(0deg); opacity: 1; filter: brightness(1); }
+  }
+  .animate-crystal-burst { animation: crystal-burst 0.65s cubic-bezier(0.34, 1.4, 0.64, 1) both; }
+
   @keyframes lava-shift {
     0%, 100% { background-position: 0% 50%; }
     50%      { background-position: 100% 50%; }

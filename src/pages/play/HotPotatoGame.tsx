@@ -253,16 +253,32 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
   const fmt = (n: number) => n.toLocaleString();
   const points = me?.crypto ?? 0;
 
+  // Danger vignette: deepens as fuse burns when holding bomb
+  const dangerAlpha = hasBomb ? ((1 - fusePct / 100) * 0.6).toFixed(2) : "0";
+  const dangerSpread = hasBomb ? 60 + (1 - fusePct / 100) * 100 : 0;
+
   return (
-    <div className="theme-hotpotato min-h-[100dvh] bg-background text-foreground font-mono flex flex-col overflow-hidden"
-      style={{ background: "radial-gradient(ellipse at 40% 0%, hsl(0 0% 13%) 0%, hsl(0 0% 6%) 100%)" }}>
+    <div className={cn(
+      "theme-hotpotato min-h-[100dvh] bg-background text-foreground font-mono flex flex-col overflow-hidden",
+      hasBomb && fuseMs < 5_000 && "animate-screen-shake"
+    )}
+      style={{
+        background: "radial-gradient(ellipse at 40% 0%, hsl(15 80% 10%) 0%, hsl(0 0% 6%) 100%)",
+        boxShadow: hasBomb ? `inset 0 0 ${dangerSpread}px hsl(0 100% 40% / ${dangerAlpha})` : "none",
+      }}>
       <div className="pointer-events-none fixed inset-0 opacity-10"
         style={{ backgroundImage: "repeating-linear-gradient(0deg,hsl(0 0% 0%/0.5) 0px,hsl(0 0% 0%/0.5) 1px,transparent 1px,transparent 4px)" }} />
 
-      {/* Explosion flash overlay */}
+      {/* Explosion flash + shockwave overlay */}
       {showFlash && (
-        <div className="pointer-events-none fixed inset-0 z-50 animate-screen-flash"
-          style={{ background: "radial-gradient(ellipse at center, hsl(25 100% 70%) 0%, hsl(0 100% 50%) 60%, transparent 100%)" }} />
+        <>
+          <div className="pointer-events-none fixed inset-0 z-50 animate-screen-flash"
+            style={{ background: "radial-gradient(ellipse at center, hsl(25 100% 70%) 0%, hsl(0 100% 50%) 60%, transparent 100%)" }} />
+          <div className="pointer-events-none fixed z-[51] rounded-full animate-shockwave"
+            style={{ top: "50%", left: "50%", width: 80, height: 80,
+              transform: "translate(-50%,-50%)",
+              border: "3px solid hsl(25 100% 70%)" }} />
+        </>
       )}
 
       {/* Header */}
@@ -398,10 +414,23 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
                   <span>لديك القنبلة — أجب صح لتمررها</span>
                   <span className="ms-auto tabular-nums text-xs opacity-70">{Math.ceil(fuseMs / 1000)}s</span>
                 </div>
-                {/* Fuse burn bar */}
-                <div className="h-1.5 w-full bg-primary/10">
-                  <div className="h-full transition-all duration-300 rounded-full"
-                    style={{ width: `${fusePct}%`, background: fuseColor, boxShadow: `0 0 8px ${fuseColor}` }} />
+                {/* Spark-on-cord fuse: burned ash on left, glowing spark at junction, golden cord on right */}
+                <div className="relative h-2.5 w-full rounded-full overflow-visible bg-primary/8">
+                  {/* Burned portion (left) */}
+                  <div className="absolute left-0 top-0 h-full rounded-l-full"
+                    style={{ width: `${100 - fusePct}%`, background: "hsl(0 0% 14%)" }} />
+                  {/* Remaining cord (right) */}
+                  <div className="absolute right-0 top-0 h-full rounded-r-full"
+                    style={{ width: `${fusePct}%`,
+                      background: `linear-gradient(90deg, ${fuseColor}88, ${fuseColor})` }} />
+                  {/* Live spark at the burn point */}
+                  <div className="absolute top-1/2 -translate-y-1/2 rounded-full"
+                    style={{
+                      left: `calc(${100 - fusePct}% - 5px)`,
+                      width: 10, height: 10,
+                      background: fuseColor,
+                      boxShadow: `0 0 10px 3px ${fuseColor}, 0 0 22px 6px hsl(45 100% 68% / 0.45)`,
+                    }} />
                 </div>
               </div>
             )}
@@ -462,11 +491,13 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
             <div className="flex flex-col gap-3">
               {passTargets.map(target => (
                 <button key={target.id} onClick={() => passBomb(target.id)}
-                  className="rounded-xl border-2 border-primary/50 bg-primary/10 hover:bg-primary/25 hover:border-primary p-4 flex items-center gap-3 transition-all active:scale-[0.97]">
+                  className="group rounded-xl border-2 border-primary/50 bg-primary/10 hover:bg-primary/25 hover:border-primary hover:scale-[1.02] p-4 flex items-center gap-3 transition-all active:scale-[0.96]">
                   <Avatar name={target.name} size="md" />
-                  <span className="text-primary font-bold text-base flex-1 text-left">{target.name}</span>
-                  <span className="text-success font-black tabular-nums text-sm">{fmt(target.crypto ?? 0)}</span>
-                  <BombIcon className="h-5 w-5 text-primary/60" />
+                  <div className="flex-1 min-w-0 text-left">
+                    <div className="text-primary font-bold text-base truncate">{target.name}</div>
+                    <div className="text-success/80 text-xs font-mono tabular-nums">{fmt(target.crypto ?? 0)} pts</div>
+                  </div>
+                  <BombIcon className="h-6 w-6 text-primary/40 group-hover:text-primary transition-colors" />
                 </button>
               ))}
             </div>
