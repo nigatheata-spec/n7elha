@@ -84,6 +84,14 @@ const GameMonitor = () => {
     }
   }, [left, reachedCap, ending, minutes]);
 
+  // navigate to results when default-mode game finishes (useEffect, not render-time)
+  useEffect(() => {
+    if (!session) return;
+    const mode = session.settings?.mode;
+    if (mode === "hotpotato" || mode === "dodgeball" || mode === "lavafloor") return;
+    if (session.status === "finished") nav(`/app/games/${session.id}/results`, { replace: true });
+  }, [session?.status]);
+
   const endNow = async () => {
     if (!session) return;
     if (!confirm("End the game now?")) return;
@@ -96,15 +104,7 @@ const GameMonitor = () => {
     (el.requestFullscreen || el.webkitRequestFullscreen)?.call(el);
   };
 
-  if (!session) return <div className="theme-game min-h-screen bg-background text-foreground flex items-center justify-center font-mono text-center p-8">
-    <div>
-      <div className="text-2xl mb-2">loading session...</div>
-      <div className="text-sm text-muted-foreground">sessionId: {sessionId}</div>
-    </div>
-  </div>;
-
-  // Debug overlay — REMOVE AFTER DEBUGGING
-  const _debug = `mode=${session.settings?.mode ?? "MISSING"} status=${session.status} started=${session.started_at ? "yes" : "NO"}`;
+  if (!session) return <div className="theme-game min-h-screen bg-background text-foreground flex items-center justify-center font-mono">...</div>;
 
   // Route to mode-specific monitor
   if (session.settings?.mode === "dodgeball") {
@@ -116,14 +116,6 @@ const GameMonitor = () => {
   if (session.settings?.mode === "lavafloor") {
     return <LavaFloorMonitor session={session} sessionId={sessionId!} />;
   }
-
-  // If we reach here, mode is missing/unrecognised — show debug instead of blind redirect
-  return <div className="fixed inset-0 bg-black text-white flex flex-col items-center justify-center font-mono text-xl p-8 gap-4">
-    <div className="text-red-400 text-3xl font-black">DEBUG: unrecognised mode</div>
-    <div>{_debug}</div>
-    <div className="text-sm opacity-60">session.settings: {JSON.stringify(session.settings)}</div>
-    <div className="text-sm opacity-60">session.status: {session.status}</div>
-  </div>;
 
   const mm = left != null ? String(Math.floor(left / 60)).padStart(2, "0") : null;
   const ss = left != null ? String(left % 60).padStart(2, "0") : null;
