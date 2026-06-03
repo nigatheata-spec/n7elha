@@ -282,14 +282,12 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
             </span>
           </div>
 
-          {/* Danger label */}
-          {danger && (
-            <div className="flex items-center gap-1 text-[10px] font-black tracking-[0.35em] uppercase"
-              style={{ color: "hsl(14 100% 65%)", animation: "heat-flicker 0.7s ease-in-out infinite" }}>
-              <Flame className="h-3 w-3" />
-              {critical ? "CRITICAL" : "DANGER"}
-            </div>
-          )}
+          {/* Danger label — always in DOM, visibility toggled to prevent layout shift */}
+          <div className="flex items-center gap-1 text-[10px] font-black tracking-[0.35em] uppercase"
+            style={{ color: "hsl(14 100% 65%)", animation: danger ? "heat-flicker 0.7s ease-in-out infinite" : "none", visibility: danger ? "visible" : "hidden" }}>
+            <Flame className="h-3 w-3" />
+            {critical ? "CRITICAL" : "DANGER"}
+          </div>
 
           {/* Bricks */}
           <div className="flex items-center gap-1.5 shrink-0">

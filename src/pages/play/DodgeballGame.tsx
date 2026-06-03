@@ -333,12 +333,6 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
               <div className="mt-2 text-xs text-muted-foreground tabular-nums">{timeLeft}s</div>
             </div>
 
-            {lives === 1 && phase === "question" && (
-              <div className="text-center text-xs font-bold mb-2 animate-pulse"
-                style={{ color: "hsl(270 80% 75%)", textShadow: "0 0 12px hsl(270 80% 65% / 0.6)" }}>
-                بلورة الزمن الأخيرة — أجب بحذر
-              </div>
-            )}
 
             <div className="grid grid-cols-2 gap-2 flex-1">
               {currentQ.options.map((opt, i) => {
