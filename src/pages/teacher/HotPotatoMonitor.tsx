@@ -104,7 +104,7 @@ const HotPotatoMonitor = ({ session, sessionId }: Props) => {
         bombHolderId: holder.id,
         bombExplodesAt: expiresAt,
       }
-    }).eq("id", sessionId).catch(() => {});
+    }).eq("id", sessionId).then(undefined, () => {});
   }, [session?.status, students.length]);
 
   // ── Bomb explosion detection ──────────────────────────────────────────────

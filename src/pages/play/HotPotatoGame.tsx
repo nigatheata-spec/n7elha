@@ -197,7 +197,7 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
         crypto: (me.crypto ?? 0) + POINTS_PER_CORRECT,
         correct_answers: (me.correct_answers ?? 0) + 1,
         total_answers: (me.total_answers ?? 0) + 1,
-      }).eq("id", me.id).catch(() => {});
+      }).eq("id", me.id).then(undefined, () => {});
 
       if (hasBomb) {
         // Pick 3 random pass targets
@@ -211,14 +211,14 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
     } else {
       supabase.from("game_students").update({
         total_answers: (me.total_answers ?? 0) + 1,
-      }).eq("id", me.id).catch(() => {});
+      }).eq("id", me.id).then(undefined, () => {});
       setTimeout(() => setPhase("answered"), 700);
     }
 
     supabase.from("question_responses").insert({
       session_id: sessionId, student_id: me.id, question_id: currentQ.id,
       question_index: askedRef.current, answer_index: idx, is_correct: correct,
-    }).catch(() => {});
+    }).then(undefined, () => {});
   }, [currentQ, me, hasBomb, studentId, sessionId]);
 
   const submit = (idx: number) => { if (pickedRef.current !== null) return; handleAnswer(idx); };
@@ -232,7 +232,7 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
       .select("settings").eq("id", sessionId).single();
     const live = fresh?.settings ?? settings;
     supabase.from("game_sessions").update({ settings: { ...live, bombHolderId: targetId } })
-      .eq("id", sessionId).catch(() => {});
+      .eq("id", sessionId).then(undefined, () => {});
     setTimeout(() => { setQSeed(s => s + 1); setPhase("question"); }, 300);
   };
 
