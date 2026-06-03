@@ -344,8 +344,8 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
                     className={cn(
                       "min-h-[100px] px-3 py-4 text-center text-base font-bold border-2 transition-all rounded-xl active:scale-[0.97]",
                       "border-primary/50 bg-primary/8 text-primary hover:bg-primary/20",
-                      show && isCorrect  && "bg-green-700/70 border-green-500 text-white",
-                      show && isPicked && !isCorrect && "bg-red-800/70 border-red-500 text-white",
+                      show && isCorrect  && "bg-green-700/70 border-green-500 text-white animate-answer-correct",
+                      show && isPicked && !isCorrect && "bg-red-800/70 border-red-500 text-white animate-answer-wrong",
                       show && !isPicked && !isCorrect && "opacity-25"
                     )}>
                     {opt}
@@ -357,38 +357,61 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
         )}
 
         {/* TIMER — STOP button */}
-        {(phase === "timer" || phase === "tapped") && (
-          <div className="flex-1 flex flex-col items-center justify-center gap-7">
-            <div className="text-center">
-              <div className="text-[10px] tracking-[0.5em] text-muted-foreground mb-1 uppercase">Stop closest to</div>
-              <div className="text-6xl font-black text-primary tabular-nums"
-                style={{ textShadow: "0 0 30px hsl(190 100% 60% / 0.9)" }}>
-                10.00s
+        {(phase === "timer" || phase === "tapped") && (() => {
+          const arcPct   = Math.min(100, (timerMs / 10_000) * 100);
+          const arcColor = timerMs < 9_000
+            ? "hsl(190 100% 60%)"
+            : timerMs <= 10_500
+              ? "hsl(140 100% 55%)"
+              : "hsl(0 90% 60%)";
+          const circ = 502.65; // 2π × 80
+          return (
+            <div className="flex-1 flex flex-col items-center justify-center gap-7">
+              <div className="text-center">
+                <div className="text-[10px] tracking-[0.5em] text-muted-foreground mb-1 uppercase">Stop closest to</div>
+                <div className="text-6xl font-black tabular-nums"
+                  style={{ color: arcColor, textShadow: `0 0 30px ${arcColor}cc` }}>
+                  10.00s
+                </div>
               </div>
-            </div>
 
-            <div className="text-5xl font-black tabular-nums text-foreground"
-              style={{ textShadow: phase === "timer" ? "0 0 20px hsl(190 100% 60% / 0.6)" : "none" }}>
-              {timerSec}s
-            </div>
-
-            {phase === "timer" ? (
-              <button onClick={tapTimer}
-                className="h-40 w-40 rounded-full border-4 border-primary bg-primary/20 font-black text-2xl text-primary active:scale-95 transition-all tracking-widest"
-                style={{ boxShadow: "0 0 40px hsl(190 100% 60% / 0.5)", textShadow: "0 0 10px hsl(190 100% 60%)" }}>
-                STOP
-              </button>
-            ) : (
-              <div className="h-40 w-40 rounded-full border-4 border-border/40 bg-muted/10 flex flex-col items-center justify-center gap-1">
-                <Check className="h-8 w-8 text-muted-foreground" />
-                <div className="text-xs text-muted-foreground">tapped</div>
-                <div className="text-2xl font-black text-primary tabular-nums">{timerSec}s</div>
+              <div className="text-5xl font-black tabular-nums"
+                style={{ color: arcColor, textShadow: phase === "timer" ? `0 0 20px ${arcColor}99` : "none" }}>
+                {timerSec}s
               </div>
-            )}
 
-            <div className="text-xs text-muted-foreground/60 tracking-widest">بانتظار نتيجة الجولة</div>
-          </div>
-        )}
+              {phase === "timer" ? (
+                <div className="relative flex items-center justify-center">
+                  <svg className="absolute" width="180" height="180" viewBox="0 0 180 180" style={{ top: -6, left: -6 }}>
+                    <circle cx="90" cy="90" r="80" fill="none" stroke={`${arcColor}22`} strokeWidth="5" />
+                    <circle cx="90" cy="90" r="80" fill="none"
+                      stroke={arcColor}
+                      strokeWidth="5"
+                      strokeDasharray={circ}
+                      strokeDashoffset={circ - (arcPct / 100) * circ}
+                      strokeLinecap="round"
+                      transform="rotate(-90 90 90)"
+                      style={{ transition: "stroke-dashoffset 0.1s linear, stroke 0.25s ease", filter: `drop-shadow(0 0 8px ${arcColor})` }}
+                    />
+                  </svg>
+                  <button onClick={tapTimer}
+                    className="h-40 w-40 rounded-full border-4 font-black text-2xl active:scale-95 transition-all tracking-widest"
+                    style={{ borderColor: arcColor, background: `${arcColor}18`, color: arcColor, boxShadow: `0 0 40px ${arcColor}55`, textShadow: `0 0 10px ${arcColor}` }}>
+                    STOP
+                  </button>
+                </div>
+              ) : (
+                <div className="h-40 w-40 rounded-full border-4 border-border/40 bg-muted/10 flex flex-col items-center justify-center gap-1">
+                  <Check className="h-8 w-8" style={{ color: arcColor }} />
+                  <div className="text-xs text-muted-foreground">tapped</div>
+                  <div className="text-2xl font-black tabular-nums" style={{ color: arcColor }}>{timerSec}s</div>
+                </div>
+              )}
+
+              <div className="text-xs text-muted-foreground/60 tracking-widest">بانتظار نتيجة الجولة</div>
+            </div>
+          );
+        })()}
 
         {/* LIFE GIFT */}
         {phase === "life_gift" && (

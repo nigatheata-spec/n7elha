@@ -54,6 +54,8 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
   const [qSeed, setQSeed]           = useState(0);
   const [passTargets, setPassTargets] = useState<any[]>([]);
   const [passSecsLeft, setPassSecsLeft] = useState(PASS_SECONDS);
+  const [now, setNow] = useState(Date.now());
+  const [showFlash, setShowFlash] = useState(false);
 
   const qStartRef    = useRef(Date.now());
   const askedRef     = useRef(0);
@@ -64,8 +66,12 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
   const lastExplosionAtRef = useRef<string | null>(null);
   const passTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const settings   = session?.settings ?? {};
-  const hasBomb    = settings.bombHolderId === studentId;
+  const settings        = session?.settings ?? {};
+  const hasBomb         = settings.bombHolderId === studentId;
+  const bombExplodesAt  = settings.bombExplodesAt as string | null;
+  const fuseMs          = bombExplodesAt ? Math.max(0, new Date(bombExplodesAt).getTime() - now) : 0;
+  const fusePct         = bombExplodesAt ? Math.min(100, (fuseMs / 90_000) * 100) : 100;
+  const fuseColor       = fuseMs > 30_000 ? "hsl(45 100% 55%)" : fuseMs > 12_000 ? "hsl(25 100% 55%)" : "hsl(0 100% 55%)";
   const bombHolder = useMemo(() => students.find(s => s.id === settings.bombHolderId), [students, settings.bombHolderId]);
 
   // ── Initial load ─────────────────────────────────────────────────────────
@@ -82,6 +88,12 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
       setMe((ss ?? []).find((x: any) => x.id === studentId) ?? null);
     })();
   }, [sessionId, studentId]);
+
+  // ── Now ticker (for fuse bar) ────────────────────────────────────────────
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 250);
+    return () => clearInterval(t);
+  }, []);
 
   // ── Realtime ──────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -121,9 +133,11 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
     }
   }, [settings.lastExplosionAt, settings.lastExplosionVictimId]);
 
-  // ── Auto-advance after exploded ───────────────────────────────────────────
+  // ── Auto-advance after exploded + trigger flash ───────────────────────────
   useEffect(() => {
     if (phase !== "exploded") return;
+    setShowFlash(true);
+    setTimeout(() => setShowFlash(false), 800);
     const t = setTimeout(() => { setQSeed(s => s + 1); setPhase("question"); }, 2200);
     return () => clearTimeout(t);
   }, [phase]);
@@ -245,6 +259,12 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
       <div className="pointer-events-none fixed inset-0 opacity-10"
         style={{ backgroundImage: "repeating-linear-gradient(0deg,hsl(0 0% 0%/0.5) 0px,hsl(0 0% 0%/0.5) 1px,transparent 1px,transparent 4px)" }} />
 
+      {/* Explosion flash overlay */}
+      {showFlash && (
+        <div className="pointer-events-none fixed inset-0 z-50 animate-screen-flash"
+          style={{ background: "radial-gradient(ellipse at center, hsl(25 100% 70%) 0%, hsl(0 100% 50%) 60%, transparent 100%)" }} />
+      )}
+
       {/* Header */}
       <header className={cn(
         "relative flex items-center justify-between px-4 py-3 border-b sticky top-0 bg-background/80 backdrop-blur-sm z-10 transition-all",
@@ -296,9 +316,17 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
           <div className="flex-1 flex flex-col max-w-2xl mx-auto w-full pt-3">
 
             {hasBomb && phase === "question" && (
-              <div className="flex items-center gap-2 justify-center mb-3 px-3 py-2 rounded-xl bg-primary/15 border border-primary/40 text-primary font-bold text-sm animate-pulse">
-                <BombIcon className="h-5 w-5" />
-                لديك القنبلة — أجب صح لتمررها
+              <div className="mb-3 rounded-xl bg-primary/15 border border-primary/40 overflow-hidden">
+                <div className="flex items-center gap-2 px-3 py-2 text-primary font-bold text-sm">
+                  <BombIcon className={cn("h-5 w-5 shrink-0", fuseMs < 12_000 && "animate-fuse-critical")} />
+                  <span>لديك القنبلة — أجب صح لتمررها</span>
+                  <span className="ms-auto tabular-nums text-xs opacity-70">{Math.ceil(fuseMs / 1000)}s</span>
+                </div>
+                {/* Fuse burn bar */}
+                <div className="h-1.5 w-full bg-primary/10">
+                  <div className="h-full transition-all duration-300 rounded-full"
+                    style={{ width: `${fusePct}%`, background: fuseColor, boxShadow: `0 0 8px ${fuseColor}` }} />
+                </div>
               </div>
             )}
 
@@ -320,8 +348,8 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
                     className={cn(
                       "min-h-[100px] px-3 py-4 text-center text-base font-bold border-2 transition-all rounded-xl active:scale-[0.97]",
                       "border-primary/50 bg-primary/10 text-primary hover:bg-primary/20",
-                      show && isCorrect  && "bg-green-700/70 border-green-500 text-white",
-                      show && isPicked && !isCorrect && "bg-red-800/70 border-red-500 text-white",
+                      show && isCorrect  && "bg-green-700/70 border-green-500 text-white animate-answer-correct",
+                      show && isPicked && !isCorrect && "bg-red-800/70 border-red-500 text-white animate-answer-wrong",
                       show && !isPicked && !isCorrect && "opacity-25"
                     )}>
                     {opt}

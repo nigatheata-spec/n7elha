@@ -197,7 +197,9 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
 
   return (
     <div className="theme-lavafloor fixed inset-0 text-foreground overflow-hidden"
-      style={{ fontFamily: "'JetBrains Mono', monospace", background: "radial-gradient(ellipse at 50% 120%, hsl(14 70% 8%) 0%, hsl(0 0% 4%) 58%)" }}>
+      style={{ fontFamily: "'JetBrains Mono', monospace", background: "radial-gradient(ellipse at 50% 120%, hsl(14 70% 8%) 0%, hsl(0 0% 4%) 58%)",
+        boxShadow: danger ? `inset 0 0 ${critical ? 80 : 40}px hsl(14 100% ${critical ? 45 : 35}% / ${critical ? 0.6 : 0.35})` : "none",
+        transition: "box-shadow 0.8s ease" }}>
 
       {/* ── VOLCANIC CRACKS background texture ───────────────────────── */}
       <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-[0.04]" xmlns="http://www.w3.org/2000/svg">
