@@ -172,7 +172,7 @@ const DodgeballMonitor = ({ session, sessionId }: Props) => {
   const winnerName = timerWinnerId ? students.find(s => s.id === timerWinnerId)?.name : null;
 
   return (
-    <div className="theme-dodgeball fixed inset-0 text-foreground overflow-hidden relative"
+    <div className="theme-dodgeball fixed inset-0 text-foreground overflow-hidden"
       style={{ background: "radial-gradient(ellipse at 50% -10%, hsl(270 50% 14%) 0%, hsl(255 40% 7%) 55%, hsl(240 35% 5%) 100%)" }}>
 
       {/* Starfield — same as student screen */}
