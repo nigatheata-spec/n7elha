@@ -151,32 +151,61 @@
   .theme-dodgeball .text-glow-green { text-shadow: 0 0 14px hsl(190 100% 60% / 0.85); }
   .theme-dodgeball .text-glow-arcane { text-shadow: 0 0 18px hsl(190 100% 60% / 0.9); }
 
-  /* Pass It theme — industrial demolition / bomb-fuse (was: hot potato) */
+  /* Pass It theme — gunmetal steel + PCB yellow-green accent */
   .theme-hotpotato {
-    --background: 0 0% 8%;              /* deep charcoal */
-    --foreground: 45 30% 90%;           /* warm ivory */
-    --card: 0 0% 12%;
-    --card-foreground: 45 30% 90%;
-    --popover: 0 0% 12%;
-    --popover-foreground: 45 30% 90%;
-    --primary: 45 100% 55%;             /* warning fuse yellow */
-    --primary-foreground: 0 0% 8%;
-    --secondary: 0 0% 18%;              /* steel grey */
-    --secondary-foreground: 45 30% 90%;
-    --muted: 0 0% 16%;
-    --muted-foreground: 30 8% 60%;
-    --accent: 12 100% 55%;              /* alarm red-orange (fuse spark / explosion) */
+    --background: 210 22% 7%;           /* gunmetal dark */
+    --foreground: 210 15% 88%;          /* steel white */
+    --card: 210 18% 11%;
+    --card-foreground: 210 15% 88%;
+    --popover: 210 18% 11%;
+    --popover-foreground: 210 15% 88%;
+    --primary: 72 100% 44%;             /* PCB yellow-green */
+    --primary-foreground: 210 22% 7%;
+    --secondary: 210 18% 17%;           /* steel panel */
+    --secondary-foreground: 210 15% 88%;
+    --muted: 210 15% 14%;
+    --muted-foreground: 210 8% 52%;
+    --accent: 0 85% 55%;               /* alarm red */
     --accent-foreground: 0 0% 100%;
     --destructive: 0 90% 55%;
     --destructive-foreground: 0 0% 100%;
     --success: 142 65% 48%;
-    --success-foreground: 0 0% 8%;
-    --border: 45 60% 28%;
-    --input: 0 0% 11%;
-    --ring: 45 100% 55%;
+    --success-foreground: 210 22% 7%;
+    --border: 210 20% 20%;
+    --input: 210 18% 10%;
+    --ring: 72 100% 44%;
   }
-  .theme-hotpotato .text-glow-fire { text-shadow: 0 0 18px hsl(12 100% 55% / 0.85); }
-  .theme-hotpotato .text-glow-gold { text-shadow: 0 0 14px hsl(45 100% 55% / 0.9); }
+  .theme-hotpotato .text-glow-fire { text-shadow: 0 0 18px hsl(0 85% 55% / 0.85); }
+  .theme-hotpotato .text-glow-pcb  { text-shadow: 0 0 16px hsl(72 100% 44% / 0.9); }
+
+  /* Metallic panel buttons */
+  .theme-hotpotato .btn-panel {
+    background: linear-gradient(160deg, hsl(210 20% 20%), hsl(210 18% 13%));
+    border: 1.5px solid hsl(210 22% 26%);
+    box-shadow: inset 0 1.5px 0 hsl(210 20% 34%), inset 0 -2px 0 hsl(210 15% 6%), 0 4px 14px hsl(0 0% 0% / 0.45);
+    color: hsl(210 15% 85%);
+    transition: background 0.1s, box-shadow 0.1s, transform 0.08s;
+  }
+  .theme-hotpotato .btn-panel:hover:not(:disabled) {
+    background: linear-gradient(160deg, hsl(210 20% 25%), hsl(210 18% 17%));
+    box-shadow: inset 0 1.5px 0 hsl(210 20% 38%), inset 0 -2px 0 hsl(210 15% 7%), 0 6px 18px hsl(0 0% 0% / 0.5), 0 0 20px hsl(22 100% 60% / 0.08);
+  }
+  .theme-hotpotato .btn-panel:active:not(:disabled) {
+    box-shadow: inset 0 2px 6px hsl(0 0% 0% / 0.6);
+    transform: translateY(1px);
+  }
+  .theme-hotpotato .btn-panel-correct {
+    background: linear-gradient(160deg, hsl(140 50% 17%), hsl(140 50% 10%)) !important;
+    border-color: hsl(140 65% 35%) !important;
+    box-shadow: inset 0 1.5px 0 hsl(140 50% 36%), 0 0 26px hsl(140 70% 40% / 0.55) !important;
+    color: hsl(140 80% 82%) !important;
+  }
+  .theme-hotpotato .btn-panel-wrong {
+    background: linear-gradient(160deg, hsl(0 60% 17%), hsl(0 60% 10%)) !important;
+    border-color: hsl(0 75% 38%) !important;
+    box-shadow: inset 0 1.5px 0 hsl(0 60% 36%), 0 0 26px hsl(0 80% 40% / 0.5) !important;
+    color: hsl(0 80% 80%) !important;
+  }
 
   /* Lava Floor theme — deep volcanic red */
   .theme-lavafloor {
@@ -233,8 +262,8 @@
     100% { opacity: 1; transform: scale(1) rotate(0deg); filter: brightness(1); }
   }
   @keyframes hp-bomb-pulse {
-    0%, 100% { box-shadow: 0 0 12px hsl(25 100% 58% / 0.4); }
-    50%      { box-shadow: 0 0 30px hsl(25 100% 58% / 0.9), 0 0 50px hsl(0 100% 50% / 0.4); }
+    0%, 100% { box-shadow: 0 0 12px hsl(0 80% 45% / 0.4); }
+    50%      { box-shadow: 0 0 32px hsl(0 85% 55% / 0.85), 0 0 60px hsl(0 80% 40% / 0.35); }
   }
   .animate-hp-explode    { animation: hp-explode 0.6s ease-out; }
   .animate-hp-bomb-pulse { animation: hp-bomb-pulse 1.2s ease-in-out infinite; }
@@ -347,6 +376,26 @@
     60%  { opacity: 0.5; }
     100% { transform: translateY(-72px) scale(0.1); opacity: 0; }
   }
+  /* Pass It — ambient embers drifting upward */
+  @keyframes pass-ember-float {
+    0%   { opacity: 0;   transform: translateY(0)     scale(1.2); }
+    10%  { opacity: 1; }
+    75%  { opacity: 0.8; }
+    100% { opacity: 0;   transform: translateY(-85vh) scale(0.1); }
+  }
+  /* Pass It — screen breathes orange when holding bomb */
+  @keyframes bomb-breathe {
+    0%, 100% { opacity: 0.05; }
+    50%       { opacity: 0.18; }
+  }
+  .animate-bomb-breathe { animation: bomb-breathe 2s ease-in-out infinite; }
+  /* Pass It / monitor — new explosion entry slides in */
+  @keyframes blast-in {
+    0%   { opacity: 0; transform: translateX(-18px) scale(0.93); filter: brightness(3); }
+    45%  { opacity: 1; transform: translateX(3px)   scale(1.02); filter: brightness(1.4); }
+    100% { opacity: 1; transform: translateX(0)     scale(1);    filter: brightness(1); }
+  }
+  .animate-blast-in { animation: blast-in 0.38s cubic-bezier(0.34, 1.4, 0.64, 1) both; }
   @keyframes heat-flicker {
     0%, 100% { opacity: 0.02; }
     50%      { opacity: 0.07; }
@@ -383,6 +432,15 @@
     background-image: linear-gradient(hsl(var(--border)) 1px, transparent 1px),
                       linear-gradient(90deg, hsl(var(--border)) 1px, transparent 1px);
     background-size: 32px 32px;
+  }
+
+  /* Pass It — PCB circuit board trace pattern (real image, black bg blends via screen mode) */
+  .pcb-trace-bg {
+    background-image: url("/pcb-bg.png");
+    background-size: 520px auto;
+    background-repeat: repeat;
+    mix-blend-mode: screen;
+    opacity: 0.55;
   }
 
   /* Results page cinematic animations */
