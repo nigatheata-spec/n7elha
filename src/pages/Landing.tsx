@@ -329,8 +329,8 @@ const Landing = () => {
         {/* ---------------- FEATURES ---------------- */}
         <section id="features" className="px-5 sm:px-8 md:px-14 py-16 sm:py-24 border-t border-black/5">
           <div className="max-w-2xl">
-            <span className="text-[12px] tracking-[0.25em] font-semibold text-[#FF8254]">{t.featuresKicker}</span>
-            <h2 className="mt-3 text-[28px] sm:text-[40px] tracking-tight leading-[1.1]" style={{ color: "#3F5A63", fontFamily: "'ArslanWessam', 'Almarai', sans-serif" }}>
+            <span className="text-[12px] tracking-[0.25em] font-semibold text-[#FF8254]" style={{ fontFamily: "'Outfit', 'Almarai', sans-serif" }}>{t.featuresKicker}</span>
+            <h2 className="mt-3 text-[28px] sm:text-[40px] tracking-tight leading-[1.15]" style={{ color: "#3F5A63", fontFamily: "'Outfit', 'Almarai', sans-serif", fontWeight: 700 }}>
               {t.featuresTitle}
             </h2>
             <p className="mt-4 text-[15px] text-black/65 leading-relaxed">{t.featuresSub}</p>
@@ -347,8 +347,8 @@ const Landing = () => {
         {/* ---------------- HOW IT WORKS ---------------- */}
         <section id="how" className="px-5 sm:px-8 md:px-14 py-16 sm:py-24 border-t border-black/5 bg-background/40">
           <div className="max-w-2xl">
-            <span className="text-[12px] tracking-[0.25em] font-semibold text-[#FF8254]">{t.howKicker}</span>
-            <h2 className="mt-3 text-[28px] sm:text-[40px] tracking-tight leading-[1.1]" style={{ color: "#3F5A63", fontFamily: "'ArslanWessam', 'Almarai', sans-serif" }}>
+            <span className="text-[12px] tracking-[0.25em] font-semibold text-[#FF8254]" style={{ fontFamily: "'Outfit', 'Almarai', sans-serif" }}>{t.howKicker}</span>
+            <h2 className="mt-3 text-[28px] sm:text-[40px] tracking-tight leading-[1.15]" style={{ color: "#3F5A63", fontFamily: "'Outfit', 'Almarai', sans-serif", fontWeight: 700 }}>
               {t.howTitle}
             </h2>
           </div>
