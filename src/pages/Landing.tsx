@@ -22,8 +22,6 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import heroPerson from "@/assets/hero-person.png";
-import { HandWrittenTitle } from "@/components/ui/hand-writing-text";
-import { CreativePricing } from "@/components/ui/creative-pricing";
 
 const Landing = () => {
   const { user } = useAuth();
@@ -238,17 +236,18 @@ const Landing = () => {
         {/* ---------------- HERO ---------------- */}
         <div className="relative grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-8 px-5 sm:px-8 md:px-14 pt-10 sm:pt-16 pb-12">
           <div className="relative z-10">
-            <h1 className="font-semibold leading-[1.05] tracking-tight text-[34px] sm:text-[44px] md:text-[60px] animate-fade-up" style={{ color: "#FF8254" }}>
+            <h1
+              className="leading-[1.1] tracking-tight text-[34px] sm:text-[44px] md:text-[60px]"
+              style={{ fontFamily: "'ArslanWessam', 'Almarai', sans-serif", color: "#FF8254" }}
+            >
               <span className="block">{t.line1}</span>
-              <span className="block mt-3">
-                <Highlight>{t.line2a}</Highlight> <span>{t.line2b}</span>
+              <span className="block mt-2">
+                <span className="italic" style={{ color: "#FF8254" }}>{t.line2a}</span>
+                {" "}<span>{t.line2b}</span>
               </span>
-              <span className="block mt-3">
-                <span>{t.line3a} </span>
-                <HandWrittenTitle
-                  text={t.line3b}
-                  className={isAr ? "font-display text-[#3F5A63] italic" : "font-handwritten text-[#3F5A63] italic"}
-                />
+              <span className="block mt-2">
+                {t.line3a && <span>{t.line3a} </span>}
+                <span style={{ color: "#3F5A63" }}>{t.line3b}</span>
               </span>
             </h1>
 
@@ -361,9 +360,6 @@ const Landing = () => {
           </div>
         </section>
 
-        {/* ---------------- PRICING ---------------- */}
-        <CreativePricing isAr={isAr} />
-
         {/* ---------------- CTA BANNER ---------------- */}
         <section className="px-5 sm:px-8 md:px-14 py-16 sm:py-20 border-t border-black/5">
           <div className="rounded-[24px] bg-[#3F5A63] text-white p-8 sm:p-12 md:p-16 relative overflow-hidden">
@@ -453,12 +449,6 @@ const Landing = () => {
 };
 
 /* ---------- helpers ---------- */
-
-const Highlight = ({ children }: { children: React.ReactNode }) => (
-  <span className="inline text-[#FF8254]">
-    <span className="italic font-semibold">{children}</span>
-  </span>
-);
 
 const FeatureLarge = ({ icon, title, desc }: { icon: React.ReactNode; title: string; desc: string }) => (
   <div className="md:col-span-2 rounded-2xl border border-black/10 bg-white p-7 hover:border-[#FF8254]/40 hover:shadow-[0_20px_50px_-20px_rgba(255,130,84,0.22)] transition-all group active:scale-[0.995]">
