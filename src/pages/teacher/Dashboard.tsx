@@ -13,6 +13,55 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 
+const PHRASES = {
+  en: [
+    "What should we teach today?",
+    "Your students are waiting...",
+    "Every lesson is a new adventure.",
+  ],
+  ar: [
+    "ماذا نُعلّم اليوم؟",
+    "طلابك ينتظرونك...",
+    "كل درس مغامرة جديدة.",
+  ],
+};
+
+const TypewriterHeading = ({ ar }: { ar: boolean }) => {
+  const phrases = ar ? PHRASES.ar : PHRASES.en;
+  const [displayed, setDisplayed] = useState("");
+  const [phraseIdx, setPhraseIdx] = useState(0);
+  const [isTyping, setIsTyping] = useState(true);
+
+  useEffect(() => {
+    const target = phrases[phraseIdx];
+    if (isTyping) {
+      if (displayed.length < target.length) {
+        const t = setTimeout(() => setDisplayed(target.slice(0, displayed.length + 1)), 72);
+        return () => clearTimeout(t);
+      }
+      const t = setTimeout(() => setIsTyping(false), 2200);
+      return () => clearTimeout(t);
+    } else {
+      if (displayed.length > 0) {
+        const t = setTimeout(() => setDisplayed(d => d.slice(0, -1)), 38);
+        return () => clearTimeout(t);
+      }
+      const t = setTimeout(() => {
+        setPhraseIdx(i => (i + 1) % phrases.length);
+        setIsTyping(true);
+      }, 350);
+      return () => clearTimeout(t);
+    }
+  }, [displayed, isTyping, phraseIdx, phrases]);
+
+  return (
+    <span className="text-primary">
+      {displayed}
+      <span className="animate-cursor-blink ms-0.5 font-thin" style={{ color: "hsl(199 23% 50%)" }}>|</span>
+    </span>
+  );
+};
+
 const CREATIVITY = [
   { value: 0, key: "strict", label_ar: "حرفي", label_en: "Strict", desc_ar: "التزام تام بالمحتوى", desc_en: "Stay 100% with the source" },
   { value: 1, key: "balanced", label_ar: "متوازن", label_en: "Balanced", desc_ar: "تنويع بسيط في الصياغة", desc_en: "Slight rephrasing" },
@@ -198,8 +247,8 @@ const Dashboard = () => {
     <div className="space-y-10 max-w-5xl mx-auto pt-2">
       {/* Hero prompt */}
       <div className="text-center space-y-6 animate-fade-in">
-        <h1 className="font-display text-4xl md:text-5xl font-bold tracking-tight">
-          <span className="animate-heading">{ar ? "ماذا نُعلّم اليوم؟" : "What should we teach today?"}</span>
+        <h1 className="font-display text-4xl md:text-5xl font-bold tracking-tight min-h-[1.2em]">
+          <TypewriterHeading ar={ar} />
         </h1>
 
         <div className="rounded-3xl bg-card border border-border shadow-[0_18px_50px_-30px_hsl(var(--primary)/0.35)] p-4 md:p-5 text-start">

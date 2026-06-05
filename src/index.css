@@ -252,31 +252,12 @@
   .text-glow-cyan { text-shadow: none; }
   .text-glow-amber { text-shadow: none; }
 
-  /* Dashboard heading — blur-reveal + shimmer */
-  @keyframes heading-reveal {
-    0%   { opacity: 0; transform: translateY(12px); filter: blur(8px); }
-    100% { opacity: 1; transform: translateY(0);    filter: blur(0); }
+  /* Dashboard heading — typewriter cursor blink */
+  @keyframes cursor-blink {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0; }
   }
-  @keyframes heading-shimmer {
-    0%   { background-position: 200% center; }
-    100% { background-position: -200% center; }
-  }
-  .animate-heading {
-    display: inline-block;
-    background: linear-gradient(
-      100deg,
-      hsl(199 23% 32%) 30%,
-      hsl(199 23% 52%) 50%,
-      hsl(199 23% 32%) 70%
-    );
-    background-size: 300% auto;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    animation:
-      heading-reveal  0.65s cubic-bezier(0.16, 1, 0.3, 1) both,
-      heading-shimmer 4s   linear 0.65s infinite;
-  }
+  .animate-cursor-blink { animation: cursor-blink 0.75s step-end infinite; }
 
   /* Hot Potato + Lava Floor animations */
   @keyframes hp-explode {
