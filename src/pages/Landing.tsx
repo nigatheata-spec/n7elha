@@ -453,7 +453,7 @@ const Landing = () => {
 const FeatureLarge = ({ icon, title, desc }: { icon: React.ReactNode; title: string; desc: string }) => (
   <div className="md:col-span-2 rounded-2xl border border-black/10 bg-white p-7 hover:border-[#FF8254]/40 hover:shadow-[0_20px_50px_-20px_rgba(255,130,84,0.22)] transition-all group active:scale-[0.995]">
     <div className="flex items-start gap-5">
-      <div className="h-12 w-12 rounded-2xl bg-[#FF8254] text-white flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+      <div className="h-12 w-12 rounded-2xl bg-[#3F5A63] text-white flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
         {icon}
       </div>
       <div>
@@ -466,7 +466,7 @@ const FeatureLarge = ({ icon, title, desc }: { icon: React.ReactNode; title: str
 
 const Feature = ({ icon, title, desc }: { icon: React.ReactNode; title: string; desc: string }) => (
   <div className="rounded-2xl border border-black/10 bg-white p-6 hover:border-[#FF8254]/40 hover:shadow-[0_18px_40px_-20px_rgba(255,130,84,0.22)] transition-all group active:scale-[0.995]">
-    <div className="h-10 w-10 rounded-2xl bg-[#FF8254]/10 text-[#FF8254] flex items-center justify-center group-hover:bg-[#FF8254] group-hover:text-white transition-colors">
+    <div className="h-10 w-10 rounded-2xl bg-[#3F5A63]/10 text-[#3F5A63] flex items-center justify-center group-hover:bg-[#3F5A63] group-hover:text-white transition-colors">
       {icon}
     </div>
     <h3 className="mt-5 text-[17px] font-semibold leading-tight" style={{ color: "#3F5A63" }}>{title}</h3>
