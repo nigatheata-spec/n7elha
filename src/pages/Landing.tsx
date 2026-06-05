@@ -330,7 +330,7 @@ const Landing = () => {
         <section id="features" className="px-5 sm:px-8 md:px-14 py-16 sm:py-24 border-t border-black/5">
           <div className="max-w-2xl">
             <span className="text-[12px] tracking-[0.25em] font-semibold text-[#FF8254]">{t.featuresKicker}</span>
-            <h2 className="mt-3 text-[28px] sm:text-[40px] font-semibold tracking-tight text-black leading-[1.1]">
+            <h2 className="mt-3 text-[28px] sm:text-[40px] font-semibold tracking-tight leading-[1.1]" style={{ color: "#3F5A63" }}>
               {t.featuresTitle}
             </h2>
             <p className="mt-4 text-[15px] text-black/65 leading-relaxed">{t.featuresSub}</p>
@@ -457,7 +457,7 @@ const FeatureLarge = ({ icon, title, desc }: { icon: React.ReactNode; title: str
         {icon}
       </div>
       <div>
-        <h3 className="text-[18px] font-semibold text-black leading-tight">{title}</h3>
+        <h3 className="text-[18px] font-semibold leading-tight" style={{ color: "#3F5A63" }}>{title}</h3>
         <p className="mt-2 text-[14px] leading-relaxed text-black/65 max-w-lg">{desc}</p>
       </div>
     </div>
@@ -469,7 +469,7 @@ const Feature = ({ icon, title, desc }: { icon: React.ReactNode; title: string; 
     <div className="h-10 w-10 rounded-2xl bg-[#FF8254]/10 text-[#FF8254] flex items-center justify-center group-hover:bg-[#FF8254] group-hover:text-white transition-colors">
       {icon}
     </div>
-    <h3 className="mt-5 text-[17px] font-semibold text-black leading-tight">{title}</h3>
+    <h3 className="mt-5 text-[17px] font-semibold leading-tight" style={{ color: "#3F5A63" }}>{title}</h3>
     <p className="mt-2 text-[13.5px] leading-relaxed text-black/65">{desc}</p>
   </div>
 );
