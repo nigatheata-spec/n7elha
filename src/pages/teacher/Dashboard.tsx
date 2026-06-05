@@ -21,7 +21,7 @@ const PHRASES = {
   ],
   ar: [
     "ماذا ندرس اليوم؟",
-    "اجعل درسك تجربة ممتعة",
+    "اجعل درسك تجربة ممتعة!",
     "طلابك يستحقون التميز",
   ],
 };
@@ -247,7 +247,7 @@ const Dashboard = () => {
     <div className="space-y-10 max-w-5xl mx-auto pt-2">
       {/* Hero prompt */}
       <div className="text-center space-y-6 animate-fade-in">
-        <h1 className="font-display text-4xl md:text-5xl font-bold tracking-tight min-h-[1.2em]">
+        <h1 className="text-4xl md:text-5xl font-bold tracking-tight min-h-[1.2em]" style={{ fontFamily: "'ArslanWessam', 'Almarai', sans-serif" }}>
           <TypewriterHeading ar={ar} />
         </h1>
 
