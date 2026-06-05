@@ -3,8 +3,6 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Copy, Play, Users, Trash2, Zap, Target, Heart, Skull, Timer, Trophy, Flame, ChevronLeft, Check, Minus, Plus } from "lucide-react";
 import { toast } from "sonner";
 
@@ -141,7 +139,7 @@ const HostGame = () => {
   const [copied, setCopied] = useState(false);
 
   const [minutes, setMinutes] = useState(7);
-  const [maxStudents, setMaxStudents] = useState(40);
+  const maxStudents = 40;
 
   useEffect(() => {
     if (!quizId) return;
@@ -358,24 +356,6 @@ const HostGame = () => {
               </div>
             )}
 
-            {/* Max students */}
-            <div>
-              <Label className="mb-2 block text-xs font-semibold" style={{ color: "hsl(210 20% 55%)" }}>
-                {t("max_students")}
-              </Label>
-              <Input
-                type="number"
-                min={2}
-                max={100}
-                value={maxStudents}
-                onChange={e => setMaxStudents(Number(e.target.value))}
-                className="border-0 text-white font-medium"
-                style={{
-                  background: "hsl(210 18% 8%)",
-                  border: "1.5px solid hsl(210 18% 22%)",
-                }}
-              />
-            </div>
           </div>
 
           {/* ── Code + lobby card ── */}
