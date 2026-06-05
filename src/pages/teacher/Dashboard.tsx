@@ -20,9 +20,9 @@ const PHRASES = {
     "Every lesson is a new adventure.",
   ],
   ar: [
-    "ماذا نُدرّس اليوم؟",
-    "حوّل درسك إلى تجربة!",
-    "طلابك يستحقون التميّز.",
+    "ماذا ندرس اليوم؟",
+    "اجعل درسك تجربة ممتعة",
+    "طلابك يستحقون التميز",
   ],
 };
 
@@ -39,7 +39,7 @@ const TypewriterHeading = ({ ar }: { ar: boolean }) => {
         const t = setTimeout(() => setDisplayed(target.slice(0, displayed.length + 1)), 72);
         return () => clearTimeout(t);
       }
-      const t = setTimeout(() => setIsTyping(false), 2200);
+      const t = setTimeout(() => setIsTyping(false), 5000);
       return () => clearTimeout(t);
     } else {
       if (displayed.length > 0) {
@@ -55,7 +55,7 @@ const TypewriterHeading = ({ ar }: { ar: boolean }) => {
   }, [displayed, isTyping, phraseIdx, phrases]);
 
   return (
-    <span className="text-primary">
+    <span className="text-primary" dir={ar ? "rtl" : "ltr"}>
       {displayed}
       <span className="animate-cursor-blink ms-0.5 font-thin" style={{ color: "hsl(199 23% 50%)" }}>|</span>
     </span>
