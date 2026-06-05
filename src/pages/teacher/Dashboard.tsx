@@ -295,7 +295,7 @@ const Dashboard = () => {
       {/* Past games */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-xl font-bold flex items-center gap-2 text-accent"><Gamepad2 className="h-5 w-5" />{ar ? "ألعابي السابقة" : "My past games"}</h2>
+          <h2 className="text-xl font-bold flex items-center gap-2 text-primary"><Gamepad2 className="h-5 w-5" />{ar ? "ألعابي السابقة" : "My past games"}</h2>
           <Link to="/app/games" className="text-sm text-primary/70 hover:text-accent">{ar ? "عرض الكل" : "View all"} →</Link>
         </div>
 
@@ -317,7 +317,7 @@ const Dashboard = () => {
                 className="group flex items-center gap-4 p-4 rounded-2xl border border-border bg-card hover:border-accent/50 hover:shadow-[0_8px_24px_-10px_hsl(var(--accent)/0.18)] transition-all"
               >
                 <div className="shrink-0 w-[72px]">
-                  <div className="font-mono text-[22px] font-black text-accent tracking-widest leading-none">{g.code}</div>
+                  <div className="font-mono text-[22px] font-black text-primary tracking-widest leading-none">{g.code}</div>
                   <div className="text-[11px] text-muted-foreground mt-1 font-mono">{new Date(g.created_at).toLocaleDateString(ar ? "ar" : "en")}</div>
                 </div>
                 <div className="flex-1 min-w-0 border-l border-border ps-4">
