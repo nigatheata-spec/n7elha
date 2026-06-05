@@ -63,7 +63,7 @@ const Dashboard = () => {
       .select("id,code,status,created_at,started_at,ended_at,quiz_id,quizzes(title)")
       .eq("teacher_id", user.id)
       .order("created_at", { ascending: false })
-      .limit(12);
+      .limit(4);
     setGames(data ?? []);
   };
   useEffect(() => { loadGames(); /* eslint-disable-next-line */ }, [user]);
@@ -309,7 +309,7 @@ const Dashboard = () => {
             </p>
           </div>
         ) : (
-          <div className="grid sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             {games.map((g) => (
               <Link
                 key={g.id}
