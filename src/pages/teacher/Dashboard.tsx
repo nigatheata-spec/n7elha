@@ -198,8 +198,8 @@ const Dashboard = () => {
     <div className="space-y-10 max-w-5xl mx-auto pt-2">
       {/* Hero prompt */}
       <div className="text-center space-y-6 animate-fade-in">
-        <h1 className="font-display text-4xl md:text-5xl font-bold tracking-tight text-accent">
-          {ar ? "ماذا نُعلّم اليوم؟" : "What should we teach today?"}
+        <h1 className="font-display text-4xl md:text-5xl font-bold tracking-tight">
+          <span className="animate-heading">{ar ? "ماذا نُعلّم اليوم؟" : "What should we teach today?"}</span>
         </h1>
 
         <div className="rounded-3xl bg-card border border-border shadow-[0_18px_50px_-30px_hsl(var(--primary)/0.35)] p-4 md:p-5 text-start">
