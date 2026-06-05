@@ -306,7 +306,7 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
       <div className="absolute inset-0 flex flex-col" style={{ zIndex: 2 }}>
 
         {/* HEADER */}
-        <header className="shrink-0 flex items-center justify-between px-4 py-2.5"
+        <header className="shrink-0 flex items-center justify-between px-4 py-2.5 safe-top"
           style={{
             borderBottom: `1px solid hsl(14 ${danger ? 90 : 40}% ${danger ? 40 : 20}% / ${danger ? 0.55 : 0.3})`,
             background: "hsl(0 0% 4% / 0.9)",
@@ -348,7 +348,7 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
         </div>
 
         {/* MAIN */}
-        <main className="flex-1 flex flex-col px-3 py-3 overflow-hidden min-h-0">
+        <main className="flex-1 flex flex-col px-3 py-3 pb-safe overflow-hidden min-h-0">
 
           {/* WAITING */}
           {phase === "waiting" && (
@@ -481,7 +481,8 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
 
           {/* QUESTION */}
           {(phase === "question" || phase === "answered") && currentQ && (
-            <div className="flex-1 flex flex-col gap-2.5 max-w-2xl mx-auto w-full min-h-0">
+            /* pe-[72px] on mobile gives clearance for the fixed spend button on the right */
+            <div className="flex-1 flex flex-col gap-2.5 max-w-2xl mx-auto w-full min-h-0 pe-[72px] lg:pe-0">
 
               {/* Question card */}
               <div className="shrink-0 rounded-2xl px-4 py-4 relative"

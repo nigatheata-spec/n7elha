@@ -295,7 +295,7 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
       <div className={cn("relative z-10 flex flex-col h-full overflow-y-auto", hasBomb && fuseMs < 5_000 && "animate-screen-shake")}>
 
         {/* ── HEADER — metal panel ── */}
-        <header className="relative shrink-0 flex items-center justify-between px-5 py-3 z-10"
+        <header className="relative shrink-0 flex items-center justify-between px-5 py-3 safe-top z-10"
           style={{ ...metalPanel, borderRadius: 0, borderLeft: "none", borderRight: "none", borderTop: "none" }}>
           <div className="flex items-center gap-2 min-w-0">
             {hasBomb && <BombIcon className="h-5 w-5 shrink-0" style={{ color: fuseColor }} />}
@@ -307,7 +307,7 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
           </div>
         </header>
 
-        <main className="flex-1 px-4 pb-6 flex flex-col overflow-y-auto">
+        <main className="flex-1 px-4 pb-6 safe-bottom flex flex-col overflow-y-auto">
 
           {/* ── WAITING ── */}
           {phase === "waiting" && (

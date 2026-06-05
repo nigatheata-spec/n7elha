@@ -294,7 +294,7 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
         style={{ background: "radial-gradient(ellipse at 50% 0%, hsl(270 60% 28% / 0.3) 0%, transparent 70%)" }} />
 
       {/* Header */}
-      <header className="relative flex items-center justify-between px-4 py-3 border-b border-primary/30 sticky top-0 z-10"
+      <header className="relative flex items-center justify-between px-4 py-3 safe-top border-b border-primary/30 sticky top-0 z-10"
         style={{ background: "hsl(255 40% 6% / 0.85)", backdropFilter: "blur(8px)" }}>
         <div className="text-sm font-bold truncate max-w-[50%] text-primary">{me?.name ?? "—"}</div>
         <div className="flex items-center gap-1">
@@ -312,7 +312,7 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
         </div>
       </header>
 
-      <main className="relative flex-1 px-4 pb-6 flex flex-col">
+      <main className="relative flex-1 px-4 pb-6 safe-bottom flex flex-col">
 
         {/* WAITING */}
         {phase === "waiting" && (

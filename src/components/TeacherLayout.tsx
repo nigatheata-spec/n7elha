@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "@/lib/auth";
 import { Logo } from "@/components/Logo";
 import {
-  Sidebar, SidebarContent, SidebarProvider, SidebarTrigger,
+  Sidebar, SidebarContent, SidebarProvider,
   SidebarHeader, SidebarFooter,
 } from "@/components/ui/sidebar";
 import { LayoutDashboard, FileQuestion, Gamepad2, BarChart3, Settings, LogOut } from "lucide-react";
@@ -85,10 +85,6 @@ export const TeacherLayout = () => {
       <div className="min-h-screen bg-background flex w-full">
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0">
-          {/* Mobile-only top bar */}
-          <header className="h-14 border-b border-border bg-background sticky top-0 z-20 flex items-center px-3 md:hidden">
-            <SidebarTrigger className="text-primary hover:bg-primary/10" />
-          </header>
           <main className="flex-1 p-4 md:p-8">
             <Outlet />
           </main>

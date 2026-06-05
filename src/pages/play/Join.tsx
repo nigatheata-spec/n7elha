@@ -261,7 +261,7 @@ const Join = () => {
   if (stage === "code") {
     return (
       <div
-        className="fixed inset-0 flex flex-col items-center justify-center p-6 overflow-hidden"
+        className="fixed inset-0 flex flex-col items-center justify-center p-6 safe-top safe-bottom overflow-hidden"
         style={{ background: "radial-gradient(ellipse at 50% 35%, #141928 0%, #080a10 70%)" }}
       >
         <div
@@ -339,7 +339,7 @@ const Join = () => {
   // ── Name entry (mode-themed) ──────────────────────────────────
   if (stage === "name") {
     return (
-      <div className="fixed inset-0 flex flex-col items-center justify-center p-6 overflow-hidden" style={{ background: theme.glow }}>
+      <div className="fixed inset-0 flex flex-col items-center justify-center p-6 safe-top safe-bottom overflow-hidden" style={{ background: theme.glow }}>
         <div className="w-full max-w-sm space-y-8 animate-fade-up">
           <div className="space-y-3">
             <div
