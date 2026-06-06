@@ -30,7 +30,7 @@ const AppSidebar = () => {
   };
 
   return (
-    <Sidebar collapsible="none" className="border-r border-sidebar-border overflow-hidden sm:rounded-r-2xl sm:my-2 sm:ms-2 sm:shadow-lg" style={{ height: "100vh" }}>
+    <Sidebar collapsible="none" className="border-r border-sidebar-border rounded-r-2xl overflow-hidden my-2 ms-2 shadow-lg" style={{ height: "calc(100vh - 1rem)" }}>
       {/* Logo */}
       <SidebarHeader className="h-16 flex items-center justify-center border-b border-sidebar-border px-2">
         <Link to="/app" className="flex items-center justify-center">
@@ -84,7 +84,7 @@ export const TeacherLayout = () => {
   return (
     <SidebarProvider style={{ "--sidebar-width": "5.5rem" } as CSSProperties}>
       <div className="min-h-screen bg-background flex w-full items-start">
-        <div className="sticky top-0 self-start shrink-0">
+        <div className="sticky top-2 self-start shrink-0">
           <AppSidebar />
         </div>
         <div className="flex-1 flex flex-col min-w-0">
