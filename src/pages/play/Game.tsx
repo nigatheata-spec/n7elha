@@ -191,12 +191,124 @@ const Game = () => {
       </header>
 
       <main className="relative flex-1 px-3 md:px-6 pb-4">
-        {phase === "waiting" && (
-          <div className="text-center py-24 md:py-32">
-            <div className="text-xl md:text-2xl text-[hsl(120_100%_55%)] animate-pulse">{"> بانتظار المعلّم..."}</div>
-            <p className="text-muted-foreground mt-3 text-sm">{students.length} لاعب متصل</p>
-          </div>
-        )}
+        {phase === "waiting" && (() => {
+          const AV_COLORS = ["#16a34a","#0891b2","#7c3aed","#dc2626","#b45309","#2563eb","#c2410c","#0f766e"];
+          const av = (name: string) => {
+            let h = 0;
+            for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xffffffff;
+            return AV_COLORS[Math.abs(h) % AV_COLORS.length];
+          };
+          return (
+            <div className="max-w-3xl mx-auto py-8 md:py-12 px-2">
+              {/* terminal header */}
+              <div className="mb-6 font-mono text-xs" style={{ color: "hsl(120 60% 38%)" }}>
+                $ ./connect --session={session.code}
+              </div>
+
+              <div className="text-center mb-8">
+                <div
+                  className="font-mono text-2xl md:text-3xl font-bold mb-2"
+                  style={{ color: "hsl(120 100% 60%)", textShadow: "0 0 20px hsl(120 100% 55% / 0.5)" }}
+                >
+                  {"> awaiting handshake"}<span className="animate-pulse">█</span>
+                </div>
+                <p className="font-mono text-xs md:text-sm" style={{ color: "hsl(120 40% 45%)" }}>
+                  بانتظار المعلّم لبدء الجلسة
+                </p>
+              </div>
+
+              {/* live joiner count */}
+              <div
+                className="flex items-center justify-between font-mono text-xs px-3 py-2 mb-3"
+                style={{
+                  borderTop: "1px solid hsl(120 100% 55% / 0.18)",
+                  borderBottom: "1px solid hsl(120 100% 55% / 0.18)",
+                  color: "hsl(120 60% 50%)",
+                }}
+              >
+                <span>HACKERS_ONLINE</span>
+                <span className="flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full animate-pulse" style={{ background: "hsl(120 100% 55%)" }} />
+                  <span className="font-bold tabular-nums" style={{ color: "hsl(120 100% 60%)" }}>
+                    {students.length.toString().padStart(2, "0")}
+                  </span>
+                </span>
+              </div>
+
+              {/* student grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                {students.map((s, i) => {
+                  const isMe = s.id === studentId;
+                  return (
+                    <div
+                      key={s.id}
+                      className="flex items-center gap-2.5 p-2.5 rounded-md transition-all"
+                      style={{
+                        background: isMe ? "hsl(120 100% 55% / 0.10)" : "hsl(120 100% 55% / 0.03)",
+                        border: `1px solid hsl(120 100% 55% / ${isMe ? 0.5 : 0.18})`,
+                        animation: `fade-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) ${Math.min(i * 60, 600)}ms both`,
+                      }}
+                    >
+                      <div
+                        className="h-8 w-8 rounded-full flex items-center justify-center font-black text-white text-xs shrink-0 font-mono"
+                        style={{ background: av(s.name) }}
+                      >
+                        {(s.name?.charAt(0) ?? "?").toUpperCase()}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div
+                          className="font-mono text-xs font-bold truncate"
+                          style={{ color: isMe ? "hsl(120 100% 65%)" : "hsl(120 60% 55%)" }}
+                        >
+                          {s.name}
+                        </div>
+                        {isMe && (
+                          <div className="font-mono text-[9px]" style={{ color: "hsl(120 60% 38%)" }}>
+                            [ you ]
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* empty slots placeholder if very few players */}
+                {students.length < 4 && Array.from({ length: 4 - students.length }).map((_, i) => (
+                  <div
+                    key={`empty-${i}`}
+                    className="flex items-center gap-2.5 p-2.5 rounded-md"
+                    style={{
+                      background: "transparent",
+                      border: "1px dashed hsl(120 100% 55% / 0.10)",
+                      opacity: 0.5,
+                    }}
+                  >
+                    <div
+                      className="h-8 w-8 rounded-full shrink-0 font-mono flex items-center justify-center"
+                      style={{ background: "hsl(120 100% 55% / 0.05)", color: "hsl(120 40% 30%)" }}
+                    >
+                      ?
+                    </div>
+                    <div
+                      className="font-mono text-xs"
+                      style={{ color: "hsl(120 40% 25%)" }}
+                    >
+                      waiting...
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* footer status */}
+              <div
+                className="mt-6 font-mono text-[10px] text-center animate-pulse"
+                style={{ color: "hsl(120 40% 35%)" }}
+              >
+                [ press start on teacher's screen to begin ]
+              </div>
+            </div>
+          );
+        })()}
 
         {phase === "done" && (() => {
           const myRank   = students.findIndex(s => s.id === studentId) + 1 || 1;
