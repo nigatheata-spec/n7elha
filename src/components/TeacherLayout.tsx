@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/lib/auth";
 import { Logo } from "@/components/Logo";
+import logoLight from "@/assets/logo-light.png";
 import {
   Sidebar, SidebarContent, SidebarProvider,
   SidebarHeader, SidebarFooter,
@@ -33,7 +34,7 @@ const AppSidebar = () => {
       {/* Logo */}
       <SidebarHeader className="h-16 flex items-center justify-center border-b border-sidebar-border px-2">
         <Link to="/app" className="flex items-center justify-center">
-          <span className="font-mono font-black text-accent text-xl">n7</span>
+          <img src={logoLight} alt="n7elha" className="h-10 w-10 object-contain" />
         </Link>
       </SidebarHeader>
 
