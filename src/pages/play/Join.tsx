@@ -95,6 +95,17 @@ const Join = () => {
   const [stage, setStage]     = useState<Stage>("code");
   const [chosen, setChosen]   = useState<string | null>(null);
 
+  // Paint body + html dark so no cream bleeds through on iOS edges
+  useEffect(() => {
+    const prev = document.body.style.background;
+    document.documentElement.style.background = "#080a10";
+    document.body.style.background = "#080a10";
+    return () => {
+      document.documentElement.style.background = "";
+      document.body.style.background = prev;
+    };
+  }, []);
+
   // Typewriter buffers
   const [bootLines, setBootLines]     = useState<string[]>([]);
   const [bootCurrent, setBootCurrent] = useState("");
