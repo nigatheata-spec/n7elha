@@ -30,7 +30,7 @@ const AppSidebar = () => {
   };
 
   return (
-    <Sidebar collapsible="none" className="border-r border-sidebar-border rounded-r-2xl overflow-hidden my-2 ms-2 shadow-lg" style={{ height: "calc(100vh - 1rem)" }}>
+    <Sidebar collapsible="none" className="border-r border-sidebar-border rounded-r-2xl overflow-hidden mb-2 shadow-lg" style={{ height: "calc(100vh - 0.5rem)" }}>
       {/* Logo */}
       <SidebarHeader className="h-16 flex items-center justify-center border-b border-sidebar-border px-2">
         <Link to="/app" className="flex items-center justify-center">
