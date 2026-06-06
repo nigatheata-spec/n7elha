@@ -83,8 +83,10 @@ const AppSidebar = () => {
 export const TeacherLayout = () => {
   return (
     <SidebarProvider style={{ "--sidebar-width": "5.5rem" } as CSSProperties}>
-      <div className="min-h-screen bg-background flex w-full">
-        <AppSidebar />
+      <div className="min-h-screen bg-background flex w-full items-start">
+        <div className="sticky top-2 self-start shrink-0">
+          <AppSidebar />
+        </div>
         <div className="flex-1 flex flex-col min-w-0">
           <main className="flex-1 p-4 md:p-8">
             <Outlet />
