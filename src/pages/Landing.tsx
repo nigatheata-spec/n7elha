@@ -158,7 +158,9 @@ const Landing = () => {
         <span className="pointer-events-none absolute -bottom-4 -right-4 h-8 w-8 rounded-full border-2 border-[#FF8254]/40 select-none" />
 
         {/* ---------------- NAV ---------------- */}
-        <nav className="flex items-center justify-between px-5 sm:px-8 md:px-14 pt-6 sm:pt-8 gap-3">
+        <nav className="px-5 sm:px-8 md:px-10 pt-5 sm:pt-6">
+          <div className="flex items-center justify-between gap-3 bg-white/80 backdrop-blur-md rounded-2xl px-4 py-3 shadow-sm border border-black/[0.06]">
+
           <Link to="/" className="flex items-center gap-2 shrink-0">
             <img src={logoMark} alt="n7elha" className="h-8 w-8 object-contain" />
             <span className="text-[17px] font-medium tracking-tight text-black">n7elha</span>
@@ -208,6 +210,7 @@ const Landing = () => {
           >
             {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
+          </div>
         </nav>
 
         {/* mobile menu panel */}

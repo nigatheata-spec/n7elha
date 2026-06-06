@@ -2,10 +2,10 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "knowledge-hack-v2",
-      "runtimeExecutable": "/usr/local/bin/npm",
-      "runtimeArgs": ["run", "dev", "--", "--port", "8083"],
-      "port": 8083
+      "name": "n7elha-dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--", "--port", "5173", "--host"],
+      "port": 5173
     }
   ]
 }

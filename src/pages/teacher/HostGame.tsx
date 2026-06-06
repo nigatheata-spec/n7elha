@@ -214,7 +214,7 @@ const HostGame = () => {
   if (!mode) {
     return (
       <div className="min-h-full rounded-2xl p-6 md:p-10" style={{ background: GUN_BG }}>
-        <div className="max-w-3xl mx-auto space-y-8">
+        <div className="max-w-xl mx-auto space-y-8">
           <div>
             <h1 className="font-display text-3xl font-black text-white">
               {ar ? "اختر وضع اللعبة" : "Choose Game Mode"}
@@ -227,9 +227,8 @@ const HostGame = () => {
               <button
                 key={m.id}
                 onClick={() => setMode(m.id)}
-                className="group relative overflow-hidden rounded-2xl text-left transition-all duration-300 hover:-translate-y-1 hover:scale-[1.01]"
+                className="group relative overflow-hidden rounded-2xl text-left transition-all duration-300 hover:-translate-y-1 hover:scale-[1.01] aspect-square w-full"
                 style={{
-                  height: "220px",
                   border: `1.5px solid ${m.color}33`,
                   boxShadow: `0 4px 24px rgba(0,0,0,0.5)`,
                 }}
