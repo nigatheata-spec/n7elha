@@ -109,6 +109,26 @@ const GameMonitor = () => {
       className="fixed inset-0 overflow-hidden font-mono flex flex-col"
       style={{ background: "#050505", color: GREEN }}
     >
+      {/* dim pixel-art hacker bg */}
+      <div
+        className="pointer-events-none fixed inset-0"
+        style={{
+          backgroundImage: "url(/leaderboard-bg.png)",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+          opacity: 0.22,
+          imageRendering: "pixelated",
+        }}
+      />
+      {/* darkening + vignette overlay for contrast */}
+      <div
+        className="pointer-events-none fixed inset-0"
+        style={{
+          background:
+            "radial-gradient(ellipse at center, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.75) 75%, rgba(0,0,0,0.92) 100%)",
+        }}
+      />
       {/* scanlines overlay */}
       <div
         className="pointer-events-none fixed inset-0 z-50"
