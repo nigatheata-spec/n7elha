@@ -352,23 +352,91 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
 
           {/* WAITING */}
           {phase === "waiting" && (
-            <div className="flex-1 flex flex-col items-center justify-center text-center gap-5">
-              <div className="text-[10px] tracking-[0.55em] uppercase" style={{ color: "hsl(14 60% 50%)" }}>
-                THE FLOOR IS LAVA
-              </div>
-              <div className="relative">
-                <Avatar name={me?.name ?? "?"} size="xl" />
-                <div className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full flex items-center justify-center"
-                  style={{ background: "hsl(14 100% 55%)", animation: "lava-bubble 2s ease-in-out infinite" }}>
-                  <Flame className="h-3 w-3 text-white" />
+            <div className="max-w-3xl mx-auto w-full py-4 px-1 overflow-y-auto">
+              {/* header */}
+              <div className="text-center mb-5">
+                <div className="text-[10px] tracking-[0.55em] uppercase mb-2" style={{ color: "hsl(14 60% 50%)" }}>
+                  THE FLOOR IS LAVA
+                </div>
+                <div className="relative inline-block">
+                  <Avatar name={me?.name ?? "?"} size="xl" />
+                  <div className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full flex items-center justify-center"
+                    style={{ background: "hsl(14 100% 55%)", animation: "lava-bubble 2s ease-in-out infinite" }}>
+                    <Flame className="h-3 w-3 text-white" />
+                  </div>
+                </div>
+                <div className="font-black text-base tracking-tight mt-2" style={{ color: "hsl(30 18% 85%)" }}>
+                  {me?.name ?? "—"}
                 </div>
               </div>
-              <div className="font-black text-lg tracking-tight" style={{ color: "hsl(30 18% 85%)" }}>
-                {me?.name ?? "—"}
+
+              {/* counter strip */}
+              <div
+                className="flex items-center justify-between text-xs font-mono px-3 py-2 mb-3"
+                style={{
+                  borderTop: "1px solid hsl(14 50% 35%)",
+                  borderBottom: "1px solid hsl(14 50% 35%)",
+                  color: "hsl(14 50% 60%)",
+                }}
+              >
+                <span className="tracking-widest">SURVIVORS</span>
+                <span className="flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full animate-pulse" style={{ background: "hsl(14 100% 55%)" }} />
+                  <span className="font-bold tabular-nums text-sm" style={{ color: "hsl(30 80% 75%)" }}>
+                    {students.length.toString().padStart(2, "0")}
+                  </span>
+                </span>
               </div>
-              <div className="text-xs" style={{ color: "hsl(14 50% 50%)", animation: "heat-flicker 2s ease-in-out infinite" }}>
-                بانتظار المعلّم...
+
+              {/* roster grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                {students.map((s, i) => {
+                  const isMe = s.id === studentId;
+                  return (
+                    <div
+                      key={s.id}
+                      className="flex items-center gap-2.5 p-2.5 rounded-xl transition-all"
+                      style={{
+                        background: isMe ? "hsl(14 100% 55% / 0.14)" : "hsl(14 60% 35% / 0.10)",
+                        border: `1px solid hsl(14 100% 55% / ${isMe ? 0.55 : 0.25})`,
+                        boxShadow: isMe ? "0 0 18px hsl(14 100% 55% / 0.30)" : "none",
+                        animation: `fade-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) ${Math.min(i * 60, 600)}ms both`,
+                      }}
+                    >
+                      <Avatar name={s.name} size="sm" />
+                      <div className="min-w-0 flex-1">
+                        <div className="text-sm font-bold truncate" style={{ color: isMe ? "hsl(30 100% 80%)" : "hsl(30 18% 75%)" }}>
+                          {s.name}
+                        </div>
+                        {isMe && (
+                          <div className="font-mono text-[9px]" style={{ color: "hsl(14 80% 65%)" }}>أنت</div>
+                        )}
+                      </div>
+                      {isMe && <Flame className="h-3.5 w-3.5 shrink-0" style={{ color: "hsl(14 100% 65%)" }} />}
+                    </div>
+                  );
+                })}
+                {students.length < 4 && Array.from({ length: 4 - students.length }).map((_, i) => (
+                  <div
+                    key={`empty-${i}`}
+                    className="flex items-center gap-2.5 p-2.5 rounded-xl"
+                    style={{
+                      border: "1px dashed hsl(14 50% 30% / 0.45)",
+                      opacity: 0.5,
+                    }}
+                  >
+                    <div className="h-8 w-8 rounded-full shrink-0 flex items-center justify-center"
+                      style={{ background: "hsl(14 50% 18%)", color: "hsl(14 30% 35%)" }}>
+                      ?
+                    </div>
+                    <div className="font-mono text-xs" style={{ color: "hsl(14 30% 35%)" }}>waiting...</div>
+                  </div>
+                ))}
               </div>
+
+              <p className="mt-6 font-mono text-xs text-center" style={{ color: "hsl(14 50% 50%)", animation: "heat-flicker 2s ease-in-out infinite" }}>
+                {">"} بانتظار المعلّم...
+              </p>
             </div>
           )}
 

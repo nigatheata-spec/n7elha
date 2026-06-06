@@ -316,50 +316,84 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
 
         {/* WAITING */}
         {phase === "waiting" && (
-          <div className="flex-1 flex flex-col items-center pt-5 gap-4 overflow-hidden">
-
-            {/* Game identity */}
-            <div className="text-center shrink-0">
+          <div className="max-w-3xl mx-auto w-full py-5 px-1">
+            {/* arcane header */}
+            <div className="text-center mb-5">
               <CrystalIcon className="h-10 w-10 mx-auto mb-1.5" />
               <h1 className="text-2xl font-black text-primary tracking-widest"
                 style={{ textShadow: "0 0 20px hsl(190 100% 60% / 0.7)" }}>
                 TIME WIZARD
               </h1>
               {session?.quizzes?.title && (
-                <p className="text-muted-foreground/60 text-xs font-mono mt-1 truncate max-w-[240px]">{session.quizzes.title}</p>
+                <p className="text-muted-foreground/60 text-xs font-mono mt-1 truncate max-w-[240px] mx-auto">{session.quizzes.title}</p>
               )}
             </div>
 
-            {/* My card — highlighted */}
-            <div className="w-full max-w-sm shrink-0 flex items-center gap-3 px-4 py-3 rounded-xl border-2 border-primary/70 bg-primary/10"
-              style={{ boxShadow: "0 0 16px hsl(190 100% 60% / 0.2)" }}>
-              <Avatar name={me?.name ?? "?"} size="md" />
-              <span className="font-bold text-primary flex-1 truncate">{me?.name ?? "—"}</span>
-              <CrystalIcon className="h-5 w-5 shrink-0" />
+            {/* live counter strip */}
+            <div
+              className="flex items-center justify-between text-xs font-mono px-3 py-2 mb-3"
+              style={{
+                borderTop: "1px solid hsl(190 100% 60% / 0.25)",
+                borderBottom: "1px solid hsl(190 100% 60% / 0.25)",
+                color: "hsl(190 50% 65%)",
+              }}
+            >
+              <span className="tracking-widest">SUMMONED</span>
+              <span className="flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full animate-pulse" style={{ background: "hsl(190 100% 60%)" }} />
+                <span className="font-bold tabular-nums text-primary text-sm">
+                  {students.length.toString().padStart(2, "0")}
+                </span>
+              </span>
             </div>
 
-            {/* Live roster */}
-            <div className="w-full max-w-sm flex-1 min-h-0 flex flex-col">
-              <div className="flex items-center justify-between text-xs font-mono text-muted-foreground mb-2 shrink-0">
-                <span>Summoned</span>
-                <span className="text-primary font-bold tabular-nums">{students.length}</span>
-              </div>
-              <div className="flex-1 overflow-y-auto space-y-1.5 pb-1">
-                {students.filter(s => s.id !== me?.id).map(s => (
-                  <div key={s.id} className="animate-fade-up flex items-center gap-3 px-3 py-2 rounded-lg border border-primary/20 bg-primary/5">
+            {/* roster grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+              {students.map((s, i) => {
+                const isMe = s.id === me?.id;
+                return (
+                  <div
+                    key={s.id}
+                    className="flex items-center gap-2.5 p-2.5 rounded-xl transition-all"
+                    style={{
+                      background: isMe ? "hsl(190 100% 60% / 0.14)" : "hsl(190 100% 60% / 0.05)",
+                      border: `1px solid hsl(190 100% 60% / ${isMe ? 0.55 : 0.22})`,
+                      boxShadow: isMe ? "0 0 18px hsl(190 100% 60% / 0.25)" : "none",
+                      animation: `fade-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) ${Math.min(i * 60, 600)}ms both`,
+                    }}
+                  >
                     <Avatar name={s.name} size="sm" />
-                    <span className="text-foreground/75 text-sm truncate flex-1">{s.name}</span>
-                    <CrystalIcon className="h-3.5 w-3.5 opacity-40 shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm font-bold truncate" style={{ color: isMe ? "hsl(190 100% 75%)" : "hsl(190 30% 80%)" }}>
+                        {s.name}
+                      </div>
+                      {isMe && (
+                        <div className="font-mono text-[9px] text-primary/70">[ you ]</div>
+                      )}
+                    </div>
+                    <CrystalIcon className={`h-3.5 w-3.5 shrink-0 ${isMe ? "opacity-100" : "opacity-40"}`} />
                   </div>
-                ))}
-                {students.filter(s => s.id !== me?.id).length === 0 && (
-                  <p className="text-muted-foreground/30 font-mono text-xs pt-1">{">"} no one yet...</p>
-                )}
-              </div>
+                );
+              })}
+              {students.length < 4 && Array.from({ length: 4 - students.length }).map((_, i) => (
+                <div
+                  key={`empty-${i}`}
+                  className="flex items-center gap-2.5 p-2.5 rounded-xl"
+                  style={{
+                    border: "1px dashed hsl(190 100% 60% / 0.15)",
+                    opacity: 0.5,
+                  }}
+                >
+                  <div className="h-8 w-8 rounded-full shrink-0 flex items-center justify-center"
+                    style={{ background: "hsl(190 100% 60% / 0.06)", color: "hsl(190 30% 40%)" }}>
+                    ?
+                  </div>
+                  <div className="font-mono text-xs" style={{ color: "hsl(190 20% 35%)" }}>waiting...</div>
+                </div>
+              ))}
             </div>
 
-            {/* Waiting pulse */}
-            <p className="shrink-0 text-primary/50 font-mono text-sm animate-pulse pb-2">
+            <p className="mt-6 text-primary/50 font-mono text-xs text-center animate-pulse">
               {">"} awaiting the wizard...
             </p>
           </div>

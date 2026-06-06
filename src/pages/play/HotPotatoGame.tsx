@@ -311,41 +311,80 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
 
           {/* ── WAITING ── */}
           {phase === "waiting" && (
-            <div className="flex-1 flex flex-col items-center pt-5 gap-4 overflow-hidden">
-              <div className="text-center shrink-0">
+            <div className="max-w-3xl mx-auto w-full py-5 px-1">
+              {/* header */}
+              <div className="text-center mb-5">
                 <BombIcon className="h-10 w-10 mx-auto mb-1.5" style={{ color: "hsl(210 10% 55%)" }} />
                 <h1 className="text-2xl font-black tracking-widest" style={{ color: "hsl(210 10% 82%)" }}>PASS IT</h1>
                 {session?.quizzes?.title && (
-                  <p className="text-muted-foreground/60 text-xs font-mono mt-1 truncate max-w-[240px]">{session.quizzes.title}</p>
+                  <p className="text-muted-foreground/60 text-xs font-mono mt-1 truncate max-w-[240px] mx-auto">{session.quizzes.title}</p>
                 )}
               </div>
 
-              {/* My card */}
-              <div className="relative w-full max-w-sm shrink-0 flex items-center gap-3 px-4 py-3 rounded-xl" style={metalPanel}>
-                <Avatar name={me?.name ?? "?"} size="md" />
-                <span className="font-bold flex-1 truncate font-mono" style={{ color: "hsl(210 10% 82%)" }}>{me?.name ?? "—"}</span>
-                <span className="text-[10px] font-mono font-black px-1.5 py-0.5 rounded" style={{ color: "hsl(210 10% 55%)", border: "1px solid hsl(210 18% 26%)" }}>أنت</span>
+              {/* counter strip */}
+              <div
+                className="flex items-center justify-between text-xs font-mono px-3 py-2 mb-3"
+                style={{
+                  borderTop: "1px solid hsl(210 18% 30%)",
+                  borderBottom: "1px solid hsl(210 18% 30%)",
+                  color: "hsl(210 10% 55%)",
+                }}
+              >
+                <span className="tracking-widest">PLAYERS_ONLINE</span>
+                <span className="flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full animate-pulse" style={{ background: "hsl(210 10% 70%)" }} />
+                  <span className="font-bold tabular-nums text-sm" style={{ color: "hsl(210 10% 85%)" }}>
+                    {students.length.toString().padStart(2, "0")}
+                  </span>
+                </span>
               </div>
 
-              {/* Live roster */}
-              <div className="w-full max-w-sm flex-1 min-h-0 flex flex-col">
-                <div className="flex items-center justify-between text-xs font-mono text-muted-foreground mb-2 shrink-0">
-                  <span>اللاعبون المتصلون</span>
-                  <span className="font-bold tabular-nums" style={{ color: "hsl(210 10% 65%)" }}>{students.length}</span>
-                </div>
-                <div className="flex-1 overflow-y-auto space-y-1.5 pb-1">
-                  {students.filter(s => s.id !== me?.id).map(s => (
-                    <div key={s.id} className="relative animate-fade-up flex items-center gap-3 px-3 py-2 rounded-lg" style={metalPanel}>
+              {/* roster grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                {students.map((s, i) => {
+                  const isMe = s.id === me?.id;
+                  return (
+                    <div
+                      key={s.id}
+                      className="flex items-center gap-2.5 p-2.5 rounded-xl transition-all"
+                      style={{
+                        ...metalPanel,
+                        border: `1px solid hsl(210 18% ${isMe ? 42 : 26}%)`,
+                        boxShadow: isMe ? "inset 0 1px 0 rgba(255,255,255,0.08), 0 0 14px rgba(255,255,255,0.06)" : (metalPanel as any).boxShadow,
+                        animation: `fade-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) ${Math.min(i * 60, 600)}ms both`,
+                      }}
+                    >
                       <Avatar name={s.name} size="sm" />
-                      <span className="text-sm truncate" style={{ color: "hsl(210 10% 72%)" }}>{s.name}</span>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-sm font-bold truncate font-mono" style={{ color: isMe ? "hsl(210 10% 90%)" : "hsl(210 10% 72%)" }}>
+                          {s.name}
+                        </div>
+                        {isMe && (
+                          <div className="font-mono text-[9px]" style={{ color: "hsl(210 10% 55%)" }}>أنت</div>
+                        )}
+                      </div>
                     </div>
-                  ))}
-                  {students.filter(s => s.id !== me?.id).length === 0 && (
-                    <p className="text-muted-foreground/35 font-mono text-xs pt-1">{">"} لا أحد بعد...</p>
-                  )}
-                </div>
+                  );
+                })}
+                {students.length < 4 && Array.from({ length: 4 - students.length }).map((_, i) => (
+                  <div
+                    key={`empty-${i}`}
+                    className="flex items-center gap-2.5 p-2.5 rounded-xl"
+                    style={{
+                      border: "1px dashed hsl(210 18% 22%)",
+                      opacity: 0.5,
+                    }}
+                  >
+                    <div className="h-8 w-8 rounded-full shrink-0 flex items-center justify-center"
+                      style={{ background: "hsl(210 18% 14%)", color: "hsl(210 10% 35%)" }}>
+                      ?
+                    </div>
+                    <div className="font-mono text-xs" style={{ color: "hsl(210 10% 30%)" }}>waiting...</div>
+                  </div>
+                ))}
               </div>
-              <p className="shrink-0 font-mono text-sm animate-pulse pb-2" style={{ color: "hsl(210 10% 45%)" }}>
+
+              <p className="mt-6 font-mono text-xs text-center animate-pulse" style={{ color: "hsl(210 10% 45%)" }}>
                 {">"} بانتظار المعلّم...
               </p>
             </div>
