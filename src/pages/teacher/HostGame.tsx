@@ -63,11 +63,11 @@ const MODES: { id: GameMode; icon: React.ReactNode; label: string; labelAr: stri
 const MINUTE_PRESETS = [5, 10, 15, 20, 30];
 
 /* shared dark-metal constants */
-const GUN_BG = "radial-gradient(ellipse at 30% 10%, hsl(210 28% 11%) 0%, hsl(210 22% 7%) 55%, hsl(210 18% 5%) 100%)";
+const GUN_BG = "radial-gradient(ellipse at 30% 10%, hsl(199 35% 13%) 0%, hsl(199 30% 8%) 55%, hsl(199 25% 5%) 100%)";
 const metalPanel = {
-  background: "linear-gradient(180deg, hsl(210 20% 14%), hsl(210 18% 10%))",
-  border: "1.5px solid hsl(210 20% 22%)",
-  boxShadow: "inset 0 1.5px 0 hsl(210 18% 30%), inset 0 -1px 0 hsl(210 15% 6%), 0 4px 14px hsl(0 0% 0% / 0.45)",
+  background: "linear-gradient(180deg, hsl(199 28% 16%), hsl(199 25% 11%))",
+  border: "1.5px solid hsl(199 28% 24%)",
+  boxShadow: "inset 0 1.5px 0 hsl(199 25% 32%), inset 0 -1px 0 hsl(199 20% 6%), 0 4px 14px hsl(0 0% 0% / 0.45)",
 };
 
 /** +/- stepper for choosing minutes */
@@ -81,7 +81,7 @@ const MinuteStepper = ({ value, onChange, color }: { value: number; onChange: (v
           onClick={() => step(-1)}
           disabled={value <= 2}
           className="h-11 w-11 rounded-xl flex items-center justify-center transition-all disabled:opacity-30"
-          style={{ background: "hsl(210 18% 18%)", border: `1.5px solid hsl(210 18% 26%)`, color: "hsl(210 20% 70%)" }}
+          style={{ background: "hsl(199 28% 18%)", border: `1.5px solid hsl(199 28% 26%)`, color: "hsl(199 25% 72%)" }}
         >
           <Minus className="h-4 w-4" />
         </button>
@@ -91,14 +91,14 @@ const MinuteStepper = ({ value, onChange, color }: { value: number; onChange: (v
           style={{ background: color + "12", border: `1.5px solid ${color}44` }}
         >
           <span className="font-black text-4xl leading-none" style={{ color }}>{value}</span>
-          <span className="text-xs mt-1 font-medium" style={{ color: "hsl(210 20% 50%)" }}>min</span>
+          <span className="text-xs mt-1 font-medium" style={{ color: "hsl(199 25% 52%)" }}>min</span>
         </div>
 
         <button
           onClick={() => step(1)}
           disabled={value >= 30}
           className="h-11 w-11 rounded-xl flex items-center justify-center transition-all disabled:opacity-30"
-          style={{ background: "hsl(210 18% 18%)", border: `1.5px solid hsl(210 18% 26%)`, color: "hsl(210 20% 70%)" }}
+          style={{ background: "hsl(199 28% 18%)", border: `1.5px solid hsl(199 28% 26%)`, color: "hsl(199 25% 72%)" }}
         >
           <Plus className="h-4 w-4" />
         </button>
@@ -113,7 +113,7 @@ const MinuteStepper = ({ value, onChange, color }: { value: number; onChange: (v
             className="px-3 py-1 rounded-lg text-xs font-bold transition-all"
             style={value === p
               ? { background: color + "33", color, border: `1.5px solid ${color}77` }
-              : { background: "hsl(210 18% 16%)", color: "hsl(210 20% 55%)", border: "1.5px solid hsl(210 18% 22%)" }
+              : { background: "hsl(199 28% 16%)", color: "hsl(199 25% 58%)", border: "1.5px solid hsl(199 28% 22%)" }
             }
           >
             {p}m
@@ -211,7 +211,7 @@ const HostGame = () => {
             <h1 className="font-display text-3xl font-black text-white">
               {ar ? "اختر وضع اللعبة" : "Choose Game Mode"}
             </h1>
-            {quiz && <p className="mt-1 text-sm" style={{ color: "hsl(210 20% 55%)" }}>{quiz.title}</p>}
+            {quiz && <p className="mt-1 text-sm" style={{ color: "hsl(199 25% 58%)" }}>{quiz.title}</p>}
           </div>
 
           <div className="grid sm:grid-cols-2 gap-4">
@@ -227,7 +227,7 @@ const HostGame = () => {
                 }}
                 onMouseLeave={e => {
                   (e.currentTarget as HTMLElement).style.boxShadow = metalPanel.boxShadow;
-                  (e.currentTarget as HTMLElement).style.borderColor = "hsl(210 20% 22%)";
+                  (e.currentTarget as HTMLElement).style.borderColor = "hsl(199 28% 22%)";
                 }}
               >
                 <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-xl"
@@ -235,7 +235,7 @@ const HostGame = () => {
                   {m.icon}
                 </div>
                 <div className="font-black text-xl text-white mb-1">{ar ? m.labelAr : m.label}</div>
-                <div className="text-sm leading-relaxed" style={{ color: "hsl(210 20% 55%)" }}>
+                <div className="text-sm leading-relaxed" style={{ color: "hsl(199 25% 58%)" }}>
                   {ar ? m.descAr : m.desc}
                 </div>
                 <div className="mt-5 text-xs font-bold tracking-wide opacity-0 group-hover:opacity-100 transition-opacity"
@@ -263,9 +263,9 @@ const HostGame = () => {
           <button
             onClick={() => { setMode(null); setSessionId(null); setStudents([]); }}
             className="flex items-center gap-1.5 text-sm font-medium transition-colors"
-            style={{ color: "hsl(210 20% 55%)" }}
+            style={{ color: "hsl(199 25% 58%)" }}
             onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = "white"}
-            onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = "hsl(210 20% 55%)"}
+            onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = "hsl(199 25% 58%)"}
           >
             <ChevronLeft className="h-4 w-4" />
             {ar ? "تغيير الوضع" : "Change mode"}
@@ -280,7 +280,7 @@ const HostGame = () => {
 
         <div>
           <h1 className="font-display text-3xl font-black text-white">{t("host_game")}</h1>
-          {quiz && <p className="mt-1 text-sm" style={{ color: "hsl(210 20% 55%)" }}>{quiz.title}</p>}
+          {quiz && <p className="mt-1 text-sm" style={{ color: "hsl(199 25% 58%)" }}>{quiz.title}</p>}
         </div>
 
         <div className="grid md:grid-cols-[1fr_360px] gap-6 items-start">
@@ -291,14 +291,14 @@ const HostGame = () => {
 
             {/* Mode info blurb */}
             <div className="rounded-xl p-4 space-y-3 text-sm"
-              style={{ background: "hsl(210 18% 8%)", border: "1.5px solid hsl(210 18% 18%)" }}>
+              style={{ background: "hsl(199 30% 9%)", border: "1.5px solid hsl(199 28% 18%)" }}>
               {mode === "crypto_rush" && (
                 <>
-                  <div className="flex items-center gap-2.5" style={{ color: "hsl(210 20% 65%)" }}>
+                  <div className="flex items-center gap-2.5" style={{ color: "hsl(199 25% 67%)" }}>
                     <Zap className="h-4 w-4 shrink-0" style={{ color: modeColor }} />
                     {ar ? "أجب على الأسئلة واكسب كريبتو" : "Answer questions and earn crypto"}
                   </div>
-                  <div className="flex items-center gap-2.5" style={{ color: "hsl(210 20% 65%)" }}>
+                  <div className="flex items-center gap-2.5" style={{ color: "hsl(199 25% 67%)" }}>
                     <Trophy className="h-4 w-4 shrink-0 text-amber-400" />
                     {ar ? "أعلى رصيد عند انتهاء الوقت يفوز" : "Highest balance when time runs out wins"}
                   </div>
@@ -306,15 +306,15 @@ const HostGame = () => {
               )}
               {mode === "dodgeball" && (
                 <>
-                  <div className="flex items-center gap-2.5" style={{ color: "hsl(210 20% 65%)" }}>
+                  <div className="flex items-center gap-2.5" style={{ color: "hsl(199 25% 67%)" }}>
                     <Heart className="h-4 w-4 shrink-0 text-red-400" />
                     {ar ? "كل لاعب يبدأ بحياة واحدة" : "Each player starts with 1 life"}
                   </div>
-                  <div className="flex items-center gap-2.5" style={{ color: "hsl(210 20% 65%)" }}>
-                    <Skull className="h-4 w-4 shrink-0" style={{ color: "hsl(210 20% 55%)" }} />
+                  <div className="flex items-center gap-2.5" style={{ color: "hsl(199 25% 67%)" }}>
+                    <Skull className="h-4 w-4 shrink-0" style={{ color: "hsl(199 25% 58%)" }} />
                     {ar ? "إجابة خاطئة = تُحذف" : "Wrong answer = eliminated"}
                   </div>
-                  <div className="flex items-center gap-2.5" style={{ color: "hsl(210 20% 65%)" }}>
+                  <div className="flex items-center gap-2.5" style={{ color: "hsl(199 25% 67%)" }}>
                     <Trophy className="h-4 w-4 shrink-0 text-amber-400" />
                     {ar ? "آخر لاعب يفوز" : "Last player standing wins"}
                   </div>
@@ -322,11 +322,11 @@ const HostGame = () => {
               )}
               {mode === "hotpotato" && (
                 <>
-                  <div className="flex items-center gap-2.5" style={{ color: "hsl(210 20% 65%)" }}>
+                  <div className="flex items-center gap-2.5" style={{ color: "hsl(199 25% 67%)" }}>
                     <Timer className="h-4 w-4 shrink-0" style={{ color: modeColor }} />
                     {ar ? "قنبلة تنتقل بين اللاعبين — أجب صح لتمررها" : "A bomb passes between players — answer right to pass it"}
                   </div>
-                  <div className="flex items-center gap-2.5" style={{ color: "hsl(210 20% 65%)" }}>
+                  <div className="flex items-center gap-2.5" style={{ color: "hsl(199 25% 67%)" }}>
                     <Zap className="h-4 w-4 shrink-0" style={{ color: modeColor }} />
                     {ar ? "من يحملها عند الانفجار تُصفّر نقاطه" : "Whoever holds it on explosion loses their score"}
                   </div>
@@ -334,11 +334,11 @@ const HostGame = () => {
               )}
               {mode === "lavafloor" && (
                 <>
-                  <div className="flex items-center gap-2.5" style={{ color: "hsl(210 20% 65%)" }}>
+                  <div className="flex items-center gap-2.5" style={{ color: "hsl(199 25% 67%)" }}>
                     <Flame className="h-4 w-4 shrink-0 text-orange-500" />
                     {ar ? "الحمم ترتفع — أجيبوا صح لإبطائها" : "Lava rises — answer correctly to slow it"}
                   </div>
-                  <div className="flex items-center gap-2.5" style={{ color: "hsl(210 20% 65%)" }}>
+                  <div className="flex items-center gap-2.5" style={{ color: "hsl(199 25% 67%)" }}>
                     <Trophy className="h-4 w-4 shrink-0 text-amber-400" />
                     {ar ? "اصمدوا حتى ينتهي الوقت لتفوزوا" : "Survive until time runs out to win"}
                   </div>
@@ -349,7 +349,7 @@ const HostGame = () => {
             {/* Duration stepper — shown for all modes except dodgeball */}
             {needsTimer && (
               <div>
-                <p className="text-xs font-semibold mb-3" style={{ color: "hsl(210 20% 50%)" }}>
+                <p className="text-xs font-semibold mb-3" style={{ color: "hsl(199 25% 52%)" }}>
                   {ar ? "مدة اللعبة" : "Game Duration"}
                 </p>
                 <MinuteStepper value={minutes} onChange={setMinutes} color={modeColor} />
@@ -365,9 +365,9 @@ const HostGame = () => {
             {/* Code display */}
             <div className="rounded-2xl p-6 text-center"
               style={{
-                background: "hsl(210 22% 7%)",
+                background: "hsl(199 30% 8%)",
                 border: `2px solid ${modeColor}33`,
-                boxShadow: `inset 0 2px 0 hsl(210 18% 20%), 0 0 40px ${modeColor}18`,
+                boxShadow: `inset 0 2px 0 hsl(199 28% 20%), 0 0 40px ${modeColor}18`,
               }}>
               <div
                 className="font-mono text-6xl font-black tracking-[0.18em] select-all"
@@ -378,7 +378,7 @@ const HostGame = () => {
               >
                 {code}
               </div>
-              <div className="mt-2 text-xs" style={{ color: "hsl(210 20% 45%)" }}>
+              <div className="mt-2 text-xs" style={{ color: "hsl(199 25% 47%)" }}>
                 {ar ? "شارك مع طلابك" : "Share with your students"}
               </div>
             </div>
@@ -388,9 +388,9 @@ const HostGame = () => {
               onClick={copy}
               className="w-full flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold transition-all"
               style={{
-                background: copied ? modeColor + "22" : "hsl(210 18% 16%)",
-                color: copied ? modeColor : "hsl(210 20% 70%)",
-                border: `1.5px solid ${copied ? modeColor + "55" : "hsl(210 18% 26%)"}`,
+                background: copied ? modeColor + "22" : "hsl(199 28% 16%)",
+                color: copied ? modeColor : "hsl(199 25% 72%)",
+                border: `1.5px solid ${copied ? modeColor + "55" : "hsl(199 28% 26%)"}`,
               }}
             >
               {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
@@ -404,7 +404,7 @@ const HostGame = () => {
                 className="w-full flex items-center justify-center gap-2 rounded-xl py-3.5 text-base font-black transition-all hover:brightness-110 active:scale-[0.98]"
                 style={{
                   background: `linear-gradient(135deg, ${modeColor}dd, ${modeColor}aa)`,
-                  color: "hsl(210 22% 7%)",
+                  color: "hsl(199 30% 8%)",
                   boxShadow: `0 4px 24px ${modeColor}44`,
                 }}
               >
@@ -415,11 +415,11 @@ const HostGame = () => {
               <>
                 {/* Student roster */}
                 <div className="rounded-xl p-4"
-                  style={{ background: "hsl(210 22% 7%)", border: "1.5px solid hsl(210 18% 18%)" }}>
+                  style={{ background: "hsl(199 30% 8%)", border: "1.5px solid hsl(199 28% 18%)" }}>
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-sm font-semibold text-white">
                       {students.length} / {maxStudents}
-                      <span className="ms-1.5 text-xs font-normal" style={{ color: "hsl(210 20% 50%)" }}>
+                      <span className="ms-1.5 text-xs font-normal" style={{ color: "hsl(199 25% 52%)" }}>
                         {t("students_connected")}
                       </span>
                     </span>
@@ -427,7 +427,7 @@ const HostGame = () => {
                   </div>
 
                   {students.length === 0 ? (
-                    <div className="text-sm text-center py-8" style={{ color: "hsl(210 20% 40%)" }}>
+                    <div className="text-sm text-center py-8" style={{ color: "hsl(199 25% 42%)" }}>
                       {t("waiting_students")}...
                     </div>
                   ) : (
@@ -435,7 +435,7 @@ const HostGame = () => {
                       {students.map(s => (
                         <div key={s.id}
                           className="flex items-center justify-between rounded-lg px-3 py-2 text-sm group"
-                          style={{ background: "hsl(210 20% 13%)", border: "1px solid hsl(210 18% 20%)" }}>
+                          style={{ background: "hsl(199 28% 14%)", border: "1px solid hsl(199 28% 20%)" }}>
                           <span className="font-medium text-white truncate">{s.name}</span>
                           <button
                             onClick={() => removeStudent(s.id)}
@@ -457,7 +457,7 @@ const HostGame = () => {
                   className="w-full flex items-center justify-center gap-2 rounded-xl py-3.5 text-base font-black transition-all hover:brightness-110 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
                   style={{
                     background: `linear-gradient(135deg, ${modeColor}dd, ${modeColor}aa)`,
-                    color: "hsl(210 22% 7%)",
+                    color: "hsl(199 30% 8%)",
                     boxShadow: students.length >= 1 ? `0 4px 24px ${modeColor}44` : "none",
                   }}
                 >
