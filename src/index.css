@@ -105,31 +105,31 @@
     --sidebar-ring: 189 100% 50%;
   }
 
-  /* Game theme — dark slate terminal with coral glow (matches main brand) */
+  /* Game theme — pure black terminal with green (classic hacker) */
   .theme-game {
-    --background: 199 28% 18%;        /* deep dark-slate */
-    --foreground: 16 100% 72%;        /* coral text */
-    --card: 199 28% 22%;
-    --card-foreground: 16 100% 72%;
-    --popover: 199 28% 22%;
-    --popover-foreground: 16 100% 72%;
-    --primary: 16 100% 66%;           /* coral-glow */
-    --primary-foreground: 199 28% 14%;
-    --secondary: 199 25% 24%;
-    --secondary-foreground: 16 100% 72%;
-    --muted: 199 22% 26%;
-    --muted-foreground: 16 30% 70%;
-    --accent: 16 100% 66%;
-    --accent-foreground: 199 28% 14%;
+    --background: 0 0% 3%;            /* near-black */
+    --foreground: 120 100% 60%;        /* terminal green */
+    --card: 0 0% 5%;
+    --card-foreground: 120 100% 60%;
+    --popover: 0 0% 5%;
+    --popover-foreground: 120 100% 60%;
+    --primary: 120 100% 55%;           /* bright green */
+    --primary-foreground: 0 0% 3%;
+    --secondary: 0 0% 8%;
+    --secondary-foreground: 120 80% 50%;
+    --muted: 0 0% 10%;
+    --muted-foreground: 120 40% 45%;
+    --accent: 120 100% 55%;
+    --accent-foreground: 0 0% 3%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
-    --success: 16 100% 66%;
-    --success-foreground: 199 28% 14%;
-    --border: 16 100% 66% / 0.45;
-    --input: 199 28% 14%;
-    --ring: 16 100% 66%;
+    --success: 120 100% 55%;
+    --success-foreground: 0 0% 3%;
+    --border: 120 100% 55% / 0.22;
+    --input: 0 0% 6%;
+    --ring: 120 100% 55%;
   }
-  .theme-game .text-glow-cyan { text-shadow: 0 0 14px hsl(16 100% 66% / 0.75); }
+  .theme-game .text-glow-cyan { text-shadow: 0 0 14px hsl(120 100% 55% / 0.70); }
 
   /* Time Wizard theme — midnight indigo + arcane cyan (was: dodgeball) */
   .theme-dodgeball {
@@ -416,8 +416,7 @@
     50%      { opacity: 0.07; }
   }
   .terminal-screen {
-    background:
-      radial-gradient(ellipse at 35% 20%, hsl(199 28% 24% / 0.92) 0%, hsl(199 28% 18% / 0.98) 54%, hsl(199 32% 12%) 100%);
+    background: #050505;
   }
   .terminal-scanlines {
     opacity: 0.24;

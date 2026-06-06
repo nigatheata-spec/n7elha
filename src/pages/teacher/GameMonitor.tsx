@@ -1,33 +1,22 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
 import { Bitcoin, Square, Maximize, ArrowRight, Lock } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import DodgeballMonitor from "./DodgeballMonitor";
 import HotPotatoMonitor from "./HotPotatoMonitor";
 import LavaFloorMonitor from "./LavaFloorMonitor";
 
 const fmt = (n: number) => n.toLocaleString();
 
-// Letter avatar (no emojis)
-const AV_COLORS = ["#2563eb","#16a34a","#b45309","#dc2626","#7c3aed","#0891b2","#c2410c","#0f766e"];
-const MonitorAvatar = ({ name }: { name: string }) => {
-  let h = 0;
-  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xffffffff;
-  const bg = AV_COLORS[Math.abs(h) % AV_COLORS.length];
-  return (
-    <div style={{ background: bg }}
-      className="h-10 w-10 rounded-full flex items-center justify-center font-black text-white text-sm select-none shrink-0 font-mono">
-      {(name.charAt(0) || "?").toUpperCase()}
-    </div>
-  );
-};
-
 const ord = (n: number) => {
   const s = ["th","st","nd","rd"], v = n % 100;
   return n + (s[(v - 20) % 10] || s[v] || s[0]);
 };
+
+const GREEN = "hsl(120 100% 55%)";
+const GREEN_DIM = "hsl(120 60% 38%)";
+const GREEN_FAINT = "hsl(120 40% 22%)";
 
 const GameMonitor = () => {
   const { sessionId } = useParams();
@@ -46,7 +35,7 @@ const GameMonitor = () => {
       const [{ data: s }, { data: ss }, { data: hs }] = await Promise.all([
         supabase.from("game_sessions").select("*, quizzes(title)").eq("id", sessionId).maybeSingle(),
         supabase.from("game_students").select("*").eq("session_id", sessionId).order("crypto", { ascending: false }),
-        supabase.from("hack_events").select("*").eq("session_id", sessionId).order("created_at", { ascending: false }).limit(10),
+        supabase.from("hack_events").select("*").eq("session_id", sessionId).order("created_at", { ascending: false }).limit(12),
       ]);
       setSession(s); setStudents(ss ?? []); setHacks(hs ?? []);
     };
@@ -70,7 +59,6 @@ const GameMonitor = () => {
   const left = minutes ? Math.max(0, totalSecs - elapsed) : null;
   const reachedCap = cap != null && totalCrypto >= cap;
 
-  // auto-end (only for the default mode — hotpotato/dodgeball/lavafloor handle their own)
   useEffect(() => {
     const sess = sessionRef.current;
     if (!sess || sess.status !== "running") return;
@@ -84,7 +72,6 @@ const GameMonitor = () => {
     }
   }, [left, reachedCap, ending, minutes]);
 
-  // navigate to results when default-mode game finishes (useEffect, not render-time)
   useEffect(() => {
     if (!session) return;
     const mode = session.settings?.mode;
@@ -104,94 +91,188 @@ const GameMonitor = () => {
     (el.requestFullscreen || el.webkitRequestFullscreen)?.call(el);
   };
 
-  if (!session) return <div className="theme-game min-h-screen bg-background text-foreground flex items-center justify-center font-mono">...</div>;
+  if (!session) return (
+    <div style={{ background: "#050505", color: GREEN }} className="fixed inset-0 flex items-center justify-center font-mono text-sm">
+      {">"} initializing...
+    </div>
+  );
 
-  // Route to mode-specific monitor
-  if (session.settings?.mode === "dodgeball") {
-    return <DodgeballMonitor session={session} sessionId={sessionId!} />;
-  }
-  if (session.settings?.mode === "hotpotato") {
-    return <HotPotatoMonitor session={session} sessionId={sessionId!} />;
-  }
-  if (session.settings?.mode === "lavafloor") {
-    return <LavaFloorMonitor session={session} sessionId={sessionId!} />;
-  }
+  if (session.settings?.mode === "dodgeball") return <DodgeballMonitor session={session} sessionId={sessionId!} />;
+  if (session.settings?.mode === "hotpotato") return <HotPotatoMonitor session={session} sessionId={sessionId!} />;
+  if (session.settings?.mode === "lavafloor") return <LavaFloorMonitor session={session} sessionId={sessionId!} />;
 
   const mm = left != null ? String(Math.floor(left / 60)).padStart(2, "0") : null;
-  const ss = left != null ? String(left % 60).padStart(2, "0") : null;
+  const ss_str = left != null ? String(left % 60).padStart(2, "0") : null;
 
   return (
-    <div className="theme-game fixed inset-0 bg-background text-foreground bg-grid overflow-hidden">
-      {/* Top controls */}
-      <div className="absolute top-3 inset-x-3 z-20 flex items-center justify-between font-mono text-xs gap-3">
-        <div className="text-muted-foreground">
-          CODE <span className="text-primary text-base font-black tracking-widest">{session.code}</span>
+    <div
+      className="fixed inset-0 overflow-hidden font-mono flex flex-col"
+      style={{ background: "#050505", color: GREEN }}
+    >
+      {/* scanlines overlay */}
+      <div
+        className="pointer-events-none fixed inset-0 z-50"
+        style={{
+          backgroundImage: "repeating-linear-gradient(0deg, rgba(0,0,0,0.18) 0px, rgba(0,0,0,0.18) 1px, transparent 1px, transparent 4px)",
+        }}
+      />
+
+      {/* ── TOP BAR ── */}
+      <div
+        className="flex items-center justify-between px-5 py-2 z-10 shrink-0"
+        style={{ borderBottom: `1px solid ${GREEN_FAINT}` }}
+      >
+        <div style={{ color: GREEN_DIM }} className="text-xs tracking-widest uppercase">
+          CODE&nbsp;<span style={{ color: GREEN }} className="text-base font-black tracking-[0.25em]">{session.code}</span>
         </div>
+
         {mm != null && (
-          <div className="text-center text-success font-black text-3xl text-glow-cyan tabular-nums">
-            {mm}:{ss}
+          <div
+            className="text-3xl font-black tabular-nums"
+            style={{
+              color: left != null && left < 60 ? "hsl(0 100% 60%)" : GREEN,
+              textShadow: `0 0 20px ${left != null && left < 60 ? "hsl(0 100% 60% / 0.6)" : "hsl(120 100% 55% / 0.6)"}`,
+            }}
+          >
+            {mm}:{ss_str}
           </div>
         )}
-        <div className="flex gap-2">
-          <Button size="sm" variant="ghost" onClick={goFullscreen} className="text-success hover:text-success hover:bg-success/10">
-            <Maximize className="h-4 w-4" />
-          </Button>
-          <Button size="sm" onClick={endNow} className="bg-destructive hover:bg-destructive/90 text-destructive-foreground font-mono font-bold">
-            <Square className="h-4 w-4 me-1" />END GAME
-          </Button>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={goFullscreen}
+            className="text-xs px-3 py-1 border transition-colors"
+            style={{ borderColor: GREEN_FAINT, color: GREEN_DIM }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = GREEN; (e.currentTarget as HTMLElement).style.color = GREEN; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = GREEN_FAINT; (e.currentTarget as HTMLElement).style.color = GREEN_DIM; }}
+          >
+            [ FULLSCREEN ]
+          </button>
+          <button
+            onClick={endNow}
+            className="text-xs px-3 py-1 font-bold transition-colors"
+            style={{ background: "hsl(0 84% 60%)", color: "#fff" }}
+          >
+            [ END GAME ]
+          </button>
         </div>
       </div>
 
-      <div className="h-full grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-4 p-4 pt-14">
-        {/* LEADERBOARD */}
-        <div className="space-y-2 overflow-hidden flex flex-col">
-          {students.length === 0 ? (
-            <div className="flex-1 flex items-center justify-center font-mono text-2xl text-success animate-pulse">
-              {"> WAITING_FOR_HACKERS..."}
-            </div>
-          ) : (
-            students.slice(0, 9).map((s, i) => (
-              <div key={s.id} className={cn(
-                "rounded-2xl border-2 px-4 py-3 flex items-center gap-3 transition-all",
-                "border-success/60 bg-success/5",
-                i === 0 && "border-success bg-success/10 shadow-[0_0_30px_-5px_hsl(var(--success)/0.6)]"
-              )}>
-                <span className="font-mono text-success font-black text-2xl w-16 shrink-0">
-                  {ord(i + 1).slice(0, -2)}<sup className="text-sm">{ord(i + 1).slice(-2)}</sup>
-                </span>
-                <MonitorAvatar name={s.name} />
-                <span className="font-mono text-success text-2xl font-bold flex-1 truncate text-glow-cyan">{s.name}</span>
-                <span className="font-mono text-success text-2xl font-black tabular-nums">
-                  {fmt(s.crypto)}
-                </span>
+      {/* ── BODY ── */}
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] overflow-hidden">
+
+        {/* LEFT — LEADERBOARD */}
+        <div className="flex flex-col overflow-hidden" style={{ borderRight: `1px solid ${GREEN_FAINT}` }}>
+          {/* section header */}
+          <div
+            className="text-xs px-5 py-2 shrink-0"
+            style={{ color: GREEN_DIM, borderBottom: `1px solid ${GREEN_FAINT}` }}
+          >
+            $ LEADERBOARD.LIVE &nbsp;<span className="animate-pulse">█</span>
+          </div>
+
+          {/* column headers */}
+          <div
+            className="grid px-5 py-2 text-xs shrink-0"
+            style={{
+              gridTemplateColumns: "3rem 1fr auto",
+              color: GREEN_DIM,
+              borderBottom: `1px solid ${GREEN_FAINT}`,
+              letterSpacing: "0.12em",
+            }}
+          >
+            <span>RANK</span>
+            <span>ALIAS</span>
+            <span>₿ CRYPTO</span>
+          </div>
+
+          {/* rows */}
+          <div className="flex-1 overflow-y-auto">
+            {students.length === 0 ? (
+              <div className="px-5 py-8 text-sm animate-pulse" style={{ color: GREEN_DIM }}>
+                {">"} awaiting hackers...
               </div>
-            ))
-          )}
+            ) : (
+              students.map((s, i) => {
+                const isFirst = i === 0;
+                return (
+                  <div
+                    key={s.id}
+                    className="grid px-5 py-3 text-sm transition-all"
+                    style={{
+                      gridTemplateColumns: "3rem 1fr auto",
+                      borderBottom: `1px solid ${GREEN_FAINT}`,
+                      background: isFirst ? "hsl(120 100% 55% / 0.04)" : "transparent",
+                      color: isFirst ? GREEN : GREEN_DIM,
+                    }}
+                  >
+                    <span
+                      className="font-black"
+                      style={{
+                        color: isFirst ? GREEN : GREEN_DIM,
+                        textShadow: isFirst ? `0 0 12px hsl(120 100% 55% / 0.5)` : "none",
+                      }}
+                    >
+                      #{i + 1}
+                    </span>
+                    <span
+                      className="truncate font-bold"
+                      style={{
+                        color: isFirst ? GREEN : "hsl(120 60% 50%)",
+                        textShadow: isFirst ? `0 0 10px hsl(120 100% 55% / 0.4)` : "none",
+                      }}
+                    >
+                      {s.name}
+                    </span>
+                    <span
+                      className="font-black tabular-nums"
+                      style={{ color: GREEN }}
+                    >
+                      {fmt(s.crypto ?? 0)}
+                    </span>
+                  </div>
+                );
+              })
+            )}
+          </div>
         </div>
 
-        {/* RIGHT COLUMN */}
-        <div className="grid grid-rows-[1fr_auto] gap-4 overflow-hidden">
-          {/* Hack feed */}
-          <div className="rounded-2xl border-2 border-success/60 bg-success/5 p-4 overflow-hidden">
-            <div className="font-mono text-success/80 text-xs mb-3 flex items-center justify-between">
+        {/* RIGHT — HACK LOG + STATS */}
+        <div className="flex flex-col overflow-hidden">
+
+          {/* HACK LOG */}
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <div
+              className="text-xs px-5 py-2 flex items-center justify-between shrink-0"
+              style={{ color: GREEN_DIM, borderBottom: `1px solid ${GREEN_FAINT}` }}
+            >
               <span>$ TAIL HACK_LOG.LIVE</span>
-              <span className="h-2 w-2 rounded-full bg-success animate-pulse" />
+              <span className="h-2 w-2 rounded-full animate-pulse" style={{ background: GREEN }} />
             </div>
-            <div className="space-y-3 overflow-hidden">
+
+            <div className="flex-1 overflow-y-auto px-5 py-3 space-y-2">
               {hacks.length === 0 ? (
-                <div className="text-success/40 font-mono text-sm">{"> awaiting breach events..."}</div>
+                <div className="text-xs" style={{ color: GREEN_DIM }}>
+                  {">"} awaiting breach events...
+                </div>
               ) : (
-                hacks.slice(0, 6).map((h) => {
+                hacks.map((h, idx) => {
                   const hk = students.find(x => x.id === h.hacker_id)?.name ?? "?";
                   const tg = students.find(x => x.id === h.target_id)?.name ?? "?";
                   return (
-                    <div key={h.id} className="flex items-start gap-2 font-mono text-success text-sm leading-tight">
-                      {h.success
-                        ? <ArrowRight className="h-4 w-4 shrink-0 mt-0.5 text-success" />
-                        : <Lock className="h-4 w-4 shrink-0 mt-0.5 text-success/40" />
-                      }
-                      <span className="flex-1">
-                        <b>{hk}</b> {h.success ? `took ${fmt(h.crypto_transferred)} from` : `failed to hack`} <b>{tg}</b>
+                    <div
+                      key={h.id}
+                      className="flex items-start gap-2 text-xs leading-relaxed"
+                      style={{ color: h.success ? GREEN : GREEN_DIM, opacity: 1 - idx * 0.07 }}
+                    >
+                      <span className="shrink-0 mt-0.5">
+                        {h.success ? ">" : "✗"}
+                      </span>
+                      <span>
+                        {h.success
+                          ? <><b>{hk}</b> breached <b>{tg}</b> · stole ₿{fmt(h.crypto_transferred)}</>
+                          : <><b>{hk}</b> failed to breach <b>{tg}</b></>
+                        }
                       </span>
                     </div>
                   );
@@ -200,16 +281,27 @@ const GameMonitor = () => {
             </div>
           </div>
 
-          {/* Total bitcoin tile */}
-          <div className="rounded-2xl border-2 border-success bg-success/10 p-4 shadow-[0_0_30px_-5px_hsl(var(--success)/0.6)]">
-            <div className="flex items-center gap-3">
-              <Bitcoin className="h-12 w-12 text-success text-glow-cyan" />
-              <div className="font-mono text-success text-3xl md:text-4xl font-black tabular-nums truncate">
-                {fmt(totalCrypto)}
+          {/* STATS BAR */}
+          <div
+            className="shrink-0 px-5 py-4 flex items-center justify-between"
+            style={{ borderTop: `1px solid ${GREEN_FAINT}` }}
+          >
+            <div>
+              <div className="text-xs mb-0.5" style={{ color: GREEN_DIM }}>TOTAL IN CIRCULATION</div>
+              <div
+                className="text-3xl font-black tabular-nums"
+                style={{ color: GREEN, textShadow: `0 0 20px hsl(120 100% 55% / 0.5)` }}
+              >
+                ₿ {fmt(totalCrypto)}
               </div>
             </div>
-            <div className="font-mono text-success/60 text-[10px] mt-1 text-end">
-              {cap != null ? <>GOAL: {fmt(cap)} · </> : null}{students.length} HACKERS
+            <div className="text-right">
+              <div className="text-xs" style={{ color: GREEN_DIM }}>{students.length} HACKERS ONLINE</div>
+              {cap != null && (
+                <div className="text-xs mt-0.5" style={{ color: reachedCap ? GREEN : GREEN_DIM }}>
+                  GOAL: ₿{fmt(cap)}
+                </div>
+              )}
             </div>
           </div>
         </div>
