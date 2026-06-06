@@ -5,6 +5,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { Copy, Play, Users, Trash2, Zap, Target, Heart, Skull, Timer, Trophy, Flame, ChevronLeft, Check, Minus, Plus } from "lucide-react";
 import { toast } from "sonner";
+import modeCrypto from "@/assets/mode-crypto.jpg";
+import modeLava from "@/assets/mode-lava.jpg";
+import modeDodgeball from "@/assets/mode-dodgeball.jpg";
+import modeHotpotato from "@/assets/mode-hotpotato.jpg";
 
 const genCode = () => {
   const c = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
@@ -13,7 +17,7 @@ const genCode = () => {
 
 type GameMode = "crypto_rush" | "dodgeball" | "hotpotato" | "lavafloor";
 
-const MODES: { id: GameMode; icon: React.ReactNode; label: string; labelAr: string; desc: string; descAr: string; color: string; glow: string; bg: string }[] = [
+const MODES: { id: GameMode; icon: React.ReactNode; label: string; labelAr: string; desc: string; descAr: string; color: string; glow: string; bg: string; poster: string }[] = [
   {
     id: "crypto_rush",
     icon: <Zap className="h-8 w-8" />,
@@ -24,6 +28,7 @@ const MODES: { id: GameMode; icon: React.ReactNode; label: string; labelAr: stri
     color: "#00ff88",
     glow: "0 0 32px #00ff8855, 0 0 64px #00ff8822",
     bg: "linear-gradient(135deg, #00ff8811 0%, #00ff8804 100%)",
+    poster: modeCrypto,
   },
   {
     id: "dodgeball",
@@ -35,6 +40,7 @@ const MODES: { id: GameMode; icon: React.ReactNode; label: string; labelAr: stri
     color: "#22d3ee",
     glow: "0 0 32px #22d3ee55, 0 0 64px #22d3ee22",
     bg: "linear-gradient(135deg, #22d3ee11 0%, #22d3ee04 100%)",
+    poster: modeDodgeball,
   },
   {
     id: "hotpotato",
@@ -46,6 +52,7 @@ const MODES: { id: GameMode; icon: React.ReactNode; label: string; labelAr: stri
     color: "#b8f026",
     glow: "0 0 32px #b8f02655, 0 0 64px #b8f02622",
     bg: "linear-gradient(135deg, #b8f02611 0%, #b8f02604 100%)",
+    poster: modeHotpotato,
   },
   {
     id: "lavafloor",
@@ -57,6 +64,7 @@ const MODES: { id: GameMode; icon: React.ReactNode; label: string; labelAr: stri
     color: "#ef4444",
     glow: "0 0 32px #ef444455, 0 0 64px #ef444422",
     bg: "linear-gradient(135deg, #ef444411 0%, #ef444404 100%)",
+    poster: modeLava,
   },
 ];
 
@@ -219,28 +227,51 @@ const HostGame = () => {
               <button
                 key={m.id}
                 onClick={() => setMode(m.id)}
-                className="group text-left rounded-2xl p-6 transition-all duration-200 hover:-translate-y-1"
-                style={{ ...metalPanel }}
+                className="group relative overflow-hidden rounded-2xl text-left transition-all duration-300 hover:-translate-y-1 hover:scale-[1.01]"
+                style={{
+                  height: "220px",
+                  border: `1.5px solid ${m.color}33`,
+                  boxShadow: `0 4px 24px rgba(0,0,0,0.5)`,
+                }}
                 onMouseEnter={e => {
-                  (e.currentTarget as HTMLElement).style.boxShadow = m.glow + ", " + metalPanel.boxShadow;
-                  (e.currentTarget as HTMLElement).style.borderColor = m.color + "66";
+                  (e.currentTarget as HTMLElement).style.boxShadow = m.glow + ", 0 8px 32px rgba(0,0,0,0.6)";
+                  (e.currentTarget as HTMLElement).style.borderColor = m.color + "88";
                 }}
                 onMouseLeave={e => {
-                  (e.currentTarget as HTMLElement).style.boxShadow = metalPanel.boxShadow;
-                  (e.currentTarget as HTMLElement).style.borderColor = "hsl(199 28% 22%)";
+                  (e.currentTarget as HTMLElement).style.boxShadow = "0 4px 24px rgba(0,0,0,0.5)";
+                  (e.currentTarget as HTMLElement).style.borderColor = m.color + "33";
                 }}
               >
-                <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-xl"
-                  style={{ background: m.bg, color: m.color, border: `1px solid ${m.color}33` }}>
-                  {m.icon}
-                </div>
-                <div className="font-black text-xl text-white mb-1">{ar ? m.labelAr : m.label}</div>
-                <div className="text-sm leading-relaxed" style={{ color: "hsl(199 25% 58%)" }}>
-                  {ar ? m.descAr : m.desc}
-                </div>
-                <div className="mt-5 text-xs font-bold tracking-wide opacity-0 group-hover:opacity-100 transition-opacity"
-                  style={{ color: m.color }}>
-                  {ar ? "اختر ←" : "Select →"}
+                {/* Poster image */}
+                <img
+                  src={m.poster}
+                  alt={m.label}
+                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                />
+                {/* Dark gradient overlay — stronger at bottom for text legibility */}
+                <div
+                  className="absolute inset-0"
+                  style={{ background: "linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.45) 50%, rgba(0,0,0,0.15) 100%)" }}
+                />
+                {/* Mode color tint on hover */}
+                <div
+                  className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                  style={{ background: `linear-gradient(to top, ${m.color}22 0%, transparent 60%)` }}
+                />
+                {/* Text content pinned to bottom */}
+                <div className="absolute bottom-0 left-0 right-0 p-5">
+                  <div className="font-black text-2xl text-white mb-1 drop-shadow-lg">
+                    {ar ? m.labelAr : m.label}
+                  </div>
+                  <div className="text-sm leading-relaxed text-white/70">
+                    {ar ? m.descAr : m.desc}
+                  </div>
+                  <div
+                    className="mt-3 text-xs font-bold tracking-wide opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                    style={{ color: m.color }}
+                  >
+                    {ar ? "اختر ←" : "Select →"}
+                  </div>
                 </div>
               </button>
             ))}
