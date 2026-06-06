@@ -28,14 +28,20 @@ const Avatar = ({ name, size = "md" }: { name: string; size?: "sm" | "md" | "xl"
   );
 };
 
-// Bomb SVG icon
-const BombIcon = ({ className }: { className?: string }) => (
-  <svg className={className} viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="15" cy="19" r="10" fill="currentColor" opacity="0.9" />
-    <rect x="14" y="7" width="2.5" height="6" rx="1.2" fill="currentColor" />
-    <path d="M20 4 L24 8" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-    <circle cx="24" cy="4" r="2.5" fill="#ff8c00" />
-    <circle cx="11" cy="15" r="2.5" fill="white" opacity="0.25" />
+// Dynamite icon — three TNT sticks bundled, lit fuse with spark
+const BombIcon = ({ className, style }: { className?: string; style?: React.CSSProperties }) => (
+  <svg className={className} style={style} viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+    {/* three sticks */}
+    <rect x="5"  y="13" width="6" height="16" rx="1.2" fill="currentColor" opacity="0.95" />
+    <rect x="13" y="13" width="6" height="16" rx="1.2" fill="currentColor" />
+    <rect x="21" y="13" width="6" height="16" rx="1.2" fill="currentColor" opacity="0.95" />
+    {/* binding band */}
+    <rect x="3.5" y="18" width="25" height="2.6" fill="hsl(30 30% 25%)" />
+    {/* fuse from middle stick, curling */}
+    <path d="M16 13 C 16 9, 19 8, 18 4" stroke="hsl(30 35% 60%)" strokeWidth="1.6" fill="none" strokeLinecap="round" />
+    {/* spark / flame at tip */}
+    <circle cx="17.5" cy="3" r="2.4" fill="#ff8c00" />
+    <circle cx="17" cy="2.5" r="1.2" fill="#ffd400" />
   </svg>
 );
 

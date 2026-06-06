@@ -35,19 +35,32 @@ const Avatar = ({ name, size = "md" }: { name: string; size?: "sm" | "md" | "xl"
   );
 };
 
-// Arcane crystal icon — replaces Heart / Skull (no emojis)
-const CrystalIcon = ({ className, dim = false }: { className?: string; dim?: boolean }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <polygon points="12,2 20,9 12,22 4,9"
-      fill={dim ? "hsl(240 20% 35%)" : "hsl(190 100% 65%)"}
-      opacity={dim ? 0.35 : 0.85} />
-    <polygon points="12,2 20,9 12,8 4,9"
-      fill={dim ? "hsl(240 15% 55%)" : "hsl(200 100% 92%)"}
-      opacity={dim ? 0.25 : 0.7} />
-    <line x1="12" y1="2" x2="12" y2="8" stroke="white" strokeWidth="0.6" opacity="0.5" />
-    {!dim && <circle cx="12" cy="2" r="1.2" fill="hsl(200 100% 96%)" opacity="0.9" />}
-  </svg>
-);
+// Stopwatch icon — represents Time Wizard's time-stop mechanic
+const CrystalIcon = ({ className, dim = false }: { className?: string; dim?: boolean }) => {
+  const main   = dim ? "hsl(240 20% 45%)" : "hsl(190 100% 65%)";
+  const accent = dim ? "hsl(240 15% 65%)" : "hsl(200 100% 92%)";
+  const op     = dim ? 0.4 : 1;
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke={main} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" opacity={op}>
+      {/* crown stem */}
+      <path d="M10 2h4" />
+      <path d="M12 2v2.5" />
+      {/* side button */}
+      <path d="M18.5 4.2l1.3 1.3" />
+      {/* face */}
+      <circle cx="12" cy="14" r="8" fill={dim ? "transparent" : "hsl(190 100% 65% / 0.10)"} />
+      {/* center dot */}
+      <circle cx="12" cy="14" r="0.9" fill={accent} stroke="none" />
+      {/* hand pointing up-right (frozen at 10s) */}
+      <path d="M12 14l3.5 -2.5" stroke={accent} strokeWidth="2" />
+      {/* tick marks at 12 / 3 / 6 / 9 */}
+      <path d="M12 7.5v1" />
+      <path d="M12 19.5v1" />
+      <path d="M5.5 14h1" />
+      <path d="M17.5 14h1" />
+    </svg>
+  );
+};
 
 // Stable starfield — computed once outside component, never regenerates
 const STARS = Array.from({ length: 40 }, (_, i) => ({

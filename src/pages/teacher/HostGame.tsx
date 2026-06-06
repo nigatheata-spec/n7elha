@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { Copy, Play, Users, Trash2, Zap, Target, Heart, Skull, Timer, Trophy, Flame, ChevronLeft, Check, Minus, Plus } from "lucide-react";
+import { BitcoinIcon, StopwatchIcon, LavaBucketIcon, DynamiteIcon } from "@/components/game/icons";
 import { toast } from "sonner";
 import modeCrypto from "@/assets/mode-crypto.jpg";
 import modeLava from "@/assets/mode-lava.jpg";
@@ -20,7 +21,7 @@ type GameMode = "crypto_rush" | "dodgeball" | "hotpotato" | "lavafloor";
 const MODES: { id: GameMode; icon: React.ReactNode; label: string; labelAr: string; desc: string; descAr: string; color: string; glow: string; bg: string; poster: string }[] = [
   {
     id: "crypto_rush",
-    icon: <Zap className="h-8 w-8" />,
+    icon: <BitcoinIcon className="h-8 w-8" strokeWidth={2} />,
     label: "Crypto Rush",
     labelAr: "كريبتو رَش",
     desc: "Answer questions, earn crypto, hack rivals",
@@ -32,7 +33,7 @@ const MODES: { id: GameMode; icon: React.ReactNode; label: string; labelAr: stri
   },
   {
     id: "dodgeball",
-    icon: <Target className="h-8 w-8" />,
+    icon: <StopwatchIcon className="h-8 w-8" strokeWidth={2} />,
     label: "Time Wizard",
     labelAr: "ساحر الوقت",
     desc: "Cast spells of time — stop the clock at exactly 10.00s",
@@ -44,7 +45,7 @@ const MODES: { id: GameMode; icon: React.ReactNode; label: string; labelAr: stri
   },
   {
     id: "hotpotato",
-    icon: <Timer className="h-8 w-8" />,
+    icon: <DynamiteIcon className="h-8 w-8" strokeWidth={2} />,
     label: "Pass It",
     labelAr: "مرّرها",
     desc: "Live bomb on a fuse — pass it before it blows",
@@ -56,7 +57,7 @@ const MODES: { id: GameMode; icon: React.ReactNode; label: string; labelAr: stri
   },
   {
     id: "lavafloor",
-    icon: <Flame className="h-8 w-8" />,
+    icon: <LavaBucketIcon className="h-8 w-8" strokeWidth={2} />,
     label: "Lava Floor",
     labelAr: "أرضية الحمم",
     desc: "Survive together before the lava rises",

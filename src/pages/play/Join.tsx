@@ -3,8 +3,10 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { Bitcoin, Target, Flame, Zap, type LucideIcon } from "lucide-react";
 import logoLight from "@/assets/logo-light.png";
+import { BitcoinIcon, StopwatchIcon, LavaBucketIcon, DynamiteIcon } from "@/components/game/icons";
+
+type IconComponent = (props: { className?: string; size?: number; strokeWidth?: number; style?: React.CSSProperties }) => JSX.Element;
 
 // ─── Password pool (Crypto Rush only) ──────────────────────────────────────
 const PASSWORD_POOL = [
@@ -24,7 +26,7 @@ type ModeTheme = {
   label: string;
   tagline: string;
   btnColor: string;
-  icon: LucideIcon;
+  icon: IconComponent;
 };
 
 const MODES: Record<string, ModeTheme> = {
@@ -37,7 +39,7 @@ const MODES: Record<string, ModeTheme> = {
     label: "Crypto Rush",
     tagline: "اخترق · اسرق · ابقَ في القمة",
     btnColor: "#000",
-    icon: Bitcoin,
+    icon: BitcoinIcon,
   },
   dodgeball: {
     bg: "#070914",
@@ -48,7 +50,7 @@ const MODES: Record<string, ModeTheme> = {
     label: "Time Wizard",
     tagline: "أوقف الزمن — 10.00 ثانية بالضبط",
     btnColor: "#000",
-    icon: Target,
+    icon: StopwatchIcon,
   },
   hotpotato: {
     bg: "#0a0a0a",
@@ -59,7 +61,7 @@ const MODES: Record<string, ModeTheme> = {
     label: "Pass It",
     tagline: "مرّر القنبلة قبل أن تنفجر",
     btnColor: "#000",
-    icon: Zap,
+    icon: DynamiteIcon,
   },
   lavafloor: {
     bg: "#120605",
@@ -70,7 +72,7 @@ const MODES: Record<string, ModeTheme> = {
     label: "Lava Floor",
     tagline: "اصمدوا قبل أن تبتلعكم الحمم",
     btnColor: "#fff",
-    icon: Flame,
+    icon: LavaBucketIcon,
   },
 };
 
