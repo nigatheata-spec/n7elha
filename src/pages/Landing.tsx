@@ -163,7 +163,7 @@ const Landing = () => {
             <span className="text-[17px] font-medium tracking-tight text-black">n7elha</span>
           </Link>
 
-          <ul className="hidden lg:flex items-center gap-10 text-[13px] tracking-[0.18em] font-medium text-black/80">
+          <ul className={`hidden lg:flex items-center gap-10 text-[13px] font-medium text-black/80 ${isAr ? "tracking-normal" : "tracking-[0.18em]"}`}>
             <li><a href="#features" className="hover:text-black">{t.services}</a></li>
             <li><a href="#how" className="hover:text-black">{t.about}</a></li>
             <li><a href="#footer" className="hover:text-black">{t.partners}</a></li>
@@ -173,25 +173,25 @@ const Landing = () => {
             <LangToggle variant="pill" />
             <Link
               to="/play"
-              className="px-4 py-2 rounded-full border border-black/15 bg-white text-[#3F5A63] text-[13px] tracking-wider font-medium hover:bg-[#3F5A63] hover:text-white transition"
+              className={`px-4 py-2 rounded-full border border-black/15 bg-white text-[#3F5A63] text-[13px] font-medium hover:bg-[#3F5A63] hover:text-white transition ${isAr ? "" : "tracking-wider"}`}
             >
               {t.joinGame}
             </Link>
             {user ? (
-              <Link to="/app" className="px-5 py-2 rounded-full bg-[#3F5A63] text-white text-[13px] tracking-wider font-medium">
+              <Link to="/app" className={`px-5 py-2 rounded-full bg-[#3F5A63] text-white text-[13px] font-medium ${isAr ? "" : "tracking-wider"}`}>
                 {t.dashboard}
               </Link>
             ) : (
               <>
                 <Link
                   to="/auth"
-                  className="px-5 py-2 rounded-full bg-[#FF8254] text-white text-[13px] tracking-wider font-medium hover:brightness-95 transition"
+                  className={`px-5 py-2 rounded-full bg-[#FF8254] text-white text-[13px] font-medium hover:brightness-95 transition ${isAr ? "" : "tracking-wider"}`}
                 >
                   {t.login}
                 </Link>
                 <Link
                   to="/auth?mode=signup"
-                  className="px-5 py-2 rounded-full bg-[#3F5A63] text-white text-[13px] tracking-wider font-medium hover:bg-[#3F5A63]/90 transition"
+                  className={`px-5 py-2 rounded-full bg-[#3F5A63] text-white text-[13px] font-medium hover:bg-[#3F5A63]/90 transition ${isAr ? "" : "tracking-wider"}`}
                 >
                   {t.signup}
                 </Link>
@@ -329,7 +329,7 @@ const Landing = () => {
         {/* ---------------- FEATURES ---------------- */}
         <section id="features" className="px-5 sm:px-8 md:px-14 py-16 sm:py-24 border-t border-black/5">
           <div className="max-w-2xl">
-            <span className="text-[12px] tracking-[0.25em] font-semibold text-[#FF8254]">{t.featuresKicker}</span>
+            <span className={`text-[12px] font-semibold text-[#FF8254] ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`}>{t.featuresKicker}</span>
             <h2 className="mt-3 text-[28px] sm:text-[40px] tracking-tight leading-[1.1]" style={{ color: "#3F5A63", fontFamily: "'ArslanWessam', 'Almarai', sans-serif" }}>
               {t.featuresTitle}
             </h2>
@@ -347,7 +347,7 @@ const Landing = () => {
         {/* ---------------- HOW IT WORKS ---------------- */}
         <section id="how" className="px-5 sm:px-8 md:px-14 py-16 sm:py-24 border-t border-black/5 bg-background/40">
           <div className="max-w-2xl">
-            <span className="text-[12px] tracking-[0.25em] font-semibold text-[#FF8254]">{t.howKicker}</span>
+            <span className={`text-[12px] font-semibold text-[#FF8254] ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`}>{t.howKicker}</span>
             <h2 className="mt-3 text-[28px] sm:text-[40px] tracking-tight leading-[1.1]" style={{ color: "#3F5A63", fontFamily: "'ArslanWessam', 'Almarai', sans-serif" }}>
               {t.howTitle}
             </h2>
