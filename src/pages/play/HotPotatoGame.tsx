@@ -578,15 +578,20 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
               </div>
 
               {/* Question card — full metal panel */}
-              <div className="relative mb-3 rounded-xl px-5 py-5 text-center" style={metalPanel}>
+              <div className="relative mb-3 rounded-xl px-4 py-4 text-center shrink-0" style={metalPanel}>
                 {currentQ.image_url && (
-                  <img src={currentQ.image_url} alt="" className="mx-auto mb-4 max-h-36 rounded-lg" style={{ border: "1px solid hsl(210 18% 22%)" }} />
+                  <img
+                    src={currentQ.image_url}
+                    alt=""
+                    className="mx-auto mb-3 max-h-[26vh] w-auto object-contain rounded-lg"
+                    style={{ border: "1px solid hsl(210 18% 22%)" }}
+                  />
                 )}
-                <p className="text-lg md:text-xl font-bold leading-relaxed" style={{ color: "hsl(210 10% 88%)" }}>{currentQ.text}</p>
+                <p className="text-base md:text-xl font-bold leading-relaxed" style={{ color: "hsl(210 10% 88%)" }}>{currentQ.text}</p>
               </div>
 
               {/* Answer buttons */}
-              <div className="grid grid-cols-2 gap-2 flex-1">
+              <div className="grid grid-cols-2 gap-2.5 flex-1 min-h-0 pb-safe px-1">
                 {currentQ.options.map((opt, i) => {
                   const isCorrect = i === currentQ.correct_index;
                   const isPicked  = picked === i;
@@ -594,7 +599,7 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
                   return (
                     <button key={i} disabled={picked !== null} onClick={() => submit(i)}
                       className={cn(
-                        "btn-panel min-h-[88px] px-3 py-4 text-center text-base font-bold rounded-xl",
+                        "btn-panel min-h-[88px] px-3 py-3 text-center text-base font-bold rounded-xl leading-snug break-words",
                         show && isCorrect              && "btn-panel-correct animate-answer-correct",
                         show && isPicked && !isCorrect && "btn-panel-wrong animate-answer-wrong",
                         show && !isPicked && !isCorrect && "opacity-20"

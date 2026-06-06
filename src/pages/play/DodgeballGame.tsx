@@ -559,17 +559,21 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
 
         {/* QUESTION */}
         {(phase === "question" || phase === "answered") && currentQ && (
-          <div key={qSeed} className="flex-1 flex flex-col max-w-2xl mx-auto w-full pt-4 animate-question-in">
-            <div className="border-2 border-primary/40 px-4 py-6 text-center rounded-xl mb-3"
+          <div key={qSeed} className="flex-1 flex flex-col max-w-2xl mx-auto w-full pt-3 gap-3 pb-safe min-h-0 animate-question-in">
+            <div className="border-2 border-primary/40 px-4 py-4 text-center rounded-xl shrink-0"
               style={{ background: "hsl(255 40% 9% / 0.75)", backdropFilter: "blur(6px)" }}>
               {currentQ.image_url && (
-                <img src={currentQ.image_url} alt="" className="mx-auto mb-4 max-h-40 rounded-lg border border-primary/30" />
+                <img
+                  src={currentQ.image_url}
+                  alt=""
+                  className="mx-auto mb-3 max-h-[26vh] w-auto object-contain rounded-lg border border-primary/30"
+                />
               )}
-              <p className="text-xl md:text-2xl text-primary font-bold leading-relaxed">{currentQ.text}</p>
+              <p className="text-lg md:text-2xl text-primary font-bold leading-relaxed">{currentQ.text}</p>
               <div className="mt-2 text-xs text-muted-foreground tabular-nums">{timeLeft}s</div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 flex-1">
+            <div className="grid grid-cols-2 gap-2.5 flex-1 min-h-0 px-1">
               {currentQ.options.map((opt, i) => {
                 const isCorrect = i === currentQ.correct_index;
                 const isPicked  = picked === i;
@@ -577,7 +581,7 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
                 return (
                   <button key={i} disabled={picked !== null} onClick={() => submit(i)}
                     className={cn(
-                      "min-h-[100px] px-3 py-4 text-center text-base font-bold border-2 transition-all rounded-xl active:scale-[0.97]",
+                      "min-h-[88px] px-3 py-3 text-center text-base font-bold border-2 transition-all rounded-xl active:scale-[0.97] leading-snug break-words",
                       "border-primary/40 text-primary hover:bg-primary/15",
                       show && isCorrect              && "bg-green-700/70 border-green-500 text-white animate-answer-correct",
                       show && isPicked && !isCorrect && "bg-red-800/70 border-red-500 text-white animate-answer-wrong",

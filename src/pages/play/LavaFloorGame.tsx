@@ -605,7 +605,11 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
                   transition: "border-color 0.4s, box-shadow 0.4s",
                 }}>
                 {currentQ.image_url && (
-                  <img src={currentQ.image_url} alt="" className="w-full max-h-32 object-cover rounded-xl mb-3 border border-white/5" />
+                  <img
+                    src={currentQ.image_url}
+                    alt=""
+                    className="mx-auto max-h-[24vh] w-auto object-contain rounded-xl mb-3 border border-white/5"
+                  />
                 )}
                 <p className="text-base md:text-lg font-bold leading-snug text-center"
                   style={{ color: "hsl(30 18% 88%)" }}>

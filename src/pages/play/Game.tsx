@@ -443,18 +443,22 @@ const Game = () => {
         })()}
 
         {(phase === "question" || phase === "answered") && currentQ && (
-          <div className="max-w-6xl mx-auto h-full flex flex-col">
-            <div className="border-y-2 border-primary/40 bg-primary/5 px-4 py-6 md:py-12 text-center shadow-[inset_0_0_30px_hsl(var(--primary)/0.12)]">
+          <div className="max-w-6xl mx-auto h-full w-full flex flex-col gap-3 pb-safe">
+            <div className="border-y-2 border-primary/40 bg-primary/5 px-4 py-4 md:py-12 text-center shadow-[inset_0_0_30px_hsl(var(--primary)/0.12)] shrink-0">
               {(currentQ as any).image_url && (
-                <img src={(currentQ as any).image_url} alt="" className="mx-auto mb-4 max-h-40 md:max-h-56 rounded-md border border-primary/30" />
+                <img
+                  src={(currentQ as any).image_url}
+                  alt=""
+                  className="mx-auto mb-3 max-h-[28vh] md:max-h-56 w-auto object-contain rounded-md border border-primary/30"
+                />
               )}
-              <p className="text-xl md:text-3xl lg:text-4xl text-[hsl(120_100%_75%)] font-medium leading-relaxed">
+              <p className="text-lg md:text-3xl lg:text-4xl text-[hsl(120_100%_75%)] font-medium leading-relaxed">
                 {currentQ.text}
               </p>
-              <div className="mt-3 text-xs text-[hsl(120_100%_45%)]">⏱ {timeLeft}s</div>
+              <div className="mt-2 text-xs text-[hsl(120_100%_45%)] tabular-nums">⏱ {timeLeft}s</div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 mt-2 flex-1">
+            <div className="grid grid-cols-2 gap-2.5 px-2 md:px-0 flex-1 min-h-0">
               {currentQ.options.map((opt, i) => {
                 const isCorrect = i === currentQ.correct_index;
                 const isPicked = picked === i;
@@ -465,9 +469,9 @@ const Game = () => {
                     disabled={picked !== null}
                     onClick={() => submit(i)}
                     className={cn(
-                      "min-h-[110px] md:min-h-[180px] px-3 py-4 md:py-6 text-center text-base md:text-2xl text-primary font-medium border-2 border-primary/60 transition-all break-words active:scale-[0.98] rounded-none",
+                      "min-h-[96px] md:min-h-[180px] px-3 py-3 md:py-6 text-center text-base md:text-2xl text-primary font-medium border-2 border-primary/60 transition-all break-words active:scale-[0.98] rounded-xl leading-snug",
                       "bg-primary/10 hover:bg-primary/20 shadow-[inset_0_0_18px_hsl(var(--primary)/0.12)]",
-                      showResult && isCorrect && "bg-[hsl(120_100%_50%)]",
+                      showResult && isCorrect && "bg-[hsl(120_100%_50%)] text-black",
                       showResult && isPicked && !isCorrect && "bg-[hsl(0_85%_55%)] text-white",
                       showResult && !isPicked && !isCorrect && "opacity-40"
                     )}
