@@ -52,18 +52,27 @@ export const StopwatchIcon = ({ className, size, strokeWidth, style }: IconProps
   </svg>
 );
 
-// ── Lava Bucket ───────────────────────────────────────────────────
-// Lava Floor — bucket with wavy lava surface and a drip
+// ── Volcano ───────────────────────────────────────────────────────
+// Lava Floor — cone with crater, lava dripping over sides, eruption sparks
 export const LavaBucketIcon = ({ className, size, strokeWidth, style }: IconProps) => (
   <svg className={cn(className)} style={style} {...baseProps(size, strokeWidth)}>
-    {/* handle */}
-    <path d="M6 7c0-2.5 2.7-4 6-4s6 1.5 6 4" />
-    {/* bucket body (tapered) */}
-    <path d="M4 7h16l-2 13H6L4 7z" />
-    {/* lava wavy surface near top */}
-    <path d="M5.4 10c1 -0.8 2 -0.8 3 0s2 0.8 3 0s2 -0.8 3 0s2 0.8 3 0" />
-    {/* drip on the side */}
-    <path d="M19 13c0 1.5 -1 2 -1 3.5" />
+    {/* eruption sparks above the crater */}
+    <path d="M12 4v-2" />
+    <path d="M9 4l-1.2 -1.6" />
+    <path d="M15 4l1.2 -1.6" />
+    {/* volcano cone with open crater on top */}
+    <path d="M3 21L9 9" />
+    <path d="M15 9l6 12" />
+    {/* ground line */}
+    <path d="M2 21h20" />
+    {/* lava bubbling at crater rim (wavy bowl) */}
+    <path d="M9 9c1 .8 2 .8 3 0s2 -.8 3 0" />
+    {/* lava overflowing the left rim, dripping down */}
+    <path d="M9.5 10c-.5 1.4 -1.5 1.8 -2.5 3" />
+    <circle cx="6.8" cy="13.5" r="0.4" fill="currentColor" stroke="none" />
+    {/* lava overflowing the right rim, dripping down */}
+    <path d="M14.5 10c.5 1.4 1.5 1.8 2.5 3" />
+    <circle cx="17.2" cy="13.5" r="0.4" fill="currentColor" stroke="none" />
   </svg>
 );
 

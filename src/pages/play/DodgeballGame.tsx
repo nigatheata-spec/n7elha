@@ -413,32 +413,114 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
         )}
 
         {/* DONE */}
-        {phase === "done" && (
-          <div className="flex-1 flex flex-col items-center justify-center text-center gap-5">
-            {me && !me.eliminated ? (
-              <>
-                <div className="animate-crystal-burst">
-                  <div style={{ filter: "drop-shadow(0 0 32px hsl(190 100% 60% / 0.9))" }}>
-                    <CrystalIcon className="h-24 w-24" />
+        {phase === "done" && (() => {
+          const survived = me && !me.eliminated;
+          const ranked   = [...students].sort((a, b) => Number(b.eliminated_at == null) - Number(a.eliminated_at == null) || (a.eliminated_at ? Date.parse(b.eliminated_at) - Date.parse(a.eliminated_at) : 0));
+          const myRank   = ranked.findIndex(s => s.id === me?.id) + 1 || students.length;
+          const top      = ranked.slice(0, 5);
+          return (
+            <div className="max-w-md mx-auto py-8 px-4 flex flex-col items-center gap-6">
+              {/* Aurora frame around stopwatch */}
+              <div className="relative">
+                {/* outer ring */}
+                <div
+                  className="absolute inset-0 rounded-full animate-ping"
+                  style={{ border: "2px solid hsl(190 100% 60% / 0.25)", margin: "-24px" }}
+                />
+                <div
+                  className="absolute inset-0 rounded-full"
+                  style={{ border: "1px solid hsl(190 100% 60% / 0.4)", margin: "-12px" }}
+                />
+                <div
+                  className={cn("relative", survived ? "" : "opacity-40")}
+                  style={{
+                    filter: survived ? "drop-shadow(0 0 38px hsl(190 100% 60% / 0.9))" : "blur(1px)",
+                    animation: survived ? "fade-up 0.6s ease-out both" : undefined,
+                  }}
+                >
+                  <CrystalIcon className="h-28 w-28" dim={!survived} />
+                </div>
+              </div>
+
+              {/* Title */}
+              <div className="text-center">
+                <div
+                  className="text-3xl md:text-4xl font-black tracking-tight"
+                  style={{
+                    color: survived ? "hsl(190 100% 75%)" : "hsl(220 12% 60%)",
+                    textShadow: survived ? "0 0 28px hsl(190 100% 60% / 0.55)" : "none",
+                  }}
+                >
+                  {survived ? "TIME MASTER" : "TIME DRIFTED"}
+                </div>
+                <div className="font-mono text-xs mt-1.5 tracking-[0.3em]" style={{ color: "hsl(190 50% 55%)" }}>
+                  {survived ? "أوقفت الزمن عند 10.00" : `المركز #${myRank} من ${students.length}`}
+                </div>
+              </div>
+
+              {/* Rank pill (only if not winner) */}
+              {!survived && (
+                <div
+                  className="rounded-2xl px-6 py-3"
+                  style={{
+                    background: "hsl(220 30% 14% / 0.85)",
+                    border: "1px solid hsl(190 60% 35% / 0.45)",
+                  }}
+                >
+                  <div className="font-black text-4xl tabular-nums text-center" style={{ color: "hsl(220 12% 75%)" }}>
+                    #{myRank}
+                  </div>
+                  <div className="text-[10px] mt-0.5 text-center tracking-widest" style={{ color: "hsl(190 30% 55%)" }}>
+                    OF {students.length}
                   </div>
                 </div>
-                <h2 className="text-3xl font-black text-primary"
-                  style={{ textShadow: "0 0 28px hsl(190 100% 60% / 0.65)" }}>
-                  بلورتك تتوهج
-                </h2>
-                <p className="text-muted-foreground text-sm">أنت آخر لاعب واقف</p>
-              </>
-            ) : (
-              <>
-                <div style={{ filter: "blur(1px)" }}>
-                  <CrystalIcon className="h-20 w-20" dim />
+              )}
+
+              {/* Constellation leaderboard */}
+              {students.length > 1 && (
+                <div className="w-full space-y-1.5">
+                  <div className="text-xs tracking-widest uppercase text-center" style={{ color: "hsl(190 50% 55%)" }}>
+                    ━ Constellation ━
+                  </div>
+                  {top.map((s, i) => {
+                    const isMe   = s.id === me?.id;
+                    const isLast = i === 0;
+                    return (
+                      <div
+                        key={s.id}
+                        className="flex items-center gap-2.5 px-3 py-2 rounded-xl"
+                        style={{
+                          background: isMe ? "hsl(190 100% 60% / 0.10)" : "hsl(240 30% 12%)",
+                          border: `1px solid hsl(190 100% 60% / ${isMe ? 0.45 : 0.15})`,
+                          boxShadow: isLast ? "0 0 22px hsl(190 100% 60% / 0.25)" : "none",
+                        }}
+                      >
+                        <CrystalIcon className="h-4 w-4 shrink-0" dim={i > 2} />
+                        <span className="text-xs font-bold tabular-nums w-4" style={{ color: "hsl(190 50% 65%)" }}>#{i + 1}</span>
+                        <span
+                          className="flex-1 text-sm font-bold truncate"
+                          style={{ color: isMe ? "hsl(190 100% 80%)" : "hsl(190 30% 75%)" }}
+                        >
+                          {s.name}
+                        </span>
+                        {!s.eliminated && (
+                          <Check className="h-3.5 w-3.5" style={{ color: "hsl(190 100% 60%)" }} />
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
-                <h2 className="text-3xl font-black text-muted-foreground">انتهت اللعبة</h2>
-              </>
-            )}
-            <Button onClick={() => navigate("/play")} className="mt-4 bg-primary text-primary-foreground">خروج</Button>
-          </div>
-        )}
+              )}
+
+              <Button
+                onClick={() => navigate("/play")}
+                className="mt-2 bg-primary text-primary-foreground tracking-widest font-black"
+              >
+                خروج
+              </Button>
+            </div>
+          );
+        })()}
 
         {/* ELIMINATED */}
         {phase === "eliminated" && (

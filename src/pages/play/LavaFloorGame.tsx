@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { Trophy, Shield, Flame } from "lucide-react";
+import { LavaBucketIcon as VolcanoIcon } from "@/components/game/icons";
 
 type Q = { id: string; text: string; options: string[]; correct_index: number; image_url?: string };
 type Phase = "waiting" | "question" | "answered" | "done";
@@ -445,102 +446,143 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
             const myRank  = students.findIndex(s => s.id === studentId) + 1 || 1;
             const total   = students.length || 1;
             const top3    = students.slice(0, 3);
-            const rankColor =
-              myRank === 1 ? "hsl(45 100% 58%)"
-              : myRank === 2 ? "hsl(220 12% 76%)"
-              : myRank === 3 ? "hsl(24 70% 56%)"
-              : "hsl(30 15% 65%)";
-            const rankGlow =
-              myRank === 1 ? "hsl(45 100% 50% / 0.55)"
-              : myRank === 2 ? "hsl(220 12% 70% / 0.35)"
-              : myRank === 3 ? "hsl(24 70% 46% / 0.45)"
-              : "transparent";
-            const rankLabel =
-              myRank === 1 ? "المركز الأول" : myRank === 2 ? "المركز الثاني"
-              : myRank === 3 ? "المركز الثالث" : `المركز ${myRank}`;
-            const medalIcon = myRank === 1 ? "🥇" : myRank === 2 ? "🥈" : myRank === 3 ? "🥉" : null;
+            const survived = myRank <= 3;
+            const verdict =
+              myRank === 1 ? "VOLCANO MASTER" :
+              survived ? "ESCAPED THE LAVA" :
+              "CONSUMED BY LAVA";
+            const arabicSub =
+              myRank === 1 ? "تحدّيت الحمم" :
+              survived ? "نجوت من الحريق" :
+              "ابتلعتك الحمم";
+            const rankColor = myRank === 1 ? "hsl(45 100% 58%)"
+              : survived    ? "hsl(30 80% 65%)"
+              :               "hsl(14 80% 55%)";
             return (
-              <div className="flex-1 flex flex-col items-center justify-center text-center gap-4 px-4">
-                {/* Rank block */}
-                <div className="flex flex-col items-center gap-1">
-                  <Trophy className="h-10 w-10 mb-1" style={{ color: rankColor, filter: `drop-shadow(0 0 14px ${rankGlow})` }} />
-                  <div className="font-black text-lg tracking-tight" style={{ color: "hsl(35 100% 68%)" }}>انتهت الجولة!</div>
-                </div>
-
-                <div className="rounded-2xl px-8 py-5 flex flex-col items-center gap-1"
-                  style={{
-                    background: `${rankColor}0f`,
-                    border: `1.5px solid ${rankColor}50`,
-                    boxShadow: myRank <= 3 ? `0 0 28px ${rankGlow}` : undefined,
-                  }}>
-                  <div className="font-black tabular-nums leading-none"
-                    style={{ fontSize: "3.5rem", color: rankColor, textShadow: `0 0 28px ${rankGlow}` }}>
-                    #{myRank}
+              <div className="max-w-md mx-auto w-full px-4 py-5 flex flex-col gap-4 overflow-y-auto">
+                {/* hero: erupting volcano */}
+                <div className="relative flex flex-col items-center pt-2">
+                  {/* heat halo */}
+                  <div
+                    className="absolute top-0 w-44 h-44 rounded-full"
+                    style={{
+                      background: "radial-gradient(circle, hsl(14 100% 55% / 0.22) 0%, transparent 65%)",
+                      animation: "heat-flicker 2s ease-in-out infinite",
+                    }}
+                  />
+                  <div
+                    className="relative"
+                    style={{
+                      color: rankColor,
+                      filter: `drop-shadow(0 0 22px ${rankColor}aa)`,
+                      animation: "fade-up 0.6s cubic-bezier(0.34,1.4,0.64,1) both",
+                    }}
+                  >
+                    <VolcanoIcon size={120} strokeWidth={1.6} />
                   </div>
-                  <div className="font-bold text-sm" style={{ color: rankColor }}>{rankLabel}</div>
-                  <div className="text-xs mt-0.5" style={{ color: "hsl(30 12% 48%)" }}>من {total} طالب</div>
-                </div>
-
-                {/* Score row */}
-                <div className="flex items-center gap-6">
-                  <div className="flex flex-col items-center gap-0.5">
-                    <div className="flex items-center gap-1.5">
-                      <Shield className="h-4 w-4" style={{ color: "hsl(35 100% 62%)" }} />
-                      <span className="font-black text-2xl tabular-nums" style={{ color: "hsl(35 100% 68%)" }}>{bricks}</span>
+                  <div className="text-center mt-3">
+                    <div
+                      className="text-2xl md:text-3xl font-black tracking-tight"
+                      style={{ color: rankColor, textShadow: `0 0 22px ${rankColor}88` }}
+                    >
+                      {verdict}
                     </div>
-                    <span className="text-[10px]" style={{ color: "hsl(30 12% 48%)" }}>طوب</span>
-                  </div>
-                  <div className="w-px h-8" style={{ background: "hsl(14 30% 22%)" }} />
-                  <div className="flex flex-col items-center gap-0.5">
-                    <span className="font-black text-2xl tabular-nums" style={{ color: "hsl(142 50% 52%)" }}>{me?.correct_answers ?? 0}</span>
-                    <span className="text-[10px]" style={{ color: "hsl(30 12% 48%)" }}>إجابة صحيحة</span>
+                    <div className="text-xs mt-1.5 tracking-[0.3em]" style={{ color: "hsl(30 30% 60%)" }}>
+                      {arabicSub.toUpperCase()}
+                    </div>
                   </div>
                 </div>
 
-                {/* Mini leaderboard — top 3 + self if outside top 3 */}
+                {/* rank tile */}
+                <div
+                  className="rounded-2xl p-4 flex items-center gap-4"
+                  style={{
+                    background: `${rankColor}10`,
+                    border: `1px solid ${rankColor}50`,
+                    boxShadow: survived ? `0 0 22px ${rankColor}33` : "none",
+                  }}
+                >
+                  <div className="flex flex-col items-center justify-center min-w-[3.5rem]">
+                    <div className="text-3xl font-black tabular-nums leading-none" style={{ color: rankColor }}>
+                      #{myRank}
+                    </div>
+                    <div className="text-[9px] tracking-widest mt-1" style={{ color: "hsl(30 25% 55%)" }}>
+                      من {total}
+                    </div>
+                  </div>
+                  <div className="h-12 w-px" style={{ background: `${rankColor}30` }} />
+                  <div className="flex-1 grid grid-cols-2 gap-3">
+                    <div>
+                      <div className="text-[9px] tracking-widest" style={{ color: "hsl(30 25% 55%)" }}>BRICKS</div>
+                      <div className="flex items-center gap-1">
+                        <Shield className="h-3.5 w-3.5" style={{ color: "hsl(35 100% 62%)" }} />
+                        <span className="text-xl font-black tabular-nums" style={{ color: "hsl(35 100% 70%)" }}>{bricks}</span>
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-[9px] tracking-widest" style={{ color: "hsl(30 25% 55%)" }}>CORRECT</div>
+                      <div className="text-xl font-black tabular-nums" style={{ color: "hsl(142 50% 62%)" }}>
+                        {me?.correct_answers ?? 0}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Survivor stack — top 3 + you */}
                 {total > 1 && (
-                  <div className="w-full max-w-xs flex flex-col gap-1 mt-1">
+                  <div className="space-y-1.5">
+                    <div className="text-[10px] tracking-[0.3em] uppercase pb-1 text-center" style={{ color: "hsl(30 30% 55%)" }}>
+                      ━ SURVIVORS ━
+                    </div>
                     {top3.map((s: any, i: number) => {
                       const mc = i === 0 ? "hsl(45 100% 58%)" : i === 1 ? "hsl(220 12% 76%)" : "hsl(24 70% 56%)";
                       const isMe = s.id === studentId;
                       return (
-                        <div key={s.id} className="flex items-center gap-2.5 rounded-xl px-3 py-2"
+                        <div
+                          key={s.id}
+                          className="flex items-center gap-2.5 rounded-xl px-3 py-2.5"
                           style={{
-                            background: isMe ? `${mc}14` : "hsl(14 30% 10%)",
-                            border: `1px solid ${isMe ? `${mc}40` : "hsl(14 25% 18%)"}`,
-                          }}>
-                          <span className="font-black text-xs w-5 tabular-nums text-right" style={{ color: mc }}>#{i + 1}</span>
+                            background: isMe ? `${mc}18` : "hsl(14 35% 9%)",
+                            border: `1px solid ${isMe ? `${mc}60` : "hsl(14 25% 18%)"}`,
+                          }}
+                        >
+                          <span className="font-black text-sm w-5 tabular-nums text-center" style={{ color: mc }}>{i + 1}</span>
                           <Avatar name={s.name} size="sm" />
-                          <span className="flex-1 text-right text-xs font-bold truncate" style={{ color: isMe ? mc : "hsl(30 15% 72%)" }}>{s.name}</span>
-                          <div className="flex items-center gap-1">
-                            <Shield className="h-3 w-3" style={{ color: "hsl(35 80% 55%)" }} />
-                            <span className="text-xs font-black tabular-nums" style={{ color: "hsl(35 100% 62%)" }}>{s.crypto ?? 0}</span>
-                          </div>
+                          <span className="flex-1 text-sm font-bold truncate" style={{ color: isMe ? "hsl(30 35% 88%)" : "hsl(30 18% 72%)" }}>
+                            {s.name}{isMe && " ←"}
+                          </span>
+                          <Flame className="h-3.5 w-3.5" style={{ color: i === 0 ? mc : "hsl(14 60% 45%)" }} />
+                          <span className="text-sm font-black tabular-nums" style={{ color: "hsl(35 100% 65%)" }}>{s.crypto ?? 0}</span>
                         </div>
                       );
                     })}
                     {myRank > 3 && (
-                      <div className="flex items-center gap-2.5 rounded-xl px-3 py-2 mt-0.5"
-                        style={{ background: `${rankColor}0f`, border: `1px solid ${rankColor}40` }}>
-                        <span className="font-black text-xs w-5 tabular-nums text-right" style={{ color: rankColor }}>#{myRank}</span>
-                        <Avatar name={me?.name ?? "?"} size="sm" />
-                        <span className="flex-1 text-right text-xs font-bold truncate" style={{ color: rankColor }}>{me?.name}</span>
-                        <div className="flex items-center gap-1">
-                          <Shield className="h-3 w-3" style={{ color: "hsl(35 80% 55%)" }} />
-                          <span className="text-xs font-black tabular-nums" style={{ color: "hsl(35 100% 62%)" }}>{bricks}</span>
+                      <>
+                        <div className="text-center text-xs" style={{ color: "hsl(14 30% 30%)" }}>···</div>
+                        <div
+                          className="flex items-center gap-2.5 rounded-xl px-3 py-2.5"
+                          style={{ background: `${rankColor}18`, border: `1px solid ${rankColor}60` }}
+                        >
+                          <span className="font-black text-sm w-5 tabular-nums text-center" style={{ color: rankColor }}>{myRank}</span>
+                          <Avatar name={me?.name ?? "?"} size="sm" />
+                          <span className="flex-1 text-sm font-bold truncate" style={{ color: "hsl(30 35% 88%)" }}>{me?.name} ←</span>
+                          <Flame className="h-3.5 w-3.5" style={{ color: rankColor }} />
+                          <span className="text-sm font-black tabular-nums" style={{ color: "hsl(35 100% 65%)" }}>{bricks}</span>
                         </div>
-                      </div>
+                      </>
                     )}
                   </div>
                 )}
 
-                <button onClick={() => navigate("/play")}
-                  className="mt-1 px-6 py-2.5 rounded-xl font-black text-sm transition-all active:scale-[0.97]"
+                <button
+                  onClick={() => navigate("/play")}
+                  className="mt-2 px-6 py-3 rounded-xl font-black text-sm tracking-widest transition-all active:scale-[0.97]"
                   style={{
-                    background: "hsl(14 100% 55% / 0.12)",
-                    border: "1.5px solid hsl(14 100% 55% / 0.4)",
-                    color: "hsl(14 100% 70%)",
-                  }}>
+                    background: "hsl(14 100% 55% / 0.15)",
+                    border: "1.5px solid hsl(14 100% 55% / 0.5)",
+                    color: "hsl(14 100% 75%)",
+                  }}
+                >
                   خروج
                 </button>
               </div>

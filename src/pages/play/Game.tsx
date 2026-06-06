@@ -311,93 +311,133 @@ const Game = () => {
         })()}
 
         {phase === "done" && (() => {
-          const myRank   = students.findIndex(s => s.id === studentId) + 1 || 1;
-          const total    = students.length || 1;
-          const top3     = students.slice(0, 3);
-          const rankColor =
-            myRank === 1 ? "hsl(45 100% 58%)"
-            : myRank === 2 ? "hsl(220 12% 76%)"
-            : myRank === 3 ? "hsl(24 70% 56%)"
-            : "hsl(120 60% 60%)";
-          const rankGlow =
-            myRank === 1 ? "hsl(45 100% 50% / 0.55)"
-            : myRank === 2 ? "hsl(220 12% 70% / 0.35)"
-            : myRank === 3 ? "hsl(24 70% 46% / 0.45)"
-            : "transparent";
-          const rankLabel =
-            myRank === 1 ? "المركز الأول" : myRank === 2 ? "المركز الثاني"
-            : myRank === 3 ? "المركز الثالث" : `المركز ${myRank}`;
-          const AV_COLORS = ["#2563eb","#16a34a","#b45309","#dc2626","#7c3aed","#0891b2","#c2410c","#0f766e"];
-          const av = (name: string) => {
-            let h = 0;
-            for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xffffffff;
-            return AV_COLORS[Math.abs(h) % AV_COLORS.length];
-          };
+          const myRank = students.findIndex(s => s.id === studentId) + 1 || 1;
+          const total  = students.length || 1;
+          const top    = students.slice(0, 5);
+          const isTop  = myRank === 1;
+          const myBal  = me?.crypto ?? 0;
+          const totalLoot = students.reduce((a, s) => a + (s.crypto || 0), 0);
+
           return (
-            <div className="flex flex-col items-center justify-center text-center gap-4 py-12 px-4">
-              <div className="flex flex-col items-center gap-1">
-                <Trophy className="h-10 w-10 mb-1" style={{ color: rankColor, filter: `drop-shadow(0 0 14px ${rankGlow})` }} />
-                <div className="font-black text-lg" style={{ color: "hsl(120 100% 60%)" }}>انتهت اللعبة</div>
+            <div className="max-w-2xl mx-auto py-6 px-2 font-mono">
+              {/* boot terminal log */}
+              <div className="space-y-1 text-xs mb-5" style={{ color: "hsl(120 60% 38%)" }}>
+                <div>$ session.disconnect --code={session.code}</div>
+                <div>{">"} flushing wallets...</div>
+                <div>{">"} computing leaderboard...</div>
+                <div style={{ color: "hsl(120 100% 60%)" }}>{">"} CONNECTION_TERMINATED</div>
               </div>
 
-              <div className="rounded-2xl px-8 py-5 flex flex-col items-center gap-1"
-                style={{
-                  background: `${rankColor}0f`,
-                  border: `1.5px solid ${rankColor}50`,
-                  boxShadow: myRank <= 3 ? `0 0 28px ${rankGlow}` : undefined,
-                }}>
-                <div className="font-black tabular-nums leading-none"
-                  style={{ fontSize: "3.5rem", color: rankColor, textShadow: `0 0 28px ${rankGlow}` }}>
-                  #{myRank}
+              {/* status badge */}
+              <div className="mb-5">
+                <div
+                  className="inline-block text-xs px-3 py-1.5 rounded-sm font-bold tracking-widest"
+                  style={{
+                    background: isTop ? "hsl(120 100% 55% / 0.18)" : "hsl(120 100% 55% / 0.06)",
+                    color: isTop ? "hsl(120 100% 70%)" : "hsl(120 60% 55%)",
+                    border: `1px solid hsl(120 100% 55% / ${isTop ? 0.6 : 0.25})`,
+                    textShadow: isTop ? "0 0 12px hsl(120 100% 55% / 0.5)" : "none",
+                  }}
+                >
+                  {isTop ? "[ TOP_HACKER ]" : `[ RANK_${String(myRank).padStart(2, "0")} ]`}
                 </div>
-                <div className="font-bold text-sm" style={{ color: rankColor }}>{rankLabel}</div>
-                <div className="text-xs mt-0.5" style={{ color: "hsl(120 20% 50%)" }}>من {total} طالب</div>
               </div>
 
-              <div className="flex flex-col items-center gap-0.5">
-                <span className="font-black text-2xl tabular-nums" style={{ color: "hsl(120 100% 60%)" }}>
-                  ₿ {(me?.crypto ?? 0).toLocaleString()}
-                </span>
-                <span className="text-[10px]" style={{ color: "hsl(120 20% 50%)" }}>رصيدك النهائي</span>
+              {/* main ascii box: balance display */}
+              <pre
+                className="text-xs md:text-sm leading-tight overflow-x-auto whitespace-pre mb-4"
+                style={{ color: "hsl(120 100% 55%)" }}
+              >
+{`╔══════════════════════════════════════════╗
+║  WALLET_BAL    ₿ ${myBal.toLocaleString().padStart(18, " ")}  ║
+║  YOUR_RANK     ${`#${myRank}`.padStart(20, " ")}  ║
+║  HACKERS       ${`${total}`.padStart(20, " ")}  ║
+╚══════════════════════════════════════════╝`}
+              </pre>
+
+              {/* stats row */}
+              <div className="grid grid-cols-3 gap-2 mb-5 text-xs">
+                {[
+                  { label: "correct", value: me?.correct_answers ?? 0 },
+                  { label: "answered", value: me?.total_answers ?? 0 },
+                  { label: "of_pool", value: `${Math.round((myBal / Math.max(totalLoot, 1)) * 100)}%` },
+                ].map(s => (
+                  <div
+                    key={s.label}
+                    className="p-2.5 rounded-sm"
+                    style={{
+                      background: "hsl(120 100% 55% / 0.04)",
+                      border: "1px solid hsl(120 100% 55% / 0.18)",
+                    }}
+                  >
+                    <div className="text-[10px] tracking-widest" style={{ color: "hsl(120 60% 38%)" }}>
+                      {s.label.toUpperCase().replace("_", "_")}
+                    </div>
+                    <div className="text-base font-bold tabular-nums" style={{ color: "hsl(120 100% 65%)" }}>
+                      {s.value}
+                    </div>
+                  </div>
+                ))}
               </div>
 
-              {total > 1 && (
-                <div className="w-full max-w-xs flex flex-col gap-1">
-                  {top3.map((s: any, i: number) => {
-                    const mc = i === 0 ? "hsl(45 100% 58%)" : i === 1 ? "hsl(220 12% 76%)" : "hsl(24 70% 56%)";
+              {/* leaderboard as tail output */}
+              <div className="mb-5">
+                <div className="text-xs mb-2 tracking-widest" style={{ color: "hsl(120 60% 38%)" }}>
+                  $ tail leaderboard.log
+                </div>
+                <div className="space-y-0.5">
+                  {top.map((s: any, i: number) => {
                     const isMe = s.id === studentId;
                     return (
-                      <div key={s.id} className="flex items-center gap-2.5 rounded-xl px-3 py-2"
+                      <div
+                        key={s.id}
+                        className="flex items-center gap-3 text-xs md:text-sm px-3 py-1.5 rounded-sm"
                         style={{
-                          background: isMe ? `${mc}14` : "hsl(199 28% 14%)",
-                          border: `1px solid ${isMe ? `${mc}40` : "hsl(199 20% 22%)"}`,
-                        }}>
-                        <span className="font-black text-xs w-5 tabular-nums text-right" style={{ color: mc }}>#{i + 1}</span>
-                        <div style={{ background: av(s.name) }}
-                          className="h-7 w-7 rounded-full flex items-center justify-center font-black text-white text-xs shrink-0">
-                          {(s.name?.charAt(0) ?? "?").toUpperCase()}
-                        </div>
-                        <span className="flex-1 text-right text-xs font-bold truncate" style={{ color: isMe ? mc : "hsl(120 20% 72%)" }}>{s.name}</span>
-                        <span className="text-xs font-black tabular-nums" style={{ color: "hsl(120 80% 55%)" }}>₿{s.crypto ?? 0}</span>
+                          background: isMe ? "hsl(120 100% 55% / 0.10)" : "transparent",
+                          border: `1px solid hsl(120 100% 55% / ${isMe ? 0.45 : 0.10})`,
+                          color: i === 0 ? "hsl(120 100% 70%)" : "hsl(120 60% 55%)",
+                          textShadow: i === 0 ? "0 0 10px hsl(120 100% 55% / 0.4)" : "none",
+                        }}
+                      >
+                        <span className="w-6 tabular-nums font-bold">#{i + 1}</span>
+                        <span className="flex-1 truncate font-bold">{s.name}{isMe && " ←"}</span>
+                        <span className="tabular-nums font-bold">₿{(s.crypto ?? 0).toLocaleString()}</span>
                       </div>
                     );
                   })}
-                  {myRank > 3 && (
-                    <div className="flex items-center gap-2.5 rounded-xl px-3 py-2 mt-0.5"
-                      style={{ background: `${rankColor}0f`, border: `1px solid ${rankColor}40` }}>
-                      <span className="font-black text-xs w-5 tabular-nums text-right" style={{ color: rankColor }}>#{myRank}</span>
-                      <div style={{ background: av(me?.name ?? "?") }}
-                        className="h-7 w-7 rounded-full flex items-center justify-center font-black text-white text-xs shrink-0">
-                        {(me?.name?.charAt(0) ?? "?").toUpperCase()}
+                  {myRank > 5 && (
+                    <>
+                      <div className="text-center text-xs" style={{ color: "hsl(120 40% 30%)" }}>...</div>
+                      <div
+                        className="flex items-center gap-3 text-xs md:text-sm px-3 py-1.5 rounded-sm"
+                        style={{
+                          background: "hsl(120 100% 55% / 0.10)",
+                          border: "1px solid hsl(120 100% 55% / 0.45)",
+                          color: "hsl(120 100% 65%)",
+                        }}
+                      >
+                        <span className="w-6 tabular-nums font-bold">#{myRank}</span>
+                        <span className="flex-1 truncate font-bold">{me?.name} ←</span>
+                        <span className="tabular-nums font-bold">₿{myBal.toLocaleString()}</span>
                       </div>
-                      <span className="flex-1 text-right text-xs font-bold truncate" style={{ color: rankColor }}>{me?.name}</span>
-                      <span className="text-xs font-black tabular-nums" style={{ color: "hsl(120 80% 55%)" }}>₿{me?.crypto ?? 0}</span>
-                    </div>
+                    </>
                   )}
                 </div>
-              )}
+              </div>
 
-              <Button className="mt-2 bg-primary text-primary-foreground" onClick={() => navigate("/play")}>خروج</Button>
+              <button
+                onClick={() => navigate("/play")}
+                className="w-full py-2.5 text-sm font-bold tracking-widest transition-all rounded-sm"
+                style={{
+                  background: "hsl(120 100% 55% / 0.10)",
+                  color: "hsl(120 100% 65%)",
+                  border: "1px solid hsl(120 100% 55% / 0.5)",
+                }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "hsl(120 100% 55% / 0.20)"; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "hsl(120 100% 55% / 0.10)"; }}
+              >
+                [ disconnect ]
+              </button>
             </div>
           );
         })()}

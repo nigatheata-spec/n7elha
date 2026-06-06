@@ -398,46 +398,128 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
 
           {/* ── DONE ── */}
           {phase === "done" && (() => {
-            const sorted = [...students].sort((a, b) => (b.crypto ?? 0) - (a.crypto ?? 0));
-            const rank   = sorted.findIndex(s => s.id === studentId) + 1 || sorted.length;
-            const medalC = rank === 1 ? "hsl(48 90% 58%)" : rank === 2 ? "hsl(210 18% 68%)" : rank === 3 ? "hsl(25 75% 52%)" : "hsl(210 10% 50%)";
-            const top5   = sorted.slice(0, 5);
-            const rankLabel = (n: number) => { const s = ["th","st","nd","rd"], v = n%100; return n+(s[(v-20)%10]||s[v]||s[0]); };
+            const sorted   = [...students].sort((a, b) => (b.crypto ?? 0) - (a.crypto ?? 0));
+            const rank     = sorted.findIndex(s => s.id === studentId) + 1 || sorted.length;
+            const top5     = sorted.slice(0, 5);
+            const exploded = (me as any)?.exploded_count ?? 0;
+            const defused  = me?.correct_answers ?? 0;
+            const survived = rank <= 3;
+            const verdict  = rank === 1 ? "MISSION ACCOMPLISHED" : survived ? "DEFUSAL TEAM" : "DETONATION SITE";
+
             return (
-              <div className="flex-1 flex flex-col items-center pt-6 pb-4 px-4 gap-5 overflow-y-auto">
-                <div style={{ animation: "result-crash-in 0.55s cubic-bezier(0.34,1.4,0.64,1) both" }} className="text-center">
-                  <div className="text-[80px] leading-none font-black tabular-nums" style={{ color: medalC, textShadow: `0 0 50px ${medalC}cc` }}>#{rank}</div>
-                  <div className="text-sm font-mono tracking-widest mt-1" style={{ color: medalC }}>{rankLabel(rank)} place</div>
+              <div className="max-w-md mx-auto py-6 px-3 flex flex-col gap-4 font-mono">
+                {/* Status header — defusal report */}
+                <div
+                  className="rounded-xl p-4 text-center relative overflow-hidden"
+                  style={{
+                    ...metalPanel,
+                    borderColor: rank === 1 ? "hsl(48 90% 50%)" : survived ? "hsl(210 25% 35%)" : "hsl(0 60% 40%)",
+                  }}
+                >
+                  {/* warning stripes only on detonation */}
+                  {!survived && (
+                    <div
+                      className="absolute inset-0 opacity-20 pointer-events-none"
+                      style={{
+                        backgroundImage: "repeating-linear-gradient(45deg, hsl(48 90% 50%) 0 10px, transparent 10px 20px)",
+                      }}
+                    />
+                  )}
+                  <div className="relative">
+                    <div
+                      className="text-[10px] tracking-[0.4em] mb-2"
+                      style={{ color: "hsl(210 15% 60%)" }}
+                    >
+                      INCIDENT_REPORT
+                    </div>
+                    <div className="flex items-center justify-center gap-3 mb-2">
+                      <BombIcon
+                        className="h-12 w-12"
+                        style={{
+                          color: rank === 1 ? "hsl(48 90% 58%)" : survived ? "hsl(210 15% 75%)" : "hsl(0 70% 55%)",
+                          filter: rank === 1 ? "drop-shadow(0 0 18px hsl(48 90% 50% / 0.7))" : "none",
+                        }}
+                      />
+                      <div className="text-left">
+                        <div
+                          className="text-xl font-black tracking-wider"
+                          style={{
+                            color: rank === 1 ? "hsl(48 100% 70%)" : survived ? "hsl(210 10% 85%)" : "hsl(0 70% 70%)",
+                          }}
+                        >
+                          {verdict}
+                        </div>
+                        <div className="text-xs tracking-widest mt-0.5" style={{ color: "hsl(210 12% 50%)" }}>
+                          {rank === 1 ? "أنت البطل" : survived ? `الرتبة #${rank}` : `الرتبة #${rank}`}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div className="animate-fade-up text-center" style={{ animationDelay: "0.15s" }}>
-                  <div className="text-4xl font-black tabular-nums text-success">{fmt(points)}</div>
-                  <div className="text-xs text-muted-foreground mt-0.5 tracking-widest">نقطة</div>
+
+                {/* Stat row — like a clipboard */}
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { label: "BOMBS_DEFUSED", value: defused, color: "hsl(142 65% 55%)" },
+                    { label: "DETONATIONS",   value: exploded, color: "hsl(0 70% 60%)" },
+                    { label: "SCORE",         value: fmt(points), color: "hsl(48 90% 60%)" },
+                  ].map(s => (
+                    <div
+                      key={s.label}
+                      className="rounded-lg p-2.5 text-center"
+                      style={metalPanel}
+                    >
+                      <div className="text-[9px] tracking-widest" style={{ color: "hsl(210 10% 50%)" }}>{s.label}</div>
+                      <div className="text-lg font-black tabular-nums mt-0.5" style={{ color: s.color }}>{s.value}</div>
+                    </div>
+                  ))}
                 </div>
-                <div className="w-full max-w-xs space-y-1.5 animate-fade-up" style={{ animationDelay: "0.3s" }}>
+
+                {/* Squad leaderboard */}
+                <div className="space-y-1">
+                  <div className="text-[10px] tracking-[0.3em] uppercase pb-1" style={{ color: "hsl(210 15% 50%)" }}>
+                    ━ SQUAD_DEBRIEF ━
+                  </div>
                   {top5.map((s, i) => {
                     const isMe = s.id === studentId;
-                    const mc   = i === 0 ? "hsl(48 90% 58%)" : i === 1 ? "hsl(210 18% 68%)" : i === 2 ? "hsl(25 75% 52%)" : "hsl(210 10% 45%)";
+                    const accent = i === 0 ? "hsl(48 90% 58%)" : i === 1 ? "hsl(210 18% 75%)" : i === 2 ? "hsl(25 75% 55%)" : "hsl(210 12% 55%)";
                     return (
-                      <div key={s.id} className={cn("relative flex items-center gap-3 px-3 py-2.5 rounded-xl", isMe ? "ring-1 ring-white/20" : "")}
-                        style={metalPanel}>
-                        <span className="font-mono text-sm font-black w-5 text-center shrink-0" style={{ color: mc }}>{i + 1}</span>
-                        <span className={cn("flex-1 text-sm font-bold truncate")} style={{ color: isMe ? "hsl(210 10% 88%)" : "hsl(210 10% 68%)" }}>{s.name}</span>
-                        <span className="font-mono text-sm tabular-nums text-muted-foreground">{fmt(s.crypto ?? 0)}</span>
+                      <div
+                        key={s.id}
+                        className="flex items-center gap-3 px-3 py-2 rounded-lg"
+                        style={{
+                          ...metalPanel,
+                          borderColor: isMe ? "hsl(210 25% 45%)" : (metalPanel as any).border,
+                          boxShadow: isMe ? "0 0 14px hsl(210 30% 40% / 0.6), " + (metalPanel as any).boxShadow : (metalPanel as any).boxShadow,
+                        }}
+                      >
+                        <span className="text-sm font-black w-5 text-center" style={{ color: accent }}>{i + 1}</span>
+                        <span className="flex-1 text-sm font-bold truncate" style={{ color: isMe ? "hsl(210 10% 92%)" : "hsl(210 10% 70%)" }}>
+                          {s.name}{isMe && " ←"}
+                        </span>
+                        <span className="text-sm tabular-nums font-bold" style={{ color: accent }}>{fmt(s.crypto ?? 0)}</span>
                       </div>
                     );
                   })}
                   {rank > 5 && (
                     <>
-                      <div className="text-center text-muted-foreground/40 text-xs py-0.5">···</div>
-                      <div className="relative flex items-center gap-3 px-3 py-2.5 rounded-xl ring-1 ring-white/20" style={metalPanel}>
-                        <span className="font-mono text-sm font-black w-5 text-center shrink-0" style={{ color: "hsl(210 10% 68%)" }}>{rank}</span>
-                        <span className="flex-1 text-sm font-bold truncate" style={{ color: "hsl(210 10% 88%)" }}>{me?.name}</span>
-                        <span className="font-mono text-sm tabular-nums text-muted-foreground">{fmt(points)}</span>
+                      <div className="text-center text-xs" style={{ color: "hsl(210 12% 35%)" }}>···</div>
+                      <div className="flex items-center gap-3 px-3 py-2 rounded-lg" style={{ ...metalPanel, borderColor: "hsl(210 25% 45%)" }}>
+                        <span className="text-sm font-black w-5 text-center" style={{ color: "hsl(210 12% 60%)" }}>{rank}</span>
+                        <span className="flex-1 text-sm font-bold truncate" style={{ color: "hsl(210 10% 92%)" }}>{me?.name} ←</span>
+                        <span className="text-sm tabular-nums font-bold" style={{ color: "hsl(210 12% 70%)" }}>{fmt(points)}</span>
                       </div>
                     </>
                   )}
                 </div>
-                <Button onClick={() => navigate("/play")} className="mt-auto px-8 animate-fade-up" style={{ animationDelay: "0.4s" }}>خروج</Button>
+
+                <Button
+                  onClick={() => navigate("/play")}
+                  className="mt-2 tracking-widest font-black"
+                  style={{ background: "hsl(210 18% 24%)", color: "hsl(210 10% 90%)" }}
+                >
+                  EXIT
+                </Button>
               </div>
             );
           })()}
