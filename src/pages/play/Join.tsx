@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Bitcoin, Target, Flame, Zap, type LucideIcon } from "lucide-react";
+import logoLight from "@/assets/logo-light.png";
 
 // ─── Password pool (Crypto Rush only) ──────────────────────────────────────
 const PASSWORD_POOL = [
@@ -274,8 +275,8 @@ const Join = () => {
         />
 
         <div className="relative z-10 w-full max-w-xs text-center space-y-12 animate-fade-up">
-          <div className="space-y-1.5">
-            <div className="text-5xl font-black text-white tracking-tight">n7elha</div>
+          <div className="space-y-3 flex flex-col items-center">
+            <img src={logoLight} alt="n7elha" className="h-16 w-16 object-contain" />
             <div className="text-white/30 text-sm tracking-wide">أدخل رمز اللعبة</div>
           </div>
 
