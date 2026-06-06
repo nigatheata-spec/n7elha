@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import heroPerson from "@/assets/hero-person.png";
+import logoMark from "@/assets/logo-mark.png";
 
 const Landing = () => {
   const { user } = useAuth();
@@ -159,7 +160,7 @@ const Landing = () => {
         {/* ---------------- NAV ---------------- */}
         <nav className="flex items-center justify-between px-5 sm:px-8 md:px-14 pt-6 sm:pt-8 gap-3">
           <Link to="/" className="flex items-center gap-2 shrink-0">
-            <span className="h-3 w-3 rounded-full bg-black inline-block" />
+            <img src={logoMark} alt="n7elha" className="h-8 w-8 object-contain" />
             <span className="text-[17px] font-medium tracking-tight text-black">n7elha</span>
           </Link>
 
@@ -393,7 +394,7 @@ const Landing = () => {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             <div className="col-span-2 md:col-span-1">
               <Link to="/" className="flex items-center gap-2">
-                <span className="h-3 w-3 rounded-full bg-black inline-block" />
+                <img src={logoMark} alt="n7elha" className="h-8 w-8 object-contain" />
                 <span className="text-[17px] font-medium tracking-tight text-black">n7elha</span>
               </Link>
               <p className="mt-4 text-[13px] text-black/60 leading-relaxed max-w-xs">{t.footerTagline}</p>
