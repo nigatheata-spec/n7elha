@@ -35,6 +35,18 @@ const Game = () => {
   // without causing the realtime channel to tear down on every score update.
   const studentsRef = useRef<any[]>([]);
 
+  // paint root black while in game so cream body never bleeds through
+  useEffect(() => {
+    const prevHtml = document.documentElement.style.background;
+    const prevBody = document.body.style.background;
+    document.documentElement.style.background = "#050505";
+    document.body.style.background = "#050505";
+    return () => {
+      document.documentElement.style.background = prevHtml;
+      document.body.style.background = prevBody;
+    };
+  }, []);
+
   // initial load
   useEffect(() => {
     if (!sessionId) return;

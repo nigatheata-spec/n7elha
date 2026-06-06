@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Logo } from "@/components/Logo";
+import logoLight from "@/assets/logo-light.png";
 import { LangToggle } from "@/components/LangToggle";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -96,7 +97,7 @@ const Auth = () => {
         </svg>
 
         <Link to="/" className="relative z-10 flex items-center gap-2 shrink-0">
-          <span className="h-3 w-3 rounded-full bg-white/80 inline-block" />
+          <img src={logoLight} alt="n7elha" className="h-9 w-9 object-contain" />
           <span className="text-[17px] font-medium tracking-tight text-white">n7elha</span>
         </Link>
 

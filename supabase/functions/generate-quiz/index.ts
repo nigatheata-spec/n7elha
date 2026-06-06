@@ -10,8 +10,8 @@ serve(async (req) => {
 
   try {
     const { content, numQuestions = 10, difficulty = "medium", topics = "", language = "ar", creativity = "balanced", images = [] } = await req.json();
-    const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY");
-    if (!OPENROUTER_API_KEY) throw new Error("OPENROUTER_API_KEY missing");
+    const DEEPSEEK_API_KEY = Deno.env.get("DEEPSEEK_API_KEY");
+    if (!DEEPSEEK_API_KEY) throw new Error("DEEPSEEK_API_KEY missing");
 
     const n = Math.max(3, Math.min(50, Number(numQuestions) || 10));
     const lang = language === "en" ? "English" : "Arabic";
@@ -22,63 +22,29 @@ serve(async (req) => {
       ? "CREATIVE mode: feel free to introduce new numbers, scenarios, twists, and analogies that test the same underlying concept. Make it fun."
       : "BALANCED mode: stay close to the source but you may rephrase, use simple examples, and vary numbers slightly.";
 
-    const systemPrompt = `You are an expert quiz generator for teachers. Generate exactly ${n} multiple-choice questions in ${lang}. Each question has exactly 4 distinct plausible options and ONE correct answer. Difficulty: ${difficulty}. ${topics ? `Teacher's request / focus: ${topics}.` : ""} ${creativityRule} Output via the provided tool only.`;
+    const systemPrompt = `You are an expert quiz generator for teachers. Generate exactly ${n} multiple-choice questions in ${lang}. Each question has exactly 4 distinct plausible options and ONE correct answer. Difficulty: ${difficulty}. ${topics ? `Teacher's request / focus: ${topics}.` : ""} ${creativityRule} You MUST respond with valid JSON only, matching this exact schema: {"title": string, "questions": [{"text": string, "options": [string, string, string, string], "correct_index": 0|1|2|3, "difficulty": "easy"|"medium"|"hard"}]}. No markdown, no explanation, just JSON.`;
 
     const textPart = content?.trim()
       ? `Source content:\n\n${String(content).slice(0, 25000)}`
       : `Topic(s): ${topics || "general knowledge"}`;
-    const imgs = Array.isArray(images) ? images.filter((u: any) => typeof u === "string" && u.startsWith("data:image")) : [];
-    const userContent: any = imgs.length
-      ? [{ type: "text", text: textPart + "\n\nAlso use the attached image(s) as source material." },
-         ...imgs.map((url: string) => ({ type: "image_url", image_url: { url } }))]
-      : textPart;
 
-    const tools = [{
-      type: "function",
-      function: {
-        name: "create_quiz",
-        description: "Return generated quiz questions",
-        parameters: {
-          type: "object",
-          properties: {
-            title: { type: "string", description: "Suggested quiz title (short)" },
-            questions: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  text: { type: "string" },
-                  options: { type: "array", items: { type: "string" }, minItems: 4, maxItems: 4 },
-                  correct_index: { type: "integer", minimum: 0, maximum: 3 },
-                  difficulty: { type: "string", enum: ["easy", "medium", "hard"] },
-                },
-                required: ["text", "options", "correct_index", "difficulty"],
-                additionalProperties: false,
-              },
-            },
-          },
-          required: ["title", "questions"],
-          additionalProperties: false,
-        },
-      },
-    }];
+    // DeepSeek doesn't support image inputs, so we note images are not supported
+    const userMessage = textPart;
 
-    const resp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    const resp = await fetch("https://api.deepseek.com/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${OPENROUTER_API_KEY}`,
+        Authorization: `Bearer ${DEEPSEEK_API_KEY}`,
         "Content-Type": "application/json",
-        "HTTP-Referer": "https://n7elha-2.vercel.app",
-        "X-Title": "Knowledge Hack",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.0-flash-001",
+        model: "deepseek-chat",
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: userContent },
+          { role: "user", content: userMessage },
         ],
-        tools,
-        tool_choice: { type: "function", function: { name: "create_quiz" } },
+        temperature: creativity === "strict" ? 0.3 : creativity === "creative" ? 1.0 : 0.7,
+        response_format: { type: "json_object" },
       }),
     });
 
@@ -93,8 +59,10 @@ serve(async (req) => {
     }
 
     const data = await resp.json();
-    const call = data?.choices?.[0]?.message?.tool_calls?.[0];
-    const args = call?.function?.arguments ? JSON.parse(call.function.arguments) : null;
+    const text = data?.choices?.[0]?.message?.content;
+    if (!text) throw new Error("No response from AI");
+
+    const args = JSON.parse(text);
     if (!args?.questions?.length) throw new Error("No questions generated");
 
     return new Response(JSON.stringify(args), {
