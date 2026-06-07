@@ -12,7 +12,6 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { generateQuiz } from "@/lib/ai";
 
 const PHRASES = {
   en: [
@@ -151,13 +150,17 @@ const Dashboard = () => {
     setBusy(true);
     try {
       const content = files.map(f => `# ${f.name}\n${f.text}`).join("\n\n");
-      const data = await generateQuiz({
-        content,
-        topics: prompt + (extraInstruction ? `\n\nتعديلات المعلم: ${extraInstruction}` : ""),
-        numQuestions: numQ,
-        creativity: CREATIVITY[creativity].key,
-        language: i18n.language,
+      const { data, error } = await supabase.functions.invoke("generate-quiz", {
+        body: {
+          content,
+          topics: prompt + (extraInstruction ? `\n\nتعديلات المعلم: ${extraInstruction}` : ""),
+          numQuestions: numQ,
+          creativity: CREATIVITY[creativity].key,
+          language: i18n.language,
+        },
       });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
       const qs = data?.questions ?? [];
       if (!qs.length) throw new Error("AI returned no questions");
 
