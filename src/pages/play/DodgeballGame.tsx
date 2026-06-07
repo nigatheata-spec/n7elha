@@ -97,6 +97,10 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
 
   // ── Initial load ──────────────────────────────────────────────────────────
   useEffect(() => {
+    // Prime audio on first user gesture (required by iOS Safari)
+    const onFirstTouch = () => { primeAudio(); window.removeEventListener("pointerdown", onFirstTouch); };
+    window.addEventListener("pointerdown", onFirstTouch, { once: true });
+
     (async () => {
       const { data: s } = await supabase.from("game_sessions").select("*, quizzes(id,title)").eq("id", sessionId).maybeSingle();
       setSession(s);
@@ -108,6 +112,8 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
       setStudents(ss ?? []);
       setMe((ss ?? []).find((x: any) => x.id === studentId) ?? null);
     })();
+
+    return () => { window.removeEventListener("pointerdown", onFirstTouch); };
   }, [sessionId, studentId]);
 
   // ── Realtime ──────────────────────────────────────────────────────────────
@@ -137,6 +143,11 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
     else if (session.status === "running")
       setPhase(prev => prev === "waiting" ? "question" : prev);
   }, [session?.status]);
+
+  // Play game-over fanfare once when teacher ends the session
+  useEffect(() => {
+    if (phase === "done") playGameOver();
+  }, [phase]);
 
   // ── Timer activation ──────────────────────────────────────────────────────
   useEffect(() => {

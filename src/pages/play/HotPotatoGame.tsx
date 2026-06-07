@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Trophy, Zap, Check, X as XIcon } from "lucide-react";
+import { playSelect, playCorrect, playWrong, playExplode, playGameOver, primeAudio } from "@/lib/sound";
 
 type Q = { id: string; text: string; options: string[]; correct_index: number; image_url?: string };
 type Phase = "waiting" | "question" | "answered" | "passing" | "exploded" | "done";
@@ -84,6 +85,10 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
 
   // ── Initial load ─────────────────────────────────────────────────────────
   useEffect(() => {
+    // Prime audio on first user gesture (required by iOS Safari)
+    const onFirstTouch = () => { primeAudio(); window.removeEventListener("pointerdown", onFirstTouch); };
+    window.addEventListener("pointerdown", onFirstTouch, { once: true });
+
     (async () => {
       const { data: s } = await supabase.from("game_sessions").select("*, quizzes(id,title)").eq("id", sessionId).maybeSingle();
       setSession(s);
@@ -95,6 +100,8 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
       setStudents(ss ?? []);
       setMe((ss ?? []).find((x: any) => x.id === studentId) ?? null);
     })();
+
+    return () => { window.removeEventListener("pointerdown", onFirstTouch); };
   }, [sessionId, studentId]);
 
   // ── Now ticker (for fuse bar) ────────────────────────────────────────────
@@ -129,6 +136,11 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
       setPhase(prev => prev === "waiting" ? "question" : prev);
   }, [session?.status]);
 
+  // Play game-over fanfare once when teacher ends the session
+  useEffect(() => {
+    if (phase === "done") playGameOver();
+  }, [phase]);
+
   // ── Explosion detection ───────────────────────────────────────────────────
   useEffect(() => {
     if (!session) return;
@@ -145,6 +157,7 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
   // ── Auto-advance after exploded + trigger flash ───────────────────────────
   useEffect(() => {
     if (phase !== "exploded") return;
+    playExplode();
     setShowFlash(true);
     setTimeout(() => setShowFlash(false), 800);
     const t = setTimeout(() => {
@@ -218,6 +231,8 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
     pickedRef.current = idx;
 
     const correct = idx === currentQ.correct_index;
+    playSelect();
+    if (correct) playCorrect(); else playWrong();
     setPicked(idx);
 
     if (correct) {

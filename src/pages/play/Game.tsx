@@ -10,6 +10,7 @@ import { OutputCards, OutputResult } from "@/components/game/OutputCards";
 import DodgeballGame from "./DodgeballGame";
 import HotPotatoGame from "./HotPotatoGame";
 import LavaFloorGame from "./LavaFloorGame";
+import { playSelect, playCorrect, playWrong, playHackAlert, playGameOver, primeAudio } from "@/lib/sound";
 
 type Q = { id: string; text: string; options: string[]; correct_index: number; position: number };
 
@@ -41,9 +42,13 @@ const Game = () => {
     const prevBody = document.body.style.background;
     document.documentElement.style.background = "#050505";
     document.body.style.background = "#050505";
+    // Prime audio on first user gesture (required by iOS Safari)
+    const onFirstTouch = () => { primeAudio(); window.removeEventListener("pointerdown", onFirstTouch); };
+    window.addEventListener("pointerdown", onFirstTouch, { once: true });
     return () => {
       document.documentElement.style.background = prevHtml;
       document.body.style.background = prevBody;
+      window.removeEventListener("pointerdown", onFirstTouch);
     };
   }, []);
 
@@ -87,7 +92,7 @@ const Game = () => {
           const hacker = studentsRef.current.find((x: any) => x.id === ev.hacker_id)?.name ?? "?";
           const target = studentsRef.current.find((x: any) => x.id === ev.target_id)?.name ?? "?";
           if (ev.success) {
-            if (ev.target_id === studentId) setPhase("breach");
+            if (ev.target_id === studentId) { playHackAlert(); setPhase("breach"); }
           }
         })
       .subscribe();
@@ -103,6 +108,11 @@ const Game = () => {
       setPhase(prev => prev === "waiting" ? "question" : prev);
     }
   }, [session?.status]);
+
+  // Play game-over fanfare once when teacher ends the session
+  useEffect(() => {
+    if (phase === "done") playGameOver();
+  }, [phase]);
 
   // pick a random new question whenever entering "question" phase
   useEffect(() => {
@@ -139,8 +149,10 @@ const Game = () => {
 
   const submit = async (idx: number) => {
     if (picked !== null || !currentQ || !me || !sessionId) return;
+    playSelect();
     setPicked(idx);
     const correct = idx === currentQ.correct_index;
+    if (correct) playCorrect(); else playWrong();
     await supabase.from("question_responses").insert({
       session_id: sessionId, student_id: me.id, question_id: currentQ.id,
       question_index: askedCount.current, answer_index: idx, is_correct: correct,

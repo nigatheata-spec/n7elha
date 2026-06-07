@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { Trophy, Shield, Flame } from "lucide-react";
 import { LavaBucketIcon as VolcanoIcon } from "@/components/game/icons";
+import { playSelect, playCorrect, playWrong, playBrick, playGameOver, primeAudio } from "@/lib/sound";
 
 type Q = { id: string; text: string; options: string[]; correct_index: number; image_url?: string };
 type Phase = "waiting" | "question" | "answered" | "done";
@@ -71,6 +72,10 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
 
   // ── Initial load ─────────────────────────────────────────────────────────
   useEffect(() => {
+    // Prime audio on first user gesture (required by iOS Safari)
+    const onFirstTouch = () => { primeAudio(); window.removeEventListener("pointerdown", onFirstTouch); };
+    window.addEventListener("pointerdown", onFirstTouch, { once: true });
+
     (async () => {
       const { data: s } = await supabase.from("game_sessions").select("*, quizzes(id,title)").eq("id", sessionId).maybeSingle();
       setSession(s);
@@ -83,6 +88,8 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
       setStudents(sorted);
       setMe(sorted.find((x: any) => x.id === studentId) ?? null);
     })();
+
+    return () => { window.removeEventListener("pointerdown", onFirstTouch); };
   }, [sessionId, studentId]);
 
   // ── Realtime ──────────────────────────────────────────────────────────────
@@ -110,6 +117,11 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
     else if (session.status === "running")
       setPhase(prev => prev === "waiting" ? "question" : prev);
   }, [session?.status]);
+
+  // Play game-over fanfare once when teacher ends the session
+  useEffect(() => {
+    if (phase === "done") playGameOver();
+  }, [phase]);
 
   // ── Lava interpolation ────────────────────────────────────────────────────
   useEffect(() => {
@@ -162,6 +174,8 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
     if (pickedRef.current !== null) return;
     pickedRef.current = idx;
     const correct = idx === currentQ.correct_index;
+    playSelect();
+    if (correct) { playCorrect(); playBrick(); } else playWrong();
     setPicked(idx);
     setTimeout(() => setPhase("answered"), 700);
     const updates: any = { total_answers: (me.total_answers ?? 0) + 1 };
