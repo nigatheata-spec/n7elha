@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Plus, Trash2, Sparkles, Upload, Save, Check, ChevronDown, Image as ImageIcon, X, Wand2 } from "lucide-react";
 import { toast } from "sonner";
+import { generateQuiz } from "@/lib/ai";
 
 type Q = { id?: string; text: string; options: string[]; correct_index: number; difficulty: "easy"|"medium"|"hard"; image_url?: string | null };
 
@@ -161,11 +162,10 @@ const QuizEditor = () => {
     }
     setGenerating(true);
     try {
-      const { data, error } = await supabase.functions.invoke("generate-quiz", {
-        body: { content: docText, images: docImages, numQuestions: numQ, difficulty: diff, topics, language: document.documentElement.lang || "ar" },
+      const data = await generateQuiz({
+        content: docText, numQuestions: numQ, difficulty: diff, topics,
+        language: document.documentElement.lang || "ar",
       });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
       const qs: Q[] = (data?.questions ?? []).map((q: any) => ({
         text: q.text, options: q.options, correct_index: q.correct_index, difficulty: q.difficulty || diff,
       }));
