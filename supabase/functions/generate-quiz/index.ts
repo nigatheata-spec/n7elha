@@ -9,9 +9,9 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { content, numQuestions = 10, difficulty = "medium", topics = "", language = "ar", creativity = "balanced", images = [] } = await req.json();
-    const DEEPSEEK_API_KEY = Deno.env.get("DEEPSEEK_API_KEY");
-    if (!DEEPSEEK_API_KEY) throw new Error("DEEPSEEK_API_KEY missing");
+    const { content, numQuestions = 10, difficulty = "medium", topics = "", language = "ar", creativity = "balanced" } = await req.json();
+    const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY");
+    if (!OPENROUTER_API_KEY) throw new Error("OPENROUTER_API_KEY missing");
 
     const n = Math.max(3, Math.min(50, Number(numQuestions) || 10));
     const lang = language === "en" ? "English" : "Arabic";
@@ -24,21 +24,20 @@ serve(async (req) => {
 
     const systemPrompt = `You are an expert quiz generator for teachers. Generate exactly ${n} multiple-choice questions in ${lang}. Each question has exactly 4 distinct plausible options and ONE correct answer. Difficulty: ${difficulty}. ${topics ? `Teacher's request / focus: ${topics}.` : ""} ${creativityRule} You MUST respond with valid JSON only, matching this exact schema: {"title": string, "questions": [{"text": string, "options": [string, string, string, string], "correct_index": 0|1|2|3, "difficulty": "easy"|"medium"|"hard"}]}. No markdown, no explanation, just JSON.`;
 
-    const textPart = content?.trim()
+    const userMessage = content?.trim()
       ? `Source content:\n\n${String(content).slice(0, 25000)}`
       : `Topic(s): ${topics || "general knowledge"}`;
 
-    // DeepSeek doesn't support image inputs, so we note images are not supported
-    const userMessage = textPart;
-
-    const resp = await fetch("https://api.deepseek.com/chat/completions", {
+    const resp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${DEEPSEEK_API_KEY}`,
+        Authorization: `Bearer ${OPENROUTER_API_KEY}`,
         "Content-Type": "application/json",
+        "HTTP-Referer": "https://n7elha.com",
+        "X-Title": "n7elha",
       },
       body: JSON.stringify({
-        model: "deepseek-chat",
+        model: "meta-llama/llama-3.3-70b-instruct:free",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userMessage },
@@ -55,14 +54,16 @@ serve(async (req) => {
       }
       const t = await resp.text();
       console.error("AI error", resp.status, t);
-      throw new Error(`AI error ${resp.status}`);
+      throw new Error(`AI error ${resp.status}: ${t.slice(0, 200)}`);
     }
 
     const data = await resp.json();
     const text = data?.choices?.[0]?.message?.content;
     if (!text) throw new Error("No response from AI");
 
-    const args = JSON.parse(text);
+    // Strip markdown fences if model wrapped the JSON
+    const clean = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+    const args = JSON.parse(clean);
     if (!args?.questions?.length) throw new Error("No questions generated");
 
     return new Response(JSON.stringify(args), {
