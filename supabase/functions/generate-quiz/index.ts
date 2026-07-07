@@ -28,33 +28,44 @@ serve(async (req) => {
       ? `Source content:\n\n${String(content).slice(0, 25000)}`
       : `Topic(s): ${topics || "general knowledge"}`;
 
-    const resp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${OPENROUTER_API_KEY}`,
-        "Content-Type": "application/json",
-        "HTTP-Referer": "https://n7elha.com",
-        "X-Title": "n7elha",
-      },
-      body: JSON.stringify({
-        model: "meta-llama/llama-3.3-70b-instruct:free",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userMessage },
-        ],
-        temperature: creativity === "strict" ? 0.3 : creativity === "creative" ? 1.0 : 0.7,
-        response_format: { type: "json_object" },
-      }),
-    });
+    // Free-tier models on OpenRouter get upstream-rate-limited unpredictably,
+    // so try a couple of fallbacks before giving up.
+    const models = ["openai/gpt-oss-20b:free", "openai/gpt-oss-120b:free", "meta-llama/llama-3.3-70b-instruct:free"];
 
-    if (!resp.ok) {
-      if (resp.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limit exceeded, try again shortly." }),
+    let resp: Response | null = null;
+    let lastErrText = "";
+    for (const model of models) {
+      resp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${OPENROUTER_API_KEY}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer": "https://n7elha.com",
+          "X-Title": "n7elha",
+        },
+        body: JSON.stringify({
+          model,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userMessage },
+          ],
+          temperature: creativity === "strict" ? 0.3 : creativity === "creative" ? 1.0 : 0.7,
+          response_format: { type: "json_object" },
+        }),
+      });
+
+      if (resp.ok) break;
+      lastErrText = await resp.text();
+      console.error("AI error", model, resp.status, lastErrText);
+      if (resp.status !== 429) break;
+    }
+
+    if (!resp || !resp.ok) {
+      if (resp?.status === 429) {
+        return new Response(JSON.stringify({ error: "All models are rate-limited right now, try again shortly." }),
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
-      const t = await resp.text();
-      console.error("AI error", resp.status, t);
-      throw new Error(`AI error ${resp.status}: ${t.slice(0, 200)}`);
+      throw new Error(`AI error ${resp?.status}: ${lastErrText.slice(0, 200)}`);
     }
 
     const data = await resp.json();
