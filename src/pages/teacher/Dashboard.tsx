@@ -147,6 +147,10 @@ const Dashboard = () => {
       toast.error(ar ? "اكتب طلبك أو ارفع مصدر" : "Write a prompt or upload a file");
       return;
     }
+    if (numQ > 10) {
+      toast.error(ar ? "الحد الأقصى 10 أسئلة حالياً" : "Max 10 questions for now");
+      return;
+    }
     setBusy(true);
     try {
       const content = files.map(f => `# ${f.name}\n${f.text}`).join("\n\n");
@@ -313,7 +317,7 @@ const Dashboard = () => {
                   </button>
                 </PopoverTrigger>
                 <PopoverContent className="w-32 p-1 max-h-64 overflow-y-auto" align="start">
-                  {[5,10,15,20,25,30,40].map(n => (
+                  {[5,10].map(n => (
                     <button key={n} type="button" onClick={() => setNumQ(n)}
                       className={`w-full flex items-center justify-between px-2.5 py-2 rounded-md text-sm hover:bg-accent ${numQ === n ? "bg-accent/50" : ""}`}>
                       <span>{n}</span>

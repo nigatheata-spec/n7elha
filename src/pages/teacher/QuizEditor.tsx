@@ -159,6 +159,10 @@ const QuizEditor = () => {
       toast.error("ارفع مستنداً أو صورة أو اكتب موضوعاً");
       return;
     }
+    if (numQ > 10) {
+      toast.error("الحد الأقصى 10 أسئلة حالياً");
+      return;
+    }
     setGenerating(true);
     try {
       const { data, error } = await supabase.functions.invoke("generate-quiz", {
@@ -295,7 +299,7 @@ const QuizEditor = () => {
                     </button>
                   </PopoverTrigger>
                   <PopoverContent className="w-40 p-1 max-h-64 overflow-y-auto" align="start">
-                    {[5,10,15,20,25,30].map(n => (
+                    {[5,10].map(n => (
                       <button key={n} type="button" onClick={() => setNumQ(n)}
                         className={`w-full flex items-center justify-between px-2.5 py-2 rounded-md text-sm hover:bg-accent ${numQ === n ? "bg-accent/50" : ""}`}>
                         <span>{n}</span>
