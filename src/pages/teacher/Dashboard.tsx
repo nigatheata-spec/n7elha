@@ -77,7 +77,7 @@ const Dashboard = () => {
   const [prompt, setPrompt] = useState("");
   const [files, setFiles] = useState<{ name: string; text: string }[]>([]);
   const [creativity, setCreativity] = useState(1);
-  const [numQ, setNumQ] = useState(15);
+  const [numQ, setNumQ] = useState(5);
   const [busy, setBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
