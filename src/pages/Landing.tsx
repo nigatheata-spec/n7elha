@@ -338,40 +338,24 @@ const Landing = () => {
             <CrossPattern />
 
             {/* preview square (background) */}
-            <div className="absolute top-2 right-2 sm:right-4 w-[88%] sm:w-[78%] aspect-square rounded-[24px] sm:rounded-[28px] bg-[#3F5A63] shadow-[0_18px_50px_-20px_rgba(63,90,99,0.35)] overflow-hidden">
-              <div className="absolute top-5 right-6 z-10 flex gap-1.5">
-                <span className="h-1.5 w-1.5 rounded-full bg-white/40" />
-                <span className="h-1.5 w-1.5 rounded-full bg-white/40" />
-                <span className="h-1.5 w-1.5 rounded-full bg-white/40" />
-              </div>
-            </div>
+            <div className="absolute top-2 right-2 sm:right-4 w-[88%] sm:w-[78%] aspect-square rounded-[24px] sm:rounded-[28px] bg-[#3F5A63] border-2 border-[hsl(var(--nb-border))] shadow-[6px_6px_0_0_hsl(var(--nb-border))] overflow-hidden" />
 
             {/* hero figure — overflows the box so the head is never clipped */}
             <img
               src={heroPerson}
               alt="معلم نحلها"
-              className="absolute bottom-14 sm:bottom-16 right-2 sm:right-4 w-[88%] sm:w-[78%] h-auto max-h-[100%] object-contain object-bottom select-none pointer-events-none drop-shadow-2xl z-20"
+              className="absolute bottom-10 sm:bottom-12 right-2 sm:right-4 w-[88%] sm:w-[78%] h-auto max-h-[100%] object-contain object-bottom select-none pointer-events-none drop-shadow-2xl z-20"
             />
 
-            {/* avatars + play video pill */}
-            <div className="absolute bottom-2 sm:bottom-4 left-2 sm:left-6 flex items-center gap-3">
-              <div className="flex -space-x-2">
-                {["#FFB89A", "#FFB89A", "#FFD3C0"].map((c, i) => (
-                  <div
-                    key={i}
-                    className="h-9 w-9 rounded-full border-2 border-white flex items-center justify-center"
-                    style={{ background: c }}
-                  >
-                    <User className="h-4 w-4 text-black/50" />
-                  </div>
-                ))}
-              </div>
-              <button className="flex items-center gap-2 rounded-full border border-black/15 bg-white px-3 py-1.5 text-[12px] font-medium text-black">
-                {t.playVideo}
-                <span className="h-6 w-6 rounded-full bg-[#FF8254] flex items-center justify-center">
-                  <Play className="h-3 w-3 text-white fill-white" />
-                </span>
-              </button>
+            {/* CTA pill */}
+            <div className="absolute bottom-2 sm:bottom-3 left-2 sm:left-4 z-30">
+              <Link
+                to={user ? "/app" : "/auth?mode=signup"}
+                className="inline-flex items-center gap-2 rounded-full border-2 border-[hsl(var(--nb-border))] bg-white text-[#3F5A63] px-4 py-2 text-[13px] font-semibold shadow-[3px_3px_0_0_hsl(var(--nb-border))] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all"
+              >
+                {t.cta}
+                <ArrowUpRight className="h-4 w-4" strokeWidth={2.25} />
+              </Link>
             </div>
           </div>
         </div>
