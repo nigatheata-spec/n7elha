@@ -176,25 +176,25 @@ const Landing = () => {
             <LangToggle variant="pill" />
             <Link
               to="/play"
-              className={`px-4 py-2 rounded-full border border-black/15 bg-white text-[#3F5A63] text-[13px] font-medium hover:bg-[#3F5A63] hover:text-white transition ${isAr ? "" : "tracking-wider"}`}
+              className={`px-4 py-2 rounded-full border-2 border-[hsl(var(--nb-border))] bg-white text-[#3F5A63] text-[13px] font-medium shadow-[3px_3px_0_0_hsl(var(--nb-border))] hover:bg-[#3F5A63] hover:text-white hover:translate-x-px hover:translate-y-px hover:shadow-[2px_2px_0_0_hsl(var(--nb-border))] transition-all ${isAr ? "" : "tracking-wider"}`}
             >
               {t.joinGame}
             </Link>
             {user ? (
-              <Link to="/app" className={`px-5 py-2 rounded-full bg-[#3F5A63] text-white text-[13px] font-medium ${isAr ? "" : "tracking-wider"}`}>
+              <Link to="/app" className={`px-5 py-2 rounded-full border-2 border-[hsl(var(--nb-border))] bg-[#3F5A63] text-white text-[13px] font-medium shadow-[3px_3px_0_0_hsl(var(--nb-border))] hover:translate-x-px hover:translate-y-px hover:shadow-[2px_2px_0_0_hsl(var(--nb-border))] transition-all ${isAr ? "" : "tracking-wider"}`}>
                 {t.dashboard}
               </Link>
             ) : (
               <>
                 <Link
                   to="/auth"
-                  className={`px-5 py-2 rounded-full bg-[#FF8254] text-white text-[13px] font-medium hover:brightness-95 transition ${isAr ? "" : "tracking-wider"}`}
+                  className={`px-5 py-2 rounded-full border-2 border-[hsl(var(--nb-border))] bg-[#FF8254] text-white text-[13px] font-medium shadow-[3px_3px_0_0_hsl(var(--nb-border))] hover:translate-x-px hover:translate-y-px hover:shadow-[2px_2px_0_0_hsl(var(--nb-border))] transition-all ${isAr ? "" : "tracking-wider"}`}
                 >
                   {t.login}
                 </Link>
                 <Link
                   to="/auth?mode=signup"
-                  className={`px-5 py-2 rounded-full bg-[#3F5A63] text-white text-[13px] font-medium hover:bg-[#3F5A63]/90 transition ${isAr ? "" : "tracking-wider"}`}
+                  className={`px-5 py-2 rounded-full border-2 border-[hsl(var(--nb-border))] bg-[#3F5A63] text-white text-[13px] font-medium shadow-[3px_3px_0_0_hsl(var(--nb-border))] hover:translate-x-px hover:translate-y-px hover:shadow-[2px_2px_0_0_hsl(var(--nb-border))] transition-all ${isAr ? "" : "tracking-wider"}`}
                 >
                   {t.signup}
                 </Link>
@@ -217,19 +217,19 @@ const Landing = () => {
         {menuOpen && (
           <div className="md:hidden px-5 pt-4 pb-2 flex flex-col gap-2">
             <LangToggle variant="pill" />
-            <Link to="/play" className="px-4 py-2 rounded-full border border-black/15 bg-white text-black text-[13px] tracking-wider font-medium text-center">
+            <Link to="/play" className="px-4 py-2 rounded-full border-2 border-[hsl(var(--nb-border))] bg-white text-black text-[13px] tracking-wider font-medium text-center shadow-[3px_3px_0_0_hsl(var(--nb-border))]">
               {t.joinGame}
             </Link>
             {user ? (
-              <Link to="/app" className="px-5 py-2 rounded-full bg-[#3F5A63] text-white text-[13px] tracking-wider font-medium text-center">
+              <Link to="/app" className="px-5 py-2 rounded-full border-2 border-[hsl(var(--nb-border))] bg-[#3F5A63] text-white text-[13px] tracking-wider font-medium text-center shadow-[3px_3px_0_0_hsl(var(--nb-border))]">
                 {t.dashboard}
               </Link>
             ) : (
               <>
-                <Link to="/auth" className="px-5 py-2 rounded-full bg-[#FF8254] text-white text-[13px] tracking-wider font-medium text-center">
+                <Link to="/auth" className="px-5 py-2 rounded-full border-2 border-[hsl(var(--nb-border))] bg-[#FF8254] text-white text-[13px] tracking-wider font-medium text-center shadow-[3px_3px_0_0_hsl(var(--nb-border))]">
                   {t.login}
                 </Link>
-                <Link to="/auth?mode=signup" className="px-5 py-2 rounded-full bg-[#3F5A63] text-white text-[13px] tracking-wider font-medium text-center">
+                <Link to="/auth?mode=signup" className="px-5 py-2 rounded-full border-2 border-[hsl(var(--nb-border))] bg-[#3F5A63] text-white text-[13px] tracking-wider font-medium text-center shadow-[3px_3px_0_0_hsl(var(--nb-border))]">
                   {t.signup}
                 </Link>
               </>
@@ -262,7 +262,7 @@ const Landing = () => {
             <div className="mt-8 flex flex-wrap items-center gap-4 animate-fade-up animation-delay-300">
               <Link
                 to={user ? "/app" : "/auth?mode=signup"}
-                className="group inline-flex items-center gap-3 rounded-full bg-[#3F5A63] text-white pl-6 pr-2 py-2 text-[15px] font-medium hover:bg-[#3F5A63]/90 transition"
+                className="group inline-flex items-center gap-3 rounded-full border-2 border-[hsl(var(--nb-border))] bg-[#3F5A63] text-white pl-6 pr-2 py-2 text-[15px] font-medium shadow-[4px_4px_0_0_hsl(var(--nb-border))] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_0_hsl(var(--nb-border))] transition-all"
               >
                 {t.cta}
                 <span className="h-9 w-9 rounded-full bg-white text-black flex items-center justify-center transition group-hover:rotate-12">
@@ -272,7 +272,7 @@ const Landing = () => {
 
               <Link
                 to="/play"
-                className="group inline-flex items-center gap-3 rounded-full bg-[#FF8254] text-white pl-6 pr-2 py-2 text-[15px] font-medium hover:brightness-95 transition"
+                className="group inline-flex items-center gap-3 rounded-full border-2 border-[hsl(var(--nb-border))] bg-[#FF8254] text-white pl-6 pr-2 py-2 text-[15px] font-medium shadow-[4px_4px_0_0_hsl(var(--nb-border))] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_0_hsl(var(--nb-border))] transition-all"
               >
                 {t.joinGame}
                 <span className="h-9 w-9 rounded-full bg-white text-[#FF8254] flex items-center justify-center">
@@ -280,7 +280,7 @@ const Landing = () => {
                 </span>
               </Link>
 
-              <div className="h-[58px] px-5 rounded-full border border-black/15 flex flex-col items-center justify-center leading-tight">
+              <div className="h-[58px] px-5 rounded-full border-2 border-[hsl(var(--nb-border))] flex flex-col items-center justify-center leading-tight shadow-[3px_3px_0_0_hsl(var(--nb-border))]">
                 <span className="text-[15px] font-semibold text-black">+120</span>
                 <span className="text-[10px] text-black/55">{t.customers}</span>
               </div>
@@ -341,10 +341,10 @@ const Landing = () => {
           </div>
 
           <div className="mt-10 sm:mt-14 grid grid-cols-1 md:grid-cols-3 gap-4">
-            <FeatureLarge icon={<Sparkles className="h-6 w-6" />} title={t.f1Title} desc={t.f1Desc} />
-            <Feature icon={<FileText className="h-5 w-5" />} title={t.f2Title} desc={t.f2Desc} />
-            <Feature icon={<Radio className="h-5 w-5" />} title={t.f3Title} desc={t.f3Desc} />
-            <FeatureLarge icon={<BarChart3 className="h-6 w-6" />} title={t.f4Title} desc={t.f4Desc} />
+            <FeatureLarge icon={<Sparkles className="h-6 w-6" />} title={t.f1Title} desc={t.f1Desc} tilt="-rotate-[0.5deg]" />
+            <Feature icon={<FileText className="h-5 w-5" />} title={t.f2Title} desc={t.f2Desc} tilt="rotate-[0.9deg]" />
+            <Feature icon={<Radio className="h-5 w-5" />} title={t.f3Title} desc={t.f3Desc} tilt="-rotate-[0.8deg]" />
+            <FeatureLarge icon={<BarChart3 className="h-6 w-6" />} title={t.f4Title} desc={t.f4Desc} tilt="rotate-[0.5deg]" />
           </div>
         </section>
 
@@ -358,9 +358,9 @@ const Landing = () => {
           </div>
 
           <div className="mt-10 sm:mt-14 grid grid-cols-1 md:grid-cols-3 gap-5">
-            <Step n="01" icon={<Upload className="h-5 w-5" />} title={t.s1} desc={t.s1d} />
-            <Step n="02" icon={<Users className="h-5 w-5" />} title={t.s2} desc={t.s2d} />
-            <Step n="03" icon={<Trophy className="h-5 w-5" />} title={t.s3} desc={t.s3d} />
+            <Step n="01" icon={<Upload className="h-5 w-5" />} title={t.s1} desc={t.s1d} tilt="-rotate-[0.6deg]" />
+            <Step n="02" icon={<Users className="h-5 w-5" />} title={t.s2} desc={t.s2d} tilt="rotate-[0.8deg]" />
+            <Step n="03" icon={<Trophy className="h-5 w-5" />} title={t.s3} desc={t.s3d} tilt="-rotate-[0.9deg]" />
           </div>
         </section>
 
@@ -375,14 +375,14 @@ const Landing = () => {
               <div className="mt-7 flex flex-wrap gap-3">
                 <Link
                   to={user ? "/app" : "/auth?mode=signup"}
-                  className="inline-flex items-center gap-2 rounded-full bg-white text-black px-6 py-3 text-[14px] font-semibold hover:bg-white/90 transition"
+                  className="inline-flex items-center gap-2 rounded-full border-2 border-white bg-white text-black px-6 py-3 text-[14px] font-semibold shadow-[4px_4px_0_0_rgba(255,255,255,0.85)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_0_rgba(255,255,255,0.85)] transition-all"
                 >
                   {t.ctaBtn}
                   <ArrowUpRight className="h-4 w-4" />
                 </Link>
                 <Link
                   to="/play"
-                  className="inline-flex items-center gap-2 rounded-full bg-[#FF8254] text-white px-6 py-3 text-[14px] font-semibold hover:brightness-95 transition"
+                  className="inline-flex items-center gap-2 rounded-full border-2 border-white bg-[#FF8254] text-white px-6 py-3 text-[14px] font-semibold shadow-[4px_4px_0_0_rgba(255,255,255,0.85)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_0_rgba(255,255,255,0.85)] transition-all"
                 >
                   {t.ctaJoin}
                   <Play className="h-4 w-4 fill-white" />
@@ -454,38 +454,44 @@ const Landing = () => {
 
 /* ---------- helpers ---------- */
 
-const FeatureLarge = ({ icon, title, desc }: { icon: React.ReactNode; title: string; desc: string }) => (
-  <div className="md:col-span-2 rounded-2xl border border-black/10 bg-white p-7 hover:border-[#FF8254]/40 hover:shadow-[0_20px_50px_-20px_rgba(255,130,84,0.22)] transition-all group active:scale-[0.995]">
-    <div className="flex items-start gap-5">
-      <div className="h-12 w-12 rounded-2xl bg-[#3F5A63] text-white flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+const FeatureLarge = ({ icon, title, desc, tilt = "-rotate-[0.6deg]" }: { icon: React.ReactNode; title: string; desc: string; tilt?: string }) => (
+  <div className={`md:col-span-2 group ${tilt} hover:rotate-0 transition-transform duration-300`}>
+    <div className="relative rounded-2xl border-2 border-[hsl(var(--nb-border))] bg-white p-7 shadow-[5px_5px_0_0_hsl(var(--nb-border))] group-hover:shadow-[8px_8px_0_0_hsl(var(--nb-border))] group-hover:-translate-x-1 group-hover:-translate-y-1 transition-all">
+      <div className="flex items-start gap-5">
+        <div className="h-12 w-12 rounded-2xl border-2 border-[hsl(var(--nb-border))] bg-[#3F5A63] text-white flex items-center justify-center shrink-0">
+          {icon}
+        </div>
+        <div>
+          <h3 className="text-[18px] font-semibold leading-tight" style={{ color: "#3F5A63" }}>{title}</h3>
+          <p className="mt-2 text-[14px] leading-relaxed text-black/65 max-w-lg">{desc}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+const Feature = ({ icon, title, desc, tilt = "rotate-[0.8deg]" }: { icon: React.ReactNode; title: string; desc: string; tilt?: string }) => (
+  <div className={`group ${tilt} hover:rotate-0 transition-transform duration-300`}>
+    <div className="relative rounded-2xl border-2 border-[hsl(var(--nb-border))] bg-white p-6 shadow-[5px_5px_0_0_hsl(var(--nb-border))] group-hover:shadow-[8px_8px_0_0_hsl(var(--nb-border))] group-hover:-translate-x-1 group-hover:-translate-y-1 transition-all">
+      <div className="h-10 w-10 rounded-2xl border-2 border-[hsl(var(--nb-border))] bg-[#3F5A63]/10 text-[#3F5A63] flex items-center justify-center group-hover:bg-[#3F5A63] group-hover:text-white transition-colors">
         {icon}
       </div>
-      <div>
-        <h3 className="text-[18px] font-semibold leading-tight" style={{ color: "#3F5A63" }}>{title}</h3>
-        <p className="mt-2 text-[14px] leading-relaxed text-black/65 max-w-lg">{desc}</p>
-      </div>
+      <h3 className="mt-5 text-[17px] font-semibold leading-tight" style={{ color: "#3F5A63" }}>{title}</h3>
+      <p className="mt-2 text-[13.5px] leading-relaxed text-black/65">{desc}</p>
     </div>
   </div>
 );
 
-const Feature = ({ icon, title, desc }: { icon: React.ReactNode; title: string; desc: string }) => (
-  <div className="rounded-2xl border border-black/10 bg-white p-6 hover:border-[#FF8254]/40 hover:shadow-[0_18px_40px_-20px_rgba(255,130,84,0.22)] transition-all group active:scale-[0.995]">
-    <div className="h-10 w-10 rounded-2xl bg-[#3F5A63]/10 text-[#3F5A63] flex items-center justify-center group-hover:bg-[#3F5A63] group-hover:text-white transition-colors">
-      {icon}
-    </div>
-    <h3 className="mt-5 text-[17px] font-semibold leading-tight" style={{ color: "#3F5A63" }}>{title}</h3>
-    <p className="mt-2 text-[13.5px] leading-relaxed text-black/65">{desc}</p>
-  </div>
-);
-
-const Step = ({ n, icon, title, desc }: { n: string; icon: React.ReactNode; title: string; desc: string }) => (
-  <div className="rounded-2xl bg-white border border-black/10 p-6">
+const Step = ({ n, icon, title, desc, tilt = "-rotate-[0.7deg]" }: { n: string; icon: React.ReactNode; title: string; desc: string; tilt?: string }) => (
+  <div className={`group ${tilt} hover:rotate-0 transition-transform duration-300`}>
+  <div className="relative rounded-2xl bg-white border-2 border-[hsl(var(--nb-border))] p-6 shadow-[5px_5px_0_0_hsl(var(--nb-border))] group-hover:shadow-[8px_8px_0_0_hsl(var(--nb-border))] group-hover:-translate-x-1 group-hover:-translate-y-1 transition-all">
     <div className="flex items-center justify-between">
       <span className="text-[12px] font-mono tracking-widest text-black/40">{n}</span>
       <div className="h-9 w-9 rounded-full bg-background text-[#FF8254] flex items-center justify-center">{icon}</div>
     </div>
     <h3 className="mt-6 text-[18px] font-semibold text-black">{title}</h3>
     <p className="mt-2 text-[13.5px] leading-relaxed text-black/65">{desc}</p>
+  </div>
   </div>
 );
 
