@@ -47,6 +47,8 @@
     --input: 37 30% 88%;
     --ring: 16 100% 66%;
 
+    --nb-border: 199 23% 18%;         /* solid dark-slate — hard button border + shadow edge */
+
     --radius: 1rem;
 
     --sidebar-background: 199 23% 32%;
