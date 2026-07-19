@@ -337,26 +337,18 @@ const Landing = () => {
           <div className="relative min-h-[420px] sm:min-h-[560px]">
             <CrossPattern />
 
-            {/* preview square (background) */}
-            <div className="absolute top-2 right-2 sm:right-4 w-[88%] sm:w-[78%] aspect-square rounded-[24px] sm:rounded-[28px] bg-[#3F5A63] border-2 border-[hsl(var(--nb-border))] shadow-[6px_6px_0_0_hsl(var(--nb-border))] overflow-hidden" />
+            {/* teal card — background only, no overflow-hidden so image floats free */}
+            <div className="absolute top-2 right-2 sm:right-4 w-[88%] sm:w-[78%] aspect-square rounded-[24px] sm:rounded-[28px] bg-[#3F5A63] border-2 border-[hsl(var(--nb-border))] shadow-[6px_6px_0_0_hsl(var(--nb-border))]" />
 
-            {/* hero figure — overflows the box so the head is never clipped */}
+            {/* teacher — floats in front of the card with depth */}
             <img
               src={heroPerson}
               alt="معلم نحلها"
               className="absolute bottom-10 sm:bottom-12 right-2 sm:right-4 w-[88%] sm:w-[78%] h-auto max-h-[100%] object-contain object-bottom select-none pointer-events-none drop-shadow-2xl z-20"
             />
 
-            {/* CTA pill */}
-            <div className="absolute bottom-2 sm:bottom-3 left-2 sm:left-4 z-30">
-              <Link
-                to={user ? "/app" : "/auth?mode=signup"}
-                className="inline-flex items-center gap-2 rounded-full border-2 border-[hsl(var(--nb-border))] bg-white text-[#3F5A63] px-4 py-2 text-[13px] font-semibold shadow-[3px_3px_0_0_hsl(var(--nb-border))] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all"
-              >
-                {t.cta}
-                <ArrowUpRight className="h-4 w-4" strokeWidth={2.25} />
-              </Link>
-            </div>
+            {/* page-color scrim fades the legs out at the container bottom */}
+            <div className="absolute bottom-0 inset-x-0 h-28 z-30 pointer-events-none" style={{ background: "linear-gradient(to top, hsl(var(--background)) 30%, transparent)" }} />
           </div>
         </div>
 
