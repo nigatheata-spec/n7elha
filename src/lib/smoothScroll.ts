@@ -19,7 +19,7 @@ export function useSmoothScroll(enabled = true) {
     lenis.on("scroll", (e: { velocity: number }) => {
       ScrollTrigger.update();
 
-      const v = gsap.utils.clamp(-3.5, 3.5, e.velocity * 0.6);
+      const v = gsap.utils.clamp(-2.8, 2.8, e.velocity * 0.48);
 
       gsap.to("#scroll-skew", {
         skewY: v,
