@@ -370,7 +370,7 @@ const Landing = () => {
         </section>
 
         {/* ---------------- HOW IT WORKS ---------------- */}
-        <section id="how" className="px-5 sm:px-8 md:px-14 py-16 sm:py-24 border-t border-black/5 bg-background/40">
+        <section id="how" className="px-5 sm:px-8 md:px-14 py-16 sm:py-24 border-t border-black/5">
           <div className="max-w-2xl">
             <span className={`text-[12px] font-semibold text-[#FF8254] ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`}>{t.howKicker}</span>
             <h2 className="mt-3 text-[28px] sm:text-[40px] tracking-tight leading-[1.1]" style={{ color: "#3F5A63", fontFamily: "'ArslanWessam', 'Almarai', sans-serif" }}>
@@ -382,6 +382,37 @@ const Landing = () => {
             <Step n="01" icon={<Upload className="h-5 w-5" />} title={t.s1} desc={t.s1d} tilt="-rotate-[0.6deg]" />
             <Step n="02" icon={<Users className="h-5 w-5" />} title={t.s2} desc={t.s2d} tilt="rotate-[0.8deg]" />
             <Step n="03" icon={<Trophy className="h-5 w-5" />} title={t.s3} desc={t.s3d} tilt="-rotate-[0.9deg]" />
+          </div>
+        </section>
+
+        {/* ---------------- FOR WHO ---------------- */}
+        <section className="px-5 sm:px-8 md:px-14 py-16 sm:py-24 border-t border-black/5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-20">
+            <div>
+              <span className={`text-[12px] font-semibold text-[#FF8254] ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`}>
+                {isAr ? "لمن هذه المنصة؟" : "WHO IS IT FOR"}
+              </span>
+              <h2 className="mt-4 text-[26px] sm:text-[36px] tracking-tight leading-[1.15]" style={{ color: "#3F5A63", fontFamily: "'ArslanWessam', 'Almarai', sans-serif" }}>
+                {isAr ? "صُممت للمعلم العربي أولاً" : "Built around the Arabic-speaking teacher"}
+              </h2>
+            </div>
+            <div className="space-y-6 text-[15px] leading-relaxed text-black/65">
+              <p>
+                {isAr
+                  ? "سواء كنت معلمًا في مدرسة حكومية تبحث عن طريقة تجعل مراجعة الدرس أكثر حيوية، أو مدرّسًا خاصًا يريد تتبع مستوى كل طالب بدقة — نحلها صُممت لك."
+                  : "Whether you're a school teacher looking to make lesson reviews more engaging, or a private tutor who wants to track each student's level with precision — n7elha was built for you."}
+              </p>
+              <p>
+                {isAr
+                  ? "لا يشترط أن تكون خبيرًا في التكنولوجيا. المنصة تعمل من المتصفح مباشرة، ولا تحتاج الطلاب إلى تحميل أي تطبيق. رمز قصير، وينضم الجميع في ثوانٍ."
+                  : "You don't need to be tech-savvy. The platform runs entirely in the browser — students don't download anything. One short code and everyone's in within seconds."}
+              </p>
+              <p>
+                {isAr
+                  ? "الأسئلة باللغة العربية، التقارير باللغة العربية، وتجربة الطالب مصممة للشاشات الصغيرة التي يحملها طلابك في جيوبهم."
+                  : "Questions in Arabic, reports in Arabic, and a student experience designed for the small screens they carry in their pockets."}
+              </p>
+            </div>
           </div>
         </section>
 
