@@ -385,25 +385,29 @@ const Landing = () => {
           </div>
         </section>
 
-        {/* ---------------- CTA BANNER ---------------- */}
-        <section className="px-5 sm:px-8 md:px-14 py-16 sm:py-20 border-t border-black/5">
-          <div className="rounded-[24px] bg-[#3F5A63] text-white p-8 sm:p-12 md:p-16 relative overflow-hidden">
-            <div className="relative max-w-2xl">
-              <h3 className="text-[26px] sm:text-[36px] font-semibold tracking-tight leading-[1.15]">
-                {t.ctaTitle}
-              </h3>
-              <p className="mt-3 text-white/70 text-[15px]">{t.ctaSub}</p>
-              <div className="mt-7 flex flex-wrap gap-3">
+        {/* ---------------- FOOTER + CTA ---------------- */}
+        <footer id="footer" className="relative bg-[#2B3F45] text-white">
+
+          {/* CTA card — pops up from the footer top */}
+          <div className="px-5 sm:px-8 md:px-14">
+            <div className="relative -top-10 rounded-[24px] bg-white border-2 border-[hsl(var(--nb-border))] shadow-[6px_6px_0_0_hsl(var(--nb-border))] p-8 sm:p-12 md:p-14 flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
+              <div className="max-w-xl">
+                <h3 className="text-[24px] sm:text-[32px] font-semibold tracking-tight leading-[1.15] text-[#2B3F45]">
+                  {t.ctaTitle}
+                </h3>
+                <p className="mt-3 text-black/55 text-[15px]">{t.ctaSub}</p>
+              </div>
+              <div className="flex flex-wrap gap-3 shrink-0">
                 <Link
                   to={user ? "/app" : "/auth?mode=signup"}
-                  className="inline-flex items-center gap-2 rounded-full border-2 border-white bg-white text-black px-6 py-3 text-[14px] font-semibold shadow-[4px_4px_0_0_rgba(255,255,255,0.85)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_0_rgba(255,255,255,0.85)] transition-all"
+                  className="inline-flex items-center gap-2 rounded-full border-2 border-[hsl(var(--nb-border))] bg-[#2B3F45] text-white px-6 py-3 text-[14px] font-semibold shadow-[4px_4px_0_0_hsl(var(--nb-border))] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_0_hsl(var(--nb-border))] transition-all"
                 >
                   {t.ctaBtn}
                   <ArrowUpRight className="h-4 w-4" />
                 </Link>
                 <Link
                   to="/play"
-                  className="inline-flex items-center gap-2 rounded-full border-2 border-white bg-[#FF8254] text-white px-6 py-3 text-[14px] font-semibold shadow-[4px_4px_0_0_rgba(255,255,255,0.85)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_0_rgba(255,255,255,0.85)] transition-all"
+                  className="inline-flex items-center gap-2 rounded-full border-2 border-[hsl(var(--nb-border))] bg-[#FF8254] text-white px-6 py-3 text-[14px] font-semibold shadow-[4px_4px_0_0_hsl(var(--nb-border))] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_0_hsl(var(--nb-border))] transition-all"
                 >
                   {t.ctaJoin}
                   <Play className="h-4 w-4 fill-white" />
@@ -411,61 +415,52 @@ const Landing = () => {
               </div>
             </div>
           </div>
-        </section>
 
-        {/* ---------------- FOOTER ---------------- */}
-        <footer id="footer" className="px-5 sm:px-8 md:px-14 pt-14 pb-10 border-t border-black/5 bg-[#EBDFC7]/60">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            <div className="col-span-2 md:col-span-1">
-              <Link to="/" className="flex items-center gap-2">
-                <img src={logoMark} alt="n7elha" className="h-8 w-8 object-contain" />
-                <span className="text-[17px] font-medium tracking-tight text-black">n7elha</span>
-              </Link>
-              <p className="mt-4 text-[13px] text-black/60 leading-relaxed max-w-xs">{t.footerTagline}</p>
-              <div className="mt-5 flex gap-3">
-                <a href="#" className="h-9 w-9 rounded-full border border-black/15 flex items-center justify-center text-black/70 hover:bg-black hover:text-white transition">
-                  <Twitter className="h-4 w-4" />
-                </a>
-                <a href="#" className="h-9 w-9 rounded-full border border-black/15 flex items-center justify-center text-black/70 hover:bg-black hover:text-white transition">
-                  <Instagram className="h-4 w-4" />
-                </a>
-                <a href="#" className="h-9 w-9 rounded-full border border-black/15 flex items-center justify-center text-black/70 hover:bg-black hover:text-white transition">
-                  <Github className="h-4 w-4" />
-                </a>
-                <a href="mailto:hello@n7elha.com" className="h-9 w-9 rounded-full border border-black/15 flex items-center justify-center text-black/70 hover:bg-black hover:text-white transition">
-                  <Mail className="h-4 w-4" />
-                </a>
+          {/* Footer content */}
+          <div className="px-5 sm:px-8 md:px-14 pb-10">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+              <div className="col-span-2 md:col-span-1">
+                <Link to="/" className="flex items-center gap-2">
+                  <img src={logoMark} alt="n7elha" className="h-8 w-8 object-contain brightness-0 invert" />
+                  <span className="text-[17px] font-medium tracking-tight text-white">n7elha</span>
+                </Link>
+                <p className="mt-4 text-[13px] text-white/50 leading-relaxed max-w-xs">{t.footerTagline}</p>
+                <div className="mt-5 flex gap-3">
+                  <a href="#" className="h-9 w-9 rounded-full border border-white/20 flex items-center justify-center text-white/60 hover:bg-white hover:text-[#2B3F45] transition">
+                    <Twitter className="h-4 w-4" />
+                  </a>
+                  <a href="#" className="h-9 w-9 rounded-full border border-white/20 flex items-center justify-center text-white/60 hover:bg-white hover:text-[#2B3F45] transition">
+                    <Instagram className="h-4 w-4" />
+                  </a>
+                  <a href="#" className="h-9 w-9 rounded-full border border-white/20 flex items-center justify-center text-white/60 hover:bg-white hover:text-[#2B3F45] transition">
+                    <Github className="h-4 w-4" />
+                  </a>
+                  <a href="mailto:hello@n7elha.com" className="h-9 w-9 rounded-full border border-white/20 flex items-center justify-center text-white/60 hover:bg-white hover:text-[#2B3F45] transition">
+                    <Mail className="h-4 w-4" />
+                  </a>
+                </div>
               </div>
-            </div>
 
-            <FooterCol
-              title={t.footerProduct}
-              items={[
+              <FooterCol dark title={t.footerProduct} items={[
                 { label: t.footerFeatures, href: "#features" },
                 { label: t.footerHow, href: "#how" },
                 { label: t.footerPricing, href: "#" },
-              ]}
-            />
-            <FooterCol
-              title={t.footerCompany}
-              items={[
+              ]} />
+              <FooterCol dark title={t.footerCompany} items={[
                 { label: t.footerAbout, href: "#" },
                 { label: t.footerContact, href: "mailto:hello@n7elha.com" },
                 { label: t.footerCareers, href: "#" },
-              ]}
-            />
-            <FooterCol
-              title={t.footerLegal}
-              items={[
+              ]} />
+              <FooterCol dark title={t.footerLegal} items={[
                 { label: t.footerPrivacy, href: "#" },
                 { label: t.footerTerms, href: "#" },
-              ]}
-            />
-          </div>
+              ]} />
+            </div>
 
-          <div className="mt-12 pt-6 border-t border-black/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-[12px] text-black/55">
-            <span>{t.footerRights}</span>
-            <span className="tracking-wider">Built for teachers.</span>
+            <div className="mt-12 pt-6 border-t border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-[12px] text-white/35">
+              <span>{t.footerRights}</span>
+              <span className="tracking-wider">Built for teachers.</span>
+            </div>
           </div>
         </footer>
       </div>
@@ -516,13 +511,13 @@ const Step = ({ n, icon, title, desc, tilt = "-rotate-[0.7deg]" }: { n: string; 
   </div>
 );
 
-const FooterCol = ({ title, items }: { title: string; items: { label: string; href: string }[] }) => (
+const FooterCol = ({ title, items, dark }: { title: string; items: { label: string; href: string }[]; dark?: boolean }) => (
   <div>
-    <h4 className="text-[12px] tracking-[0.2em] font-semibold text-black/80">{title}</h4>
+    <h4 className={`text-[12px] tracking-[0.2em] font-semibold ${dark ? "text-white/50" : "text-black/80"}`}>{title}</h4>
     <ul className="mt-3 space-y-1.5">
       {items.map((it) => (
         <li key={it.label}>
-          <a href={it.href} className="text-[13px] text-black/65 hover:text-black transition">
+          <a href={it.href} className={`text-[13px] transition ${dark ? "text-white/60 hover:text-white" : "text-black/65 hover:text-black"}`}>
             {it.label}
           </a>
         </li>
@@ -533,27 +528,48 @@ const FooterCol = ({ title, items }: { title: string; items: { label: string; hr
 
 const CrossPattern = () => (
   <svg
-    className="absolute inset-0 w-full h-full pointer-events-none"
+    className="absolute inset-0 w-full h-full pointer-events-none select-none"
     viewBox="0 0 500 500"
     fill="none"
     xmlns="http://www.w3.org/2000/svg"
     aria-hidden
   >
-    {[
-      [80, 60], [240, 60], [400, 60],
-      [80, 220], [400, 220],
-      [80, 380], [240, 380], [400, 380],
-    ].map(([x, y], i) => (
-      <g key={i} stroke="#1a1a1a" strokeWidth="1">
-        <line x1={x - 22} y1={y} x2={x + 22} y2={y} />
-        <line x1={x} y1={y - 22} x2={x} y2={y + 22} />
-        <path
-          d={`M ${x} ${y - 6} L ${x + 2} ${y} L ${x} ${y + 6} L ${x - 2} ${y} Z M ${x - 6} ${y} L ${x} ${y - 2} L ${x + 6} ${y} L ${x} ${y + 2} Z`}
-          fill="#1a1a1a"
-          stroke="none"
+    {/* Dot grid */}
+    {Array.from({ length: 7 }, (_, row) =>
+      Array.from({ length: 5 }, (_, col) => (
+        <circle
+          key={`dot-${row}-${col}`}
+          cx={40 + col * 105}
+          cy={45 + row * 72}
+          r="2.2"
+          fill="#3F5A63"
+          opacity="0.32"
         />
-      </g>
-    ))}
+      ))
+    )}
+
+    {/* Filled accent circles */}
+    <circle cx="55"  cy="80"  r="5"   fill="#3F5A63" opacity="0.45" />
+    <circle cx="370" cy="120" r="6"   fill="#FF8254" opacity="0.40" />
+    <circle cx="110" cy="310" r="4.5" fill="#FF8254" opacity="0.38" />
+    <circle cx="200" cy="455" r="5"   fill="#3F5A63" opacity="0.35" />
+    <circle cx="430" cy="340" r="4"   fill="#3F5A63" opacity="0.38" />
+    <circle cx="75"  cy="430" r="3.5" fill="#FF8254" opacity="0.35" />
+    <circle cx="310" cy="70"  r="3"   fill="#FF8254" opacity="0.32" />
+
+    {/* Stroke-only circles */}
+    <circle cx="110" cy="180" r="7"   stroke="#FF8254" strokeWidth="1.8" opacity="0.40" />
+    <circle cx="420" cy="460" r="6"   stroke="#3F5A63" strokeWidth="1.8" opacity="0.38" />
+    <circle cx="60"  cy="355" r="5"   stroke="#3F5A63" strokeWidth="1.5" opacity="0.35" />
+    <circle cx="340" cy="260" r="4.5" stroke="#FF8254" strokeWidth="1.5" opacity="0.32" />
+
+    {/* Rotated squares */}
+    <rect x="90"  y="352" width="10" height="10" rx="1.5" transform="rotate(20 95 357)"  fill="#3F5A63" opacity="0.38" />
+    <rect x="338" y="387" width="9"  height="9"  rx="1.5" transform="rotate(35 343 392)" fill="#FF8254" opacity="0.40" />
+    <rect x="58"  y="255" width="8"  height="8"  rx="1"   transform="rotate(-15 62 259)" fill="#3F5A63" opacity="0.35" />
+    <rect x="420" cy="200" width="7"  height="7"  rx="1"   transform="rotate(45 423 203)" fill="#FF8254" opacity="0.32" />
+    <rect x="170" y="130" width="7"  height="7"  rx="1"   transform="rotate(28 173 133)" fill="#3F5A63" opacity="0.30" />
+    <rect x="300" y="440" width="9"  height="9"  rx="1.5" transform="rotate(-20 304 444)" fill="#FF8254" opacity="0.35" />
   </svg>
 );
 
