@@ -166,12 +166,12 @@ const Landing = () => {
 
   return (
     <div
+      id="scroll-skew"
       dir="ltr"
-      className="min-h-screen w-full p-3 sm:p-6 lg:p-12 flex flex-col items-center"
-      style={{ background: "#EBDFC7", fontFamily: "'Outfit', 'Almarai', system-ui, sans-serif" }}
+      className="min-h-screen w-full"
+      style={{ background: "hsl(var(--cream-panel))", fontFamily: "'Outfit', 'Almarai', system-ui, sans-serif", willChange: "transform" }}
     >
-      <div id="scroll-skew" className="relative w-full max-w-[1280px] rounded-[20px] sm:rounded-[28px] overflow-hidden shadow-[0_24px_70px_-38px_rgba(63,90,99,0.35)]" style={{ background: "hsl(var(--cream-panel))", willChange: "transform" }}>
-        <span className="pointer-events-none absolute -bottom-4 -right-4 h-8 w-8 rounded-full border-2 border-[#FF8254]/40 select-none" />
+      <div className="relative w-full">
 
         {/* ---------------- NAV ---------------- */}
         <nav className="px-5 sm:px-8 md:px-10 pt-5 sm:pt-6">
