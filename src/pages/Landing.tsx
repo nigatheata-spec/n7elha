@@ -168,7 +168,7 @@ const Landing = () => {
     <div
       id="scroll-skew"
       dir="ltr"
-      className="grain min-h-screen w-full"
+      className="min-h-screen w-full"
       style={{ background: "hsl(var(--cream-panel))", fontFamily: "'Outfit', 'Almarai', system-ui, sans-serif", willChange: "transform" }}
     >
       <div className="relative w-full">
