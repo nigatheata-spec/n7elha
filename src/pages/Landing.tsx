@@ -346,11 +346,8 @@ const Landing = () => {
             <img
               src={heroPerson}
               alt="معلم نحلها"
-              className="absolute bottom-10 sm:bottom-12 right-2 sm:right-4 w-[88%] sm:w-[78%] h-auto max-h-[100%] object-contain object-bottom select-none pointer-events-none drop-shadow-2xl z-20"
+              className="absolute bottom-0 right-2 sm:right-4 w-[88%] sm:w-[78%] h-full object-contain object-bottom select-none pointer-events-none drop-shadow-2xl z-20"
             />
-
-            {/* page-color scrim fades the legs out at the container bottom */}
-            <div className="absolute bottom-0 inset-x-0 h-28 z-30 pointer-events-none" style={{ background: "linear-gradient(to top, hsl(var(--background)) 30%, transparent)" }} />
           </div>
         </div>
 
