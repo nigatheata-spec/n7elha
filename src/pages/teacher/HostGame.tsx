@@ -126,6 +126,31 @@ const HostGame = () => {
     supabase.from("quizzes").select("*").eq("id", quizId).maybeSingle().then(({ data }) => setQuiz(data));
   }, [quizId]);
 
+  // Resume an already-open lobby (or running game) after a page refresh —
+  // otherwise the teacher's session state resets while the DB session lives on.
+  useEffect(() => {
+    if (!user || !quizId) return;
+    (async () => {
+      const { data } = await supabase.from("game_sessions")
+        .select("*")
+        .eq("teacher_id", user.id)
+        .eq("quiz_id", quizId)
+        .in("status", ["lobby", "running"])
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (!data) return;
+      if (data.status === "running") {
+        navigate(`/app/games/${data.id}/monitor`);
+        return;
+      }
+      setMode((data.settings?.mode as GameMode) ?? null);
+      setCode(data.code);
+      setSessionId(data.id);
+      if (data.settings?.minutes) setMinutes(data.settings.minutes);
+    })();
+  }, [user, quizId]);
+
   useEffect(() => {
     if (!sessionId) return;
     const load = async () => {
