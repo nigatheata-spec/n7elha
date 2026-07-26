@@ -3,13 +3,9 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
-import { Copy, Play, Users, Trash2, Zap, Target, Heart, Skull, Timer, Trophy, Flame, ChevronLeft, Check, Minus, Plus } from "lucide-react";
+import { Copy, Play, Users, Trash2, Zap, Heart, Skull, Timer, Trophy, Flame, ChevronLeft, Check, Minus, Plus } from "lucide-react";
 import { BitcoinIcon, StopwatchIcon, LavaBucketIcon, DynamiteIcon } from "@/components/game/icons";
 import { toast } from "sonner";
-import modeCrypto from "@/assets/mode-crypto.jpg";
-import modeLava from "@/assets/mode-lava.jpg";
-import modeDodgeball from "@/assets/mode-dodgeball.jpg";
-import modeHotpotato from "@/assets/mode-hotpotato.jpg";
 
 const genCode = () => {
   const c = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
@@ -18,111 +14,87 @@ const genCode = () => {
 
 type GameMode = "crypto_rush" | "dodgeball" | "hotpotato" | "lavafloor";
 
-const MODES: { id: GameMode; icon: React.ReactNode; label: string; labelAr: string; desc: string; descAr: string; color: string; glow: string; bg: string; poster: string }[] = [
+const MODES: { id: GameMode; icon: React.ReactNode; label: string; labelAr: string; desc: string; descAr: string; accent: string; num: string }[] = [
   {
     id: "crypto_rush",
-    icon: <BitcoinIcon className="h-8 w-8" strokeWidth={2} />,
+    icon: <BitcoinIcon className="h-6 w-6" strokeWidth={2} />,
     label: "Crypto Rush",
     labelAr: "كريبتو رَش",
     desc: "Answer questions, earn crypto, hack rivals",
     descAr: "أجب على الأسئلة، اكسب كريبتو، اخترق منافسيك",
-    color: "#00ff88",
-    glow: "0 0 32px #00ff8855, 0 0 64px #00ff8822",
-    bg: "linear-gradient(135deg, #00ff8811 0%, #00ff8804 100%)",
-    poster: modeCrypto,
+    accent: "#FF8254",
+    num: "01",
   },
   {
     id: "dodgeball",
-    icon: <StopwatchIcon className="h-8 w-8" strokeWidth={2} />,
+    icon: <StopwatchIcon className="h-6 w-6" strokeWidth={2} />,
     label: "Time Wizard",
     labelAr: "ساحر الوقت",
-    desc: "Cast spells of time — stop the clock at exactly 10.00s",
+    desc: "Stop the clock at exactly 10.00 — closest wins",
     descAr: "أوقف الزمن عند 10.00 ثانية بالضبط — الأقرب ينجو",
-    color: "#22d3ee",
-    glow: "0 0 32px #22d3ee55, 0 0 64px #22d3ee22",
-    bg: "linear-gradient(135deg, #22d3ee11 0%, #22d3ee04 100%)",
-    poster: modeDodgeball,
+    accent: "#3F5A63",
+    num: "02",
   },
   {
     id: "hotpotato",
-    icon: <DynamiteIcon className="h-8 w-8" strokeWidth={2} />,
+    icon: <DynamiteIcon className="h-6 w-6" strokeWidth={2} />,
     label: "Pass It",
     labelAr: "مرّرها",
     desc: "Live bomb on a fuse — pass it before it blows",
     descAr: "قنبلة موقوتة — مرّرها قبل أن تنفجر",
-    color: "#b8f026",
-    glow: "0 0 32px #b8f02655, 0 0 64px #b8f02622",
-    bg: "linear-gradient(135deg, #b8f02611 0%, #b8f02604 100%)",
-    poster: modeHotpotato,
+    accent: "#C8783A",
+    num: "03",
   },
   {
     id: "lavafloor",
-    icon: <LavaBucketIcon className="h-8 w-8" strokeWidth={2} />,
+    icon: <LavaBucketIcon className="h-6 w-6" strokeWidth={2} />,
     label: "Lava Floor",
     labelAr: "أرضية الحمم",
     desc: "Survive together before the lava rises",
     descAr: "اصمدوا معاً قبل أن تبتلعكم الحمم",
-    color: "#ef4444",
-    glow: "0 0 32px #ef444455, 0 0 64px #ef444422",
-    bg: "linear-gradient(135deg, #ef444411 0%, #ef444404 100%)",
-    poster: modeLava,
+    accent: "#8B4A3A",
+    num: "04",
   },
 ];
 
 const MINUTE_PRESETS = [5, 10, 15, 20, 30];
 
-/* shared dark-metal constants */
-const GUN_BG = "radial-gradient(ellipse at 30% 10%, hsl(199 35% 13%) 0%, hsl(199 30% 8%) 55%, hsl(199 25% 5%) 100%)";
-const metalPanel = {
-  background: "linear-gradient(180deg, hsl(199 28% 16%), hsl(199 25% 11%))",
-  border: "1.5px solid hsl(199 28% 24%)",
-  boxShadow: "inset 0 1.5px 0 hsl(199 25% 32%), inset 0 -1px 0 hsl(199 20% 6%), 0 4px 14px hsl(0 0% 0% / 0.45)",
-};
-
-/** +/- stepper for choosing minutes */
-const MinuteStepper = ({ value, onChange, color }: { value: number; onChange: (v: number) => void; color: string }) => {
+const MinuteStepper = ({ value, onChange }: { value: number; onChange: (v: number) => void }) => {
   const step = (delta: number) => onChange(Math.min(30, Math.max(2, value + delta)));
   return (
     <div className="space-y-3">
-      {/* Big stepper row */}
       <div className="flex items-center gap-3">
         <button
           onClick={() => step(-1)}
           disabled={value <= 2}
-          className="h-11 w-11 rounded-xl flex items-center justify-center transition-all disabled:opacity-30"
-          style={{ background: "hsl(199 28% 18%)", border: `1.5px solid hsl(199 28% 26%)`, color: "hsl(199 25% 72%)" }}
+          className="h-11 w-11 rounded-xl flex items-center justify-center border-2 border-[hsl(var(--nb-border))] bg-white text-[#3F5A63] shadow-[3px_3px_0_0_hsl(var(--nb-border))] hover:translate-x-px hover:translate-y-px hover:shadow-[2px_2px_0_0_hsl(var(--nb-border))] transition-all disabled:opacity-30 disabled:cursor-not-allowed"
         >
           <Minus className="h-4 w-4" />
         </button>
 
-        <div
-          className="flex-1 rounded-xl flex flex-col items-center justify-center py-3"
-          style={{ background: color + "12", border: `1.5px solid ${color}44` }}
-        >
-          <span className="font-black text-4xl leading-none" style={{ color }}>{value}</span>
-          <span className="text-xs mt-1 font-medium" style={{ color: "hsl(199 25% 52%)" }}>min</span>
+        <div className="flex-1 rounded-xl flex flex-col items-center justify-center py-3 border-2 border-[hsl(var(--nb-border))] bg-white shadow-[3px_3px_0_0_hsl(var(--nb-border))]">
+          <span className="font-black text-4xl leading-none text-[#3F5A63]">{value}</span>
+          <span className="text-xs mt-1 font-medium text-black/40">min</span>
         </div>
 
         <button
           onClick={() => step(1)}
           disabled={value >= 30}
-          className="h-11 w-11 rounded-xl flex items-center justify-center transition-all disabled:opacity-30"
-          style={{ background: "hsl(199 28% 18%)", border: `1.5px solid hsl(199 28% 26%)`, color: "hsl(199 25% 72%)" }}
+          className="h-11 w-11 rounded-xl flex items-center justify-center border-2 border-[hsl(var(--nb-border))] bg-white text-[#3F5A63] shadow-[3px_3px_0_0_hsl(var(--nb-border))] hover:translate-x-px hover:translate-y-px hover:shadow-[2px_2px_0_0_hsl(var(--nb-border))] transition-all disabled:opacity-30 disabled:cursor-not-allowed"
         >
           <Plus className="h-4 w-4" />
         </button>
       </div>
 
-      {/* Quick presets */}
       <div className="flex gap-2 flex-wrap">
         {MINUTE_PRESETS.map(p => (
           <button
             key={p}
             onClick={() => onChange(p)}
-            className="px-3 py-1 rounded-lg text-xs font-bold transition-all"
+            className="px-3 py-1.5 rounded-lg text-xs font-bold border-2 border-[hsl(var(--nb-border))] transition-all hover:translate-x-px hover:translate-y-px"
             style={value === p
-              ? { background: color + "33", color, border: `1.5px solid ${color}77` }
-              : { background: "hsl(199 28% 16%)", color: "hsl(199 25% 58%)", border: "1.5px solid hsl(199 28% 22%)" }
+              ? { background: "#3F5A63", color: "white", boxShadow: "2px 2px 0 0 hsl(var(--nb-border))" }
+              : { background: "white", color: "#3F5A63", boxShadow: "2px 2px 0 0 hsl(var(--nb-border))" }
             }
           >
             {p}m
@@ -146,7 +118,6 @@ const HostGame = () => {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [students, setStudents] = useState<any[]>([]);
   const [copied, setCopied] = useState(false);
-
   const [minutes, setMinutes] = useState(7);
   const maxStudents = 40;
 
@@ -211,16 +182,21 @@ const HostGame = () => {
 
   const selectedMode = mode ? MODES.find(m => m.id === mode)! : null;
 
-  // ── Mode picker ──────────────────────────────────────────────────────────
+  // ── Mode picker ───────────────────────────────────────────────────────────
   if (!mode) {
     return (
-      <div className="min-h-full rounded-2xl p-6 md:p-10" style={{ background: GUN_BG }}>
-        <div className="max-w-xl mx-auto space-y-8">
+      <div className="min-h-full p-6 md:p-10" style={{ background: "hsl(var(--background))" }}>
+        <div className="max-w-2xl mx-auto space-y-8">
           <div>
-            <h1 className="font-display text-3xl font-black text-white">
+            {quiz && (
+              <p className="text-[12px] font-semibold tracking-[0.22em] uppercase text-[#FF8254] mb-3">
+                {quiz.title}
+              </p>
+            )}
+            <h1 className="text-[28px] sm:text-[36px] font-bold leading-tight text-[#3F5A63]"
+              style={{ fontFamily: "'ArslanWessam', 'Almarai', sans-serif" }}>
               {ar ? "اختر وضع اللعبة" : "Choose Game Mode"}
             </h1>
-            {quiz && <p className="mt-1 text-sm" style={{ color: "hsl(199 25% 58%)" }}>{quiz.title}</p>}
           </div>
 
           <div className="grid sm:grid-cols-2 gap-4">
@@ -228,50 +204,31 @@ const HostGame = () => {
               <button
                 key={m.id}
                 onClick={() => setMode(m.id)}
-                className="group relative overflow-hidden rounded-2xl text-left transition-all duration-300 hover:-translate-y-1 hover:scale-[1.01] aspect-square w-full"
-                style={{
-                  border: `1.5px solid ${m.color}33`,
-                  boxShadow: `0 4px 24px rgba(0,0,0,0.5)`,
-                }}
-                onMouseEnter={e => {
-                  (e.currentTarget as HTMLElement).style.boxShadow = m.glow + ", 0 8px 32px rgba(0,0,0,0.6)";
-                  (e.currentTarget as HTMLElement).style.borderColor = m.color + "88";
-                }}
-                onMouseLeave={e => {
-                  (e.currentTarget as HTMLElement).style.boxShadow = "0 4px 24px rgba(0,0,0,0.5)";
-                  (e.currentTarget as HTMLElement).style.borderColor = m.color + "33";
-                }}
+                className="group text-left rounded-2xl p-6 bg-white border-2 border-[hsl(var(--nb-border))] shadow-[4px_4px_0_0_hsl(var(--nb-border))] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_0_hsl(var(--nb-border))] transition-all duration-150"
               >
-                {/* Poster image */}
-                <img
-                  src={m.poster}
-                  alt={m.label}
-                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                />
-                {/* Dark gradient overlay — stronger at bottom for text legibility */}
-                <div
-                  className="absolute inset-0"
-                  style={{ background: "linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.45) 50%, rgba(0,0,0,0.15) 100%)" }}
-                />
-                {/* Mode color tint on hover */}
-                <div
-                  className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                  style={{ background: `linear-gradient(to top, ${m.color}22 0%, transparent 60%)` }}
-                />
-                {/* Text content pinned to bottom */}
-                <div className="absolute bottom-0 left-0 right-0 p-5">
-                  <div className="font-black text-2xl text-white mb-1 drop-shadow-lg">
-                    {ar ? m.labelAr : m.label}
-                  </div>
-                  <div className="text-sm leading-relaxed text-white/70">
-                    {ar ? m.descAr : m.desc}
-                  </div>
+                <div className="flex items-center justify-between mb-6">
+                  <span className="font-mono text-[11px] tracking-widest text-black/30">{m.num}</span>
                   <div
-                    className="mt-3 text-xs font-bold tracking-wide opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                    style={{ color: m.color }}
+                    className="h-10 w-10 rounded-xl flex items-center justify-center border-2 border-[hsl(var(--nb-border))]"
+                    style={{ background: m.accent, color: "white" }}
                   >
-                    {ar ? "اختر ←" : "Select →"}
+                    {m.icon}
                   </div>
+                </div>
+
+                <div className="text-[20px] font-bold text-[#3F5A63] leading-tight mb-2">
+                  {ar ? m.labelAr : m.label}
+                </div>
+
+                <div className="text-[13px] leading-relaxed text-black/55">
+                  {ar ? m.descAr : m.desc}
+                </div>
+
+                <div
+                  className="mt-4 text-[11px] font-bold tracking-widest uppercase opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+                  style={{ color: m.accent }}
+                >
+                  {ar ? "اختر" : "Select →"}
                 </div>
               </button>
             ))}
@@ -281,148 +238,135 @@ const HostGame = () => {
     );
   }
 
-  // ── Settings + lobby ─────────────────────────────────────────────────────
-  const modeColor = selectedMode!.color;
+  // ── Settings + lobby ──────────────────────────────────────────────────────
+  const selectedAccent = selectedMode!.accent;
   const needsTimer = mode !== "dodgeball";
 
   return (
-    <div className="min-h-full rounded-2xl p-6 md:p-10" style={{ background: GUN_BG }}>
-      <div className="max-w-6xl mx-auto space-y-8">
+    <div className="min-h-full p-6 md:p-10" style={{ background: "hsl(var(--background))" }}>
+      <div className="max-w-5xl mx-auto space-y-8">
 
         {/* Top bar */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <button
             onClick={() => { setMode(null); setSessionId(null); setStudents([]); }}
-            className="flex items-center gap-1.5 text-sm font-medium transition-colors"
-            style={{ color: "hsl(199 25% 58%)" }}
-            onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = "white"}
-            onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = "hsl(199 25% 58%)"}
+            className="flex items-center gap-1.5 text-sm font-medium text-black/50 hover:text-[#3F5A63] transition-colors"
           >
             <ChevronLeft className="h-4 w-4" />
             {ar ? "تغيير الوضع" : "Change mode"}
           </button>
 
-          <div className="flex items-center gap-2 px-3 py-1 rounded-full text-xs font-black"
-            style={{ background: modeColor + "22", color: modeColor, border: `1px solid ${modeColor}44` }}>
+          <div
+            className="flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold border-2 border-[hsl(var(--nb-border))] bg-white shadow-[2px_2px_0_0_hsl(var(--nb-border))]"
+            style={{ color: selectedAccent }}
+          >
             <span className="h-3.5 w-3.5 [&>svg]:h-full [&>svg]:w-full">{selectedMode!.icon}</span>
             {ar ? selectedMode!.labelAr : selectedMode!.label}
           </div>
         </div>
 
         <div>
-          <h1 className="font-display text-3xl font-black text-white">{t("host_game")}</h1>
-          {quiz && <p className="mt-1 text-sm" style={{ color: "hsl(199 25% 58%)" }}>{quiz.title}</p>}
+          <h1 className="text-[26px] sm:text-[32px] font-bold text-[#3F5A63] leading-tight"
+            style={{ fontFamily: "'ArslanWessam', 'Almarai', sans-serif" }}>
+            {t("host_game")}
+          </h1>
+          {quiz && <p className="mt-1 text-sm text-black/45">{quiz.title}</p>}
         </div>
 
-        <div className="grid md:grid-cols-[1fr_360px] gap-6 items-start">
+        <div className="grid md:grid-cols-[1fr_340px] gap-5 items-start">
 
           {/* ── Settings card ── */}
-          <div className="rounded-2xl p-6 space-y-6" style={metalPanel}>
-            <h2 className="font-bold text-base text-white">{ar ? "إعدادات اللعبة" : "Game Settings"}</h2>
+          <div className="rounded-2xl p-6 space-y-6 bg-white border-2 border-[hsl(var(--nb-border))] shadow-[4px_4px_0_0_hsl(var(--nb-border))]">
+            <h2 className="font-semibold text-[15px] text-[#3F5A63]">{ar ? "إعدادات اللعبة" : "Game Settings"}</h2>
 
-            {/* Mode info blurb */}
-            <div className="rounded-xl p-4 space-y-3 text-sm"
-              style={{ background: "hsl(199 30% 9%)", border: "1.5px solid hsl(199 28% 18%)" }}>
+            {/* Mode rules */}
+            <div className="rounded-xl p-4 space-y-3 text-sm bg-[hsl(var(--background))] border border-black/[0.06]">
               {mode === "crypto_rush" && (
                 <>
-                  <div className="flex items-center gap-2.5" style={{ color: "hsl(199 25% 67%)" }}>
-                    <Zap className="h-4 w-4 shrink-0" style={{ color: modeColor }} />
+                  <div className="flex items-center gap-2.5 text-black/65">
+                    <Zap className="h-4 w-4 shrink-0" style={{ color: selectedAccent }} />
                     {ar ? "أجب على الأسئلة واكسب كريبتو" : "Answer questions and earn crypto"}
                   </div>
-                  <div className="flex items-center gap-2.5" style={{ color: "hsl(199 25% 67%)" }}>
-                    <Trophy className="h-4 w-4 shrink-0 text-amber-400" />
+                  <div className="flex items-center gap-2.5 text-black/65">
+                    <Trophy className="h-4 w-4 shrink-0 text-[#C8783A]" />
                     {ar ? "أعلى رصيد عند انتهاء الوقت يفوز" : "Highest balance when time runs out wins"}
                   </div>
                 </>
               )}
               {mode === "dodgeball" && (
                 <>
-                  <div className="flex items-center gap-2.5" style={{ color: "hsl(199 25% 67%)" }}>
-                    <Heart className="h-4 w-4 shrink-0 text-red-400" />
+                  <div className="flex items-center gap-2.5 text-black/65">
+                    <Heart className="h-4 w-4 shrink-0 text-[#FF8254]" />
                     {ar ? "كل لاعب يبدأ بحياة واحدة" : "Each player starts with 1 life"}
                   </div>
-                  <div className="flex items-center gap-2.5" style={{ color: "hsl(199 25% 67%)" }}>
-                    <Skull className="h-4 w-4 shrink-0" style={{ color: "hsl(199 25% 58%)" }} />
+                  <div className="flex items-center gap-2.5 text-black/65">
+                    <Skull className="h-4 w-4 shrink-0 text-black/40" />
                     {ar ? "إجابة خاطئة = تُحذف" : "Wrong answer = eliminated"}
                   </div>
-                  <div className="flex items-center gap-2.5" style={{ color: "hsl(199 25% 67%)" }}>
-                    <Trophy className="h-4 w-4 shrink-0 text-amber-400" />
+                  <div className="flex items-center gap-2.5 text-black/65">
+                    <Trophy className="h-4 w-4 shrink-0 text-[#C8783A]" />
                     {ar ? "آخر لاعب يفوز" : "Last player standing wins"}
                   </div>
                 </>
               )}
               {mode === "hotpotato" && (
                 <>
-                  <div className="flex items-center gap-2.5" style={{ color: "hsl(199 25% 67%)" }}>
-                    <Timer className="h-4 w-4 shrink-0" style={{ color: modeColor }} />
+                  <div className="flex items-center gap-2.5 text-black/65">
+                    <Timer className="h-4 w-4 shrink-0" style={{ color: selectedAccent }} />
                     {ar ? "قنبلة تنتقل بين اللاعبين — أجب صح لتمررها" : "A bomb passes between players — answer right to pass it"}
                   </div>
-                  <div className="flex items-center gap-2.5" style={{ color: "hsl(199 25% 67%)" }}>
-                    <Zap className="h-4 w-4 shrink-0" style={{ color: modeColor }} />
+                  <div className="flex items-center gap-2.5 text-black/65">
+                    <Zap className="h-4 w-4 shrink-0" style={{ color: selectedAccent }} />
                     {ar ? "من يحملها عند الانفجار تُصفّر نقاطه" : "Whoever holds it on explosion loses their score"}
                   </div>
                 </>
               )}
               {mode === "lavafloor" && (
                 <>
-                  <div className="flex items-center gap-2.5" style={{ color: "hsl(199 25% 67%)" }}>
-                    <Flame className="h-4 w-4 shrink-0 text-orange-500" />
+                  <div className="flex items-center gap-2.5 text-black/65">
+                    <Flame className="h-4 w-4 shrink-0" style={{ color: selectedAccent }} />
                     {ar ? "الحمم ترتفع — أجيبوا صح لإبطائها" : "Lava rises — answer correctly to slow it"}
                   </div>
-                  <div className="flex items-center gap-2.5" style={{ color: "hsl(199 25% 67%)" }}>
-                    <Trophy className="h-4 w-4 shrink-0 text-amber-400" />
+                  <div className="flex items-center gap-2.5 text-black/65">
+                    <Trophy className="h-4 w-4 shrink-0 text-[#C8783A]" />
                     {ar ? "اصمدوا حتى ينتهي الوقت لتفوزوا" : "Survive until time runs out to win"}
                   </div>
                 </>
               )}
             </div>
 
-            {/* Duration stepper — shown for all modes except dodgeball */}
             {needsTimer && (
               <div>
-                <p className="text-xs font-semibold mb-3" style={{ color: "hsl(199 25% 52%)" }}>
+                <p className="text-xs font-semibold tracking-widest uppercase text-black/40 mb-3">
                   {ar ? "مدة اللعبة" : "Game Duration"}
                 </p>
-                <MinuteStepper value={minutes} onChange={setMinutes} color={modeColor} />
+                <MinuteStepper value={minutes} onChange={setMinutes} />
               </div>
             )}
-
           </div>
 
           {/* ── Code + lobby card ── */}
-          <div className="rounded-2xl p-6 space-y-5" style={metalPanel}>
-            <h2 className="font-bold text-base text-white">{t("game_code")}</h2>
+          <div className="rounded-2xl p-6 space-y-4 bg-white border-2 border-[hsl(var(--nb-border))] shadow-[4px_4px_0_0_hsl(var(--nb-border))]">
+            <h2 className="font-semibold text-[15px] text-[#3F5A63]">{t("game_code")}</h2>
 
             {/* Code display */}
-            <div className="rounded-2xl p-6 text-center"
-              style={{
-                background: "hsl(199 30% 8%)",
-                border: `2px solid ${modeColor}33`,
-                boxShadow: `inset 0 2px 0 hsl(199 28% 20%), 0 0 40px ${modeColor}18`,
-              }}>
-              <div
-                className="font-mono text-6xl font-black tracking-[0.18em] select-all"
-                style={{
-                  color: modeColor,
-                  textShadow: `0 0 20px ${modeColor}99, 0 0 40px ${modeColor}44`,
-                }}
-              >
+            <div className="rounded-2xl p-6 text-center bg-[#3F5A63] border-2 border-[hsl(var(--nb-border))] shadow-[4px_4px_0_0_hsl(var(--nb-border))]">
+              <div className="font-mono text-5xl font-black tracking-[0.2em] select-all text-white">
                 {code}
               </div>
-              <div className="mt-2 text-xs" style={{ color: "hsl(199 25% 47%)" }}>
+              <div className="mt-2 text-xs text-white/50">
                 {ar ? "شارك مع طلابك" : "Share with your students"}
               </div>
             </div>
 
-            {/* Copy only */}
+            {/* Copy */}
             <button
               onClick={copy}
-              className="w-full flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold transition-all"
-              style={{
-                background: copied ? modeColor + "22" : "hsl(199 28% 16%)",
-                color: copied ? modeColor : "hsl(199 25% 72%)",
-                border: `1.5px solid ${copied ? modeColor + "55" : "hsl(199 28% 26%)"}`,
-              }}
+              className="w-full flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold border-2 border-[hsl(var(--nb-border))] transition-all hover:translate-x-px hover:translate-y-px"
+              style={copied
+                ? { background: "#3F5A63", color: "white", boxShadow: "2px 2px 0 0 hsl(var(--nb-border))" }
+                : { background: "white", color: "#3F5A63", boxShadow: "3px 3px 0 0 hsl(var(--nb-border))" }
+              }
             >
               {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
               {copied ? (ar ? "تم النسخ!" : "Copied!") : t("copy")}
@@ -432,12 +376,7 @@ const HostGame = () => {
             {!sessionId ? (
               <button
                 onClick={openLobby}
-                className="w-full flex items-center justify-center gap-2 rounded-xl py-3.5 text-base font-black transition-all hover:brightness-110 active:scale-[0.98]"
-                style={{
-                  background: `linear-gradient(135deg, ${modeColor}dd, ${modeColor}aa)`,
-                  color: "hsl(199 30% 8%)",
-                  boxShadow: `0 4px 24px ${modeColor}44`,
-                }}
+                className="w-full flex items-center justify-center gap-2 rounded-xl py-3.5 text-base font-bold border-2 border-[hsl(var(--nb-border))] bg-[#FF8254] text-white shadow-[4px_4px_0_0_hsl(var(--nb-border))] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_0_hsl(var(--nb-border))] transition-all active:scale-[0.99]"
               >
                 <Users className="h-5 w-5" />
                 {t("open_lobby")}
@@ -445,33 +384,30 @@ const HostGame = () => {
             ) : (
               <>
                 {/* Student roster */}
-                <div className="rounded-xl p-4"
-                  style={{ background: "hsl(199 30% 8%)", border: "1.5px solid hsl(199 28% 18%)" }}>
+                <div className="rounded-xl p-4 border border-black/[0.08] bg-[hsl(var(--background))]">
                   <div className="flex items-center justify-between mb-3">
-                    <span className="text-sm font-semibold text-white">
+                    <span className="text-sm font-semibold text-[#3F5A63]">
                       {students.length} / {maxStudents}
-                      <span className="ms-1.5 text-xs font-normal" style={{ color: "hsl(199 25% 52%)" }}>
+                      <span className="ms-1.5 text-xs font-normal text-black/40">
                         {t("students_connected")}
                       </span>
                     </span>
-                    <span className="h-2 w-2 rounded-full animate-pulse" style={{ background: modeColor }} />
+                    <span className="h-2 w-2 rounded-full animate-pulse bg-[#FF8254]" />
                   </div>
 
                   {students.length === 0 ? (
-                    <div className="text-sm text-center py-8" style={{ color: "hsl(199 25% 42%)" }}>
+                    <div className="text-sm text-center py-8 text-black/35">
                       {t("waiting_students")}...
                     </div>
                   ) : (
                     <div className="space-y-1.5 max-h-56 overflow-auto">
                       {students.map(s => (
                         <div key={s.id}
-                          className="flex items-center justify-between rounded-lg px-3 py-2 text-sm group"
-                          style={{ background: "hsl(199 28% 14%)", border: "1px solid hsl(199 28% 20%)" }}>
-                          <span className="font-medium text-white truncate">{s.name}</span>
+                          className="flex items-center justify-between rounded-lg px-3 py-2 text-sm group bg-white border border-black/[0.06]">
+                          <span className="font-medium text-[#3F5A63] truncate">{s.name}</span>
                           <button
                             onClick={() => removeStudent(s.id)}
-                            className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded"
-                            style={{ color: "hsl(0 70% 55%)" }}
+                            className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded text-red-400"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                           </button>
@@ -485,12 +421,7 @@ const HostGame = () => {
                 <button
                   onClick={startGame}
                   disabled={students.length < 1}
-                  className="w-full flex items-center justify-center gap-2 rounded-xl py-3.5 text-base font-black transition-all hover:brightness-110 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
-                  style={{
-                    background: `linear-gradient(135deg, ${modeColor}dd, ${modeColor}aa)`,
-                    color: "hsl(199 30% 8%)",
-                    boxShadow: students.length >= 1 ? `0 4px 24px ${modeColor}44` : "none",
-                  }}
+                  className="w-full flex items-center justify-center gap-2 rounded-xl py-3.5 text-base font-bold border-2 border-[hsl(var(--nb-border))] bg-[#3F5A63] text-white shadow-[4px_4px_0_0_hsl(var(--nb-border))] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_0_hsl(var(--nb-border))] transition-all active:scale-[0.99] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-x-0 disabled:hover:translate-y-0 disabled:shadow-[4px_4px_0_0_hsl(var(--nb-border))]"
                 >
                   <Play className="h-5 w-5" />
                   {t("start_game")}
