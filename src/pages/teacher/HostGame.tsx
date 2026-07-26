@@ -22,7 +22,7 @@ const MODES: { id: GameMode; icon: React.ReactNode; label: string; labelAr: stri
     labelAr: "كريبتو رَش",
     desc: "Answer questions, earn crypto, hack rivals",
     descAr: "أجب على الأسئلة، اكسب كريبتو، اخترق منافسيك",
-    accent: "#FF8254",
+    accent: "#3a9e6e",
     num: "01",
   },
   {
@@ -279,57 +279,57 @@ const HostGame = () => {
           <div className="rounded-2xl p-6 space-y-6 bg-white border-2 border-[hsl(var(--nb-border))] shadow-[4px_4px_0_0_hsl(var(--nb-border))]">
             <h2 className="font-semibold text-[15px] text-[#3F5A63]">{ar ? "إعدادات اللعبة" : "Game Settings"}</h2>
 
-            {/* Mode rules */}
-            <div className="rounded-xl p-4 space-y-3 text-sm bg-[hsl(var(--background))] border border-black/[0.06]">
+            {/* Mode description */}
+            <div className="rounded-xl p-4 text-sm bg-[hsl(var(--background))] border border-black/[0.06] space-y-3">
               {mode === "crypto_rush" && (
                 <>
-                  <div className="flex items-center gap-2.5 text-black/65">
-                    <Zap className="h-4 w-4 shrink-0" style={{ color: selectedAccent }} />
-                    {ar ? "أجب على الأسئلة واكسب كريبتو" : "Answer questions and earn crypto"}
-                  </div>
-                  <div className="flex items-center gap-2.5 text-black/65">
+                  <p className="text-black/65 leading-relaxed">
+                    {ar
+                      ? "كل طالب يبدأ برصيد صفر ويكسب عملات كريبتو مقابل كل إجابة صحيحة. يمكن للطلاب اختراق منافسيهم وسرقة جزء من رصيدهم."
+                      : "Every student starts at zero and earns crypto for each correct answer. They can also hack rivals to steal part of their balance."}
+                  </p>
+                  <div className="flex items-center gap-2 text-black/45">
                     <Trophy className="h-4 w-4 shrink-0 text-[#C8783A]" />
-                    {ar ? "أعلى رصيد عند انتهاء الوقت يفوز" : "Highest balance when time runs out wins"}
+                    <span>{ar ? "أعلى رصيد عند انتهاء الوقت يفوز" : "Highest balance when time runs out wins"}</span>
                   </div>
                 </>
               )}
               {mode === "dodgeball" && (
                 <>
-                  <div className="flex items-center gap-2.5 text-black/65">
-                    <Heart className="h-4 w-4 shrink-0 text-[#FF8254]" />
-                    {ar ? "كل لاعب يبدأ بحياة واحدة" : "Each player starts with 1 life"}
-                  </div>
-                  <div className="flex items-center gap-2.5 text-black/65">
-                    <Skull className="h-4 w-4 shrink-0 text-black/40" />
-                    {ar ? "إجابة خاطئة = تُحذف" : "Wrong answer = eliminated"}
-                  </div>
-                  <div className="flex items-center gap-2.5 text-black/65">
+                  <p className="text-black/65 leading-relaxed">
+                    {ar
+                      ? "كل طالب يدخل بحياة واحدة فقط. كل إجابة خاطئة تُحذفه من الميدان. المتبقون يواصلون حتى يبقى آخر واحد."
+                      : "Each student gets one life. A wrong answer knocks them out. Survivors keep going until only one remains standing."}
+                  </p>
+                  <div className="flex items-center gap-2 text-black/45">
                     <Trophy className="h-4 w-4 shrink-0 text-[#C8783A]" />
-                    {ar ? "آخر لاعب يفوز" : "Last player standing wins"}
+                    <span>{ar ? "آخر لاعب يبقى يفوز" : "Last player standing wins"}</span>
                   </div>
                 </>
               )}
               {mode === "hotpotato" && (
                 <>
-                  <div className="flex items-center gap-2.5 text-black/65">
+                  <p className="text-black/65 leading-relaxed">
+                    {ar
+                      ? "قنبلة موقوتة تنتقل بين الطلاب. من يجيب صح يمررها لغيره، ومن يجيب خطأ يحتفظ بها. عند الانفجار يخسر من يحملها كل نقاطه."
+                      : "A live bomb passes between students. Answer correctly to pass it on, answer wrong and you keep it. When it explodes, whoever's holding it loses all their points."}
+                  </p>
+                  <div className="flex items-center gap-2 text-black/45">
                     <Timer className="h-4 w-4 shrink-0" style={{ color: selectedAccent }} />
-                    {ar ? "قنبلة تنتقل بين اللاعبين — أجب صح لتمررها" : "A bomb passes between players — answer right to pass it"}
-                  </div>
-                  <div className="flex items-center gap-2.5 text-black/65">
-                    <Zap className="h-4 w-4 shrink-0" style={{ color: selectedAccent }} />
-                    {ar ? "من يحملها عند الانفجار تُصفّر نقاطه" : "Whoever holds it on explosion loses their score"}
+                    <span>{ar ? "أعلى نقاط في النهاية يفوز" : "Most points at the end wins"}</span>
                   </div>
                 </>
               )}
               {mode === "lavafloor" && (
                 <>
-                  <div className="flex items-center gap-2.5 text-black/65">
+                  <p className="text-black/65 leading-relaxed">
+                    {ar
+                      ? "الفصل كله يلعب معاً ضد الحمم. كل إجابة صحيحة تُبطئ ارتفاع الحمم، وكل إجابة خاطئة تُسرّعها. عليهم التعاون للصمود حتى انتهاء الوقت."
+                      : "The whole class plays together against the rising lava. Correct answers slow it down, wrong answers speed it up. Cooperate to survive until time runs out."}
+                  </p>
+                  <div className="flex items-center gap-2 text-black/45">
                     <Flame className="h-4 w-4 shrink-0" style={{ color: selectedAccent }} />
-                    {ar ? "الحمم ترتفع — أجيبوا صح لإبطائها" : "Lava rises — answer correctly to slow it"}
-                  </div>
-                  <div className="flex items-center gap-2.5 text-black/65">
-                    <Trophy className="h-4 w-4 shrink-0 text-[#C8783A]" />
-                    {ar ? "اصمدوا حتى ينتهي الوقت لتفوزوا" : "Survive until time runs out to win"}
+                    <span>{ar ? "اصمدوا معاً حتى النهاية" : "Survive together to the end"}</span>
                   </div>
                 </>
               )}
