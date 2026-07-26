@@ -350,11 +350,11 @@ const HostGame = () => {
             <h2 className="font-semibold text-[15px] text-[#3F5A63]">{t("game_code")}</h2>
 
             {/* Code display */}
-            <div className="rounded-2xl p-6 text-center bg-[#3F5A63] border-2 border-[hsl(var(--nb-border))] shadow-[4px_4px_0_0_hsl(var(--nb-border))]">
-              <div className="font-mono text-5xl font-black tracking-[0.2em] select-all text-white">
+            <div className="rounded-2xl p-6 text-center bg-white border-2 border-[hsl(var(--nb-border))] shadow-[4px_4px_0_0_hsl(var(--nb-border))]">
+              <div className="font-mono text-5xl font-black tracking-[0.2em] select-all text-[#3F5A63]">
                 {code}
               </div>
-              <div className="mt-2 text-xs text-white/50">
+              <div className="mt-2 text-xs text-black/35">
                 {ar ? "شارك مع طلابك" : "Share with your students"}
               </div>
             </div>
