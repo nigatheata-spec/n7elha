@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Trophy } from "lucide-react";
@@ -19,6 +21,7 @@ const fmt = (n: number) => n.toLocaleString();
 const Game = () => {
   const { sessionId } = useParams();
   const navigate = useNavigate();
+  const { i18n } = useTranslation();
   const [session, setSession] = useState<any>(null);
   const [questions, setQuestions] = useState<Q[]>([]);
   const [students, setStudents] = useState<any[]>([]);
@@ -106,6 +109,10 @@ const Game = () => {
     else if (session.status === "finished") setPhase("done");
     else if (session.status === "running") {
       setPhase(prev => prev === "waiting" ? "question" : prev);
+    } else if (session.status === "cancelled") {
+      const ar = (session.settings?.lang ?? i18n.language) === "ar";
+      toast.error(ar ? "أغلق المعلّم الردهة" : "The teacher closed the lobby");
+      navigate("/play");
     }
   }, [session?.status]);
 
@@ -180,6 +187,8 @@ const Game = () => {
 
   if (!session) return <div className="theme-game terminal-screen min-h-screen text-foreground flex items-center justify-center font-mono">...</div>;
 
+  const ar = session.settings?.lang === "ar";
+
   // Route to mode-specific game
   if (session.settings?.mode === "dodgeball" && studentId) {
     return <DodgeballGame sessionId={sessionId!} studentId={studentId} />;
@@ -222,10 +231,10 @@ const Game = () => {
                   className="font-mono text-2xl md:text-3xl font-bold mb-2"
                   style={{ color: "hsl(120 100% 60%)", textShadow: "0 0 20px hsl(120 100% 55% / 0.5)" }}
                 >
-                  {"> awaiting handshake"}<span className="animate-pulse">█</span>
+                  {ar ? "> بانتظار المصافحة" : "> awaiting handshake"}<span className="animate-pulse">█</span>
                 </div>
                 <p className="font-mono text-xs md:text-sm" style={{ color: "hsl(120 40% 45%)" }}>
-                  بانتظار المعلّم لبدء الجلسة
+                  {ar ? "بانتظار المعلّم لبدء الجلسة" : "Waiting for the teacher to start"}
                 </p>
               </div>
 
@@ -238,7 +247,7 @@ const Game = () => {
                   color: "hsl(120 60% 50%)",
                 }}
               >
-                <span>HACKERS_ONLINE</span>
+                <span>{ar ? "المتصلون" : "HACKERS_ONLINE"}</span>
                 <span className="flex items-center gap-2">
                   <span className="h-2 w-2 rounded-full animate-pulse" style={{ background: "hsl(120 100% 55%)" }} />
                   <span className="font-bold tabular-nums" style={{ color: "hsl(120 100% 60%)" }}>
@@ -276,7 +285,7 @@ const Game = () => {
                         </div>
                         {isMe && (
                           <div className="font-mono text-[9px]" style={{ color: "hsl(120 60% 38%)" }}>
-                            [ you ]
+                            {ar ? "[ أنت ]" : "[ you ]"}
                           </div>
                         )}
                       </div>
@@ -305,7 +314,7 @@ const Game = () => {
                       className="font-mono text-xs"
                       style={{ color: "hsl(120 40% 25%)" }}
                     >
-                      waiting...
+                      {ar ? "بالانتظار..." : "waiting..."}
                     </div>
                   </div>
                 ))}
@@ -316,7 +325,7 @@ const Game = () => {
                 className="mt-6 font-mono text-[10px] text-center animate-pulse"
                 style={{ color: "hsl(120 40% 35%)" }}
               >
-                [ press start on teacher's screen to begin ]
+                {ar ? "[ اضغط ابدأ على شاشة المعلّم للبدء ]" : "[ press start on teacher's screen to begin ]"}
               </div>
             </div>
           );
@@ -335,9 +344,9 @@ const Game = () => {
               {/* boot terminal log */}
               <div className="space-y-1 text-xs mb-5" style={{ color: "hsl(120 60% 38%)" }}>
                 <div>$ session.disconnect --code={session.code}</div>
-                <div>{">"} flushing wallets...</div>
-                <div>{">"} computing leaderboard...</div>
-                <div style={{ color: "hsl(120 100% 60%)" }}>{">"} CONNECTION_TERMINATED</div>
+                <div>{">"} {ar ? "تفريغ المحافظ..." : "flushing wallets..."}</div>
+                <div>{">"} {ar ? "حساب الترتيب..." : "computing leaderboard..."}</div>
+                <div style={{ color: "hsl(120 100% 60%)" }}>{">"} {ar ? "تم إنهاء الاتصال" : "CONNECTION_TERMINATED"}</div>
               </div>
 
               {/* status badge */}
@@ -351,28 +360,36 @@ const Game = () => {
                     textShadow: isTop ? "0 0 12px hsl(120 100% 55% / 0.5)" : "none",
                   }}
                 >
-                  {isTop ? "[ TOP_HACKER ]" : `[ RANK_${String(myRank).padStart(2, "0")} ]`}
+                  {isTop ? (ar ? "[ أفضل مخترق ]" : "[ TOP_HACKER ]") : (ar ? `[ الترتيب #${myRank} ]` : `[ RANK_${String(myRank).padStart(2, "0")} ]`)}
                 </div>
               </div>
 
-              {/* main ascii box: balance display */}
-              <pre
-                className="text-xs md:text-sm leading-tight overflow-x-auto whitespace-pre mb-4"
-                style={{ color: "hsl(120 100% 55%)" }}
+              {/* balance display */}
+              <div
+                className="rounded-lg overflow-hidden mb-4 font-mono text-xs md:text-sm"
+                style={{ border: "1px solid hsl(120 100% 55% / 0.4)", color: "hsl(120 100% 55%)" }}
               >
-{`╔══════════════════════════════════════════╗
-║  WALLET_BAL    ₿ ${myBal.toLocaleString().padStart(18, " ")}  ║
-║  YOUR_RANK     ${`#${myRank}`.padStart(20, " ")}  ║
-║  HACKERS       ${`${total}`.padStart(20, " ")}  ║
-╚══════════════════════════════════════════╝`}
-              </pre>
+                {[
+                  { label: ar ? "الرصيد" : "WALLET_BAL", value: `₿ ${myBal.toLocaleString()}` },
+                  { label: ar ? "ترتيبك" : "YOUR_RANK", value: `#${myRank}` },
+                  { label: ar ? "المخترقون" : "HACKERS", value: `${total}` },
+                ].map((row, i) => (
+                  <div key={row.label}
+                    className="flex items-center justify-between px-4 py-2"
+                    style={{ borderTop: i === 0 ? "none" : "1px solid hsl(120 100% 55% / 0.18)" }}
+                  >
+                    <span style={{ color: "hsl(120 60% 45%)" }}>{row.label}</span>
+                    <span className="font-bold">{row.value}</span>
+                  </div>
+                ))}
+              </div>
 
               {/* stats row */}
               <div className="grid grid-cols-3 gap-2 mb-5 text-xs">
                 {[
-                  { label: "correct", value: me?.correct_answers ?? 0 },
-                  { label: "answered", value: me?.total_answers ?? 0 },
-                  { label: "of_pool", value: `${Math.round((myBal / Math.max(totalLoot, 1)) * 100)}%` },
+                  { label: ar ? "صحيحة" : "correct", value: me?.correct_answers ?? 0 },
+                  { label: ar ? "مجاوَبة" : "answered", value: me?.total_answers ?? 0 },
+                  { label: ar ? "من المجموع" : "of_pool", value: `${Math.round((myBal / Math.max(totalLoot, 1)) * 100)}%` },
                 ].map(s => (
                   <div
                     key={s.label}
@@ -383,7 +400,7 @@ const Game = () => {
                     }}
                   >
                     <div className="text-[10px] tracking-widest" style={{ color: "hsl(120 60% 38%)" }}>
-                      {s.label.toUpperCase().replace("_", "_")}
+                      {ar ? s.label : s.label.toUpperCase()}
                     </div>
                     <div className="text-base font-bold tabular-nums" style={{ color: "hsl(120 100% 65%)" }}>
                       {s.value}
@@ -395,7 +412,7 @@ const Game = () => {
               {/* leaderboard as tail output */}
               <div className="mb-5">
                 <div className="text-xs mb-2 tracking-widest" style={{ color: "hsl(120 60% 38%)" }}>
-                  $ tail leaderboard.log
+                  {ar ? "$ عرض الترتيب" : "$ tail leaderboard.log"}
                 </div>
                 <div className="space-y-0.5">
                   {top.map((s: any, i: number) => {
@@ -448,7 +465,7 @@ const Game = () => {
                 onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "hsl(120 100% 55% / 0.20)"; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "hsl(120 100% 55% / 0.10)"; }}
               >
-                [ disconnect ]
+                {ar ? "[ قطع الاتصال ]" : "[ disconnect ]"}
               </button>
             </div>
           );
@@ -497,7 +514,7 @@ const Game = () => {
         )}
 
         {phase === "output" && me && (
-          <OutputCards onPick={onOutput} picked={output} />
+          <OutputCards onPick={onOutput} picked={output} ar={ar} />
         )}
 
         {phase === "hacking" && me && (
@@ -506,12 +523,13 @@ const Game = () => {
             students={students.filter(s => s.id !== me.id)}
             sessionId={sessionId!}
             onDone={() => { setQSeed(s => s + 1); setPhase("question"); }}
+            ar={ar}
           />
         )}
       </main>
 
       {phase === "breach" && me && (
-        <BreachModal me={me} onDone={async () => {
+        <BreachModal me={me} ar={ar} onDone={async () => {
           await supabase.from("game_students").update({ is_breached: false }).eq("id", me.id);
           setQSeed(s => s + 1); setPhase("question");
         }} />

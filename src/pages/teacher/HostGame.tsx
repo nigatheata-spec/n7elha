@@ -114,7 +114,7 @@ const HostGame = () => {
 
   const [quiz, setQuiz] = useState<any>(null);
   const [mode, setMode] = useState<GameMode | null>(null);
-  const [code] = useState(genCode());
+  const [code, setCode] = useState(genCode());
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [students, setStudents] = useState<any[]>([]);
   const [copied, setCopied] = useState(false);
@@ -152,11 +152,19 @@ const HostGame = () => {
         settings.minutes = minutes;
         settings.timePerQ = 20;
       }
-      const { data, error } = await supabase.from("game_sessions")
-        .insert({ teacher_id: user.id, quiz_id: quizId, code, status: "lobby", settings }).select().single();
+      settings.lang = i18n.language;
+      let tryCode = code;
+      let data, error;
+      for (let attempt = 0; attempt < 5; attempt++) {
+        ({ data, error } = await supabase.from("game_sessions")
+          .insert({ teacher_id: user.id, quiz_id: quizId, code: tryCode, status: "lobby", settings }).select().single());
+        if (!error || error.code !== "23505") break; // 23505 = unique_violation — retry with a fresh code
+        tryCode = genCode();
+      }
       if (error) throw error;
+      setCode(tryCode);
       setSessionId(data.id);
-      toast.success("Lobby opened");
+      toast.success(ar ? "تم فتح الردهة" : "Lobby opened");
     } catch (e: any) { toast.error(e.message); }
   };
 
@@ -174,6 +182,15 @@ const HostGame = () => {
       current_question_started_at: new Date().toISOString(),
     }).eq("id", sessionId);
     navigate(`/app/games/${sessionId}/monitor`);
+  };
+
+  const cancelLobby = async () => {
+    if (!sessionId) return;
+    await supabase.from("game_sessions").update({ status: "cancelled" }).eq("id", sessionId);
+    setSessionId(null);
+    setStudents([]);
+    setCode(genCode()); // the old code is now taken forever by the cancelled row — never reuse it
+    toast.success(ar ? "تم إغلاق الردهة" : "Lobby cancelled");
   };
 
   const removeStudent = async (id: string) => {
@@ -416,6 +433,14 @@ const HostGame = () => {
                     </div>
                   )}
                 </div>
+
+                {/* Cancel lobby */}
+                <button
+                  onClick={cancelLobby}
+                  className="w-full flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold border-2 border-[hsl(var(--nb-border))] bg-white text-red-500 shadow-[3px_3px_0_0_hsl(var(--nb-border))] hover:translate-x-px hover:translate-y-px hover:shadow-[2px_2px_0_0_hsl(var(--nb-border))] transition-all"
+                >
+                  {ar ? "إغلاق الردهة" : "Cancel lobby"}
+                </button>
 
                 {/* Start game */}
                 <button

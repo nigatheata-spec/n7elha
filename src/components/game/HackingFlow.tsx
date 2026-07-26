@@ -26,9 +26,9 @@ function pickWeightedTarget(students: any[]) {
 }
 
 export const HackingFlow = ({
-  me, students, sessionId, onDone,
+  me, students, sessionId, onDone, ar,
 }: {
-  me: any; students: any[]; sessionId: string; onDone: () => void;
+  me: any; students: any[]; sessionId: string; onDone: () => void; ar?: boolean;
   passwords?: string[]; // unused now — passwords come from real students
 }) => {
   const [target, setTarget] = useState<any | null>(null);
@@ -96,10 +96,10 @@ export const HackingFlow = ({
   if (students.length === 0) {
     return (
       <div className="min-h-[calc(100dvh-56px)] pt-8 font-mono text-primary">
-        <div className="text-lg md:text-2xl font-black">لا يوجد هدف متاح</div>
-        <div className="mt-3 text-sm text-muted-foreground">&gt; انتظر دخول لاعب آخر للنظام</div>
+        <div className="text-lg md:text-2xl font-black">{ar ? "لا يوجد هدف متاح" : "No target available"}</div>
+        <div className="mt-3 text-sm text-muted-foreground">&gt; {ar ? "انتظر دخول لاعب آخر للنظام" : "waiting for another player to join..."}</div>
         <button onClick={onDone} className="mt-8 border border-primary/70 px-4 py-2 text-sm text-primary hover:bg-primary/15">
-          رجوع
+          {ar ? "رجوع" : "Back"}
         </button>
       </div>
     );
@@ -108,7 +108,7 @@ export const HackingFlow = ({
   if (phase === "intro" || !target) {
     return (
       <div className="min-h-[calc(100dvh-56px)] pt-8 font-mono text-primary">
-        <div className="text-sm text-muted-foreground">&gt; اختيار هدف عشوائي...</div>
+        <div className="text-sm text-muted-foreground">&gt; {ar ? "اختيار هدف عشوائي..." : "picking random target..."}</div>
         <div className="mt-3 text-3xl md:text-5xl font-black text-primary text-glow-cyan animate-pulse">
           {target ? target.name : "..."}
         </div>
@@ -121,16 +121,16 @@ export const HackingFlow = ({
       <div className="text-center py-16 font-mono">
         {result.ok ? (
           <>
-            <div className="text-3xl text-success animate-pulse">✓ تم الاختراق</div>
-            <div className="mt-3 text-lg text-muted-foreground">الهدف: {target.name}</div>
+            <div className="text-3xl text-success animate-pulse">{ar ? "✓ تم الاختراق" : "✓ BREACH SUCCESSFUL"}</div>
+            <div className="mt-3 text-lg text-muted-foreground">{ar ? "الهدف:" : "Target:"} {target.name}</div>
             <div className="mt-4 text-3xl" style={{ color: "hsl(51 100% 50%)" }}>
               +{fmt(result.transferred)} <Coins className="inline h-6 w-6" />
             </div>
           </>
         ) : (
           <>
-            <div className="text-3xl text-destructive animate-pulse">✗ فشل الاختراق</div>
-            <div className="mt-3 text-lg text-muted-foreground">كلمة المرور خاطئة</div>
+            <div className="text-3xl text-destructive animate-pulse">{ar ? "✗ فشل الاختراق" : "✗ BREACH FAILED"}</div>
+            <div className="mt-3 text-lg text-muted-foreground">{ar ? "كلمة المرور خاطئة" : "Wrong password"}</div>
           </>
         )}
       </div>
@@ -141,12 +141,12 @@ export const HackingFlow = ({
   return (
     <div className="min-h-[calc(100dvh-56px)] pt-5 md:pt-8 font-mono text-primary">
       <div className="mb-6">
-        <div className="text-2xl md:text-4xl font-black text-primary text-glow-cyan">HACKING {target.name}</div>
+        <div className="text-2xl md:text-4xl font-black text-primary text-glow-cyan">{ar ? `اختراق ${target.name}` : `HACKING ${target.name}`}</div>
         <div className="text-sm mt-1" style={{ color: "hsl(51 100% 50%)" }}>
-          الرصيد: {fmt(target.crypto || 0)}
+          {ar ? "الرصيد:" : "Balance:"} {fmt(target.crypto || 0)}
         </div>
         <div className="mt-4 text-sm md:text-base text-muted-foreground">
-          {"> اختر كلمة المرور الصحيحة"}
+          {ar ? "> اختر كلمة المرور الصحيحة" : "> choose the correct password"}
         </div>
       </div>
       <div className="flex flex-wrap gap-2 md:gap-4">
@@ -165,7 +165,7 @@ export const HackingFlow = ({
         ))}
       </div>
       <div className="mt-6 text-center">
-        <Button variant="ghost" onClick={onDone} className="text-muted-foreground">تخطي</Button>
+        <Button variant="ghost" onClick={onDone} className="text-muted-foreground">{ar ? "تخطي" : "Skip"}</Button>
       </div>
     </div>
   );

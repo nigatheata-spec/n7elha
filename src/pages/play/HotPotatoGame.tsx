@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -51,6 +53,7 @@ interface Props { sessionId: string; studentId: string; }
 
 const HotPotatoGame = ({ sessionId, studentId }: Props) => {
   const navigate = useNavigate();
+  const { i18n } = useTranslation();
   const [session, setSession]       = useState<any>(null);
   const [questions, setQuestions]   = useState<Q[]>([]);
   const [students, setStudents]     = useState<any[]>([]);
@@ -134,6 +137,11 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
     else if (session.status === "finished") setPhase("done");
     else if (session.status === "running")
       setPhase(prev => prev === "waiting" ? "question" : prev);
+    else if (session.status === "cancelled") {
+      const arLang = (session.settings?.lang ?? i18n.language) === "ar";
+      toast.error(arLang ? "أغلق المعلّم الردهة" : "The teacher closed the lobby");
+      navigate("/play");
+    }
   }, [session?.status]);
 
   // Play game-over fanfare once when teacher ends the session
@@ -282,6 +290,7 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
 
   const fmt = (n: number) => n.toLocaleString();
   const points = me?.crypto ?? 0;
+  const ar = (session?.settings?.lang ?? i18n.language) === "ar";
 
   const dangerAlpha  = hasBomb ? ((1 - fusePct / 100) * 0.45).toFixed(2) : "0";
   const dangerSpread = hasBomb ? 50 + (1 - fusePct / 100) * 80 : 0;
@@ -336,7 +345,7 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
               {/* header */}
               <div className="text-center mb-5">
                 <BombIcon className="h-10 w-10 mx-auto mb-1.5" style={{ color: "hsl(210 10% 55%)" }} />
-                <h1 className="text-2xl font-black tracking-widest" style={{ color: "hsl(210 10% 82%)" }}>PASS IT</h1>
+                <h1 className="text-2xl font-black tracking-widest" style={{ color: "hsl(210 10% 82%)" }}>{ar ? "مرّرها" : "PASS IT"}</h1>
                 {session?.quizzes?.title && (
                   <p className="text-muted-foreground/60 text-xs font-mono mt-1 truncate max-w-[240px] mx-auto">{session.quizzes.title}</p>
                 )}
@@ -351,7 +360,7 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
                   color: "hsl(210 10% 55%)",
                 }}
               >
-                <span className="tracking-widest">PLAYERS_ONLINE</span>
+                <span className="tracking-widest">{ar ? "اللاعبون المتصلون" : "PLAYERS_ONLINE"}</span>
                 <span className="flex items-center gap-2">
                   <span className="h-2 w-2 rounded-full animate-pulse" style={{ background: "hsl(210 10% 70%)" }} />
                   <span className="font-bold tabular-nums text-sm" style={{ color: "hsl(210 10% 85%)" }}>
@@ -381,7 +390,7 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
                           {s.name}
                         </div>
                         {isMe && (
-                          <div className="font-mono text-[9px]" style={{ color: "hsl(210 10% 55%)" }}>أنت</div>
+                          <div className="font-mono text-[9px]" style={{ color: "hsl(210 10% 55%)" }}>{ar ? "أنت" : "you"}</div>
                         )}
                       </div>
                     </div>
@@ -400,13 +409,13 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
                       style={{ background: "hsl(210 18% 14%)", color: "hsl(210 10% 35%)" }}>
                       ?
                     </div>
-                    <div className="font-mono text-xs" style={{ color: "hsl(210 10% 30%)" }}>waiting...</div>
+                    <div className="font-mono text-xs" style={{ color: "hsl(210 10% 30%)" }}>{ar ? "بالانتظار..." : "waiting..."}</div>
                   </div>
                 ))}
               </div>
 
               <p className="mt-6 font-mono text-xs text-center animate-pulse" style={{ color: "hsl(210 10% 45%)" }}>
-                {">"} بانتظار المعلّم...
+                {ar ? "> بانتظار المعلّم..." : "> waiting for the teacher..."}
               </p>
             </div>
           )}
@@ -419,7 +428,9 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
             const exploded = (me as any)?.exploded_count ?? 0;
             const defused  = me?.correct_answers ?? 0;
             const survived = rank <= 3;
-            const verdict  = rank === 1 ? "MISSION ACCOMPLISHED" : survived ? "DEFUSAL TEAM" : "DETONATION SITE";
+            const verdict  = ar
+              ? (rank === 1 ? "المهمة أُنجزت" : survived ? "فريق التفكيك" : "موقع الانفجار")
+              : (rank === 1 ? "MISSION ACCOMPLISHED" : survived ? "DEFUSAL TEAM" : "DETONATION SITE");
 
             return (
               <div className="max-w-md mx-auto py-6 px-3 flex flex-col gap-4 font-mono">
@@ -445,7 +456,7 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
                       className="text-[10px] tracking-[0.4em] mb-2"
                       style={{ color: "hsl(210 15% 60%)" }}
                     >
-                      INCIDENT_REPORT
+                      {ar ? "تقرير الحادثة" : "INCIDENT_REPORT"}
                     </div>
                     <div className="flex items-center justify-center gap-3 mb-2">
                       <BombIcon
@@ -465,7 +476,9 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
                           {verdict}
                         </div>
                         <div className="text-xs tracking-widest mt-0.5" style={{ color: "hsl(210 12% 50%)" }}>
-                          {rank === 1 ? "أنت البطل" : survived ? `الرتبة #${rank}` : `الرتبة #${rank}`}
+                          {rank === 1
+                            ? (ar ? "أنت البطل" : "You're the hero")
+                            : (ar ? `الرتبة #${rank}` : `Rank #${rank}`)}
                         </div>
                       </div>
                     </div>
@@ -475,9 +488,9 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
                 {/* Stat row — like a clipboard */}
                 <div className="grid grid-cols-3 gap-2">
                   {[
-                    { label: "BOMBS_DEFUSED", value: defused, color: "hsl(142 65% 55%)" },
-                    { label: "DETONATIONS",   value: exploded, color: "hsl(0 70% 60%)" },
-                    { label: "SCORE",         value: fmt(points), color: "hsl(48 90% 60%)" },
+                    { label: ar ? "قنابل مفكَّكة" : "BOMBS_DEFUSED", value: defused, color: "hsl(142 65% 55%)" },
+                    { label: ar ? "انفجارات" : "DETONATIONS",   value: exploded, color: "hsl(0 70% 60%)" },
+                    { label: ar ? "النقاط" : "SCORE",         value: fmt(points), color: "hsl(48 90% 60%)" },
                   ].map(s => (
                     <div
                       key={s.label}
@@ -493,7 +506,7 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
                 {/* Squad leaderboard */}
                 <div className="space-y-1">
                   <div className="text-[10px] tracking-[0.3em] uppercase pb-1" style={{ color: "hsl(210 15% 50%)" }}>
-                    ━ SQUAD_DEBRIEF ━
+                    {ar ? "━ تقييم الفريق ━" : "━ SQUAD_DEBRIEF ━"}
                   </div>
                   {top5.map((s, i) => {
                     const isMe = s.id === studentId;
@@ -533,7 +546,7 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
                   className="mt-2 tracking-widest font-black"
                   style={{ background: "hsl(210 18% 24%)", color: "hsl(210 10% 90%)" }}
                 >
-                  EXIT
+                  {ar ? "خروج" : "EXIT"}
                 </Button>
               </div>
             );
@@ -543,9 +556,9 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
           {phase === "exploded" && (
             <div className="flex-1 flex flex-col items-center justify-center text-center gap-5 animate-hp-explode">
               <BombIcon className="h-24 w-24" style={{ color: "hsl(0 70% 60%)" }} />
-              <h2 className="text-3xl font-black" style={{ color: "hsl(0 70% 65%)", textShadow: "0 0 20px hsl(0 80% 50% / 0.6)" }}>انفجرت!</h2>
-              <p className="text-muted-foreground text-base">تم تصفير نقاطك</p>
-              <p className="text-muted-foreground/50 text-xs">تعود للعبة الآن...</p>
+              <h2 className="text-3xl font-black" style={{ color: "hsl(0 70% 65%)", textShadow: "0 0 20px hsl(0 80% 50% / 0.6)" }}>{ar ? "انفجرت!" : "You exploded!"}</h2>
+              <p className="text-muted-foreground text-base">{ar ? "تم تصفير نقاطك" : "Your score was reset"}</p>
+              <p className="text-muted-foreground/50 text-xs">{ar ? "تعود للعبة الآن..." : "Back to the game..."}</p>
             </div>
           )}
 
@@ -562,7 +575,7 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
                   transition: "box-shadow 0.5s ease",
                 }}>
                   <BombIcon className={cn("h-5 w-5 shrink-0", fuseMs < 12_000 && "animate-fuse-critical")} style={{ color: fuseColor }} />
-                  <span className="text-sm font-bold flex-1" style={{ color: "hsl(0 60% 72%)" }}>لديك القنبلة</span>
+                  <span className="text-sm font-bold flex-1" style={{ color: "hsl(0 60% 72%)" }}>{ar ? "لديك القنبلة" : "You have the bomb"}</span>
                   <span className="font-mono tabular-nums text-sm font-bold" style={{ color: fuseColor }}>{Math.ceil(fuseMs / 1000)}s</span>
                   {/* Fuse bar */}
                   <div className="absolute bottom-0 inset-x-0 h-[3px] rounded-b-xl overflow-hidden">
@@ -575,7 +588,7 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
               {!hasBomb && bombHolder && phase === "question" && (
                 <div className="relative mb-2 flex items-center gap-2 px-3 py-1.5 rounded-lg" style={metalPanel}>
                   <BombIcon className="h-3.5 w-3.5 shrink-0" style={{ color: "hsl(210 10% 50%)" }} />
-                  <span className="flex-1 truncate text-xs font-mono" style={{ color: "hsl(210 10% 58%)" }}>{bombHolder.name} يحمل القنبلة</span>
+                  <span className="flex-1 truncate text-xs font-mono" style={{ color: "hsl(210 10% 58%)" }}>{ar ? `${bombHolder.name} يحمل القنبلة` : `${bombHolder.name} has the bomb`}</span>
                   <span className="tabular-nums text-xs font-mono font-bold" style={{ color: fuseColor }}>{Math.ceil(fuseMs / 1000)}s</span>
                 </div>
               )}
@@ -632,8 +645,10 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
             <div className="flex-1 flex flex-col pt-4 gap-4 max-w-md mx-auto w-full">
               <div className="text-center">
                 <BombIcon className="h-12 w-12 mx-auto mb-2" style={{ color: fuseColor }} />
-                <h2 className="text-xl font-black" style={{ color: "hsl(210 10% 82%)" }}>مرّر القنبلة!</h2>
-                <p className="text-sm text-muted-foreground mt-1">عندك {passSecsLeft}ث — اختر من تعطيها</p>
+                <h2 className="text-xl font-black" style={{ color: "hsl(210 10% 82%)" }}>{ar ? "مرّر القنبلة!" : "Pass the bomb!"}</h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {ar ? `عندك ${passSecsLeft}ث — اختر من تعطيها` : `You have ${passSecsLeft}s — pick someone to give it to`}
+                </p>
                 <svg className="mx-auto mt-2" width="48" height="48" viewBox="0 0 44 44">
                   <circle cx="22" cy="22" r="20" fill="none" stroke="hsl(210 18% 20%)" strokeWidth="3" />
                   <circle cx="22" cy="22" r="20" fill="none" stroke="hsl(210 10% 60%)" strokeWidth="3"
@@ -650,13 +665,13 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
                     <Avatar name={target.name} size="md" />
                     <div className="flex-1 min-w-0 text-left">
                       <div className="font-bold text-base truncate" style={{ color: "hsl(210 10% 82%)" }}>{target.name}</div>
-                      <div className="text-success/80 text-xs font-mono tabular-nums">{fmt(target.crypto ?? 0)} pts</div>
+                      <div className="text-success/80 text-xs font-mono tabular-nums">{fmt(target.crypto ?? 0)} {ar ? "نقطة" : "pts"}</div>
                     </div>
                     <BombIcon className="h-6 w-6 shrink-0 opacity-40 group-hover:opacity-90 transition-opacity" style={{ color: fuseColor }} />
                   </button>
                 ))}
               </div>
-              <p className="text-center text-xs text-muted-foreground/50">إذا لم تختر — تبقى القنبلة معك</p>
+              <p className="text-center text-xs text-muted-foreground/50">{ar ? "إذا لم تختر — تبقى القنبلة معك" : "If you don't choose — the bomb stays with you"}</p>
             </div>
           )}
 

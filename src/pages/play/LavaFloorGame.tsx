@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { Trophy, Shield, Flame } from "lucide-react";
@@ -48,6 +50,7 @@ interface Props { sessionId: string; studentId: string; }
 
 const LavaFloorGame = ({ sessionId, studentId }: Props) => {
   const navigate = useNavigate();
+  const { i18n } = useTranslation();
   const [session, setSession]         = useState<any>(null);
   const [questions, setQuestions]     = useState<Q[]>([]);
   const [me, setMe]                   = useState<any>(null);
@@ -116,6 +119,11 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
     else if (session.status === "finished")  setPhase("done");
     else if (session.status === "running")
       setPhase(prev => prev === "waiting" ? "question" : prev);
+    else if (session.status === "cancelled") {
+      const arLang = (session.settings?.lang ?? i18n.language) === "ar";
+      toast.error(arLang ? "أغلق المعلّم الردهة" : "The teacher closed the lobby");
+      navigate("/play");
+    }
   }, [session?.status]);
 
   // Play game-over fanfare once when teacher ends the session
@@ -209,6 +217,7 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
   const timerFrac    = timeLeft / duration;
   const timerColor   = timerFrac > 0.5 ? "#e67e22" : timerFrac > 0.25 ? "#e74c3c" : "#ff3322";
   const glowStrength = Math.min(1, lavaPct / 55); // 0→1 as lava rises
+  const ar = (session?.settings?.lang ?? i18n.language) === "ar";
 
   return (
     <div className="theme-lavafloor fixed inset-0 text-foreground overflow-hidden"
@@ -339,7 +348,7 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
           <div className="flex items-center gap-1 text-[10px] font-black tracking-[0.35em] uppercase"
             style={{ color: "hsl(14 100% 65%)", animation: danger ? "heat-flicker 0.7s ease-in-out infinite" : "none", visibility: danger ? "visible" : "hidden" }}>
             <Flame className="h-3 w-3" />
-            {critical ? "CRITICAL" : "DANGER"}
+            {ar ? (critical ? "حرج" : "خطر") : (critical ? "CRITICAL" : "DANGER")}
           </div>
 
           {/* Bricks */}
@@ -371,7 +380,7 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
               {/* header */}
               <div className="text-center mb-5">
                 <div className="text-[10px] tracking-[0.55em] uppercase mb-2" style={{ color: "hsl(14 60% 50%)" }}>
-                  THE FLOOR IS LAVA
+                  {ar ? "الأرضية حمم" : "THE FLOOR IS LAVA"}
                 </div>
                 <div className="relative inline-block">
                   <Avatar name={me?.name ?? "?"} size="xl" />
@@ -394,7 +403,7 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
                   color: "hsl(14 50% 60%)",
                 }}
               >
-                <span className="tracking-widest">SURVIVORS</span>
+                <span className="tracking-widest">{ar ? "الناجون" : "SURVIVORS"}</span>
                 <span className="flex items-center gap-2">
                   <span className="h-2 w-2 rounded-full animate-pulse" style={{ background: "hsl(14 100% 55%)" }} />
                   <span className="font-bold tabular-nums text-sm" style={{ color: "hsl(30 80% 75%)" }}>
@@ -424,7 +433,7 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
                           {s.name}
                         </div>
                         {isMe && (
-                          <div className="font-mono text-[9px]" style={{ color: "hsl(14 80% 65%)" }}>أنت</div>
+                          <div className="font-mono text-[9px]" style={{ color: "hsl(14 80% 65%)" }}>{ar ? "أنت" : "you"}</div>
                         )}
                       </div>
                       {isMe && <Flame className="h-3.5 w-3.5 shrink-0" style={{ color: "hsl(14 100% 65%)" }} />}
@@ -444,13 +453,13 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
                       style={{ background: "hsl(14 50% 18%)", color: "hsl(14 30% 35%)" }}>
                       ?
                     </div>
-                    <div className="font-mono text-xs" style={{ color: "hsl(14 30% 35%)" }}>waiting...</div>
+                    <div className="font-mono text-xs" style={{ color: "hsl(14 30% 35%)" }}>{ar ? "بالانتظار..." : "waiting..."}</div>
                   </div>
                 ))}
               </div>
 
               <p className="mt-6 font-mono text-xs text-center" style={{ color: "hsl(14 50% 50%)", animation: "heat-flicker 2s ease-in-out infinite" }}>
-                {">"} بانتظار المعلّم...
+                {ar ? "> بانتظار المعلّم..." : "> waiting for the teacher..."}
               </p>
             </div>
           )}
@@ -461,14 +470,12 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
             const total   = students.length || 1;
             const top3    = students.slice(0, 3);
             const survived = myRank <= 3;
-            const verdict =
-              myRank === 1 ? "VOLCANO MASTER" :
-              survived ? "ESCAPED THE LAVA" :
-              "CONSUMED BY LAVA";
-            const arabicSub =
-              myRank === 1 ? "تحدّيت الحمم" :
-              survived ? "نجوت من الحريق" :
-              "ابتلعتك الحمم";
+            const verdict = ar
+              ? (myRank === 1 ? "سيد البركان" : survived ? "نجوت من الحمم" : "التهمتك الحمم")
+              : (myRank === 1 ? "VOLCANO MASTER" : survived ? "ESCAPED THE LAVA" : "CONSUMED BY LAVA");
+            const subtitle = ar
+              ? (myRank === 1 ? "تحدّيت الحمم" : survived ? "نجوت من الحريق" : "ابتلعتك الحمم")
+              : (myRank === 1 ? "YOU DEFIED THE LAVA" : survived ? "YOU SURVIVED THE FIRE" : "THE LAVA GOT YOU");
             const rankColor = myRank === 1 ? "hsl(45 100% 58%)"
               : survived    ? "hsl(30 80% 65%)"
               :               "hsl(14 80% 55%)";
@@ -502,7 +509,7 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
                       {verdict}
                     </div>
                     <div className="text-xs mt-1.5 tracking-[0.3em]" style={{ color: "hsl(30 30% 60%)" }}>
-                      {arabicSub.toUpperCase()}
+                      {ar ? subtitle : subtitle.toUpperCase()}
                     </div>
                   </div>
                 </div>
@@ -521,20 +528,20 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
                       #{myRank}
                     </div>
                     <div className="text-[9px] tracking-widest mt-1" style={{ color: "hsl(30 25% 55%)" }}>
-                      من {total}
+                      {ar ? `من ${total}` : `OF ${total}`}
                     </div>
                   </div>
                   <div className="h-12 w-px" style={{ background: `${rankColor}30` }} />
                   <div className="flex-1 grid grid-cols-2 gap-3">
                     <div>
-                      <div className="text-[9px] tracking-widest" style={{ color: "hsl(30 25% 55%)" }}>BRICKS</div>
+                      <div className="text-[9px] tracking-widest" style={{ color: "hsl(30 25% 55%)" }}>{ar ? "الطوب" : "BRICKS"}</div>
                       <div className="flex items-center gap-1">
                         <Shield className="h-3.5 w-3.5" style={{ color: "hsl(35 100% 62%)" }} />
                         <span className="text-xl font-black tabular-nums" style={{ color: "hsl(35 100% 70%)" }}>{bricks}</span>
                       </div>
                     </div>
                     <div>
-                      <div className="text-[9px] tracking-widest" style={{ color: "hsl(30 25% 55%)" }}>CORRECT</div>
+                      <div className="text-[9px] tracking-widest" style={{ color: "hsl(30 25% 55%)" }}>{ar ? "صحيح" : "CORRECT"}</div>
                       <div className="text-xl font-black tabular-nums" style={{ color: "hsl(142 50% 62%)" }}>
                         {me?.correct_answers ?? 0}
                       </div>
@@ -546,7 +553,7 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
                 {total > 1 && (
                   <div className="space-y-1.5">
                     <div className="text-[10px] tracking-[0.3em] uppercase pb-1 text-center" style={{ color: "hsl(30 30% 55%)" }}>
-                      ━ SURVIVORS ━
+                      {ar ? "━ الناجون ━" : "━ SURVIVORS ━"}
                     </div>
                     {top3.map((s: any, i: number) => {
                       const mc = i === 0 ? "hsl(45 100% 58%)" : i === 1 ? "hsl(220 12% 76%)" : "hsl(24 70% 56%)";
@@ -597,7 +604,7 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
                     color: "hsl(14 100% 75%)",
                   }}
                 >
-                  خروج
+                  {ar ? "خروج" : "Exit"}
                 </button>
               </div>
             );

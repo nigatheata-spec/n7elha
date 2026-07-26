@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Trophy, Check } from "lucide-react";
+import { playGameOver, primeAudio } from "@/lib/sound";
 
 type Q = { id: string; text: string; options: string[]; correct_index: number; image_url?: string };
 type Phase =
@@ -76,6 +79,7 @@ interface Props { sessionId: string; studentId: string; }
 
 const DodgeballGame = ({ sessionId, studentId }: Props) => {
   const navigate = useNavigate();
+  const { i18n } = useTranslation();
   const [session, setSession]       = useState<any>(null);
   const [questions, setQuestions]   = useState<Q[]>([]);
   const [students, setStudents]     = useState<any[]>([]);
@@ -142,6 +146,11 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
     else if (session.status === "finished")  setPhase("done");
     else if (session.status === "running")
       setPhase(prev => prev === "waiting" ? "question" : prev);
+    else if (session.status === "cancelled") {
+      const arLang = (session.settings?.lang ?? i18n.language) === "ar";
+      toast.error(arLang ? "أغلق المعلّم الردهة" : "The teacher closed the lobby");
+      navigate("/play");
+    }
   }, [session?.status]);
 
   // Play game-over fanfare once when teacher ends the session
@@ -291,6 +300,7 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
   // ── Render ────────────────────────────────────────────────────────────────
   const lives    = me?.lives ?? 1;
   const timerSec = (timerMs / 1000).toFixed(2);
+  const ar = (session?.settings?.lang ?? i18n.language) === "ar";
 
   return (
     <div className="theme-dodgeball min-h-[100dvh] text-foreground font-mono flex flex-col overflow-hidden relative"
@@ -332,7 +342,7 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
           }
         </div>
         <div className="text-xs text-muted-foreground tabular-nums">
-          {students.filter(s => !s.eliminated).length} alive
+          {ar ? `${students.filter(s => !s.eliminated).length} أحياء` : `${students.filter(s => !s.eliminated).length} alive`}
         </div>
       </header>
 
@@ -346,7 +356,7 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
               <CrystalIcon className="h-10 w-10 mx-auto mb-1.5" />
               <h1 className="text-2xl font-black text-primary tracking-widest"
                 style={{ textShadow: "0 0 20px hsl(190 100% 60% / 0.7)" }}>
-                TIME WIZARD
+                {ar ? "ساحر الوقت" : "TIME WIZARD"}
               </h1>
               {session?.quizzes?.title && (
                 <p className="text-muted-foreground/60 text-xs font-mono mt-1 truncate max-w-[240px] mx-auto">{session.quizzes.title}</p>
@@ -362,7 +372,7 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
                 color: "hsl(190 50% 65%)",
               }}
             >
-              <span className="tracking-widest">SUMMONED</span>
+              <span className="tracking-widest">{ar ? "المستدعَون" : "SUMMONED"}</span>
               <span className="flex items-center gap-2">
                 <span className="h-2 w-2 rounded-full animate-pulse" style={{ background: "hsl(190 100% 60%)" }} />
                 <span className="font-bold tabular-nums text-primary text-sm">
@@ -392,7 +402,7 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
                         {s.name}
                       </div>
                       {isMe && (
-                        <div className="font-mono text-[9px] text-primary/70">[ you ]</div>
+                        <div className="font-mono text-[9px] text-primary/70">{ar ? "[ أنت ]" : "[ you ]"}</div>
                       )}
                     </div>
                     <CrystalIcon className={`h-3.5 w-3.5 shrink-0 ${isMe ? "opacity-100" : "opacity-40"}`} />
@@ -412,13 +422,13 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
                     style={{ background: "hsl(190 100% 60% / 0.06)", color: "hsl(190 30% 40%)" }}>
                     ?
                   </div>
-                  <div className="font-mono text-xs" style={{ color: "hsl(190 20% 35%)" }}>waiting...</div>
+                  <div className="font-mono text-xs" style={{ color: "hsl(190 20% 35%)" }}>{ar ? "بالانتظار..." : "waiting..."}</div>
                 </div>
               ))}
             </div>
 
             <p className="mt-6 text-primary/50 font-mono text-xs text-center animate-pulse">
-              {">"} awaiting the wizard...
+              {ar ? "> بانتظار الساحر..." : "> awaiting the wizard..."}
             </p>
           </div>
         )}
@@ -462,10 +472,12 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
                     textShadow: survived ? "0 0 28px hsl(190 100% 60% / 0.55)" : "none",
                   }}
                 >
-                  {survived ? "TIME MASTER" : "TIME DRIFTED"}
+                  {survived ? (ar ? "سيد الوقت" : "TIME MASTER") : (ar ? "انزلق الوقت" : "TIME DRIFTED")}
                 </div>
                 <div className="font-mono text-xs mt-1.5 tracking-[0.3em]" style={{ color: "hsl(190 50% 55%)" }}>
-                  {survived ? "أوقفت الزمن عند 10.00" : `المركز #${myRank} من ${students.length}`}
+                  {survived
+                    ? (ar ? "أوقفت الزمن عند 10.00" : "You stopped time at 10.00")
+                    : (ar ? `المركز #${myRank} من ${students.length}` : `Rank #${myRank} of ${students.length}`)}
                 </div>
               </div>
 
@@ -482,7 +494,7 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
                     #{myRank}
                   </div>
                   <div className="text-[10px] mt-0.5 text-center tracking-widest" style={{ color: "hsl(190 30% 55%)" }}>
-                    OF {students.length}
+                    {ar ? `من ${students.length}` : `OF ${students.length}`}
                   </div>
                 </div>
               )}
@@ -491,7 +503,7 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
               {students.length > 1 && (
                 <div className="w-full space-y-1.5">
                   <div className="text-xs tracking-widest uppercase text-center" style={{ color: "hsl(190 50% 55%)" }}>
-                    ━ Constellation ━
+                    {ar ? "━ الترتيب ━" : "━ Constellation ━"}
                   </div>
                   {top.map((s, i) => {
                     const isMe   = s.id === me?.id;
@@ -527,7 +539,7 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
                 onClick={() => navigate("/play")}
                 className="mt-2 bg-primary text-primary-foreground tracking-widest font-black"
               >
-                خروج
+                {ar ? "خروج" : "Exit"}
               </Button>
             </div>
           );
@@ -546,9 +558,9 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
               <div className="absolute top-2 -left-4 w-2 h-2 rounded-sm opacity-25 rotate-[40deg]"
                 style={{ background: "hsl(190 60% 50%)", clipPath: "polygon(50% 0%, 100% 100%, 0% 100%)" }} />
             </div>
-            <h2 className="text-2xl font-black text-muted-foreground">تحطمت بلورتك</h2>
-            <p className="text-xs text-muted-foreground/50">بانتظار نهاية اللعبة...</p>
-            <p className="text-xs text-muted-foreground/30">قد يهبك أحدهم بلورة جديدة</p>
+            <h2 className="text-2xl font-black text-muted-foreground">{ar ? "تحطمت بلورتك" : "Your crystal shattered"}</h2>
+            <p className="text-xs text-muted-foreground/50">{ar ? "بانتظار نهاية اللعبة..." : "Waiting for the game to end..."}</p>
+            <p className="text-xs text-muted-foreground/30">{ar ? "قد يهبك أحدهم بلورة جديدة" : "Someone might gift you a new crystal"}</p>
           </div>
         )}
 
@@ -562,9 +574,9 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
             </div>
             <h2 className="text-2xl font-black text-primary"
               style={{ textShadow: "0 0 20px hsl(190 100% 60% / 0.6)" }}>
-              استعدت بلورتك!
+              {ar ? "استعدت بلورتك!" : "Your crystal is restored!"}
             </h2>
-            <p className="text-sm text-muted-foreground">عد إلى الساحة السحرية...</p>
+            <p className="text-sm text-muted-foreground">{ar ? "عد إلى الساحة السحرية..." : "Back to the arcane arena..."}</p>
           </div>
         )}
 
@@ -636,7 +648,7 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
               {/* Target label */}
               <div className="text-center">
                 <div className="text-[10px] tracking-[0.4em] text-muted-foreground mb-0.5 uppercase font-mono">
-                  أوقف عند
+                  {ar ? "أوقف عند" : "STOP AT"}
                 </div>
                 <div className="text-5xl font-black tabular-nums font-mono"
                   style={{ color: "hsl(45 100% 65%)", textShadow: "0 0 24px hsl(45 100% 60% / 0.6)" }}>
@@ -693,20 +705,20 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
                       boxShadow: `0 0 40px ${arcColor}55, inset 0 0 20px ${arcColor}15`,
                       textShadow: `0 0 12px ${arcColor}`,
                     }}>
-                    STOP
+                    {ar ? "أوقف" : "STOP"}
                   </button>
                 </div>
               ) : (
                 <div className="h-40 w-40 rounded-full border-4 border-border/40 flex flex-col items-center justify-center gap-1"
                   style={{ background: "hsl(255 40% 9% / 0.6)" }}>
                   <Check className="h-8 w-8" style={{ color: arcColor }} />
-                  <div className="text-xs text-muted-foreground">تم الإيقاف</div>
+                  <div className="text-xs text-muted-foreground">{ar ? "تم الإيقاف" : "Stopped"}</div>
                   <div className="text-2xl font-black tabular-nums" style={{ color: arcColor }}>{timerSec}s</div>
                 </div>
               )}
 
               <div className="text-xs text-muted-foreground/60 tracking-widest font-mono">
-                بانتظار نتيجة الجولة السحرية
+                {ar ? "بانتظار نتيجة الجولة السحرية" : "Waiting for the round result..."}
               </div>
             </div>
           );
@@ -721,8 +733,8 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
                   <CrystalIcon className="h-14 w-14" />
                 </div>
               </div>
-              <h2 className="text-xl font-black text-primary">فزت بالجولة</h2>
-              <p className="text-sm text-muted-foreground mt-1">احتفظ بالبلورة أو اهدِها لأحد</p>
+              <h2 className="text-xl font-black text-primary">{ar ? "فزت بالجولة" : "You won the round"}</h2>
+              <p className="text-sm text-muted-foreground mt-1">{ar ? "احتفظ بالبلورة أو اهدِها لأحد" : "Keep the crystal or gift it to someone"}</p>
             </div>
 
             <Button onClick={keepLife}
@@ -730,11 +742,11 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
               <div className="h-5 w-5 shrink-0">
                 <CrystalIcon className="h-5 w-5" />
               </div>
-              احتفظ بها
+              {ar ? "احتفظ بها" : "Keep it"}
             </Button>
 
             <div className="text-center text-[10px] tracking-widest text-muted-foreground uppercase">
-              — أو اهدِها —
+              {ar ? "— أو اهدِها —" : "— or gift it —"}
             </div>
 
             <div className="grid grid-cols-2 gap-2 overflow-y-auto max-h-64">
@@ -758,7 +770,7 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
                   </div>
                   {s.eliminated ? (
                     <div className="text-xs text-muted-foreground flex items-center gap-1">
-                      <CrystalIcon className="h-3 w-3" dim /> تعود بلورته
+                      <CrystalIcon className="h-3 w-3" dim /> {ar ? "تعود بلورته" : "crystal restored"}
                     </div>
                   ) : (
                     <div className="flex gap-0.5">

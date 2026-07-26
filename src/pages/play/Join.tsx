@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -8,12 +9,19 @@ import { BitcoinIcon, StopwatchIcon, LavaBucketIcon, DynamiteIcon } from "@/comp
 
 type IconComponent = (props: { className?: string; size?: number; strokeWidth?: number; style?: React.CSSProperties }) => JSX.Element;
 
-// ─── Password pool (Crypto Rush only) ──────────────────────────────────────
-const PASSWORD_POOL = [
-  "FROSTY_PAY65", "FORTNITE", "sealYouLater32", "***everything_ok***", "daGOAT_13",
-  "ghost_in_the_shell", "n30n_w0lf", "matrix_42", "shadow_byte", "quantum_leap",
-  "z3r0_c00l", "midnight_owl", "vortex_99", "cyber_punk_77", "echo_phantom",
-  "lazer_kid", "binary_ninja", "rogue_wave", "pixel_storm", "hyper_drive_8",
+// ─── Password pools (Crypto Rush only) ─────────────────────────────────────
+// English pool: trendy internet-slang flavored, keeps the "hacker handle" feel
+const PASSWORD_POOL_EN = [
+  "skibidi_toilet", "sigma_grindset", "rizz_god_67", "gyatt_alert", "no_cap_frfr",
+  "ohio_rizz", "goated_67", "npc_moment", "brainrot_king", "aura_100k",
+  "delulu_mode", "mewing_maxx", "sigma_67", "chad_energy", "labubu_army",
+  "z3r0_c00l", "matrix_42", "quantum_leap", "cyber_punk_77", "hyper_drive_8",
+];
+// Arabic pool: ~70% Arabic slang, ~30% trendy English mixed in
+const PASSWORD_POOL_AR = [
+  "زعيم_67", "فشخ_99", "أسطورة_42", "وحش_الشبكة", "نار_تجنن",
+  "جامد_قوي", "ملك_البيانات", "خطير_بزيادة", "طاقة_زعيم", "هكر_شبح",
+  "sigma_67", "gyatt_alert", "labubu_67", "goated_af",
 ];
 
 // ─── Mode themes ────────────────────────────────────────────────────────────
@@ -24,7 +32,9 @@ type ModeTheme = {
   accentDim: string;
   accentBorder: string;
   label: string;
+  labelAr: string;
   tagline: string;
+  taglineAr: string;
   btnColor: string;
   icon: IconComponent;
 };
@@ -37,7 +47,9 @@ const MODES: Record<string, ModeTheme> = {
     accentDim: "#00ff8825",
     accentBorder: "#00ff8845",
     label: "Crypto Rush",
-    tagline: "اخترق · اسرق · ابقَ في القمة",
+    labelAr: "كريبتو رَش",
+    tagline: "Hack · Steal · Stay on top",
+    taglineAr: "اخترق · اسرق · ابقَ في القمة",
     btnColor: "#000",
     icon: BitcoinIcon,
   },
@@ -48,7 +60,9 @@ const MODES: Record<string, ModeTheme> = {
     accentDim: "#22d3ee22",
     accentBorder: "#22d3ee45",
     label: "Time Wizard",
-    tagline: "أوقف الزمن — 10.00 ثانية بالضبط",
+    labelAr: "ساحر الوقت",
+    tagline: "Stop the clock — exactly 10.00s",
+    taglineAr: "أوقف الزمن — 10.00 ثانية بالضبط",
     btnColor: "#000",
     icon: StopwatchIcon,
   },
@@ -59,7 +73,9 @@ const MODES: Record<string, ModeTheme> = {
     accentDim: "#facc1522",
     accentBorder: "#facc1545",
     label: "Pass It",
-    tagline: "مرّر القنبلة قبل أن تنفجر",
+    labelAr: "مرّرها",
+    tagline: "Pass the bomb before it blows",
+    taglineAr: "مرّر القنبلة قبل أن تنفجر",
     btnColor: "#000",
     icon: DynamiteIcon,
   },
@@ -70,7 +86,9 @@ const MODES: Record<string, ModeTheme> = {
     accentDim: "#ff442222",
     accentBorder: "#ff442245",
     label: "Lava Floor",
-    tagline: "اصمدوا قبل أن تبتلعكم الحمم",
+    labelAr: "أرضية الحمم",
+    tagline: "Survive before the lava swallows you",
+    taglineAr: "اصمدوا قبل أن تبتلعكم الحمم",
     btnColor: "#fff",
     icon: LavaBucketIcon,
   },
@@ -82,6 +100,7 @@ type Stage = "code" | "reveal" | "name" | "boot" | "launch" | "arena";
 const Join = () => {
   const nav = useNavigate();
   const [params] = useSearchParams();
+  const { i18n } = useTranslation();
 
   // 4-cell code input
   const [cells, setCells] = useState(["", "", "", ""]);
@@ -117,10 +136,12 @@ const Join = () => {
   const mode  = (session?.settings?.mode as string) ?? "crypto_rush";
   const theme = MODES[mode] ?? MODES.crypto_rush;
   const Icon  = theme.icon;
+  // teacher's language, once known; falls back to the browser's current language pre-session
+  const ar = (session?.settings?.lang ?? i18n.language) === "ar";
 
   const passwordChoices = useMemo(
-    () => [...PASSWORD_POOL].sort(() => Math.random() - 0.5).slice(0, 5),
-    []
+    () => [...(ar ? PASSWORD_POOL_AR : PASSWORD_POOL_EN)].sort(() => Math.random() - 0.5).slice(0, 5),
+    [ar]
   );
 
   // Pre-fill from URL ?code=XXXX
@@ -149,7 +170,7 @@ const Join = () => {
     setLoading(false);
     submitting.current = false;
     if (error || !data) {
-      toast.error("رمز غير صحيح");
+      toast.error(ar ? "رمز غير صحيح" : "Invalid code");
       setCells(["", "", "", ""]);
       setTimeout(() => r0.current?.focus(), 50);
       return;
@@ -182,11 +203,9 @@ const Join = () => {
   };
 
   // ── Crypto Rush: boot typewriter ──────────────────────────────
-  const BOOT_LINES = [
-    "> New User Detected!",
-    "> Welcome to the Terminal Hacking Portal",
-    "> Please select a password:",
-  ];
+  const BOOT_LINES = ar
+    ? ["> تم اكتشاف مستخدم جديد!", "> أهلاً بك في بوابة اختراق الطرفية", "> اختر كلمة مرور:"]
+    : ["> New User Detected!", "> Welcome to the Terminal Hacking Portal", "> Please select a password:"];
   useEffect(() => {
     if (stage !== "boot") return;
     setBootLines([]); setBootCurrent("");
@@ -210,14 +229,9 @@ const Join = () => {
   const showPasswords = bootLines.length === BOOT_LINES.length;
 
   // ── Crypto Rush: launch sequence then navigate ────────────────
-  const LAUNCH_LINES = [
-    "> Authentication Complete",
-    "> Loading Crypto Mining Software...",
-    ">",
-    "> .......",
-    "> .......",
-    "> Launching...",
-  ];
+  const LAUNCH_LINES = ar
+    ? ["> تم التحقق من الهوية", "> جارٍ تحميل برنامج تعدين الكريبتو...", ">", "> .......", "> .......", "> جارٍ الإطلاق..."]
+    : ["> Authentication Complete", "> Loading Crypto Mining Software...", ">", "> .......", "> .......", "> Launching..."];
   useEffect(() => {
     if (stage !== "launch" || !session) return;
     setLaunchLines([]);
@@ -255,7 +269,7 @@ const Join = () => {
       localStorage.setItem(`hash_student_${sess.id}`, student.id);
       nav(`/play/${sess.id}`);
     } catch (err: any) {
-      toast.error(err.message || "تعذّر الانضمام");
+      toast.error(err.message || (ar ? "تعذّر الانضمام" : "Could not join"));
       setStage("name");
     }
   };
@@ -290,7 +304,7 @@ const Join = () => {
         <div className="relative z-10 w-full max-w-xs text-center space-y-12 animate-fade-up">
           <div className="space-y-3 flex flex-col items-center">
             <img src={logoLight} alt="n7elha" className="h-16 w-16 object-contain" />
-            <div className="text-white/30 text-sm tracking-wide">أدخل رمز اللعبة</div>
+            <div className="text-white/30 text-sm tracking-wide">{ar ? "أدخل رمز اللعبة" : "Enter the game code"}</div>
           </div>
 
           <div className="space-y-6">
@@ -317,12 +331,12 @@ const Join = () => {
             </div>
             {loading && (
               <p className="text-white/35 text-sm font-mono animate-pulse tracking-widest">
-                جارٍ التحقق...
+                {ar ? "جارٍ التحقق..." : "Verifying..."}
               </p>
             )}
           </div>
 
-          <p className="text-white/15 text-xs">الرمز مكوّن من 4 أحرف</p>
+          <p className="text-white/15 text-xs">{ar ? "الرمز مكوّن من 4 أحرف" : "The code is 4 characters"}</p>
         </div>
       </div>
     );
@@ -340,10 +354,10 @@ const Join = () => {
             <Icon className="h-12 w-12" style={{ color: theme.accent }} strokeWidth={2} />
           </div>
           <div className="text-[clamp(3.5rem,14vw,7rem)] font-black text-white leading-none tracking-tight">
-            {theme.label}
+            {ar ? theme.labelAr : theme.label}
           </div>
           <div className="font-mono text-base tracking-widest" style={{ color: theme.accent }}>
-            {theme.tagline}
+            {ar ? theme.taglineAr : theme.tagline}
           </div>
         </div>
       </div>
@@ -361,9 +375,9 @@ const Join = () => {
               style={{ background: theme.accentDim, color: theme.accent, border: `1px solid ${theme.accentBorder}` }}
             >
               <Icon className="h-3.5 w-3.5" strokeWidth={2} />
-              {theme.label}
+              {ar ? theme.labelAr : theme.label}
             </div>
-            <h1 className="text-4xl font-black text-white">اسمك في اللعبة؟</h1>
+            <h1 className="text-4xl font-black text-white">{ar ? "اسمك في اللعبة؟" : "What's your name?"}</h1>
           </div>
 
           <form onSubmit={submitName} className="space-y-4">
@@ -372,7 +386,7 @@ const Join = () => {
               value={name}
               onChange={e => setName(e.target.value)}
               maxLength={24}
-              placeholder="اسم اللاعب..."
+              placeholder={ar ? "اسم اللاعب..." : "Player name..."}
               className="w-full h-14 px-4 text-lg font-bold rounded-2xl text-white
                          bg-white/[0.07] border-2 focus:outline-none
                          placeholder:text-white/20 transition-colors duration-150"
@@ -388,7 +402,7 @@ const Join = () => {
                          disabled:opacity-40 disabled:active:scale-100"
               style={{ background: theme.accent, color: theme.btnColor }}
             >
-              دخول
+              {ar ? "دخول" : "Join"}
             </button>
           </form>
         </div>
@@ -404,7 +418,7 @@ const Join = () => {
         <div className="pointer-events-none fixed inset-0 terminal-scanlines opacity-[0.18]" />
         <div className="relative p-6 md:p-16 py-12 min-h-full">
           <h1 className="text-3xl md:text-5xl font-black tracking-wider mb-8" style={{ filter: `drop-shadow(0 0 18px ${cr.accent}70)` }}>
-            WELCOME HACKER
+            {ar ? "أهلاً أيها المخترق" : "WELCOME HACKER"}
           </h1>
 
           <div className="space-y-2 text-base md:text-xl">
@@ -464,7 +478,7 @@ const Join = () => {
         <div className="relative text-center space-y-4 animate-fade-up z-10 mt-[22rem]">
           <div className="text-5xl md:text-6xl font-black text-white">{name}</div>
           <div className="font-mono text-sm tracking-widest animate-pulse" style={{ color: theme.accent }}>
-            {"> الدخول إلى اللعبة..."}
+            {ar ? "> الدخول إلى اللعبة..." : "> entering the game..."}
           </div>
         </div>
       </div>
