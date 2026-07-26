@@ -189,7 +189,7 @@ const HostGame = () => {
         <div className="max-w-2xl mx-auto space-y-8">
           <div>
             {quiz && (
-              <p className="text-[12px] font-semibold tracking-[0.22em] uppercase text-[#FF8254] mb-3">
+              <p className="text-[12px] font-semibold text-[#FF8254] mb-3">
                 {quiz.title}
               </p>
             )}

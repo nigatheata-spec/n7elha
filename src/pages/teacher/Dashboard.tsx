@@ -255,7 +255,7 @@ const Dashboard = () => {
           <TypewriterHeading ar={ar} />
         </h1>
 
-        <div className="rounded-3xl bg-card border border-border shadow-[0_18px_50px_-30px_hsl(var(--primary)/0.35)] p-4 md:p-5 text-start">
+        <div className="rounded-3xl bg-white border-2 border-[hsl(var(--nb-border))] shadow-[4px_4px_0_0_hsl(var(--nb-border))] p-4 md:p-5 text-start">
           <textarea
             value={prompt}
             onChange={e => setPrompt(e.target.value)}
@@ -367,7 +367,7 @@ const Dashboard = () => {
               <Link
                 key={g.id}
                 to={g.status === "lobby" || g.status === "running" ? `/app/games/${g.id}/monitor` : `/app/games/${g.id}/results`}
-                className="group flex items-center gap-4 p-4 rounded-2xl border border-border bg-card hover:border-accent/50 hover:shadow-[0_8px_24px_-10px_hsl(var(--accent)/0.18)] transition-all"
+                className="group flex items-center gap-4 p-4 rounded-2xl border-2 border-[hsl(var(--nb-border))] bg-white shadow-[3px_3px_0_0_hsl(var(--nb-border))] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0_0_hsl(var(--nb-border))] transition-all"
               >
                 <div className="shrink-0 w-[72px]">
                   <div className="font-mono text-[22px] font-black text-primary tracking-widest leading-none">{g.code}</div>
