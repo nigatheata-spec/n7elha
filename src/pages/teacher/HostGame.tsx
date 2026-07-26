@@ -240,7 +240,7 @@ const HostGame = () => {
 
   // ── Settings + lobby ──────────────────────────────────────────────────────
   const selectedAccent = selectedMode!.accent;
-  const needsTimer = mode !== "dodgeball";
+  const needsTimer = true;
 
   return (
     <div className="min-h-full p-6 md:p-10" style={{ background: "hsl(var(--background))" }}>
