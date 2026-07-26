@@ -8,13 +8,13 @@ import {
   Sidebar, SidebarContent, SidebarProvider,
   SidebarHeader, SidebarFooter,
 } from "@/components/ui/sidebar";
-import { LayoutDashboard, FileQuestion, Gamepad2, BarChart3, Settings, LogOut } from "lucide-react";
+import { LayoutDashboard, FileQuestion, History, BarChart3, Settings, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const links = [
   { to: "/app", icon: LayoutDashboard, key: "dashboard", end: true },
   { to: "/app/quizzes", icon: FileQuestion, key: "my_quizzes" },
-  { to: "/app/games", icon: Gamepad2, key: "hosted_games" },
+  { to: "/app/games", icon: History, key: "hosted_games" },
   { to: "/app/analytics", icon: BarChart3, key: "analytics" },
   { to: "/app/settings", icon: Settings, key: "settings" },
 ];
