@@ -1,10 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
-import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { Coins } from "lucide-react";
 
 const fmt = (n: number) => n.toLocaleString();
+
+const TEAL = "#3F5A63";
+const GOLD = "#C8783A";
+const GREEN = "#3a9e6e";
+const RED = "#dc2626";
 
 /**
  * Pick a random target weighted by rank.
@@ -95,10 +99,14 @@ export const HackingFlow = ({
 
   if (students.length === 0) {
     return (
-      <div className="min-h-[calc(100dvh-56px)] pt-8 font-mono text-primary">
-        <div className="text-lg md:text-2xl font-black">{ar ? "لا يوجد هدف متاح" : "No target available"}</div>
-        <div className="mt-3 text-sm text-muted-foreground">&gt; {ar ? "انتظر دخول لاعب آخر للنظام" : "waiting for another player to join..."}</div>
-        <button onClick={onDone} className="mt-8 border border-primary/70 px-4 py-2 text-sm text-primary hover:bg-primary/15">
+      <div className="max-w-md mx-auto py-10 px-2 text-center">
+        <div className="text-xl font-bold" style={{ color: TEAL }}>{ar ? "لا يوجد هدف متاح" : "No target available"}</div>
+        <div className="mt-2 text-sm text-black/50">{ar ? "بانتظار دخول لاعب آخر" : "Waiting for another player to join..."}</div>
+        <button
+          onClick={onDone}
+          className="mt-6 rounded-full border-2 border-[hsl(var(--nb-border))] bg-white px-5 py-2 text-sm font-semibold shadow-[2px_2px_0_0_hsl(var(--nb-border))] hover:translate-x-px hover:translate-y-px hover:shadow-[1px_1px_0_0_hsl(var(--nb-border))] transition-all"
+          style={{ color: TEAL }}
+        >
           {ar ? "رجوع" : "Back"}
         </button>
       </div>
@@ -107,9 +115,9 @@ export const HackingFlow = ({
 
   if (phase === "intro" || !target) {
     return (
-      <div className="min-h-[calc(100dvh-56px)] pt-8 font-mono text-primary">
-        <div className="text-sm text-muted-foreground">&gt; {ar ? "اختيار هدف عشوائي..." : "picking random target..."}</div>
-        <div className="mt-3 text-3xl md:text-5xl font-black text-primary text-glow-cyan animate-pulse">
+      <div className="max-w-md mx-auto py-10 px-2 text-center">
+        <div className="text-sm text-black/45">{ar ? "اختيار هدف عشوائي..." : "Picking a random target..."}</div>
+        <div className="mt-3 text-3xl md:text-4xl font-bold animate-pulse" style={{ color: TEAL }}>
           {target ? target.name : "..."}
         </div>
       </div>
@@ -118,19 +126,20 @@ export const HackingFlow = ({
 
   if (phase === "result" && result) {
     return (
-      <div className="text-center py-16 font-mono">
+      <div className="max-w-md mx-auto text-center py-14 px-2">
         {result.ok ? (
           <>
-            <div className="text-3xl text-success animate-pulse">{ar ? "✓ تم الاختراق" : "✓ BREACH SUCCESSFUL"}</div>
-            <div className="mt-3 text-lg text-muted-foreground">{ar ? "الهدف:" : "Target:"} {target.name}</div>
-            <div className="mt-4 text-3xl" style={{ color: "hsl(51 100% 50%)" }}>
-              +{fmt(result.transferred)} <Coins className="inline h-6 w-6" />
+            <div className="text-2xl font-bold" style={{ color: GREEN }}>{ar ? "تم الاختراق!" : "Breach successful!"}</div>
+            <div className="mt-2 text-sm text-black/50">{ar ? "الهدف:" : "Target:"} {target.name}</div>
+            <div className="mt-4 flex items-center justify-center gap-1.5 text-2xl font-bold" style={{ color: GOLD }}>
+              <Coins className="h-6 w-6" />
+              +{fmt(result.transferred)}
             </div>
           </>
         ) : (
           <>
-            <div className="text-3xl text-destructive animate-pulse">{ar ? "✗ فشل الاختراق" : "✗ BREACH FAILED"}</div>
-            <div className="mt-3 text-lg text-muted-foreground">{ar ? "كلمة المرور خاطئة" : "Wrong password"}</div>
+            <div className="text-2xl font-bold" style={{ color: RED }}>{ar ? "فشل الاختراق" : "Breach failed"}</div>
+            <div className="mt-2 text-sm text-black/50">{ar ? "كلمة المرور خاطئة" : "Wrong password"}</div>
           </>
         )}
       </div>
@@ -139,33 +148,34 @@ export const HackingFlow = ({
 
   // guess phase
   return (
-    <div className="min-h-[calc(100dvh-56px)] pt-5 md:pt-8 font-mono text-primary">
-      <div className="mb-6">
-        <div className="text-2xl md:text-4xl font-black text-primary text-glow-cyan">{ar ? `اختراق ${target.name}` : `HACKING ${target.name}`}</div>
-        <div className="text-sm mt-1" style={{ color: "hsl(51 100% 50%)" }}>
+    <div className="max-w-xl mx-auto py-6 md:py-8 px-2">
+      <div className="mb-6 text-center">
+        <div className="text-xl md:text-2xl font-bold" style={{ color: TEAL, fontFamily: "'ArslanWessam', 'Almarai', sans-serif" }}>
+          {ar ? `اختراق ${target.name}` : `Hacking ${target.name}`}
+        </div>
+        <div className="text-sm mt-1 font-semibold" style={{ color: GOLD }}>
           {ar ? "الرصيد:" : "Balance:"} {fmt(target.crypto || 0)}
         </div>
-        <div className="mt-4 text-sm md:text-base text-muted-foreground">
-          {ar ? "> اختر كلمة المرور الصحيحة" : "> choose the correct password"}
+        <div className="mt-4 text-sm text-black/45">
+          {ar ? "اختر كلمة المرور الصحيحة" : "Choose the correct password"}
         </div>
       </div>
-      <div className="flex flex-wrap gap-2 md:gap-4">
+      <div className="flex flex-wrap gap-2 justify-center">
         {choices.map(p => (
           <button
             key={p}
             onClick={() => tryPwd(p)}
-            className={cn(
-              "px-3 py-2 md:px-4 md:py-3 border-2 text-left text-sm md:text-base transition-all break-all",
-              "border-primary/70 text-primary bg-primary/10 shadow-[inset_0_0_10px_hsl(var(--primary)/0.18)]",
-              "hover:bg-primary/25 hover:shadow-[0_0_18px_hsl(var(--primary)/0.5)]"
-            )}
+            className="rounded-xl border-2 border-[hsl(var(--nb-border))] bg-white px-4 py-2.5 text-sm md:text-base font-medium shadow-[2px_2px_0_0_hsl(var(--nb-border))] hover:translate-x-px hover:translate-y-px hover:shadow-[1px_1px_0_0_hsl(var(--nb-border))] transition-all break-all"
+            style={{ color: TEAL }}
           >
             {p}
           </button>
         ))}
       </div>
       <div className="mt-6 text-center">
-        <Button variant="ghost" onClick={onDone} className="text-muted-foreground">{ar ? "تخطي" : "Skip"}</Button>
+        <button onClick={onDone} className="text-sm font-medium text-black/40 hover:text-black/60 transition-colors">
+          {ar ? "تخطي" : "Skip"}
+        </button>
       </div>
     </div>
   );
