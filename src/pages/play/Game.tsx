@@ -3,8 +3,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { Trophy, Users } from "lucide-react";
-import { BitcoinIcon } from "@/components/game/icons";
+import { Button } from "@/components/ui/button";
+import { Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { HackingFlow } from "@/components/game/HackingFlow";
 import { BreachModal } from "@/components/game/BreachModal";
@@ -17,16 +17,6 @@ import { playSelect, playCorrect, playWrong, playHackAlert, playGameOver, primeA
 type Q = { id: string; text: string; options: string[]; correct_index: number; position: number };
 
 const fmt = (n: number) => n.toLocaleString();
-
-const AV_COLORS = ["#2563eb", "#16a34a", "#b45309", "#dc2626", "#7c3aed", "#0891b2", "#c2410c", "#0f766e"];
-const av = (name: string) => {
-  let h = 0;
-  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xffffffff;
-  return AV_COLORS[Math.abs(h) % AV_COLORS.length];
-};
-
-const CRYPTO_GREEN = "#3a9e6e";
-const TEAL = "#3F5A63";
 
 const Game = () => {
   const { sessionId } = useParams();
@@ -49,12 +39,12 @@ const Game = () => {
   // without causing the realtime channel to tear down on every score update.
   const studentsRef = useRef<any[]>([]);
 
-  // paint root cream while in game so no theme flash bleeds through
+  // paint root black while in game so cream body never bleeds through
   useEffect(() => {
     const prevHtml = document.documentElement.style.background;
     const prevBody = document.body.style.background;
-    document.documentElement.style.background = "hsl(40 47% 85%)";
-    document.body.style.background = "hsl(40 47% 85%)";
+    document.documentElement.style.background = "#050505";
+    document.body.style.background = "#050505";
     // Prime audio on first user gesture (required by iOS Safari)
     const onFirstTouch = () => { primeAudio(); window.removeEventListener("pointerdown", onFirstTouch); };
     window.addEventListener("pointerdown", onFirstTouch, { once: true });
@@ -195,13 +185,7 @@ const Game = () => {
     setTimeout(() => { setQSeed(s => s + 1); setPhase("question"); }, 1200);
   };
 
-  if (!session) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "hsl(40 47% 85%)" }}>
-        <div className="h-8 w-8 rounded-full border-2 border-[hsl(var(--nb-border))] border-t-transparent animate-spin" />
-      </div>
-    );
-  }
+  if (!session) return <div className="theme-game terminal-screen min-h-screen text-foreground flex items-center justify-center font-mono">...</div>;
 
   const ar = session.settings?.lang === "ar";
 
@@ -217,102 +201,135 @@ const Game = () => {
   }
 
   return (
-    <div
-      className="min-h-[100dvh] flex flex-col"
-      style={{ background: "hsl(40 47% 85%)", fontFamily: "'Outfit', 'Almarai', system-ui, sans-serif" }}
-    >
-      {/* HEADER */}
-      <header className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 bg-white/90 backdrop-blur-sm border-b-2 border-[hsl(var(--nb-border))]">
-        <div className="font-semibold text-sm md:text-base truncate max-w-[55%]" style={{ color: TEAL }}>{me?.name ?? "—"}</div>
-        <div className="flex items-center gap-1.5 rounded-full border-2 border-[hsl(var(--nb-border))] bg-white px-3 py-1 shadow-[2px_2px_0_0_hsl(var(--nb-border))]">
-          <BitcoinIcon className="h-4 w-4" style={{ color: CRYPTO_GREEN }} strokeWidth={2} />
-          <span className="font-bold text-sm md:text-base tabular-nums" style={{ color: TEAL }}>{fmt(me?.crypto ?? 0)}</span>
+    <div className="theme-game terminal-screen min-h-[100dvh] text-foreground font-mono flex flex-col overflow-hidden">
+      <div className="pointer-events-none fixed inset-0 terminal-scanlines" />
+      {/* Minimal sticky top bar — name left, ₿ crypto right */}
+      <header className="relative flex items-center justify-between px-4 py-3 text-primary border-b border-primary/30 sticky top-0 bg-background/75 backdrop-blur-sm z-10">
+        <div className="font-medium text-sm md:text-base truncate max-w-[55%]">{me?.name ?? "—"}</div>
+        <div className="text-lg md:text-xl font-bold tracking-wider whitespace-nowrap">
+          ₿ {fmt(me?.crypto ?? 0)}
         </div>
       </header>
 
-      <main className="relative flex-1 px-3 md:px-6 py-5">
-        {phase === "waiting" && (
-          <div className="max-w-3xl mx-auto py-4 md:py-8 px-2">
-            <div className="text-center mb-8">
-              <div className="inline-flex items-center gap-2 rounded-full border-2 border-[hsl(var(--nb-border))] bg-white px-4 py-1.5 shadow-[2px_2px_0_0_hsl(var(--nb-border))] mb-5">
-                <span className="font-mono text-xs tracking-[0.2em]" style={{ color: TEAL }}>{session.code}</span>
+      <main className="relative flex-1 px-3 md:px-6 pb-4">
+        {phase === "waiting" && (() => {
+          const AV_COLORS = ["#16a34a","#0891b2","#7c3aed","#dc2626","#b45309","#2563eb","#c2410c","#0f766e"];
+          const av = (name: string) => {
+            let h = 0;
+            for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xffffffff;
+            return AV_COLORS[Math.abs(h) % AV_COLORS.length];
+          };
+          return (
+            <div className="max-w-3xl mx-auto py-8 md:py-12 px-2">
+              {/* terminal header */}
+              <div className="mb-6 font-mono text-xs" style={{ color: "hsl(120 60% 38%)" }}>
+                $ ./connect --session={session.code}
               </div>
-              <h1 className="text-[24px] sm:text-[32px] font-bold leading-tight" style={{ color: TEAL, fontFamily: "'ArslanWessam', 'Almarai', sans-serif" }}>
-                {ar ? "بانتظار المعلّم لبدء الجلسة" : "Waiting for your teacher to start"}
-              </h1>
-              <p className="mt-2 text-sm text-black/50">
-                {ar ? "استعد لكسب أول عملات الكريبتو" : "Get ready to earn your first crypto"}
-              </p>
-            </div>
 
-            {/* live joiner count */}
-            <div className="flex items-center justify-between text-xs font-semibold px-4 py-2.5 mb-4 rounded-xl border-2 border-[hsl(var(--nb-border))] bg-white shadow-[2px_2px_0_0_hsl(var(--nb-border))]">
-              <span className="flex items-center gap-1.5" style={{ color: TEAL }}>
-                <Users className="h-3.5 w-3.5" />
-                {ar ? "اللاعبون المتصلون" : "Players online"}
-              </span>
-              <span className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full animate-pulse" style={{ background: CRYPTO_GREEN }} />
-                <span className="font-bold tabular-nums" style={{ color: TEAL }}>{students.length}</span>
-              </span>
-            </div>
+              <div className="text-center mb-8">
+                <div
+                  className="font-mono text-2xl md:text-3xl font-bold mb-2"
+                  style={{ color: "hsl(120 100% 60%)", textShadow: "0 0 20px hsl(120 100% 55% / 0.5)" }}
+                >
+                  {ar ? "> بانتظار المصافحة" : "> awaiting handshake"}<span className="animate-pulse">█</span>
+                </div>
+                <p className="font-mono text-xs md:text-sm" style={{ color: "hsl(120 40% 45%)" }}>
+                  {ar ? "بانتظار المعلّم لبدء الجلسة" : "Waiting for the teacher to start"}
+                </p>
+              </div>
 
-            {/* student grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
-              {students.map((s, i) => {
-                const isMe = s.id === studentId;
-                return (
+              {/* live joiner count */}
+              <div
+                className="flex items-center justify-between font-mono text-xs px-3 py-2 mb-3"
+                style={{
+                  borderTop: "1px solid hsl(120 100% 55% / 0.18)",
+                  borderBottom: "1px solid hsl(120 100% 55% / 0.18)",
+                  color: "hsl(120 60% 50%)",
+                }}
+              >
+                <span>{ar ? "المتصلون" : "HACKERS_ONLINE"}</span>
+                <span className="flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full animate-pulse" style={{ background: "hsl(120 100% 55%)" }} />
+                  <span className="font-bold tabular-nums" style={{ color: "hsl(120 100% 60%)" }}>
+                    {students.length.toString().padStart(2, "0")}
+                  </span>
+                </span>
+              </div>
+
+              {/* student grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                {students.map((s, i) => {
+                  const isMe = s.id === studentId;
+                  return (
+                    <div
+                      key={s.id}
+                      className="flex items-center gap-2.5 p-2.5 rounded-md transition-all"
+                      style={{
+                        background: isMe ? "hsl(120 100% 55% / 0.10)" : "hsl(120 100% 55% / 0.03)",
+                        border: `1px solid hsl(120 100% 55% / ${isMe ? 0.5 : 0.18})`,
+                        animation: `fade-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) ${Math.min(i * 60, 600)}ms both`,
+                      }}
+                    >
+                      <div
+                        className="h-8 w-8 rounded-full flex items-center justify-center font-black text-white text-xs shrink-0 font-mono"
+                        style={{ background: av(s.name) }}
+                      >
+                        {(s.name?.charAt(0) ?? "?").toUpperCase()}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div
+                          className="font-mono text-xs font-bold truncate"
+                          style={{ color: isMe ? "hsl(120 100% 65%)" : "hsl(120 60% 55%)" }}
+                        >
+                          {s.name}
+                        </div>
+                        {isMe && (
+                          <div className="font-mono text-[9px]" style={{ color: "hsl(120 60% 38%)" }}>
+                            {ar ? "[ أنت ]" : "[ you ]"}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* empty slots placeholder if very few players */}
+                {students.length < 4 && Array.from({ length: 4 - students.length }).map((_, i) => (
                   <div
-                    key={s.id}
-                    className="flex items-center gap-2.5 p-3 rounded-xl border-2 bg-white transition-all"
+                    key={`empty-${i}`}
+                    className="flex items-center gap-2.5 p-2.5 rounded-md"
                     style={{
-                      borderColor: isMe ? CRYPTO_GREEN : "hsl(199 23% 18% / 0.18)",
-                      boxShadow: isMe ? `2px 2px 0 0 ${CRYPTO_GREEN}` : "2px 2px 0 0 hsl(199 23% 18% / 0.12)",
-                      animation: `fade-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) ${Math.min(i * 60, 600)}ms both`,
+                      background: "transparent",
+                      border: "1px dashed hsl(120 100% 55% / 0.10)",
+                      opacity: 0.5,
                     }}
                   >
                     <div
-                      className="h-8 w-8 rounded-full flex items-center justify-center font-bold text-white text-xs shrink-0"
-                      style={{ background: av(s.name) }}
+                      className="h-8 w-8 rounded-full shrink-0 font-mono flex items-center justify-center"
+                      style={{ background: "hsl(120 100% 55% / 0.05)", color: "hsl(120 40% 30%)" }}
                     >
-                      {(s.name?.charAt(0) ?? "?").toUpperCase()}
+                      ?
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="text-xs font-semibold truncate" style={{ color: TEAL }}>
-                        {s.name}
-                      </div>
-                      {isMe && (
-                        <div className="text-[10px] font-medium" style={{ color: CRYPTO_GREEN }}>
-                          {ar ? "أنت" : "you"}
-                        </div>
-                      )}
+                    <div
+                      className="font-mono text-xs"
+                      style={{ color: "hsl(120 40% 25%)" }}
+                    >
+                      {ar ? "بالانتظار..." : "waiting..."}
                     </div>
                   </div>
-                );
-              })}
+                ))}
+              </div>
 
-              {/* empty slots placeholder if very few players */}
-              {students.length < 4 && Array.from({ length: 4 - students.length }).map((_, i) => (
-                <div
-                  key={`empty-${i}`}
-                  className="flex items-center gap-2.5 p-3 rounded-xl border-2 border-dashed border-black/10 opacity-50"
-                >
-                  <div className="h-8 w-8 rounded-full shrink-0 flex items-center justify-center bg-black/5 text-black/30 text-xs">
-                    ?
-                  </div>
-                  <div className="text-xs text-black/30">
-                    {ar ? "بالانتظار..." : "waiting..."}
-                  </div>
-                </div>
-              ))}
+              {/* footer status */}
+              <div
+                className="mt-6 font-mono text-[10px] text-center animate-pulse"
+                style={{ color: "hsl(120 40% 35%)" }}
+              >
+                {ar ? "[ اضغط ابدأ على شاشة المعلّم للبدء ]" : "[ press start on teacher's screen to begin ]"}
+              </div>
             </div>
-
-            {/* footer status */}
-            <p className="mt-6 text-xs text-center text-black/40">
-              {ar ? "سيبدأ المعلّم اللعبة قريباً" : "Your teacher will start the game shortly"}
-            </p>
-          </div>
-        )}
+          );
+        })()}
 
         {phase === "done" && (() => {
           const myRank = students.findIndex(s => s.id === studentId) + 1 || 1;
@@ -320,119 +337,157 @@ const Game = () => {
           const top    = students.slice(0, 5);
           const isTop  = myRank === 1;
           const myBal  = me?.crypto ?? 0;
+          const totalLoot = students.reduce((a, s) => a + (s.crypto || 0), 0);
 
           return (
-            <div className="max-w-xl mx-auto py-6 px-2">
-              <div className="text-center mb-6">
-                <div
-                  className="inline-flex h-16 w-16 items-center justify-center rounded-2xl border-2 border-[hsl(var(--nb-border))] bg-white shadow-[3px_3px_0_0_hsl(var(--nb-border))] mb-3"
-                  style={{ color: isTop ? CRYPTO_GREEN : TEAL }}
-                >
-                  <Trophy className="h-8 w-8" />
-                </div>
-                <h1 className="text-[24px] sm:text-[30px] font-bold leading-tight" style={{ color: TEAL, fontFamily: "'ArslanWessam', 'Almarai', sans-serif" }}>
-                  {isTop
-                    ? (ar ? "أنت أفضل لاعب!" : "You're the top earner!")
-                    : (ar ? `حللت في المركز #${myRank}` : `You finished #${myRank}`)}
-                </h1>
-                <p className="mt-2 text-sm text-black/50">
-                  {ar ? `من أصل ${total} لاعب` : `out of ${total} players`}
-                </p>
+            <div className="max-w-2xl mx-auto py-6 px-2 font-mono">
+              {/* boot terminal log */}
+              <div className="space-y-1 text-xs mb-5" style={{ color: "hsl(120 60% 38%)" }}>
+                <div>$ session.disconnect --code={session.code}</div>
+                <div>{">"} {ar ? "تفريغ المحافظ..." : "flushing wallets..."}</div>
+                <div>{">"} {ar ? "حساب الترتيب..." : "computing leaderboard..."}</div>
+                <div style={{ color: "hsl(120 100% 60%)" }}>{">"} {ar ? "تم إنهاء الاتصال" : "CONNECTION_TERMINATED"}</div>
               </div>
 
-              {/* balance card */}
-              <div className="rounded-2xl border-2 border-[hsl(var(--nb-border))] bg-white shadow-[4px_4px_0_0_hsl(var(--nb-border))] p-5 mb-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-black/45">{ar ? "رصيدك النهائي" : "Final balance"}</span>
-                  <div className="flex items-center gap-1.5">
-                    <BitcoinIcon className="h-4 w-4" style={{ color: CRYPTO_GREEN }} strokeWidth={2} />
-                    <span className="font-bold text-lg" style={{ color: TEAL }}>{fmt(myBal)}</span>
-                  </div>
+              {/* status badge */}
+              <div className="mb-5">
+                <div
+                  className="inline-block text-xs px-3 py-1.5 rounded-sm font-bold tracking-widest"
+                  style={{
+                    background: isTop ? "hsl(120 100% 55% / 0.18)" : "hsl(120 100% 55% / 0.06)",
+                    color: isTop ? "hsl(120 100% 70%)" : "hsl(120 60% 55%)",
+                    border: `1px solid hsl(120 100% 55% / ${isTop ? 0.6 : 0.25})`,
+                    textShadow: isTop ? "0 0 12px hsl(120 100% 55% / 0.5)" : "none",
+                  }}
+                >
+                  {isTop ? (ar ? "[ أفضل مخترق ]" : "[ TOP_HACKER ]") : (ar ? `[ الترتيب #${myRank} ]` : `[ RANK_${String(myRank).padStart(2, "0")} ]`)}
                 </div>
+              </div>
+
+              {/* balance display */}
+              <div
+                className="rounded-lg overflow-hidden mb-4 font-mono text-xs md:text-sm"
+                style={{ border: "1px solid hsl(120 100% 55% / 0.4)", color: "hsl(120 100% 55%)" }}
+              >
+                {[
+                  { label: ar ? "الرصيد" : "WALLET_BAL", value: `₿ ${myBal.toLocaleString()}` },
+                  { label: ar ? "ترتيبك" : "YOUR_RANK", value: `#${myRank}` },
+                  { label: ar ? "المخترقون" : "HACKERS", value: `${total}` },
+                ].map((row, i) => (
+                  <div key={row.label}
+                    className="flex items-center justify-between px-4 py-2"
+                    style={{ borderTop: i === 0 ? "none" : "1px solid hsl(120 100% 55% / 0.18)" }}
+                  >
+                    <span style={{ color: "hsl(120 60% 45%)" }}>{row.label}</span>
+                    <span className="font-bold">{row.value}</span>
+                  </div>
+                ))}
               </div>
 
               {/* stats row */}
-              <div className="grid grid-cols-2 gap-2.5 mb-6">
-                <div className="rounded-xl border-2 border-[hsl(var(--nb-border))] bg-white shadow-[2px_2px_0_0_hsl(var(--nb-border))] p-3 text-center">
-                  <div className="text-2xl font-bold" style={{ color: TEAL }}>{me?.correct_answers ?? 0}</div>
-                  <div className="text-[11px] text-black/45 mt-0.5">{ar ? "إجابات صحيحة" : "correct answers"}</div>
-                </div>
-                <div className="rounded-xl border-2 border-[hsl(var(--nb-border))] bg-white shadow-[2px_2px_0_0_hsl(var(--nb-border))] p-3 text-center">
-                  <div className="text-2xl font-bold" style={{ color: TEAL }}>{me?.total_answers ?? 0}</div>
-                  <div className="text-[11px] text-black/45 mt-0.5">{ar ? "مجموع الإجابات" : "total answered"}</div>
-                </div>
+              <div className="grid grid-cols-3 gap-2 mb-5 text-xs">
+                {[
+                  { label: ar ? "صحيحة" : "correct", value: me?.correct_answers ?? 0 },
+                  { label: ar ? "مجاوَبة" : "answered", value: me?.total_answers ?? 0 },
+                  { label: ar ? "من المجموع" : "of_pool", value: `${Math.round((myBal / Math.max(totalLoot, 1)) * 100)}%` },
+                ].map(s => (
+                  <div
+                    key={s.label}
+                    className="p-2.5 rounded-sm"
+                    style={{
+                      background: "hsl(120 100% 55% / 0.04)",
+                      border: "1px solid hsl(120 100% 55% / 0.18)",
+                    }}
+                  >
+                    <div className="text-[10px] tracking-widest" style={{ color: "hsl(120 60% 38%)" }}>
+                      {ar ? s.label : s.label.toUpperCase()}
+                    </div>
+                    <div className="text-base font-bold tabular-nums" style={{ color: "hsl(120 100% 65%)" }}>
+                      {s.value}
+                    </div>
+                  </div>
+                ))}
               </div>
 
-              {/* leaderboard */}
-              <div className="mb-6">
-                <div className="text-xs font-semibold text-black/45 mb-2 uppercase tracking-wide">
-                  {ar ? "الترتيب" : "Leaderboard"}
+              {/* leaderboard as tail output */}
+              <div className="mb-5">
+                <div className="text-xs mb-2 tracking-widest" style={{ color: "hsl(120 60% 38%)" }}>
+                  {ar ? "$ عرض الترتيب" : "$ tail leaderboard.log"}
                 </div>
-                <div className="space-y-1.5">
+                <div className="space-y-0.5">
                   {top.map((s: any, i: number) => {
                     const isMe = s.id === studentId;
                     return (
                       <div
                         key={s.id}
-                        className="flex items-center gap-3 px-3 py-2 rounded-xl border-2"
+                        className="flex items-center gap-3 text-xs md:text-sm px-3 py-1.5 rounded-sm"
                         style={{
-                          background: isMe ? `${CRYPTO_GREEN}14` : "white",
-                          borderColor: isMe ? CRYPTO_GREEN : "hsl(199 23% 18% / 0.15)",
+                          background: isMe ? "hsl(120 100% 55% / 0.10)" : "transparent",
+                          border: `1px solid hsl(120 100% 55% / ${isMe ? 0.45 : 0.10})`,
+                          color: i === 0 ? "hsl(120 100% 70%)" : "hsl(120 60% 55%)",
+                          textShadow: i === 0 ? "0 0 10px hsl(120 100% 55% / 0.4)" : "none",
                         }}
                       >
-                        <span className="w-5 text-center font-bold text-sm" style={{ color: i === 0 ? CRYPTO_GREEN : TEAL }}>{i + 1}</span>
-                        <span className="flex-1 truncate text-sm font-semibold" style={{ color: TEAL }}>
-                          {s.name}{isMe && (ar ? " (أنت)" : " (you)")}
-                        </span>
-                        <span className="font-bold text-sm" style={{ color: TEAL }}>{fmt(s.crypto ?? 0)}</span>
+                        <span className="w-6 tabular-nums font-bold">#{i + 1}</span>
+                        <span className="flex-1 truncate font-bold">{s.name}{isMe && " ←"}</span>
+                        <span className="tabular-nums font-bold">₿{(s.crypto ?? 0).toLocaleString()}</span>
                       </div>
                     );
                   })}
                   {myRank > 5 && (
-                    <div
-                      className="flex items-center gap-3 px-3 py-2 rounded-xl border-2"
-                      style={{ background: `${CRYPTO_GREEN}14`, borderColor: CRYPTO_GREEN }}
-                    >
-                      <span className="w-5 text-center font-bold text-sm" style={{ color: TEAL }}>{myRank}</span>
-                      <span className="flex-1 truncate text-sm font-semibold" style={{ color: TEAL }}>
-                        {me?.name}{ar ? " (أنت)" : " (you)"}
-                      </span>
-                      <span className="font-bold text-sm" style={{ color: TEAL }}>{fmt(myBal)}</span>
-                    </div>
+                    <>
+                      <div className="text-center text-xs" style={{ color: "hsl(120 40% 30%)" }}>...</div>
+                      <div
+                        className="flex items-center gap-3 text-xs md:text-sm px-3 py-1.5 rounded-sm"
+                        style={{
+                          background: "hsl(120 100% 55% / 0.10)",
+                          border: "1px solid hsl(120 100% 55% / 0.45)",
+                          color: "hsl(120 100% 65%)",
+                        }}
+                      >
+                        <span className="w-6 tabular-nums font-bold">#{myRank}</span>
+                        <span className="flex-1 truncate font-bold">{me?.name} ←</span>
+                        <span className="tabular-nums font-bold">₿{myBal.toLocaleString()}</span>
+                      </div>
+                    </>
                   )}
                 </div>
               </div>
 
               <button
                 onClick={() => navigate("/play")}
-                className="w-full py-3 rounded-full border-2 border-[hsl(var(--nb-border))] text-white font-semibold shadow-[3px_3px_0_0_hsl(var(--nb-border))] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0_0_hsl(var(--nb-border))] transition-all"
-                style={{ background: TEAL }}
+                className="w-full py-2.5 text-sm font-bold tracking-widest transition-all rounded-sm"
+                style={{
+                  background: "hsl(120 100% 55% / 0.10)",
+                  color: "hsl(120 100% 65%)",
+                  border: "1px solid hsl(120 100% 55% / 0.5)",
+                }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "hsl(120 100% 55% / 0.20)"; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "hsl(120 100% 55% / 0.10)"; }}
               >
-                {ar ? "العودة" : "Back to home"}
+                {ar ? "[ قطع الاتصال ]" : "[ disconnect ]"}
               </button>
             </div>
           );
         })()}
 
         {(phase === "question" || phase === "answered") && currentQ && (
-          <div className="max-w-3xl mx-auto h-full w-full flex flex-col gap-3 pb-safe">
-            <div className="rounded-2xl border-2 border-[hsl(var(--nb-border))] bg-white shadow-[4px_4px_0_0_hsl(var(--nb-border))] px-4 py-5 md:py-8 text-center shrink-0">
+          <div className="max-w-6xl mx-auto h-full w-full flex flex-col gap-3 pb-safe">
+            <div className="border-y-2 border-primary/40 bg-primary/5 px-4 py-4 md:py-12 text-center shadow-[inset_0_0_30px_hsl(var(--primary)/0.12)] shrink-0">
               {(currentQ as any).image_url && (
                 <img
                   src={(currentQ as any).image_url}
                   alt=""
-                  className="mx-auto mb-3 max-h-[26vh] md:max-h-56 w-auto object-contain rounded-lg border-2 border-[hsl(var(--nb-border))]"
+                  className="mx-auto mb-3 max-h-[28vh] md:max-h-56 w-auto object-contain rounded-md border border-primary/30"
                 />
               )}
-              <p className="text-lg md:text-2xl lg:text-3xl font-semibold leading-relaxed" style={{ color: TEAL }}>
+              <p className="text-lg md:text-3xl lg:text-4xl text-[hsl(120_100%_75%)] font-medium leading-relaxed">
                 {currentQ.text}
               </p>
-              <div className="mt-3 inline-flex items-center gap-1.5 rounded-full border-2 border-[hsl(var(--nb-border))] px-3 py-1" style={{ background: "hsl(40 47% 85%)" }}>
-                <span className="text-xs font-bold tabular-nums" style={{ color: TEAL }}>{timeLeft}s</span>
-              </div>
+              <div className="mt-2 text-xs text-[hsl(120_100%_45%)] tabular-nums">⏱ {timeLeft}s</div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2.5 px-1 flex-1 min-h-0">
+            <div className="grid grid-cols-2 gap-2.5 px-2 md:px-0 flex-1 min-h-0">
               {currentQ.options.map((opt, i) => {
                 const isCorrect = i === currentQ.correct_index;
                 const isPicked = picked === i;
@@ -443,13 +498,12 @@ const Game = () => {
                     disabled={picked !== null}
                     onClick={() => submit(i)}
                     className={cn(
-                      "min-h-[96px] md:min-h-[176px] px-3 py-3 md:py-6 text-center text-base md:text-xl font-semibold border-2 rounded-2xl transition-all break-words active:scale-[0.98] leading-snug",
-                      !showResult && "bg-white border-[hsl(var(--nb-border))] shadow-[3px_3px_0_0_hsl(var(--nb-border))] hover:translate-x-px hover:translate-y-px hover:shadow-[2px_2px_0_0_hsl(var(--nb-border))]",
-                      showResult && isCorrect && "bg-[#16a34a] text-white border-[hsl(var(--nb-border))] shadow-[3px_3px_0_0_hsl(var(--nb-border))]",
-                      showResult && isPicked && !isCorrect && "bg-[#dc2626] text-white border-[hsl(var(--nb-border))] shadow-[3px_3px_0_0_hsl(var(--nb-border))]",
-                      showResult && !isPicked && !isCorrect && "bg-white border-black/10 opacity-30"
+                      "min-h-[96px] md:min-h-[180px] px-3 py-3 md:py-6 text-center text-base md:text-2xl text-primary font-medium border-2 border-primary/60 transition-all break-words active:scale-[0.98] rounded-xl leading-snug",
+                      "bg-primary/10 hover:bg-primary/20 shadow-[inset_0_0_18px_hsl(var(--primary)/0.12)]",
+                      showResult && isCorrect && "bg-[hsl(120_100%_50%)] text-black",
+                      showResult && isPicked && !isCorrect && "bg-[hsl(0_85%_55%)] text-white",
+                      showResult && !isPicked && !isCorrect && "opacity-40"
                     )}
-                    style={!showResult ? { color: TEAL } : undefined}
                   >
                     {opt}
                   </button>
