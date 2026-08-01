@@ -12,6 +12,7 @@ import { OutputCards, OutputResult } from "@/components/game/OutputCards";
 import DodgeballGame from "./DodgeballGame";
 import HotPotatoGame from "./HotPotatoGame";
 import LavaFloorGame from "./LavaFloorGame";
+import ClassicGame from "./ClassicGame";
 import { playSelect, playCorrect, playWrong, playHackAlert, playGameOver, primeAudio } from "@/lib/sound";
 
 type Q = { id: string; text: string; options: string[]; correct_index: number; position: number };
@@ -32,7 +33,10 @@ const MOCK_Q: Q = {
   text: "Which port does HTTPS traffic use by default?",
   options: ["21", "443", "8080", "22"],
 };
-const MOCK_SESSION = { id: "preview", code: "DEMO", quiz_id: "mock", status: "running", settings: { lang: "en", timePerQ: 25 } };
+const getMockSession = () => {
+  const previewMode = new URLSearchParams(window.location.search).get("mode") ?? undefined;
+  return { id: "preview", code: "DEMO", quiz_id: "mock", status: "running", settings: { lang: "en", timePerQ: 25, mode: previewMode } };
+};
 
 const Game = () => {
   const { sessionId } = useParams();
@@ -40,7 +44,7 @@ const Game = () => {
   const isPreview = searchParams.get("preview") === "1";
   const navigate = useNavigate();
   const { i18n } = useTranslation();
-  const [session, setSession] = useState<any>(isPreview ? MOCK_SESSION : null);
+  const [session, setSession] = useState<any>(isPreview ? getMockSession() : null);
   const [questions, setQuestions] = useState<Q[]>(isPreview ? [MOCK_Q] : []);
   const [students, setStudents] = useState<any[]>(isPreview ? MOCK_STUDENTS : []);
   const [me, setMe] = useState<any>(isPreview ? MOCK_STUDENTS[2] : null);
@@ -52,7 +56,7 @@ const Game = () => {
   const [output, setOutput] = useState<OutputResult | null>(null);
   const [currentQ, setCurrentQ] = useState<Q | null>(isPreview ? MOCK_Q : null);
   const [qSeed, setQSeed] = useState(0);
-  const studentId = sessionId ? localStorage.getItem(`hash_student_${sessionId}`) : null;
+  const studentId = sessionId ? (localStorage.getItem(`hash_student_${sessionId}`) ?? (isPreview ? "me" : null)) : null;
   const startedAtRef = useRef<number>(0);
   const askedCount = useRef(0);
   // Keep a ref to students so hack_events callback can read current names
@@ -225,6 +229,9 @@ const Game = () => {
   }
   if (session.settings?.mode === "lavafloor" && studentId) {
     return <LavaFloorGame sessionId={sessionId!} studentId={studentId} />;
+  }
+  if (session.settings?.mode === "classic" && studentId) {
+    return <ClassicGame sessionId={sessionId!} studentId={studentId} />;
   }
 
   return (

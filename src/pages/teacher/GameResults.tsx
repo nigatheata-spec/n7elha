@@ -70,6 +70,8 @@ const GameResults = () => {
   }, [phase]);
 
   const mode = session?.settings?.mode ?? "crypto_rush";
+  // classic mode also scores by accumulated points stored in the `crypto` column
+  const isPointsMode = mode === "crypto_rush" || mode === "classic";
 
   const ranked = useMemo(() => {
     if (mode === "dodgeball") {
@@ -98,10 +100,10 @@ const GameResults = () => {
   const winner = ranked[0];
 
   const exportCsv = () => {
-    const header = ["Rank","Name", mode === "crypto_rush" ? "Crypto" : "Status", "Correct","Total","Accuracy%"];
+    const header = ["Rank","Name", mode === "crypto_rush" ? "Crypto" : mode === "classic" ? "Points" : "Status", "Correct","Total","Accuracy%"];
     const rows = ranked.map((s, i) => {
       const a = s.total_answers ? (s.correct_answers / s.total_answers) * 100 : 0;
-      const metric = mode === "crypto_rush" ? String(s.crypto) : (s.eliminated ? "Eliminated" : "Survived");
+      const metric = isPointsMode ? String(s.crypto) : (s.eliminated ? "Eliminated" : "Survived");
       return [String(i + 1), s.name, metric, String(s.correct_answers), String(s.total_answers), a.toFixed(0)];
     });
     const csv = [header, ...rows].map(r => r.map(c => `"${c}"`).join(",")).join("\n");
@@ -253,7 +255,7 @@ const GameResults = () => {
                 <div className="text-2xl md:text-3xl font-black tracking-tight text-primary leading-none">
                   {winner.name}
                 </div>
-                {mode === "crypto_rush" ? (
+                {isPointsMode ? (
                   <div className="text-3xl md:text-4xl font-black tabular-nums text-primary"
                     style={{ textShadow: "0 0 24px hsl(16 100% 66% / 0.5)" }}>
                     {fmt(winner.crypto)}
@@ -277,7 +279,7 @@ const GameResults = () => {
                     <Avatar name={s.name} size="sm" />
                     <span className="font-bold text-primary flex-1 truncate min-w-0">{s.name}</span>
                     <span className="text-xs text-primary/65 tabular-nums shrink-0">{pct(acc)}</span>
-                    {mode === "crypto_rush"
+                    {isPointsMode
                       ? <span className="font-black tabular-nums text-primary text-sm shrink-0">{fmt(s.crypto)}</span>
                       : <span className={cn("text-[10px] font-bold tracking-widest shrink-0",
                           s.eliminated ? "text-destructive/80" : "text-primary/80")}>
@@ -320,7 +322,7 @@ const GameResults = () => {
                 <thead>
                   <tr className="border-b border-primary/25 bg-primary/10">
                     {["#", "Player",
-                      mode === "crypto_rush" ? "Crypto" : "Status",
+                      isPointsMode ? "Points" : "Status",
                       "Correct", "Accuracy",
                       ...(mode === "crypto_rush" ? ["Hacks"] : [])
                     ].map(h => (
@@ -346,7 +348,7 @@ const GameResults = () => {
                             {i === 0 && <Trophy className="h-3.5 w-3.5 text-amber-400 shrink-0" />}
                           </div>
                         </td>
-                        {mode === "crypto_rush"
+                        {isPointsMode
                           ? <td className="px-4 py-3 text-center font-black tabular-nums text-primary">{fmt(s.crypto)}</td>
                           : <td className="px-4 py-3 text-center">
                               <span className={cn("text-[10px] font-bold tracking-widest",

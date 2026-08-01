@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
-import { Copy, Play, Users, Trash2, Zap, Heart, Skull, Timer, Trophy, Flame, ChevronLeft, Check, Minus, Plus } from "lucide-react";
+import { Copy, Play, Users, Trash2, Zap, Heart, Skull, Timer, Trophy, Flame, ChevronLeft, Check, Minus, Plus, ListChecks } from "lucide-react";
 import { BitcoinIcon, StopwatchIcon, LavaBucketIcon, DynamiteIcon } from "@/components/game/icons";
 import { toast } from "sonner";
 
@@ -12,9 +12,19 @@ const genCode = () => {
   return Array.from({ length: 4 }, () => c[Math.floor(Math.random() * c.length)]).join("");
 };
 
-type GameMode = "crypto_rush" | "dodgeball" | "hotpotato" | "lavafloor";
+type GameMode = "crypto_rush" | "dodgeball" | "hotpotato" | "lavafloor" | "classic";
 
 const MODES: { id: GameMode; icon: React.ReactNode; label: string; labelAr: string; desc: string; descAr: string; accent: string; num: string }[] = [
+  {
+    id: "classic",
+    icon: <ListChecks className="h-6 w-6" strokeWidth={2} />,
+    label: "Classic",
+    labelAr: "كلاسيكي",
+    desc: "Answer fast, earn more — the original quiz race",
+    descAr: "أجب بسرعة، اكسب أكثر — سباق الأسئلة الأصلي",
+    accent: "#FF8254",
+    num: "00",
+  },
   {
     id: "crypto_rush",
     icon: <BitcoinIcon className="h-6 w-6" strokeWidth={2} />,
@@ -323,6 +333,19 @@ const HostGame = () => {
 
             {/* Mode description */}
             <div className="rounded-xl p-4 text-sm bg-[hsl(var(--background))] border border-black/[0.06] space-y-3">
+              {mode === "classic" && (
+                <>
+                  <p className="text-black/65 leading-relaxed">
+                    {ar
+                      ? "أجب على الأسئلة بأسرع ما يمكن. الإجابة الصحيحة السريعة تكسب نقاطاً أكثر من الإجابة الصحيحة البطيئة."
+                      : "Answer questions as fast as you can. A quick correct answer earns more points than a slow one."}
+                  </p>
+                  <div className="flex items-center gap-2 text-black/45">
+                    <Trophy className="h-4 w-4 shrink-0" style={{ color: selectedAccent }} />
+                    <span>{ar ? "أعلى نقاط عند انتهاء الوقت يفوز" : "Highest points when time runs out wins"}</span>
+                  </div>
+                </>
+              )}
               {mode === "crypto_rush" && (
                 <>
                   <p className="text-black/65 leading-relaxed">
