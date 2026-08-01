@@ -249,16 +249,7 @@ const Game = () => {
 
         {/* WAITING ──────────────────────────────────────────────────────────── */}
         {phase === "waiting" && (
-          <div className="flex-1 flex flex-col max-w-xl mx-auto w-full px-4 py-6 overflow-y-auto">
-            {/* bold boot header */}
-            <div className="mb-5">
-              <h1
-                className="text-2xl md:text-3xl font-black uppercase leading-none"
-                style={{ color: "var(--g-bright)", letterSpacing: "0.02em", textShadow: "0 0 24px hsl(120 100% 55% / 0.35)" }}
-              >
-                {ar ? "أهلاً أيها المخترق" : "Welcome Hacker"}
-              </h1>
-            </div>
+          <div className="flex-1 flex flex-col max-w-xl mx-auto w-full px-4 py-5 overflow-y-auto">
             {/* terminal prompt */}
             <div className="mb-6 space-y-0.5 text-xs" style={{ color: "var(--g-dim)" }}>
               <div>$ ./connect --session={session.code} --user=&quot;{me?.name}&quot;</div>
@@ -358,7 +349,7 @@ const Game = () => {
                 />
               )}
               <p
-                className="text-xl md:text-2xl font-bold leading-snug"
+                className="text-xl md:text-2xl font-medium leading-snug"
                 style={{ color: "hsl(120 100% 82%)" }}
               >
                 {currentQ.text}
@@ -409,7 +400,7 @@ const Game = () => {
                     )}
                     style={{
                       background: bg,
-                      border: `2px solid ${border}`,
+                      border: `1px solid ${border}`,
                       color,
                       opacity,
                       transition: "border-color 0.2s, opacity 0.2s",
@@ -424,17 +415,17 @@ const Game = () => {
                     }}
                   >
                     <span
-                      className="shrink-0 w-9 h-9 flex items-center justify-center text-sm font-black"
+                      className="shrink-0 w-7 h-7 flex items-center justify-center text-xs font-bold"
                       style={{
                         background: keyBg,
                         color: keyColor,
-                        border: `2px solid ${border}`,
+                        border: `1px solid ${border}`,
                         transition: "all 0.2s",
                       }}
                     >
                       {KEYS[i]}
                     </span>
-                    <span className="font-bold text-base md:text-lg leading-snug flex-1">
+                    <span className="font-medium text-base md:text-lg leading-snug flex-1">
                       {opt}
                     </span>
                     {showResult && isCorrect && (
@@ -478,18 +469,12 @@ const Game = () => {
 
               {/* rank badge */}
               <div>
-                <h1
-                  className="text-2xl md:text-3xl font-black uppercase leading-none mb-3"
-                  style={{ color: "var(--g-bright)", letterSpacing: "0.02em", textShadow: "0 0 24px hsl(120 100% 55% / 0.35)" }}
-                >
-                  {ar ? "تم الفصل" : "Disconnected"}
-                </h1>
                 <span
-                  className="inline-block text-[11px] px-2.5 py-1.5 tracking-widest font-black"
+                  className="inline-block text-[11px] px-2.5 py-1 tracking-widest font-bold"
                   style={{
                     background: isTop ? "hsl(120 100% 55% / 0.13)" : "hsl(120 100% 55% / 0.05)",
                     color: isTop ? "var(--g-bright)" : "var(--g-mid)",
-                    border: `2px solid hsl(120 100% 55% / ${isTop ? 0.5 : 0.18})`,
+                    border: `1px solid hsl(120 100% 55% / ${isTop ? 0.5 : 0.18})`,
                     boxShadow: isTop ? "0 0 18px hsl(120 100% 55% / 0.12)" : "none",
                   }}
                 >
