@@ -100,7 +100,7 @@ const ClassicGame = ({ sessionId, studentId }: Props) => {
   // realtime
   useEffect(() => {
     if (!sessionId || isPreview) return;
-    const ch = supabase.channel(`game-${sessionId}`)
+    const ch = supabase.channel(`cl-game-${sessionId}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "game_sessions", filter: `id=eq.${sessionId}` },
         (p: any) => setSession((prev: any) => ({ ...prev, ...p.new })))
       .on("postgres_changes", { event: "*", schema: "public", table: "game_students", filter: `session_id=eq.${sessionId}` },
