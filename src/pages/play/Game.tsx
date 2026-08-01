@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,19 +18,39 @@ type Q = { id: string; text: string; options: string[]; correct_index: number; p
 
 const fmt = (n: number) => n.toLocaleString();
 
+// DEV-ONLY PREVIEW HARNESS — view any phase at /play/preview?preview=1&phase=waiting|question|done
+// No Supabase writes, no accounts. Remove before shipping to production.
+const MOCK_STUDENTS = [
+  { id: "s1", name: "Sara",   crypto: 4200, correct_answers: 8, total_answers: 9 },
+  { id: "s2", name: "Omar",   crypto: 3100, correct_answers: 6, total_answers: 9 },
+  { id: "me", name: "You",    crypto: 2750, correct_answers: 5, total_answers: 9 },
+  { id: "s4", name: "Lina",   crypto: 1900, correct_answers: 4, total_answers: 9 },
+  { id: "s5", name: "Yousef", crypto:  900, correct_answers: 2, total_answers: 9 },
+];
+const MOCK_Q: Q = {
+  id: "q1", position: 0, correct_index: 1,
+  text: "Which port does HTTPS traffic use by default?",
+  options: ["21", "443", "8080", "22"],
+};
+const MOCK_SESSION = { id: "preview", code: "DEMO", quiz_id: "mock", status: "running", settings: { lang: "en", timePerQ: 25 } };
+
 const Game = () => {
   const { sessionId } = useParams();
+  const [searchParams] = useSearchParams();
+  const isPreview = searchParams.get("preview") === "1";
   const navigate = useNavigate();
   const { i18n } = useTranslation();
-  const [session, setSession] = useState<any>(null);
-  const [questions, setQuestions] = useState<Q[]>([]);
-  const [students, setStudents] = useState<any[]>([]);
-  const [me, setMe] = useState<any>(null);
-  const [phase, setPhase] = useState<"waiting"|"question"|"answered"|"output"|"hacking"|"breach"|"done">("waiting");
+  const [session, setSession] = useState<any>(isPreview ? MOCK_SESSION : null);
+  const [questions, setQuestions] = useState<Q[]>(isPreview ? [MOCK_Q] : []);
+  const [students, setStudents] = useState<any[]>(isPreview ? MOCK_STUDENTS : []);
+  const [me, setMe] = useState<any>(isPreview ? MOCK_STUDENTS[2] : null);
+  const [phase, setPhase] = useState<"waiting"|"question"|"answered"|"output"|"hacking"|"breach"|"done">(
+    isPreview ? ((searchParams.get("phase") as any) ?? "waiting") : "waiting"
+  );
   const [picked, setPicked] = useState<number | null>(null);
   const [timeLeft, setTimeLeft] = useState(0);
   const [output, setOutput] = useState<OutputResult | null>(null);
-  const [currentQ, setCurrentQ] = useState<Q | null>(null);
+  const [currentQ, setCurrentQ] = useState<Q | null>(isPreview ? MOCK_Q : null);
   const [qSeed, setQSeed] = useState(0);
   const studentId = sessionId ? localStorage.getItem(`hash_student_${sessionId}`) : null;
   const startedAtRef = useRef<number>(0);
@@ -58,6 +78,11 @@ const Game = () => {
   // initial load
   useEffect(() => {
     if (!sessionId) return;
+    if (isPreview) {
+      const p = (searchParams.get("phase") as any) ?? "waiting";
+      setPhase(p);
+      return;
+    }
     (async () => {
       const { data: s } = await supabase.from("game_sessions").select("*, quizzes(id, title)").eq("id", sessionId).maybeSingle();
       setSession(s);
@@ -77,7 +102,7 @@ const Game = () => {
   // realtime — deps contain only stable values so the channel is created once
   // and never torn down mid-game due to score updates changing `students`.
   useEffect(() => {
-    if (!sessionId) return;
+    if (!sessionId || isPreview) return;
     const ch = supabase.channel(`game-${sessionId}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "game_sessions", filter: `id=eq.${sessionId}` },
         (p: any) => setSession((prev: any) => ({ ...prev, ...p.new })))
@@ -104,7 +129,7 @@ const Game = () => {
 
   // status sync
   useEffect(() => {
-    if (!session) return;
+    if (!session || isPreview) return;
     if (session.status === "lobby") setPhase("waiting");
     else if (session.status === "finished") setPhase("done");
     else if (session.status === "running") {
@@ -160,14 +185,16 @@ const Game = () => {
     setPicked(idx);
     const correct = idx === currentQ.correct_index;
     if (correct) playCorrect(); else playWrong();
-    await supabase.from("question_responses").insert({
-      session_id: sessionId, student_id: me.id, question_id: currentQ.id,
-      question_index: askedCount.current, answer_index: idx, is_correct: correct,
-    });
-    await supabase.from("game_students").update({
-      total_answers: me.total_answers + 1,
-      correct_answers: me.correct_answers + (correct ? 1 : 0),
-    }).eq("id", me.id);
+    if (!isPreview) {
+      await supabase.from("question_responses").insert({
+        session_id: sessionId, student_id: me.id, question_id: currentQ.id,
+        question_index: askedCount.current, answer_index: idx, is_correct: correct,
+      });
+      await supabase.from("game_students").update({
+        total_answers: me.total_answers + 1,
+        correct_answers: me.correct_answers + (correct ? 1 : 0),
+      }).eq("id", me.id);
+    }
     if (correct) setTimeout(() => setPhase("output"), 700);
     else setTimeout(() => setPhase("answered"), 700);
   };
@@ -178,7 +205,7 @@ const Game = () => {
     let delta = 0;
     if (r.kind === "flat") delta = r.value;
     if (r.kind === "mult") delta = Math.floor(me.crypto * (r.value - 1));
-    if (delta !== 0) {
+    if (delta !== 0 && !isPreview) {
       await supabase.from("game_students").update({ crypto: me.crypto + delta }).eq("id", me.id);
     }
     if (r.kind === "hack") { setTimeout(() => setPhase("hacking"), 700); return; }
@@ -201,317 +228,199 @@ const Game = () => {
   }
 
   return (
-    <div className="theme-game terminal-screen min-h-[100dvh] text-foreground font-mono flex flex-col overflow-hidden">
-      <div className="pointer-events-none fixed inset-0 terminal-scanlines" />
-      {/* Minimal sticky top bar — name left, ₿ crypto right */}
-      <header className="relative flex items-center justify-between px-4 py-3 text-primary border-b border-primary/30 sticky top-0 bg-background/75 backdrop-blur-sm z-10">
-        <div className="font-medium text-sm md:text-base truncate max-w-[55%]">{me?.name ?? "—"}</div>
-        <div className="text-lg md:text-xl font-bold tracking-wider whitespace-nowrap">
+    <div className="theme-game terminal-screen crt-flicker min-h-[100dvh] font-mono flex flex-col overflow-hidden"
+      style={{ color: "hsl(120 90% 62%)" }}>
+      <div className="pointer-events-none fixed inset-0 terminal-scanlines z-20" />
+      <div className="pointer-events-none fixed inset-0 terminal-vignette z-20" />
+
+      {/* minimal top strip — small wordmark left, balance right, sits directly on the CRT glass */}
+      <header className="relative shrink-0 flex items-center justify-between px-4 pt-3 pb-1 z-10">
+        <span className="text-[11px] font-bold tracking-widest" style={{ color: "hsl(120 60% 42%)" }}>
+          n7elha
+        </span>
+        <span className="flex items-center gap-1.5 text-sm font-bold tabular-nums" style={{ color: "hsl(120 100% 68%)" }}>
           ₿ {fmt(me?.crypto ?? 0)}
-        </div>
+        </span>
       </header>
 
-      <main className="relative flex-1 px-3 md:px-6 pb-4">
-        {phase === "waiting" && (() => {
-          const AV_COLORS = ["#16a34a","#0891b2","#7c3aed","#dc2626","#b45309","#2563eb","#c2410c","#0f766e"];
-          const av = (name: string) => {
-            let h = 0;
-            for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xffffffff;
-            return AV_COLORS[Math.abs(h) % AV_COLORS.length];
-          };
-          return (
-            <div className="max-w-3xl mx-auto py-8 md:py-12 px-2">
-              {/* terminal header */}
-              <div className="mb-6 font-mono text-xs" style={{ color: "hsl(120 60% 38%)" }}>
-                $ ./connect --session={session.code}
-              </div>
+      <main className="relative flex-1 flex flex-col min-h-0 overflow-hidden z-10">
 
-              <div className="text-center mb-8">
-                <div
-                  className="font-mono text-2xl md:text-3xl font-bold mb-2"
-                  style={{ color: "hsl(120 100% 60%)", textShadow: "0 0 20px hsl(120 100% 55% / 0.5)" }}
-                >
-                  {ar ? "> بانتظار المصافحة" : "> awaiting handshake"}<span className="animate-pulse">█</span>
-                </div>
-                <p className="font-mono text-xs md:text-sm" style={{ color: "hsl(120 40% 45%)" }}>
-                  {ar ? "بانتظار المعلّم لبدء الجلسة" : "Waiting for the teacher to start"}
-                </p>
-              </div>
+        {/* WAITING — boot sequence + peer list ─────────────────────────────── */}
+        {phase === "waiting" && (
+          <div className="flex-1 flex flex-col max-w-md mx-auto w-full px-5 py-4 overflow-y-auto">
+            <h1
+              className="font-pixel text-center leading-[1.7] mb-4"
+              style={{ fontSize: "clamp(13px, 4vw, 18px)" }}
+            >
+              <span style={{ color: "hsl(120 90% 55%)" }}>WELCOME </span>
+              <span style={{ color: "hsl(0 0% 96%)" }}>HACKER</span>
+            </h1>
 
-              {/* live joiner count */}
-              <div
-                className="flex items-center justify-between font-mono text-xs px-3 py-2 mb-3"
-                style={{
-                  borderTop: "1px solid hsl(120 100% 55% / 0.18)",
-                  borderBottom: "1px solid hsl(120 100% 55% / 0.18)",
-                  color: "hsl(120 60% 50%)",
-                }}
-              >
-                <span>{ar ? "المتصلون" : "HACKERS_ONLINE"}</span>
-                <span className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full animate-pulse" style={{ background: "hsl(120 100% 55%)" }} />
-                  <span className="font-bold tabular-nums" style={{ color: "hsl(120 100% 60%)" }}>
-                    {students.length.toString().padStart(2, "0")}
-                  </span>
-                </span>
-              </div>
+            <div className="space-y-1 text-xs leading-relaxed mb-5" style={{ color: "hsl(120 80% 60%)" }}>
+              <div>{">"} {ar ? "تم رصد لاعب جديد!" : "New player detected!"}</div>
+              <div>{">"} {ar ? "جلسة #" : "session #"}{session.code}</div>
+              <div>{">"} {ar ? "بانتظار بدء المضيف" : "waiting for host to start"}<span className="animate-pulse">_</span></div>
+            </div>
 
-              {/* student grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-                {students.map((s, i) => {
-                  const isMe = s.id === studentId;
-                  return (
-                    <div
-                      key={s.id}
-                      className="flex items-center gap-2.5 p-2.5 rounded-md transition-all"
-                      style={{
-                        background: isMe ? "hsl(120 100% 55% / 0.10)" : "hsl(120 100% 55% / 0.03)",
-                        border: `1px solid hsl(120 100% 55% / ${isMe ? 0.5 : 0.18})`,
-                        animation: `fade-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) ${Math.min(i * 60, 600)}ms both`,
-                      }}
-                    >
-                      <div
-                        className="h-8 w-8 rounded-full flex items-center justify-center font-black text-white text-xs shrink-0 font-mono"
-                        style={{ background: av(s.name) }}
-                      >
-                        {(s.name?.charAt(0) ?? "?").toUpperCase()}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div
-                          className="font-mono text-xs font-bold truncate"
-                          style={{ color: isMe ? "hsl(120 100% 65%)" : "hsl(120 60% 55%)" }}
-                        >
-                          {s.name}
-                        </div>
-                        {isMe && (
-                          <div className="font-mono text-[9px]" style={{ color: "hsl(120 60% 38%)" }}>
-                            {ar ? "[ أنت ]" : "[ you ]"}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-
-                {/* empty slots placeholder if very few players */}
-                {students.length < 4 && Array.from({ length: 4 - students.length }).map((_, i) => (
+            <div className="flex-1 space-y-px">
+              {students.map((s, i) => {
+                const isMe = s.id === studentId;
+                return (
                   <div
-                    key={`empty-${i}`}
-                    className="flex items-center gap-2.5 p-2.5 rounded-md"
+                    key={s.id}
+                    className="flex items-center gap-3 px-1 py-1.5 text-sm"
                     style={{
-                      background: "transparent",
-                      border: "1px dashed hsl(120 100% 55% / 0.10)",
-                      opacity: 0.5,
+                      color: isMe ? "hsl(0 0% 96%)" : "hsl(120 70% 55%)",
+                      animation: `fade-up 0.25s cubic-bezier(0.16,1,0.3,1) ${Math.min(i * 45, 450)}ms both`,
                     }}
                   >
-                    <div
-                      className="h-8 w-8 rounded-full shrink-0 font-mono flex items-center justify-center"
-                      style={{ background: "hsl(120 100% 55% / 0.05)", color: "hsl(120 40% 30%)" }}
-                    >
-                      ?
-                    </div>
-                    <div
-                      className="font-mono text-xs"
-                      style={{ color: "hsl(120 40% 25%)" }}
-                    >
-                      {ar ? "بالانتظار..." : "waiting..."}
-                    </div>
+                    <span style={{ color: "hsl(120 50% 38%)" }}>{">"}</span>
+                    <span className="flex-1 truncate font-bold">{s.name}</span>
+                    {isMe && (
+                      <span className="text-[10px] tracking-widest" style={{ color: "hsl(120 50% 38%)" }}>
+                        {ar ? "[أنت]" : "[you]"}
+                      </span>
+                    )}
                   </div>
-                ))}
-              </div>
-
-              {/* footer status */}
-              <div
-                className="mt-6 font-mono text-[10px] text-center animate-pulse"
-                style={{ color: "hsl(120 40% 35%)" }}
-              >
-                {ar ? "[ اضغط ابدأ على شاشة المعلّم للبدء ]" : "[ press start on teacher's screen to begin ]"}
-              </div>
+                );
+              })}
             </div>
-          );
-        })()}
 
-        {phase === "done" && (() => {
-          const myRank = students.findIndex(s => s.id === studentId) + 1 || 1;
-          const total  = students.length || 1;
-          const top    = students.slice(0, 5);
-          const isTop  = myRank === 1;
-          const myBal  = me?.crypto ?? 0;
-          const totalLoot = students.reduce((a, s) => a + (s.crypto || 0), 0);
-
-          return (
-            <div className="max-w-2xl mx-auto py-6 px-2 font-mono">
-              {/* boot terminal log */}
-              <div className="space-y-1 text-xs mb-5" style={{ color: "hsl(120 60% 38%)" }}>
-                <div>$ session.disconnect --code={session.code}</div>
-                <div>{">"} {ar ? "تفريغ المحافظ..." : "flushing wallets..."}</div>
-                <div>{">"} {ar ? "حساب الترتيب..." : "computing leaderboard..."}</div>
-                <div style={{ color: "hsl(120 100% 60%)" }}>{">"} {ar ? "تم إنهاء الاتصال" : "CONNECTION_TERMINATED"}</div>
-              </div>
-
-              {/* status badge */}
-              <div className="mb-5">
-                <div
-                  className="inline-block text-xs px-3 py-1.5 rounded-sm font-bold tracking-widest"
-                  style={{
-                    background: isTop ? "hsl(120 100% 55% / 0.18)" : "hsl(120 100% 55% / 0.06)",
-                    color: isTop ? "hsl(120 100% 70%)" : "hsl(120 60% 55%)",
-                    border: `1px solid hsl(120 100% 55% / ${isTop ? 0.6 : 0.25})`,
-                    textShadow: isTop ? "0 0 12px hsl(120 100% 55% / 0.5)" : "none",
-                  }}
-                >
-                  {isTop ? (ar ? "[ أفضل مخترق ]" : "[ TOP_HACKER ]") : (ar ? `[ الترتيب #${myRank} ]` : `[ RANK_${String(myRank).padStart(2, "0")} ]`)}
-                </div>
-              </div>
-
-              {/* balance display */}
-              <div
-                className="rounded-lg overflow-hidden mb-4 font-mono text-xs md:text-sm"
-                style={{ border: "1px solid hsl(120 100% 55% / 0.4)", color: "hsl(120 100% 55%)" }}
-              >
-                {[
-                  { label: ar ? "الرصيد" : "WALLET_BAL", value: `₿ ${myBal.toLocaleString()}` },
-                  { label: ar ? "ترتيبك" : "YOUR_RANK", value: `#${myRank}` },
-                  { label: ar ? "المخترقون" : "HACKERS", value: `${total}` },
-                ].map((row, i) => (
-                  <div key={row.label}
-                    className="flex items-center justify-between px-4 py-2"
-                    style={{ borderTop: i === 0 ? "none" : "1px solid hsl(120 100% 55% / 0.18)" }}
-                  >
-                    <span style={{ color: "hsl(120 60% 45%)" }}>{row.label}</span>
-                    <span className="font-bold">{row.value}</span>
-                  </div>
-                ))}
-              </div>
-
-              {/* stats row */}
-              <div className="grid grid-cols-3 gap-2 mb-5 text-xs">
-                {[
-                  { label: ar ? "صحيحة" : "correct", value: me?.correct_answers ?? 0 },
-                  { label: ar ? "مجاوَبة" : "answered", value: me?.total_answers ?? 0 },
-                  { label: ar ? "من المجموع" : "of_pool", value: `${Math.round((myBal / Math.max(totalLoot, 1)) * 100)}%` },
-                ].map(s => (
-                  <div
-                    key={s.label}
-                    className="p-2.5 rounded-sm"
-                    style={{
-                      background: "hsl(120 100% 55% / 0.04)",
-                      border: "1px solid hsl(120 100% 55% / 0.18)",
-                    }}
-                  >
-                    <div className="text-[10px] tracking-widest" style={{ color: "hsl(120 60% 38%)" }}>
-                      {ar ? s.label : s.label.toUpperCase()}
-                    </div>
-                    <div className="text-base font-bold tabular-nums" style={{ color: "hsl(120 100% 65%)" }}>
-                      {s.value}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* leaderboard as tail output */}
-              <div className="mb-5">
-                <div className="text-xs mb-2 tracking-widest" style={{ color: "hsl(120 60% 38%)" }}>
-                  {ar ? "$ عرض الترتيب" : "$ tail leaderboard.log"}
-                </div>
-                <div className="space-y-0.5">
-                  {top.map((s: any, i: number) => {
-                    const isMe = s.id === studentId;
-                    return (
-                      <div
-                        key={s.id}
-                        className="flex items-center gap-3 text-xs md:text-sm px-3 py-1.5 rounded-sm"
-                        style={{
-                          background: isMe ? "hsl(120 100% 55% / 0.10)" : "transparent",
-                          border: `1px solid hsl(120 100% 55% / ${isMe ? 0.45 : 0.10})`,
-                          color: i === 0 ? "hsl(120 100% 70%)" : "hsl(120 60% 55%)",
-                          textShadow: i === 0 ? "0 0 10px hsl(120 100% 55% / 0.4)" : "none",
-                        }}
-                      >
-                        <span className="w-6 tabular-nums font-bold">#{i + 1}</span>
-                        <span className="flex-1 truncate font-bold">{s.name}{isMe && " ←"}</span>
-                        <span className="tabular-nums font-bold">₿{(s.crypto ?? 0).toLocaleString()}</span>
-                      </div>
-                    );
-                  })}
-                  {myRank > 5 && (
-                    <>
-                      <div className="text-center text-xs" style={{ color: "hsl(120 40% 30%)" }}>...</div>
-                      <div
-                        className="flex items-center gap-3 text-xs md:text-sm px-3 py-1.5 rounded-sm"
-                        style={{
-                          background: "hsl(120 100% 55% / 0.10)",
-                          border: "1px solid hsl(120 100% 55% / 0.45)",
-                          color: "hsl(120 100% 65%)",
-                        }}
-                      >
-                        <span className="w-6 tabular-nums font-bold">#{myRank}</span>
-                        <span className="flex-1 truncate font-bold">{me?.name} ←</span>
-                        <span className="tabular-nums font-bold">₿{myBal.toLocaleString()}</span>
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              <button
-                onClick={() => navigate("/play")}
-                className="w-full py-2.5 text-sm font-bold tracking-widest transition-all rounded-sm"
-                style={{
-                  background: "hsl(120 100% 55% / 0.10)",
-                  color: "hsl(120 100% 65%)",
-                  border: "1px solid hsl(120 100% 55% / 0.5)",
-                }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "hsl(120 100% 55% / 0.20)"; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "hsl(120 100% 55% / 0.10)"; }}
-              >
-                {ar ? "[ قطع الاتصال ]" : "[ disconnect ]"}
-              </button>
+            <div className="mt-5 text-[11px] text-center" style={{ color: "hsl(120 50% 38%)" }}>
+              {ar ? `[ ${students.length} متصل ]` : `[ ${students.length} connected ]`}
             </div>
-          );
-        })()}
+          </div>
+        )}
 
+        {/* QUESTION / ANSWERED ──────────────────────────────────────────────── */}
         {(phase === "question" || phase === "answered") && currentQ && (
-          <div className="max-w-6xl mx-auto h-full w-full flex flex-col gap-3 pb-safe">
-            <div className="border-y-2 border-primary/40 bg-primary/5 px-4 py-4 md:py-12 text-center shadow-[inset_0_0_30px_hsl(var(--primary)/0.12)] shrink-0">
+          <div className="flex-1 flex flex-col max-w-md mx-auto w-full px-5 py-4 gap-5 overflow-hidden">
+            <div className="shrink-0 pt-2">
               {(currentQ as any).image_url && (
                 <img
                   src={(currentQ as any).image_url}
                   alt=""
-                  className="mx-auto mb-3 max-h-[28vh] md:max-h-56 w-auto object-contain rounded-md border border-primary/30"
+                  className="mb-3 max-h-[24vh] w-auto object-contain"
+                  style={{ border: "1px solid hsl(120 100% 55% / 0.3)" }}
                 />
               )}
-              <p className="text-lg md:text-3xl lg:text-4xl text-[hsl(120_100%_75%)] font-medium leading-relaxed">
+              <p className="text-lg md:text-xl font-bold leading-snug" style={{ color: "hsl(0 0% 96%)" }}>
                 {currentQ.text}
               </p>
-              <div className="mt-2 text-xs text-[hsl(120_100%_45%)] tabular-nums">⏱ {timeLeft}s</div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2.5 px-2 md:px-0 flex-1 min-h-0">
+            <div className="flex flex-col gap-2.5 flex-1 min-h-0 justify-center">
               {currentQ.options.map((opt, i) => {
                 const isCorrect = i === currentQ.correct_index;
-                const isPicked = picked === i;
+                const isPicked  = picked === i;
                 const showResult = picked !== null;
+
+                let border = "hsl(120 100% 55% / 0.55)";
+                let color  = "hsl(120 90% 62%)";
+                let anim   = "";
+                let opacity = 1;
+
+                if (showResult) {
+                  if (isCorrect) {
+                    color = "hsl(0 0% 100%)";
+                    anim = "ans-correct";
+                  } else if (isPicked) {
+                    border = "hsl(0 85% 60%)";
+                    color = "hsl(0 0% 100%)";
+                    anim = "ans-wrong";
+                  } else {
+                    opacity = 0.35;
+                  }
+                }
+
                 return (
                   <button
                     key={i}
                     disabled={picked !== null}
                     onClick={() => submit(i)}
-                    className={cn(
-                      "min-h-[96px] md:min-h-[180px] px-3 py-3 md:py-6 text-center text-base md:text-2xl text-primary font-medium border-2 border-primary/60 transition-all break-words active:scale-[0.98] rounded-xl leading-snug",
-                      "bg-primary/10 hover:bg-primary/20 shadow-[inset_0_0_18px_hsl(var(--primary)/0.12)]",
-                      showResult && isCorrect && "bg-[hsl(120_100%_50%)] text-black",
-                      showResult && isPicked && !isCorrect && "bg-[hsl(0_85%_55%)] text-white",
-                      showResult && !isPicked && !isCorrect && "opacity-40"
-                    )}
+                    className={cn("px-4 py-3 text-center font-bold text-base active:scale-[0.98] transition-all", anim)}
+                    style={{ border: `2px solid ${border}`, color, opacity }}
                   >
-                    {opt}
+                    [ {opt} ]
                   </button>
                 );
               })}
             </div>
           </div>
         )}
+
+        {/* DONE — shutdown log + leaderboard ────────────────────────────────── */}
+        {phase === "done" && (() => {
+          const myRank    = students.findIndex(s => s.id === studentId) + 1 || 1;
+          const total     = students.length || 1;
+          const top       = students.slice(0, 5);
+          const isTop     = myRank === 1;
+          const myBal     = me?.crypto ?? 0;
+
+          return (
+            <div className="flex-1 max-w-md mx-auto w-full px-5 py-4 flex flex-col gap-4 overflow-y-auto">
+              <h1
+                className="font-pixel text-center leading-[1.7] mb-1"
+                style={{ fontSize: "clamp(12px, 3.6vw, 16px)" }}
+              >
+                <span style={{ color: "hsl(0 0% 96%)" }}>SESSION </span>
+                <span style={{ color: "hsl(120 90% 55%)" }}>OVER</span>
+              </h1>
+
+              <div className="space-y-1 text-xs leading-relaxed" style={{ color: "hsl(120 80% 60%)" }}>
+                <div>{">"} {ar ? "تفريغ المحافظ..." : "flushing wallets..."}</div>
+                <div>{">"} {ar ? "حساب الترتيب..." : "computing leaderboard..."}</div>
+                <div style={{ color: "hsl(0 0% 96%)" }}>
+                  {">"} {isTop
+                    ? (ar ? "أنت أفضل مخترق!" : "you're the top hacker!")
+                    : (ar ? `ترتيبك #${myRank} من ${total}` : `you ranked #${myRank} of ${total}`)}
+                </div>
+              </div>
+
+              <div className="text-sm py-2" style={{ color: "hsl(120 90% 62%)" }}>
+                {">"} {ar ? "رصيدك النهائي" : "your final balance"}:{" "}
+                <span className="font-bold" style={{ color: "hsl(0 0% 96%)" }}>₿{myBal.toLocaleString()}</span>
+              </div>
+
+              <div>
+                <div className="text-[11px] mb-1.5" style={{ color: "hsl(120 50% 38%)" }}>
+                  {ar ? "الترتيب" : "leaderboard"}
+                </div>
+                <div className="space-y-1">
+                  {top.map((s: any, i: number) => {
+                    const isMe = s.id === studentId;
+                    return (
+                      <div
+                        key={s.id}
+                        className="flex items-center gap-2 text-sm px-1 py-1"
+                        style={{ color: isMe ? "hsl(0 0% 96%)" : "hsl(120 70% 55%)" }}
+                      >
+                        <span style={{ color: "hsl(120 50% 38%)" }}>{i + 1}.</span>
+                        <span className="flex-1 truncate font-bold">{s.name}{isMe && " ←"}</span>
+                        <span className="tabular-nums font-bold">₿{(s.crypto ?? 0).toLocaleString()}</span>
+                      </div>
+                    );
+                  })}
+                  {myRank > 5 && (
+                    <div className="flex items-center gap-2 text-sm px-1 py-1" style={{ color: "hsl(0 0% 96%)" }}>
+                      <span style={{ color: "hsl(120 50% 38%)" }}>{myRank}.</span>
+                      <span className="flex-1 truncate font-bold">{me?.name} ←</span>
+                      <span className="tabular-nums font-bold">₿{myBal.toLocaleString()}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <button
+                onClick={() => navigate("/play")}
+                className="mt-auto py-3 text-sm font-bold"
+                style={{ border: "2px solid hsl(120 100% 55% / 0.5)", color: "hsl(120 90% 62%)" }}
+              >
+                [ {ar ? "خروج" : "exit"} ]
+              </button>
+            </div>
+          );
+        })()}
 
         {phase === "output" && me && (
           <OutputCards onPick={onOutput} picked={output} ar={ar} />
