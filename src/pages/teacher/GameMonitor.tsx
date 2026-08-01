@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import DodgeballMonitor from "./DodgeballMonitor";
 import HotPotatoMonitor from "./HotPotatoMonitor";
 import LavaFloorMonitor from "./LavaFloorMonitor";
+import ClassicMonitor from "./ClassicMonitor";
 
 const fmt = (n: number) => n.toLocaleString();
 
@@ -63,7 +64,7 @@ const GameMonitor = () => {
     const sess = sessionRef.current;
     if (!sess || sess.status !== "running") return;
     const mode = sess.settings?.mode;
-    if (mode === "hotpotato" || mode === "dodgeball" || mode === "lavafloor") return;
+    if (mode === "hotpotato" || mode === "dodgeball" || mode === "lavafloor" || mode === "classic") return;
     const timeUp = minutes != null && left === 0;
     if (timeUp || reachedCap) {
       if (ending) return;
@@ -75,7 +76,7 @@ const GameMonitor = () => {
   useEffect(() => {
     if (!session) return;
     const mode = session.settings?.mode;
-    if (mode === "hotpotato" || mode === "dodgeball" || mode === "lavafloor") return;
+    if (mode === "hotpotato" || mode === "dodgeball" || mode === "lavafloor" || mode === "classic") return;
     if (session.status === "finished") nav(`/app/games/${session.id}/results`, { replace: true });
   }, [session?.status]);
 
@@ -100,6 +101,7 @@ const GameMonitor = () => {
   if (session.settings?.mode === "dodgeball") return <DodgeballMonitor session={session} sessionId={sessionId!} />;
   if (session.settings?.mode === "hotpotato") return <HotPotatoMonitor session={session} sessionId={sessionId!} />;
   if (session.settings?.mode === "lavafloor") return <LavaFloorMonitor session={session} sessionId={sessionId!} />;
+  if (session.settings?.mode === "classic") return <ClassicMonitor session={session} sessionId={sessionId!} />;
 
   const mm = left != null ? String(Math.floor(left / 60)).padStart(2, "0") : null;
   const ss_str = left != null ? String(left % 60).padStart(2, "0") : null;
