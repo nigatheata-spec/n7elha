@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import logoLight from "@/assets/logo-light.png";
 import { BitcoinIcon, StopwatchIcon, LavaBucketIcon, DynamiteIcon } from "@/components/game/icons";
+import { ListChecks } from "lucide-react";
 
 type IconComponent = (props: { className?: string; size?: number; strokeWidth?: number; style?: React.CSSProperties }) => JSX.Element;
 
@@ -40,6 +41,19 @@ type ModeTheme = {
 };
 
 const MODES: Record<string, ModeTheme> = {
+  classic: {
+    bg: "#150b08",
+    glow: "radial-gradient(ellipse at 50% 30%, #2b140a 0%, #150b08 70%)",
+    accent: "#FF8254",
+    accentDim: "#FF825422",
+    accentBorder: "#FF825445",
+    label: "Classic",
+    labelAr: "كلاسيكي",
+    tagline: "Answer fast — climb the board",
+    taglineAr: "أجب بسرعة — تصدّر الترتيب",
+    btnColor: "#fff",
+    icon: ListChecks,
+  },
   crypto_rush: {
     bg: "#06110d",
     glow: "radial-gradient(ellipse at 50% 30%, #0c2b1f 0%, #06110d 70%)",
