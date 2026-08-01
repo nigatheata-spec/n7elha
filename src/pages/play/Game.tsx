@@ -1,10 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { HackingFlow } from "@/components/game/HackingFlow";
 import { BreachModal } from "@/components/game/BreachModal";
@@ -18,34 +16,50 @@ type Q = { id: string; text: string; options: string[]; correct_index: number; p
 
 const fmt = (n: number) => n.toLocaleString();
 
+// DEV-ONLY preview harness — lets us view any phase at /play/preview?preview=1&phase=waiting|question|done
+const MOCK_STUDENTS = [
+  { id: "s1", name: "Sara",   crypto: 4200, correct_answers: 8, total_answers: 9 },
+  { id: "s2", name: "Omar",   crypto: 3100, correct_answers: 6, total_answers: 9 },
+  { id: "me", name: "You",    crypto: 2750, correct_answers: 5, total_answers: 9 },
+  { id: "s4", name: "Lina",   crypto: 1900, correct_answers: 4, total_answers: 9 },
+  { id: "s5", name: "Yousef", crypto:  900, correct_answers: 2, total_answers: 9 },
+];
+const MOCK_Q: Q = {
+  id: "q1", position: 0, correct_index: 1,
+  text: "Which port does HTTPS traffic use by default?",
+  options: ["21", "443", "8080", "22"],
+};
+const MOCK_SESSION = { id: "preview", code: "DEMO", quiz_id: "mock", status: "running", settings: { lang: "en", timePerQ: 25 } };
+
 const Game = () => {
   const { sessionId } = useParams();
+  const [searchParams] = useSearchParams();
+  const isPreview = searchParams.get("preview") === "1";
   const navigate = useNavigate();
   const { i18n } = useTranslation();
-  const [session, setSession] = useState<any>(null);
-  const [questions, setQuestions] = useState<Q[]>([]);
-  const [students, setStudents] = useState<any[]>([]);
-  const [me, setMe] = useState<any>(null);
-  const [phase, setPhase] = useState<"waiting"|"question"|"answered"|"output"|"hacking"|"breach"|"done">("waiting");
-  const [picked, setPicked] = useState<number | null>(null);
+  const [session,   setSession]   = useState<any>(isPreview ? MOCK_SESSION : null);
+  const [questions, setQuestions] = useState<Q[]>(isPreview ? [MOCK_Q] : []);
+  const [students,  setStudents]  = useState<any[]>(isPreview ? MOCK_STUDENTS : []);
+  const [me,        setMe]        = useState<any>(isPreview ? MOCK_STUDENTS[2] : null);
+  const [phase, setPhase] = useState<"waiting"|"question"|"answered"|"output"|"hacking"|"breach"|"done">(
+    isPreview ? ((searchParams.get("phase") as any) ?? "waiting") : "waiting"
+  );
+  const [picked,   setPicked]   = useState<number | null>(null);
   const [timeLeft, setTimeLeft] = useState(0);
-  const [output, setOutput] = useState<OutputResult | null>(null);
-  const [currentQ, setCurrentQ] = useState<Q | null>(null);
-  const [qSeed, setQSeed] = useState(0);
-  const studentId = sessionId ? localStorage.getItem(`hash_student_${sessionId}`) : null;
-  const startedAtRef = useRef<number>(0);
-  const askedCount = useRef(0);
-  // Keep a ref to students so hack_events callback can read current names
-  // without causing the realtime channel to tear down on every score update.
-  const studentsRef = useRef<any[]>([]);
+  const [output,   setOutput]   = useState<OutputResult | null>(null);
+  const [currentQ, setCurrentQ] = useState<Q | null>(isPreview ? MOCK_Q : null);
+  const [qSeed,    setQSeed]    = useState(0);
+  const studentId      = sessionId ? localStorage.getItem(`hash_student_${sessionId}`) : null;
+  const startedAtRef   = useRef<number>(0);
+  const askedCount     = useRef(0);
+  const studentsRef    = useRef<any[]>([]);
 
-  // paint root black while in game so cream body never bleeds through
+  // paint root black while in game
   useEffect(() => {
     const prevHtml = document.documentElement.style.background;
     const prevBody = document.body.style.background;
     document.documentElement.style.background = "#050505";
     document.body.style.background = "#050505";
-    // Prime audio on first user gesture (required by iOS Safari)
     const onFirstTouch = () => { primeAudio(); window.removeEventListener("pointerdown", onFirstTouch); };
     window.addEventListener("pointerdown", onFirstTouch, { once: true });
     return () => {
@@ -57,7 +71,7 @@ const Game = () => {
 
   // initial load
   useEffect(() => {
-    if (!sessionId) return;
+    if (!sessionId || isPreview) return;
     (async () => {
       const { data: s } = await supabase.from("game_sessions").select("*, quizzes(id, title)").eq("id", sessionId).maybeSingle();
       setSession(s);
@@ -71,13 +85,11 @@ const Game = () => {
     })();
   }, [sessionId, studentId]);
 
-  // Keep studentsRef in sync every render so closures always see current list
   studentsRef.current = students;
 
-  // realtime — deps contain only stable values so the channel is created once
-  // and never torn down mid-game due to score updates changing `students`.
+  // realtime
   useEffect(() => {
-    if (!sessionId) return;
+    if (!sessionId || isPreview) return;
     const ch = supabase.channel(`game-${sessionId}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "game_sessions", filter: `id=eq.${sessionId}` },
         (p: any) => setSession((prev: any) => ({ ...prev, ...p.new })))
@@ -91,7 +103,6 @@ const Game = () => {
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "hack_events", filter: `session_id=eq.${sessionId}` },
         (p: any) => {
           const ev = p.new;
-          // Use ref — not state — so this callback never causes channel re-creation
           const hacker = studentsRef.current.find((x: any) => x.id === ev.hacker_id)?.name ?? "?";
           const target = studentsRef.current.find((x: any) => x.id === ev.target_id)?.name ?? "?";
           if (ev.success) {
@@ -100,11 +111,11 @@ const Game = () => {
         })
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, [sessionId, studentId]); // ← `students` removed: channel stays alive for the whole session
+  }, [sessionId, studentId]);
 
   // status sync
   useEffect(() => {
-    if (!session) return;
+    if (!session || isPreview) return;
     if (session.status === "lobby") setPhase("waiting");
     else if (session.status === "finished") setPhase("done");
     else if (session.status === "running") {
@@ -116,12 +127,11 @@ const Game = () => {
     }
   }, [session?.status]);
 
-  // Play game-over fanfare once when teacher ends the session
   useEffect(() => {
     if (phase === "done") playGameOver();
   }, [phase]);
 
-  // pick a random new question whenever entering "question" phase
+  // pick question
   useEffect(() => {
     if (phase !== "question" || questions.length === 0) return;
     const next = questions[Math.floor(Math.random() * questions.length)];
@@ -134,7 +144,7 @@ const Game = () => {
 
   const duration = session?.settings?.timePerQ ?? 25;
 
-  // per-question countdown
+  // countdown
   useEffect(() => {
     if (phase !== "question" || !currentQ) return;
     const t = setInterval(() => {
@@ -149,7 +159,7 @@ const Game = () => {
   // auto-advance after wrong/timeout
   useEffect(() => {
     if (phase !== "answered") return;
-    const t = setTimeout(() => setQSeed(s => s + 1), 1400);
+    const t  = setTimeout(() => setQSeed(s => s + 1), 1400);
     const t2 = setTimeout(() => setPhase("question"), 1450);
     return () => { clearTimeout(t); clearTimeout(t2); };
   }, [phase]);
@@ -185,267 +195,353 @@ const Game = () => {
     setTimeout(() => { setQSeed(s => s + 1); setPhase("question"); }, 1200);
   };
 
-  if (!session) return <div className="theme-game terminal-screen min-h-screen text-foreground flex items-center justify-center font-mono">...</div>;
+  if (!session) return (
+    <div className="theme-game terminal-screen min-h-screen text-foreground flex items-center justify-center font-mono"
+      style={{ color: "var(--g-dim)" }}>
+      $ connecting...
+    </div>
+  );
 
   const ar = session.settings?.lang === "ar";
 
-  // Route to mode-specific game
-  if (session.settings?.mode === "dodgeball" && studentId) {
+  if (session.settings?.mode === "dodgeball" && studentId)
     return <DodgeballGame sessionId={sessionId!} studentId={studentId} />;
-  }
-  if (session.settings?.mode === "hotpotato" && studentId) {
+  if (session.settings?.mode === "hotpotato" && studentId)
     return <HotPotatoGame sessionId={sessionId!} studentId={studentId} />;
-  }
-  if (session.settings?.mode === "lavafloor" && studentId) {
+  if (session.settings?.mode === "lavafloor" && studentId)
     return <LavaFloorGame sessionId={sessionId!} studentId={studentId} />;
-  }
+
+  // ─── Answer key labels ───────────────────────────────────────────────────────
+  const KEYS = ["A", "B", "C", "D"];
 
   return (
-    <div className="theme-game terminal-screen min-h-[100dvh] text-foreground font-mono flex flex-col overflow-hidden">
+    <div className="theme-game terminal-screen min-h-[100dvh] font-mono flex flex-col overflow-hidden"
+      style={{ color: "var(--g-mid)" }}>
       <div className="pointer-events-none fixed inset-0 terminal-scanlines" />
-      {/* Minimal sticky top bar — name left, ₿ crypto right */}
-      <header className="relative flex items-center justify-between px-4 py-3 text-primary border-b border-primary/30 sticky top-0 bg-background/75 backdrop-blur-sm z-10">
-        <div className="font-medium text-sm md:text-base truncate max-w-[55%]">{me?.name ?? "—"}</div>
-        <div className="text-lg md:text-xl font-bold tracking-wider whitespace-nowrap">
-          ₿ {fmt(me?.crypto ?? 0)}
+
+      {/* ── TOP STATUS BAR ──────────────────────────────────────────────────── */}
+      <header
+        className="relative shrink-0 flex items-center justify-between px-4 py-2.5 sticky top-0 z-10"
+        style={{
+          background: "hsl(0 0% 2% / 0.92)",
+          backdropFilter: "blur(8px)",
+          borderBottom: "1px solid hsl(120 100% 55% / 0.18)",
+        }}
+      >
+        <div className="flex items-center gap-2.5 min-w-0">
+          <span className="text-[10px] tracking-widest shrink-0" style={{ color: "var(--g-dim)" }}>
+            [{session.code}]
+          </span>
+          <span className="text-sm font-bold truncate" style={{ color: "var(--g-mid)" }}>
+            {me?.name ?? "—"}
+          </span>
+        </div>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <span className="text-[11px]" style={{ color: "var(--g-dim)" }}>₿</span>
+          <span className="text-base font-bold tabular-nums" style={{ color: "var(--g-bright)" }}>
+            {fmt(me?.crypto ?? 0)}
+          </span>
         </div>
       </header>
 
-      <main className="relative flex-1 px-3 md:px-6 pb-4">
-        {phase === "waiting" && (() => {
-          const AV_COLORS = ["#16a34a","#0891b2","#7c3aed","#dc2626","#b45309","#2563eb","#c2410c","#0f766e"];
-          const av = (name: string) => {
-            let h = 0;
-            for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xffffffff;
-            return AV_COLORS[Math.abs(h) % AV_COLORS.length];
-          };
-          return (
-            <div className="max-w-3xl mx-auto py-8 md:py-12 px-2">
-              {/* terminal header */}
-              <div className="mb-6 font-mono text-xs" style={{ color: "hsl(120 60% 38%)" }}>
-                $ ./connect --session={session.code}
-              </div>
+      {/* ── MAIN CONTENT ────────────────────────────────────────────────────── */}
+      <main className="relative flex-1 flex flex-col min-h-0 overflow-hidden">
 
-              <div className="text-center mb-8">
-                <div
-                  className="font-mono text-2xl md:text-3xl font-bold mb-2"
-                  style={{ color: "hsl(120 100% 60%)", textShadow: "0 0 20px hsl(120 100% 55% / 0.5)" }}
-                >
-                  {ar ? "> بانتظار المصافحة" : "> awaiting handshake"}<span className="animate-pulse">█</span>
-                </div>
-                <p className="font-mono text-xs md:text-sm" style={{ color: "hsl(120 40% 45%)" }}>
-                  {ar ? "بانتظار المعلّم لبدء الجلسة" : "Waiting for the teacher to start"}
-                </p>
-              </div>
-
-              {/* live joiner count */}
-              <div
-                className="flex items-center justify-between font-mono text-xs px-3 py-2 mb-3"
-                style={{
-                  borderTop: "1px solid hsl(120 100% 55% / 0.18)",
-                  borderBottom: "1px solid hsl(120 100% 55% / 0.18)",
-                  color: "hsl(120 60% 50%)",
-                }}
-              >
-                <span>{ar ? "المتصلون" : "HACKERS_ONLINE"}</span>
-                <span className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full animate-pulse" style={{ background: "hsl(120 100% 55%)" }} />
-                  <span className="font-bold tabular-nums" style={{ color: "hsl(120 100% 60%)" }}>
-                    {students.length.toString().padStart(2, "0")}
-                  </span>
-                </span>
-              </div>
-
-              {/* student grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-                {students.map((s, i) => {
-                  const isMe = s.id === studentId;
-                  return (
-                    <div
-                      key={s.id}
-                      className="flex items-center gap-2.5 p-2.5 rounded-md transition-all"
-                      style={{
-                        background: isMe ? "hsl(120 100% 55% / 0.10)" : "hsl(120 100% 55% / 0.03)",
-                        border: `1px solid hsl(120 100% 55% / ${isMe ? 0.5 : 0.18})`,
-                        animation: `fade-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) ${Math.min(i * 60, 600)}ms both`,
-                      }}
-                    >
-                      <div
-                        className="h-8 w-8 rounded-full flex items-center justify-center font-black text-white text-xs shrink-0 font-mono"
-                        style={{ background: av(s.name) }}
-                      >
-                        {(s.name?.charAt(0) ?? "?").toUpperCase()}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div
-                          className="font-mono text-xs font-bold truncate"
-                          style={{ color: isMe ? "hsl(120 100% 65%)" : "hsl(120 60% 55%)" }}
-                        >
-                          {s.name}
-                        </div>
-                        {isMe && (
-                          <div className="font-mono text-[9px]" style={{ color: "hsl(120 60% 38%)" }}>
-                            {ar ? "[ أنت ]" : "[ you ]"}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-
-                {/* empty slots placeholder if very few players */}
-                {students.length < 4 && Array.from({ length: 4 - students.length }).map((_, i) => (
-                  <div
-                    key={`empty-${i}`}
-                    className="flex items-center gap-2.5 p-2.5 rounded-md"
-                    style={{
-                      background: "transparent",
-                      border: "1px dashed hsl(120 100% 55% / 0.10)",
-                      opacity: 0.5,
-                    }}
-                  >
-                    <div
-                      className="h-8 w-8 rounded-full shrink-0 font-mono flex items-center justify-center"
-                      style={{ background: "hsl(120 100% 55% / 0.05)", color: "hsl(120 40% 30%)" }}
-                    >
-                      ?
-                    </div>
-                    <div
-                      className="font-mono text-xs"
-                      style={{ color: "hsl(120 40% 25%)" }}
-                    >
-                      {ar ? "بالانتظار..." : "waiting..."}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* footer status */}
-              <div
-                className="mt-6 font-mono text-[10px] text-center animate-pulse"
-                style={{ color: "hsl(120 40% 35%)" }}
-              >
-                {ar ? "[ اضغط ابدأ على شاشة المعلّم للبدء ]" : "[ press start on teacher's screen to begin ]"}
+        {/* WAITING ──────────────────────────────────────────────────────────── */}
+        {phase === "waiting" && (
+          <div className="flex-1 flex flex-col max-w-xl mx-auto w-full px-4 py-5 overflow-y-auto">
+            {/* terminal prompt */}
+            <div className="mb-6 space-y-0.5 text-xs" style={{ color: "var(--g-dim)" }}>
+              <div>$ ./connect --session={session.code} --user=&quot;{me?.name}&quot;</div>
+              <div style={{ color: "var(--g-mid)" }}>
+                {">"} {ar ? "اتصال ناجح. بانتظار بدء الجلسة." : "connection established. awaiting session start."}
+                <span className="animate-pulse">█</span>
               </div>
             </div>
-          );
-        })()}
 
+            {/* peers header */}
+            <div
+              className="flex items-center justify-between text-[11px] mb-1 pb-1.5 tracking-widest"
+              style={{ borderBottom: "1px solid hsl(120 100% 55% / 0.15)", color: "var(--g-dim)" }}
+            >
+              <span>{ar ? "الأقران" : "PEERS"}</span>
+              <span className="flex items-center gap-1.5">
+                <span className="h-1.5 w-1.5 rounded-full animate-pulse"
+                  style={{ background: "hsl(120 100% 55%)" }} />
+                <span className="font-bold tabular-nums" style={{ color: "var(--g-bright)" }}>
+                  {students.length.toString().padStart(2, "0")}
+                </span>
+              </span>
+            </div>
+
+            {/* player rows — monospace, no colored circles */}
+            <div className="flex-1 space-y-px">
+              {students.map((s, i) => {
+                const isMe = s.id === studentId;
+                return (
+                  <div
+                    key={s.id}
+                    className="flex items-center gap-3 px-3 py-2 text-sm"
+                    style={{
+                      background: isMe ? "hsl(120 100% 55% / 0.06)" : "transparent",
+                      borderLeft: `2px solid hsl(120 100% 55% / ${isMe ? 0.65 : 0.14})`,
+                      animation: `fade-up 0.28s cubic-bezier(0.16,1,0.3,1) ${Math.min(i * 45, 450)}ms both`,
+                    }}
+                  >
+                    <span
+                      className="text-[11px] tabular-nums w-6 shrink-0"
+                      style={{ color: "var(--g-dim)" }}
+                    >
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+                    <span
+                      className="flex-1 truncate font-bold"
+                      style={{ color: isMe ? "var(--g-bright)" : "var(--g-mid)" }}
+                    >
+                      {s.name}
+                    </span>
+                    {isMe && (
+                      <span className="text-[10px] tracking-widest shrink-0" style={{ color: "var(--g-dim)" }}>
+                        {ar ? "[أنت]" : "[you]"}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+              {/* empty slots */}
+              {students.length < 3 && Array.from({ length: 3 - students.length }).map((_, i) => (
+                <div
+                  key={`e-${i}`}
+                  className="flex items-center gap-3 px-3 py-2 text-sm"
+                  style={{ borderLeft: "2px dashed hsl(120 100% 55% / 0.08)", opacity: 0.4 }}
+                >
+                  <span className="text-[11px] tabular-nums w-6 shrink-0" style={{ color: "var(--g-dim)" }}>
+                    {String(students.length + i + 1).padStart(2, "0")}
+                  </span>
+                  <span className="text-[11px]" style={{ color: "var(--g-dim)" }}>
+                    {ar ? "بانتظار..." : "waiting..."}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-5 text-[10px] text-center animate-pulse" style={{ color: "var(--g-dim)" }}>
+              {ar ? "[ اضغط ابدأ على شاشة المعلّم ]" : "[ waiting for teacher to start the session ]"}
+            </div>
+          </div>
+        )}
+
+        {/* QUESTION / ANSWERED ──────────────────────────────────────────────── */}
+        {(phase === "question" || phase === "answered") && currentQ && (
+          <div className="flex-1 flex flex-col max-w-xl mx-auto w-full px-4 py-4 gap-4 overflow-hidden">
+
+            {/* question text */}
+            <div className="shrink-0 pt-1">
+              <div className="text-[11px] mb-2" style={{ color: "var(--g-dim)" }}>
+                {ar ? "$ السؤال" : "$ prompt.txt"}
+              </div>
+              {(currentQ as any).image_url && (
+                <img
+                  src={(currentQ as any).image_url}
+                  alt=""
+                  className="mb-3 max-h-[26vh] w-auto object-contain"
+                  style={{ border: "1px solid hsl(120 100% 55% / 0.22)" }}
+                />
+              )}
+              <p
+                className="text-xl md:text-2xl font-medium leading-snug"
+                style={{ color: "hsl(120 100% 82%)" }}
+              >
+                {currentQ.text}
+              </p>
+            </div>
+
+            {/* answer rows [A] [B] [C] [D] */}
+            <div className="flex flex-col gap-1.5 flex-1 min-h-0">
+              {currentQ.options.map((opt, i) => {
+                const isCorrect = i === currentQ.correct_index;
+                const isPicked  = picked === i;
+                const showResult = picked !== null;
+
+                let bg      = "transparent";
+                let border  = "hsl(120 100% 55% / 0.18)";
+                let color   = "var(--g-mid)";
+                let keyBg   = "hsl(120 100% 55% / 0.07)";
+                let keyColor = "hsl(120 50% 48%)";
+                let opacity  = 1;
+                let animClass = "";
+
+                if (showResult) {
+                  if (isCorrect) {
+                    border   = "hsl(120 100% 55% / 0.85)";
+                    color    = "var(--g-bright)";
+                    keyBg    = "hsl(120 100% 55%)";
+                    keyColor = "hsl(120 5% 5%)";
+                    animClass = "ans-correct";
+                  } else if (isPicked) {
+                    border   = "hsl(0 85% 60% / 0.65)";
+                    color    = "hsl(0 80% 75%)";
+                    keyBg    = "hsl(0 80% 55% / 0.25)";
+                    keyColor = "hsl(0 80% 75%)";
+                    animClass = "ans-wrong";
+                  } else {
+                    opacity = 0.28;
+                  }
+                }
+
+                return (
+                  <button
+                    key={i}
+                    disabled={picked !== null}
+                    onClick={() => submit(i)}
+                    className={cn(
+                      "flex items-center gap-3 px-3 py-3.5 text-left w-full transition-all active:scale-[0.99]",
+                      animClass
+                    )}
+                    style={{
+                      background: bg,
+                      border: `1px solid ${border}`,
+                      color,
+                      opacity,
+                      transition: "border-color 0.2s, opacity 0.2s",
+                    }}
+                    onMouseEnter={e => {
+                      if (picked === null)
+                        (e.currentTarget as HTMLElement).style.background = "hsl(120 100% 55% / 0.06)";
+                    }}
+                    onMouseLeave={e => {
+                      if (picked === null)
+                        (e.currentTarget as HTMLElement).style.background = "transparent";
+                    }}
+                  >
+                    <span
+                      className="shrink-0 w-7 h-7 flex items-center justify-center text-xs font-bold"
+                      style={{
+                        background: keyBg,
+                        color: keyColor,
+                        border: `1px solid ${border}`,
+                        transition: "all 0.2s",
+                      }}
+                    >
+                      {KEYS[i]}
+                    </span>
+                    <span className="font-medium text-base md:text-lg leading-snug flex-1">
+                      {opt}
+                    </span>
+                    {showResult && isCorrect && (
+                      <span className="text-xs shrink-0 font-bold" style={{ color: "var(--g-bright)" }}>
+                        {ar ? "✓ صحيح" : "✓ correct"}
+                      </span>
+                    )}
+                    {showResult && isPicked && !isCorrect && (
+                      <span className="text-xs shrink-0 font-bold" style={{ color: "hsl(0 80% 70%)" }}>
+                        {ar ? "✗ خطأ" : "✗ wrong"}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* DONE ─────────────────────────────────────────────────────────────── */}
         {phase === "done" && (() => {
-          const myRank = students.findIndex(s => s.id === studentId) + 1 || 1;
-          const total  = students.length || 1;
-          const top    = students.slice(0, 5);
-          const isTop  = myRank === 1;
-          const myBal  = me?.crypto ?? 0;
+          const myRank    = students.findIndex(s => s.id === studentId) + 1 || 1;
+          const total     = students.length || 1;
+          const top       = students.slice(0, 5);
+          const isTop     = myRank === 1;
+          const myBal     = me?.crypto ?? 0;
           const totalLoot = students.reduce((a, s) => a + (s.crypto || 0), 0);
 
           return (
-            <div className="max-w-2xl mx-auto py-6 px-2 font-mono">
-              {/* boot terminal log */}
-              <div className="space-y-1 text-xs mb-5" style={{ color: "hsl(120 60% 38%)" }}>
-                <div>$ session.disconnect --code={session.code}</div>
+            <div className="flex-1 max-w-xl mx-auto w-full px-4 py-5 flex flex-col gap-5 overflow-y-auto">
+
+              {/* terminal shutdown log */}
+              <div className="space-y-0.5 text-xs" style={{ color: "var(--g-dim)" }}>
+                <div>$ session.end --code={session.code}</div>
                 <div>{">"} {ar ? "تفريغ المحافظ..." : "flushing wallets..."}</div>
                 <div>{">"} {ar ? "حساب الترتيب..." : "computing leaderboard..."}</div>
-                <div style={{ color: "hsl(120 100% 60%)" }}>{">"} {ar ? "تم إنهاء الاتصال" : "CONNECTION_TERMINATED"}</div>
+                <div style={{ color: "var(--g-bright)" }}>
+                  {">"} {ar ? "تم إنهاء الاتصال" : "CONNECTION_TERMINATED"}
+                </div>
               </div>
 
-              {/* status badge */}
-              <div className="mb-5">
-                <div
-                  className="inline-block text-xs px-3 py-1.5 rounded-sm font-bold tracking-widest"
+              {/* rank badge */}
+              <div>
+                <span
+                  className="inline-block text-[11px] px-2.5 py-1 tracking-widest font-bold"
                   style={{
-                    background: isTop ? "hsl(120 100% 55% / 0.18)" : "hsl(120 100% 55% / 0.06)",
-                    color: isTop ? "hsl(120 100% 70%)" : "hsl(120 60% 55%)",
-                    border: `1px solid hsl(120 100% 55% / ${isTop ? 0.6 : 0.25})`,
-                    textShadow: isTop ? "0 0 12px hsl(120 100% 55% / 0.5)" : "none",
+                    background: isTop ? "hsl(120 100% 55% / 0.13)" : "hsl(120 100% 55% / 0.05)",
+                    color: isTop ? "var(--g-bright)" : "var(--g-mid)",
+                    border: `1px solid hsl(120 100% 55% / ${isTop ? 0.5 : 0.18})`,
+                    boxShadow: isTop ? "0 0 18px hsl(120 100% 55% / 0.12)" : "none",
                   }}
                 >
-                  {isTop ? (ar ? "[ أفضل مخترق ]" : "[ TOP_HACKER ]") : (ar ? `[ الترتيب #${myRank} ]` : `[ RANK_${String(myRank).padStart(2, "0")} ]`)}
-                </div>
+                  {isTop
+                    ? (ar ? "[ أفضل مخترق ]" : "[ TOP_HACKER ]")
+                    : (ar ? `[ الترتيب #${myRank} ]` : `[ RANK_${String(myRank).padStart(2, "0")} ]`)}
+                </span>
               </div>
 
-              {/* balance display */}
-              <div
-                className="rounded-lg overflow-hidden mb-4 font-mono text-xs md:text-sm"
-                style={{ border: "1px solid hsl(120 100% 55% / 0.4)", color: "hsl(120 100% 55%)" }}
-              >
+              {/* stats as terminal key-value output */}
+              <div className="text-xs space-y-0.5">
+                <div className="mb-2" style={{ color: "var(--g-dim)" }}>$ session.stats --me</div>
                 {[
-                  { label: ar ? "الرصيد" : "WALLET_BAL", value: `₿ ${myBal.toLocaleString()}` },
-                  { label: ar ? "ترتيبك" : "YOUR_RANK", value: `#${myRank}` },
-                  { label: ar ? "المخترقون" : "HACKERS", value: `${total}` },
-                ].map((row, i) => (
-                  <div key={row.label}
-                    className="flex items-center justify-between px-4 py-2"
-                    style={{ borderTop: i === 0 ? "none" : "1px solid hsl(120 100% 55% / 0.18)" }}
-                  >
-                    <span style={{ color: "hsl(120 60% 45%)" }}>{row.label}</span>
-                    <span className="font-bold">{row.value}</span>
+                  { k: ar ? "الرصيد_النهائي"   : "WALLET_BALANCE", v: `₿ ${myBal.toLocaleString()}` },
+                  { k: ar ? "الترتيب_النهائي"  : "FINAL_RANK",     v: `#${myRank} of ${total}` },
+                  { k: ar ? "إجابات_صحيحة"     : "CORRECT_ANS",    v: `${me?.correct_answers ?? 0} / ${me?.total_answers ?? 0}` },
+                  { k: ar ? "حصة_من_المجموع"   : "POOL_SHARE",     v: `${Math.round((myBal / Math.max(totalLoot, 1)) * 100)}%` },
+                ].map(row => (
+                  <div key={row.k} className="flex items-baseline gap-2">
+                    <span className="w-40 shrink-0 text-[11px]" style={{ color: "var(--g-dim)" }}>{row.k}</span>
+                    <span className="font-bold" style={{ color: "var(--g-bright)" }}>{row.v}</span>
                   </div>
                 ))}
               </div>
 
-              {/* stats row */}
-              <div className="grid grid-cols-3 gap-2 mb-5 text-xs">
-                {[
-                  { label: ar ? "صحيحة" : "correct", value: me?.correct_answers ?? 0 },
-                  { label: ar ? "مجاوَبة" : "answered", value: me?.total_answers ?? 0 },
-                  { label: ar ? "من المجموع" : "of_pool", value: `${Math.round((myBal / Math.max(totalLoot, 1)) * 100)}%` },
-                ].map(s => (
-                  <div
-                    key={s.label}
-                    className="p-2.5 rounded-sm"
-                    style={{
-                      background: "hsl(120 100% 55% / 0.04)",
-                      border: "1px solid hsl(120 100% 55% / 0.18)",
-                    }}
-                  >
-                    <div className="text-[10px] tracking-widest" style={{ color: "hsl(120 60% 38%)" }}>
-                      {ar ? s.label : s.label.toUpperCase()}
-                    </div>
-                    <div className="text-base font-bold tabular-nums" style={{ color: "hsl(120 100% 65%)" }}>
-                      {s.value}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* leaderboard as tail output */}
-              <div className="mb-5">
-                <div className="text-xs mb-2 tracking-widest" style={{ color: "hsl(120 60% 38%)" }}>
-                  {ar ? "$ عرض الترتيب" : "$ tail leaderboard.log"}
+              {/* leaderboard */}
+              <div>
+                <div className="text-[11px] mb-1.5" style={{ color: "var(--g-dim)" }}>
+                  $ tail -5 leaderboard.log
                 </div>
-                <div className="space-y-0.5">
+                <div className="space-y-px">
                   {top.map((s: any, i: number) => {
                     const isMe = s.id === studentId;
                     return (
                       <div
                         key={s.id}
-                        className="flex items-center gap-3 text-xs md:text-sm px-3 py-1.5 rounded-sm"
+                        className="flex items-center gap-2 text-xs px-3 py-2"
                         style={{
-                          background: isMe ? "hsl(120 100% 55% / 0.10)" : "transparent",
-                          border: `1px solid hsl(120 100% 55% / ${isMe ? 0.45 : 0.10})`,
-                          color: i === 0 ? "hsl(120 100% 70%)" : "hsl(120 60% 55%)",
-                          textShadow: i === 0 ? "0 0 10px hsl(120 100% 55% / 0.4)" : "none",
+                          background: isMe ? "hsl(120 100% 55% / 0.07)" : "transparent",
+                          borderLeft: `2px solid hsl(120 100% 55% / ${i === 0 ? 0.75 : isMe ? 0.45 : 0.13})`,
+                          color: i === 0 ? "var(--g-bright)" : "var(--g-mid)",
                         }}
                       >
-                        <span className="w-6 tabular-nums font-bold">#{i + 1}</span>
-                        <span className="flex-1 truncate font-bold">{s.name}{isMe && " ←"}</span>
-                        <span className="tabular-nums font-bold">₿{(s.crypto ?? 0).toLocaleString()}</span>
+                        <span className="w-5 tabular-nums shrink-0" style={{ color: "var(--g-dim)" }}>
+                          {i + 1}.
+                        </span>
+                        <span className="flex-1 truncate font-bold">
+                          {s.name}{isMe && " ←"}
+                        </span>
+                        <span className="tabular-nums font-bold">
+                          ₿{(s.crypto ?? 0).toLocaleString()}
+                        </span>
                       </div>
                     );
                   })}
                   {myRank > 5 && (
                     <>
-                      <div className="text-center text-xs" style={{ color: "hsl(120 40% 30%)" }}>...</div>
+                      <div className="text-center text-[10px] py-0.5" style={{ color: "var(--g-dim)" }}>...</div>
                       <div
-                        className="flex items-center gap-3 text-xs md:text-sm px-3 py-1.5 rounded-sm"
+                        className="flex items-center gap-2 text-xs px-3 py-2"
                         style={{
-                          background: "hsl(120 100% 55% / 0.10)",
-                          border: "1px solid hsl(120 100% 55% / 0.45)",
-                          color: "hsl(120 100% 65%)",
+                          background: "hsl(120 100% 55% / 0.07)",
+                          borderLeft: "2px solid hsl(120 100% 55% / 0.45)",
+                          color: "var(--g-bright)",
                         }}
                       >
-                        <span className="w-6 tabular-nums font-bold">#{myRank}</span>
+                        <span className="w-5 tabular-nums shrink-0" style={{ color: "var(--g-dim)" }}>{myRank}.</span>
                         <span className="flex-1 truncate font-bold">{me?.name} ←</span>
                         <span className="tabular-nums font-bold">₿{myBal.toLocaleString()}</span>
                       </div>
@@ -456,62 +552,20 @@ const Game = () => {
 
               <button
                 onClick={() => navigate("/play")}
-                className="w-full py-2.5 text-sm font-bold tracking-widest transition-all rounded-sm"
+                className="mt-auto w-full py-2.5 text-[11px] font-bold tracking-widest transition-all"
                 style={{
-                  background: "hsl(120 100% 55% / 0.10)",
-                  color: "hsl(120 100% 65%)",
-                  border: "1px solid hsl(120 100% 55% / 0.5)",
+                  background: "hsl(120 100% 55% / 0.07)",
+                  color: "var(--g-mid)",
+                  border: "1px solid hsl(120 100% 55% / 0.28)",
                 }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "hsl(120 100% 55% / 0.20)"; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "hsl(120 100% 55% / 0.10)"; }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "hsl(120 100% 55% / 0.13)"; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "hsl(120 100% 55% / 0.07)"; }}
               >
                 {ar ? "[ قطع الاتصال ]" : "[ disconnect ]"}
               </button>
             </div>
           );
         })()}
-
-        {(phase === "question" || phase === "answered") && currentQ && (
-          <div className="max-w-6xl mx-auto h-full w-full flex flex-col gap-3 pb-safe">
-            <div className="border-y-2 border-primary/40 bg-primary/5 px-4 py-4 md:py-12 text-center shadow-[inset_0_0_30px_hsl(var(--primary)/0.12)] shrink-0">
-              {(currentQ as any).image_url && (
-                <img
-                  src={(currentQ as any).image_url}
-                  alt=""
-                  className="mx-auto mb-3 max-h-[28vh] md:max-h-56 w-auto object-contain rounded-md border border-primary/30"
-                />
-              )}
-              <p className="text-lg md:text-3xl lg:text-4xl text-[hsl(120_100%_75%)] font-medium leading-relaxed">
-                {currentQ.text}
-              </p>
-              <div className="mt-2 text-xs text-[hsl(120_100%_45%)] tabular-nums">⏱ {timeLeft}s</div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2.5 px-2 md:px-0 flex-1 min-h-0">
-              {currentQ.options.map((opt, i) => {
-                const isCorrect = i === currentQ.correct_index;
-                const isPicked = picked === i;
-                const showResult = picked !== null;
-                return (
-                  <button
-                    key={i}
-                    disabled={picked !== null}
-                    onClick={() => submit(i)}
-                    className={cn(
-                      "min-h-[96px] md:min-h-[180px] px-3 py-3 md:py-6 text-center text-base md:text-2xl text-primary font-medium border-2 border-primary/60 transition-all break-words active:scale-[0.98] rounded-xl leading-snug",
-                      "bg-primary/10 hover:bg-primary/20 shadow-[inset_0_0_18px_hsl(var(--primary)/0.12)]",
-                      showResult && isCorrect && "bg-[hsl(120_100%_50%)] text-black",
-                      showResult && isPicked && !isCorrect && "bg-[hsl(0_85%_55%)] text-white",
-                      showResult && !isPicked && !isCorrect && "opacity-40"
-                    )}
-                  >
-                    {opt}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
 
         {phase === "output" && me && (
           <OutputCards onPick={onOutput} picked={output} ar={ar} />
@@ -527,6 +581,29 @@ const Game = () => {
           />
         )}
       </main>
+
+      {/* ── BOTTOM STATUS BAR ───────────────────────────────────────────────── */}
+      <footer
+        className="shrink-0 flex items-center justify-between px-4 py-1.5 text-[10px]"
+        style={{
+          background: "hsl(0 0% 2%)",
+          borderTop: "1px solid hsl(120 100% 55% / 0.10)",
+          color: "var(--g-dim)",
+        }}
+      >
+        <span>
+          {ar ? "الجلسة:" : "session:"}
+          {" "}<span style={{ color: "hsl(120 60% 44%)" }}>{session.code}</span>
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="h-1 w-1 rounded-full" style={{ background: "hsl(120 80% 42%)" }} />
+          {ar ? "متصل" : "online"}
+        </span>
+        <span>
+          {ar ? "الأقران:" : "peers:"}
+          {" "}<span style={{ color: "hsl(120 60% 44%)" }}>{students.length}</span>
+        </span>
+      </footer>
 
       {phase === "breach" && me && (
         <BreachModal me={me} ar={ar} onDone={async () => {

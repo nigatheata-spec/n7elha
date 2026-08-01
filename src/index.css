@@ -109,13 +109,13 @@
 
   /* Game theme — pure black terminal with green (classic hacker) */
   .theme-game {
-    --background: 0 0% 3%;            /* near-black */
-    --foreground: 120 100% 60%;        /* terminal green */
+    --background: 0 0% 3%;
+    --foreground: 120 100% 60%;
     --card: 0 0% 5%;
     --card-foreground: 120 100% 60%;
     --popover: 0 0% 5%;
     --popover-foreground: 120 100% 60%;
-    --primary: 120 100% 55%;           /* bright green */
+    --primary: 120 100% 55%;
     --primary-foreground: 0 0% 3%;
     --secondary: 0 0% 8%;
     --secondary-foreground: 120 80% 50%;
@@ -130,8 +130,24 @@
     --border: 120 100% 55% / 0.22;
     --input: 0 0% 6%;
     --ring: 120 100% 55%;
+    /* Three-tier green signal system */
+    --g-dim:    hsl(120 40% 32%);   /* chrome: borders, labels, prompts */
+    --g-mid:    hsl(120 70% 54%);   /* content: body text, secondary values */
+    --g-bright: hsl(120 100% 68%);  /* signal: primary values, key info */
   }
   .theme-game .text-glow-cyan { text-shadow: 0 0 14px hsl(120 100% 55% / 0.70); }
+
+  /* Answer row: correct reveal flash */
+  @keyframes ans-correct {
+    0%   { background: hsl(120 100% 55% / 0.35); }
+    100% { background: hsl(120 80% 22% / 0.60); }
+  }
+  @keyframes ans-wrong {
+    0%   { background: hsl(0 85% 55% / 0.35); }
+    100% { background: hsl(0 70% 22% / 0.50); }
+  }
+  .ans-correct { animation: ans-correct 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+  .ans-wrong   { animation: ans-wrong   0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
   /* Time Wizard theme — midnight indigo + arcane cyan (was: dodgeball) */
   .theme-dodgeball {
