@@ -316,7 +316,7 @@ const Game = () => {
               </p>
             </div>
 
-            <div className="flex flex-col gap-2.5 flex-1 min-h-0 justify-center">
+            <div className="grid grid-cols-2 gap-3 flex-1 min-h-0 overflow-y-auto auto-rows-max content-center">
               {currentQ.options.map((opt, i) => {
                 const isCorrect = i === currentQ.correct_index;
                 const isPicked  = picked === i;
@@ -326,15 +326,18 @@ const Game = () => {
                 let color  = "hsl(120 90% 62%)";
                 let anim   = "";
                 let opacity = 1;
+                let shadow = "shadow-[3px_3px_0_0_hsl(120_90%_62%_/_0.5)]";
 
                 if (showResult) {
                   if (isCorrect) {
                     color = "hsl(0 0% 100%)";
                     anim = "ans-correct";
+                    shadow = "shadow-[4px_4px_0_0_hsl(120_100%_55%)]";
                   } else if (isPicked) {
                     border = "hsl(0 85% 60%)";
                     color = "hsl(0 0% 100%)";
                     anim = "ans-wrong";
+                    shadow = "shadow-[4px_4px_0_0_hsl(0_85%_60%)]";
                   } else {
                     opacity = 0.35;
                   }
@@ -345,10 +348,10 @@ const Game = () => {
                     key={i}
                     disabled={picked !== null}
                     onClick={() => submit(i)}
-                    className={cn("px-4 py-3 text-center font-bold text-base active:scale-[0.98] transition-all", anim)}
-                    style={{ border: `2px solid ${border}`, color, opacity }}
+                    className={cn("relative rounded-xl px-3 py-5 min-h-[72px] flex items-center justify-center font-bold text-sm leading-snug text-center transition-all active:scale-[0.97]", anim, shadow)}
+                    style={{ border: `2px solid ${border}`, color, opacity, borderRadius: "12px" }}
                   >
-                    [ {opt} ]
+                    {opt}
                   </button>
                 );
               })}
