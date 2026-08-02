@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Trophy, Check } from "lucide-react";
 import { playGameOver, primeAudio } from "@/lib/sound";
+import { AsteroidCard } from "@/components/AsteroidCard";
+import { SpaceBackdrop } from "@/components/SpaceBackdrop";
 
 type Q = { id: string; text: string; options: string[]; correct_index: number; image_url?: string };
 type Phase =
@@ -68,7 +70,7 @@ const STARS = Array.from({ length: 50 }, (_, i) => ({
   x:        (i * 37 + 11) % 100,
   y:        (i * 53 + 17) % 100,
   size:     1 + (i % 4),
-  color:    i % 7 === 0 ? "hsl(45 100% 82%)" : i % 5 === 0 ? "hsl(40 95% 75%)" : i % 3 === 0 ? "hsl(39 85% 70%)" : "hsl(44 80% 78%)",
+  color:    i % 7 === 0 ? "hsl(220 30% 92%)" : i % 5 === 0 ? "hsl(220 25% 88%)" : i % 3 === 0 ? "hsl(220 20% 84%)" : "hsl(220 25% 90%)",
   duration: 2.5 + (i % 4) * 0.7,
   delay:    (i * 0.31) % 4,
   isConstellation: i % 8 === 0,
@@ -316,15 +318,13 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
           }} />
       ))}
 
+      <SpaceBackdrop />
+
       {/* Freeze flash overlay */}
       {showFreeze && (
         <div className="pointer-events-none fixed inset-0 z-50 animate-freeze-flash"
           style={{ background: "radial-gradient(ellipse at center, hsl(45 100% 72% / 0.75) 0%, hsl(40 100% 60% / 0.35) 55%, transparent 80%)" }} />
       )}
-
-      {/* Ambient top arcane glow */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-72"
-        style={{ background: "radial-gradient(ellipse at 50% 0%, hsl(270 60% 28% / 0.3) 0%, transparent 70%)" }} />
 
       {/* Header */}
       <header className="relative flex items-center justify-between px-4 py-3 safe-top border-b border-primary/30 sticky top-0 z-10"
@@ -333,7 +333,7 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
         <div className="flex items-center gap-1">
           {lives > 0
             ? Array.from({ length: Math.min(lives, 6) }).map((_, i) => (
-                <div key={i} style={{ filter: "drop-shadow(0 0 6px hsl(40 100% 55% / 0.8))" }}>
+                <div key={i}>
                   <CrystalIcon className="h-5 w-5" />
                 </div>
               ))
@@ -354,7 +354,7 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
             <div className="text-center mb-5">
               <CrystalIcon className="h-10 w-10 mx-auto mb-1.5" />
               <h1 className="text-3xl font-black tracking-widest"
-                style={{ color: "hsl(40 100% 55%)", textShadow: "0 0 24px hsl(40 100% 55% / 0.65)" }}>
+                style={{ color: "hsl(220 20% 97%)" }}>
                 {ar ? "تحدي السرعة" : "SPEED CHALLENGE"}
               </h1>
               {session?.quizzes?.title && (
@@ -366,15 +366,15 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
             <div
               className="flex items-center justify-between text-xs font-mono px-3 py-2 mb-3"
               style={{
-                borderTop: "1px solid hsl(40 100% 55% / 0.3)",
-                borderBottom: "1px solid hsl(40 100% 55% / 0.3)",
-                color: "hsl(39 85% 58%)",
+                borderTop: "1px solid hsl(220 20% 90% / 0.22)",
+                borderBottom: "1px solid hsl(220 20% 90% / 0.22)",
+                color: "hsl(220 20% 97%)",
               }}
             >
               <span className="tracking-widest">{ar ? "المستدعَون" : "SUMMONED"}</span>
               <span className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full animate-pulse" style={{ background: "hsl(40 100% 55%)" }} />
-                <span className="font-bold tabular-nums text-sm" style={{ color: "hsl(40 100% 55%)" }}>
+                <span className="h-2 w-2 rounded-full animate-pulse" style={{ background: "hsl(220 20% 97%)" }} />
+                <span className="font-bold tabular-nums text-sm" style={{ color: "hsl(220 20% 97%)" }}>
                   {students.length.toString().padStart(2, "0")}
                 </span>
               </span>
@@ -385,27 +385,25 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
               {students.map((s, i) => {
                 const isMe = s.id === me?.id;
                 return (
-                  <div
+                  <AsteroidCard
                     key={s.id}
-                    className="flex items-center gap-2.5 p-2.5 rounded-xl transition-all"
-                    style={{
-                      background: isMe ? "hsl(40 100% 55% / 0.16)" : "hsl(40 100% 55% / 0.06)",
-                      border: `1px solid hsl(40 100% 55% / ${isMe ? 0.5 : 0.25})`,
-                      boxShadow: isMe ? "0 0 20px hsl(40 100% 55% / 0.3)" : "none",
-                      animation: `fade-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) ${Math.min(i * 60, 600)}ms both`,
-                    }}
+                    seed={s.name}
+                    active={isMe}
+                    style={{ animation: `fade-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) ${Math.min(i * 60, 600)}ms both` }}
                   >
-                    <Avatar name={s.name} size="sm" />
-                    <div className="min-w-0 flex-1">
-                      <div className="text-sm font-bold truncate" style={{ color: isMe ? "hsl(45 100% 68%)" : "hsl(40 70% 72%)" }}>
-                        {s.name}
+                    <div className="h-full p-2.5 flex items-center gap-2.5">
+                      <Avatar name={s.name} size="md" />
+                      <div className="min-w-0 flex-1">
+                        <div className="text-lg font-black truncate" style={{ color: isMe ? "hsl(0 0% 100%)" : "hsl(220 15% 82%)" }}>
+                          {s.name}
+                        </div>
+                        {isMe && (
+                          <div className="font-mono text-[10px] text-primary/70">{ar ? "[ أنت ]" : "[ you ]"}</div>
+                        )}
                       </div>
-                      {isMe && (
-                        <div className="font-mono text-[9px] text-primary/70">{ar ? "[ أنت ]" : "[ you ]"}</div>
-                      )}
+                      <CrystalIcon className={`h-4 w-4 shrink-0 ${isMe ? "opacity-100" : "opacity-40"}`} />
                     </div>
-                    <CrystalIcon className={`h-3.5 w-3.5 shrink-0 ${isMe ? "opacity-100" : "opacity-40"}`} />
-                  </div>
+                  </AsteroidCard>
                 );
               })}
             </div>
@@ -420,23 +418,11 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
           const top      = ranked.slice(0, 5);
           return (
             <div className="max-w-md mx-auto py-8 px-4 flex flex-col items-center gap-6">
-              {/* Aurora frame around starmap */}
+              {/* Starmap */}
               <div className="relative">
-                {/* outer ring */}
                 <div
-                  className="absolute inset-0 rounded-full animate-ping"
-                  style={{ border: "2px solid hsl(40 100% 55% / 0.3)", margin: "-24px" }}
-                />
-                <div
-                  className="absolute inset-0 rounded-full"
-                  style={{ border: "1px solid hsl(40 100% 55% / 0.5)", margin: "-12px" }}
-                />
-                <div
-                  className={cn("relative", survived ? "" : "opacity-40")}
-                  style={{
-                    filter: survived ? "drop-shadow(0 0 40px hsl(40 100% 55% / 0.85))" : "blur(1px)",
-                    animation: survived ? "fade-up 0.6s ease-out both" : undefined,
-                  }}
+                  className={cn("relative", survived ? "" : "opacity-40 blur-[1px]")}
+                  style={{ animation: survived ? "fade-up 0.6s ease-out both" : undefined }}
                 >
                   <CrystalIcon className="h-28 w-28" dim={!survived} />
                 </div>
@@ -446,14 +432,11 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
               <div className="text-center">
                 <div
                   className="text-3xl md:text-4xl font-black tracking-tight"
-                  style={{
-                    color: survived ? "hsl(45 100% 68%)" : "hsl(220 12% 60%)",
-                    textShadow: survived ? "0 0 30px hsl(40 100% 55% / 0.6)" : "none",
-                  }}
+                  style={{ color: survived ? "hsl(0 0% 100%)" : "hsl(220 12% 60%)" }}
                 >
                   {survived ? (ar ? "سيد الوقت" : "TIME MASTER") : (ar ? "انزلق الوقت" : "TIME DRIFTED")}
                 </div>
-                <div className="font-mono text-xs mt-1.5 tracking-[0.3em]" style={{ color: "hsl(40 90% 55%)" }}>
+                <div className="font-mono text-xs mt-1.5 tracking-[0.3em]" style={{ color: "hsl(220 15% 78%)" }}>
                   {survived
                     ? (ar ? "أوقفت الزمن عند 10.00" : "You stopped time at 10.00")
                     : (ar ? `المركز #${myRank} من ${students.length}` : `Rank #${myRank} of ${students.length}`)}
@@ -466,13 +449,13 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
                   className="rounded-2xl px-6 py-3"
                   style={{
                     background: "hsl(220 30% 14% / 0.85)",
-                    border: "1px solid hsl(40 85% 35% / 0.45)",
+                    border: "1px solid hsl(220 20% 90% / 0.22)",
                   }}
                 >
                   <div className="font-black text-4xl tabular-nums text-center" style={{ color: "hsl(220 12% 75%)" }}>
                     #{myRank}
                   </div>
-                  <div className="text-[10px] mt-0.5 text-center tracking-widest" style={{ color: "hsl(40 75% 55%)" }}>
+                  <div className="text-[10px] mt-0.5 text-center tracking-widest" style={{ color: "hsl(220 15% 72%)" }}>
                     {ar ? `من ${students.length}` : `OF ${students.length}`}
                   </div>
                 </div>
@@ -481,7 +464,7 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
               {/* Constellation leaderboard */}
               {students.length > 1 && (
                 <div className="w-full space-y-1.5">
-                  <div className="text-xs tracking-widest uppercase text-center" style={{ color: "hsl(39 85% 58%)" }}>
+                  <div className="text-xs tracking-widest uppercase text-center" style={{ color: "hsl(220 20% 97%)" }}>
                     {ar ? "━ الترتيب ━" : "━ Constellation ━"}
                   </div>
                   {top.map((s, i) => {
@@ -492,21 +475,20 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
                         key={s.id}
                         className="flex items-center gap-2.5 px-3 py-2 rounded-xl"
                         style={{
-                          background: isMe ? "hsl(40 100% 55% / 0.12)" : "hsl(240 30% 12%)",
-                          border: `1px solid hsl(40 100% 55% / ${isMe ? 0.4 : 0.15})`,
-                          boxShadow: isLast ? "0 0 24px hsl(40 100% 55% / 0.28)" : "none",
+                          background: isMe ? "hsl(220 20% 90% / 0.10)" : "hsl(240 30% 12%)",
+                          border: `1px solid hsl(220 20% 90% / ${isMe ? 0.35 : 0.14})`,
                         }}
                       >
                         <CrystalIcon className="h-4 w-4 shrink-0" dim={i > 2} />
-                        <span className="text-xs font-bold tabular-nums w-4" style={{ color: "hsl(39 85% 58%)" }}>#{i + 1}</span>
+                        <span className="text-xs font-bold tabular-nums w-4" style={{ color: "hsl(220 20% 97%)" }}>#{i + 1}</span>
                         <span
                           className="flex-1 text-sm font-bold truncate"
-                          style={{ color: isMe ? "hsl(45 100% 68%)" : "hsl(40 70% 72%)" }}
+                          style={{ color: isMe ? "hsl(0 0% 100%)" : "hsl(220 15% 82%)" }}
                         >
                           {s.name}
                         </span>
                         {!s.eliminated && (
-                          <Check className="h-3.5 w-3.5" style={{ color: "hsl(40 100% 55%)" }} />
+                          <Check className="h-3.5 w-3.5" style={{ color: "hsl(220 20% 97%)" }} />
                         )}
                       </div>
                     );
@@ -547,12 +529,9 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
         {phase === "revived" && (
           <div className="flex-1 flex flex-col items-center justify-center text-center gap-4">
             <div className="animate-crystal-burst">
-              <div style={{ filter: "drop-shadow(0 0 28px hsl(40 100% 55% / 0.9))" }}>
-                <CrystalIcon className="h-24 w-24" />
-              </div>
+              <CrystalIcon className="h-24 w-24" />
             </div>
-            <h2 className="text-2xl font-black text-primary"
-              style={{ textShadow: "0 0 22px hsl(40 100% 55% / 0.65)" }}>
+            <h2 className="text-2xl font-black text-primary">
               {ar ? "استعدت بلورتك!" : "Your starmap is restored!"}
             </h2>
             <p className="text-sm text-muted-foreground">{ar ? "عد إلى الساحة السحرية..." : "Back to the arcane arena..."}</p>
@@ -562,18 +541,19 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
         {/* QUESTION */}
         {(phase === "question" || phase === "answered") && currentQ && (
           <div key={qSeed} className="flex-1 flex flex-col max-w-2xl mx-auto w-full pt-3 gap-3 pb-safe min-h-0 animate-question-in">
-            <div className="border-2 border-primary/40 px-4 py-4 text-center rounded-xl shrink-0"
-              style={{ background: "hsl(255 40% 9% / 0.75)", backdropFilter: "blur(6px)" }}>
-              {currentQ.image_url && (
-                <img
-                  src={currentQ.image_url}
-                  alt=""
-                  className="mx-auto mb-3 max-h-[26vh] w-auto object-contain rounded-lg border border-primary/30"
-                />
-              )}
-              <p className="text-lg md:text-2xl text-primary font-bold leading-relaxed">{currentQ.text}</p>
-              <div className="mt-2 text-xs text-muted-foreground tabular-nums">{timeLeft}s</div>
-            </div>
+            <AsteroidCard seed={currentQ.id} fill className="shrink-0">
+              <div className="px-4 py-4 text-center">
+                {currentQ.image_url && (
+                  <img
+                    src={currentQ.image_url}
+                    alt=""
+                    className="mx-auto mb-3 max-h-[26vh] w-auto object-contain rounded-lg"
+                  />
+                )}
+                <p className="text-lg md:text-2xl text-primary font-bold leading-relaxed">{currentQ.text}</p>
+                <div className="mt-2 text-xs text-muted-foreground tabular-nums">{timeLeft}s</div>
+              </div>
+            </AsteroidCard>
 
             <div className="grid grid-cols-2 gap-2.5 flex-1 min-h-0 px-1">
               {currentQ.options.map((opt, i) => {
@@ -602,7 +582,7 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
         {(phase === "timer" || phase === "tapped") && (() => {
           const arcPct   = Math.min(100, (timerMs / 10_000) * 100);
           const arcColor = timerMs < 9_000
-            ? "hsl(40 100% 55%)"
+            ? "hsl(220 20% 97%)"
             : timerMs <= 10_500
               ? "hsl(140 100% 55%)"
               : "hsl(0 90% 60%)";
@@ -630,14 +610,14 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
                   {ar ? "أوقف عند" : "STOP AT"}
                 </div>
                 <div className="text-5xl font-black tabular-nums font-mono"
-                  style={{ color: "hsl(45 100% 65%)", textShadow: "0 0 24px hsl(45 100% 60% / 0.6)" }}>
+                  style={{ color: "hsl(0 0% 100%)" }}>
                   10.00s
                 </div>
               </div>
 
               {/* Running time */}
               <div className="text-4xl font-black tabular-nums font-mono"
-                style={{ color: arcColor, textShadow: phase === "timer" ? `0 0 18px ${arcColor}99` : "none" }}>
+                style={{ color: arcColor }}>
                 {timerSec}s
               </div>
 
@@ -645,9 +625,6 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
                 <div className="relative flex items-center justify-center">
                   <svg className="absolute" width="180" height="180" viewBox="0 0 180 180"
                     style={{ top: -6, left: -6 }}>
-                    {/* Outer glow halo */}
-                    <circle cx="90" cy="90" r="86" fill="none"
-                      stroke={arcColor} strokeWidth="1" opacity="0.1" />
                     {/* Rune tick marks */}
                     {ticks.map((t, i) => (
                       <line key={i}
@@ -669,7 +646,6 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
                       transform="rotate(-90 90 90)"
                       style={{
                         transition: "stroke-dashoffset 0.1s linear, stroke 0.25s ease",
-                        filter: `drop-shadow(0 0 8px ${arcColor})`,
                       }} />
                     {/* Inner centre dot */}
                     <circle cx="90" cy="90" r="3" fill={arcColor} opacity="0.25" />
@@ -679,10 +655,8 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
                     className="h-40 w-40 rounded-full border-4 font-black text-2xl active:scale-95 transition-all tracking-widest"
                     style={{
                       borderColor: arcColor,
-                      background: `radial-gradient(ellipse at 40% 35%, ${arcColor}28 0%, ${arcColor}0c 60%, transparent 100%)`,
+                      background: `${arcColor}18`,
                       color: arcColor,
-                      boxShadow: `0 0 40px ${arcColor}55, inset 0 0 20px ${arcColor}15`,
-                      textShadow: `0 0 12px ${arcColor}`,
                     }}>
                     {ar ? "أوقف" : "STOP"}
                   </button>
@@ -708,9 +682,7 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
           <div className="flex-1 flex flex-col pt-5 gap-4">
             <div className="text-center">
               <div className="animate-crystal-burst inline-block mb-2">
-                <div style={{ filter: "drop-shadow(0 0 24px hsl(40 100% 55% / 0.85))" }}>
-                  <CrystalIcon className="h-14 w-14" />
-                </div>
+                <CrystalIcon className="h-14 w-14" />
               </div>
               <h2 className="text-xl font-black text-primary">{ar ? "فزت بالجولة" : "You won the round"}</h2>
               <p className="text-sm text-muted-foreground mt-1">{ar ? "احتفظ بالبلورة أو اهدِها لأحد" : "Keep the crystal or gift it to someone"}</p>
@@ -731,33 +703,30 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
             <div className="grid grid-cols-2 gap-2 overflow-y-auto max-h-64">
               {students.filter(s => s.id !== studentId).map(s => (
                 <button key={s.id} onClick={() => giftLife(s.id)}
-                  className={cn(
-                    "rounded-xl border-2 p-3 text-left transition-all",
-                    s.eliminated
-                      ? "border-border/30 opacity-60"
-                      : "border-primary/40 hover:bg-primary/15 hover:border-primary active:scale-[0.97]"
-                  )}
-                  style={s.eliminated
-                    ? { background: "hsl(255 30% 8%)" }
-                    : { background: "hsl(255 40% 9% / 0.6)" }}>
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <Avatar name={s.name} size="sm" />
-                    <span className={cn("text-sm font-bold truncate",
-                      s.eliminated ? "text-muted-foreground line-through" : "text-primary")}>
-                      {s.name}
-                    </span>
-                  </div>
-                  {s.eliminated ? (
-                    <div className="text-xs text-muted-foreground flex items-center gap-1">
-                      <CrystalIcon className="h-3 w-3" dim /> {ar ? "تعود بلورته" : "crystal restored"}
+                  className={cn("text-left transition-transform",
+                    s.eliminated ? "opacity-60" : "active:scale-[0.97]")}>
+                  <AsteroidCard seed={s.name} dim={s.eliminated}>
+                    <div className="h-full p-3 flex flex-col justify-center gap-1.5">
+                      <div className="flex items-center gap-2">
+                        <Avatar name={s.name} size="sm" />
+                        <span className={cn("text-sm font-bold truncate",
+                          s.eliminated ? "text-muted-foreground line-through" : "text-primary")}>
+                          {s.name}
+                        </span>
+                      </div>
+                      {s.eliminated ? (
+                        <div className="text-xs text-muted-foreground flex items-center gap-1">
+                          <CrystalIcon className="h-3 w-3" dim /> {ar ? "تعود بلورته" : "crystal restored"}
+                        </div>
+                      ) : (
+                        <div className="flex gap-0.5">
+                          {Array.from({ length: Math.min(s.lives ?? 1, 5) }).map((_: any, i: number) => (
+                            <CrystalIcon key={i} className="h-3 w-3" />
+                          ))}
+                        </div>
+                      )}
                     </div>
-                  ) : (
-                    <div className="flex gap-0.5">
-                      {Array.from({ length: Math.min(s.lives ?? 1, 5) }).map((_: any, i: number) => (
-                        <CrystalIcon key={i} className="h-3 w-3" />
-                      ))}
-                    </div>
-                  )}
+                  </AsteroidCard>
                 </button>
               ))}
             </div>

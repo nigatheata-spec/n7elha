@@ -133,15 +133,15 @@
   }
   .theme-game .text-glow-cyan { text-shadow: 0 0 14px hsl(120 100% 55% / 0.70); }
 
-  /* Time Wizard theme — midnight indigo + arcane cyan (was: dodgeball) */
+  /* Time Wizard theme — midnight indigo + amber constellation */
   .theme-dodgeball {
     --background: 240 40% 7%;           /* deep midnight indigo */
-    --foreground: 190 60% 88%;          /* pale arcane glow */
+    --foreground: 220 20% 96%;          /* near-white, faintly cool */
     --card: 240 35% 11%;
-    --card-foreground: 190 60% 88%;
+    --card-foreground: 220 20% 96%;
     --popover: 240 35% 11%;
-    --popover-foreground: 190 60% 88%;
-    --primary: 190 100% 60%;            /* arcane cyan */
+    --popover-foreground: 220 20% 96%;
+    --primary: 220 20% 97%;             /* white */
     --primary-foreground: 240 40% 7%;
     --secondary: 270 50% 22%;
     --secondary-foreground: 270 80% 85%;
@@ -153,13 +153,10 @@
     --destructive-foreground: 0 0% 100%;
     --success: 150 70% 55%;
     --success-foreground: 240 40% 7%;
-    --border: 190 80% 55% / 0.32;
+    --border: 220 20% 90% / 0.25;
     --input: 240 40% 5%;
-    --ring: 190 100% 60%;
+    --ring: 220 20% 97%;
   }
-  .theme-dodgeball .text-glow-red { text-shadow: 0 0 18px hsl(270 80% 65% / 0.8); }
-  .theme-dodgeball .text-glow-green { text-shadow: 0 0 14px hsl(190 100% 60% / 0.85); }
-  .theme-dodgeball .text-glow-arcane { text-shadow: 0 0 18px hsl(190 100% 60% / 0.9); }
 
   /* Pass It theme — gunmetal steel + PCB yellow-green accent */
   .theme-hotpotato {
@@ -347,6 +344,15 @@
   @keyframes star-twinkle {
     0%, 100% { opacity: 0.1;  transform: scale(1); }
     50%      { opacity: 0.75; transform: scale(1.5); }
+  }
+
+  /* Space backdrop — slow drifting rock debris */
+  @keyframes debris-drift {
+    from { transform: translate3d(-18vw, 0, 0) rotate(0deg); }
+    to   { transform: translate3d(120vw, 0, 0) rotate(var(--spin, 360deg)); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .space-debris { animation: none !important; }
   }
 
   /* Time Wizard — freeze flash on STOP tap */
