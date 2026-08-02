@@ -8,7 +8,8 @@ import logoLight from "@/assets/logo-light.png";
 import { BitcoinIcon, StopwatchIcon, LavaBucketIcon, DynamiteIcon } from "@/components/game/icons";
 import { ListChecks } from "lucide-react";
 
-type IconComponent = (props: { className?: string; size?: number; strokeWidth?: number; style?: React.CSSProperties }) => JSX.Element;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type IconComponent = React.ComponentType<any>;
 
 // ─── Password pools (Crypto Rush only) ─────────────────────────────────────
 // English pool: trendy internet-slang flavored, keeps the "hacker handle" feel
@@ -32,11 +33,6 @@ type ModeTheme = {
   accent: string;
   accentDim: string;
   accentBorder: string;
-  label: string;
-  labelAr: string;
-  tagline: string;
-  taglineAr: string;
-  btnColor: string;
   icon: IconComponent;
 };
 
@@ -47,11 +43,6 @@ const MODES: Record<string, ModeTheme> = {
     accent: "#FF8254",
     accentDim: "#FF825422",
     accentBorder: "#FF825445",
-    label: "Classic",
-    labelAr: "كلاسيكي",
-    tagline: "Answer fast — climb the board",
-    taglineAr: "أجب بسرعة — تصدّر الترتيب",
-    btnColor: "#fff",
     icon: ListChecks,
   },
   crypto_rush: {
@@ -60,11 +51,6 @@ const MODES: Record<string, ModeTheme> = {
     accent: "#00ff88",
     accentDim: "#00ff8825",
     accentBorder: "#00ff8845",
-    label: "Crypto Rush",
-    labelAr: "كريبتو رَش",
-    tagline: "Hack · Steal · Stay on top",
-    taglineAr: "اخترق · اسرق · ابقَ في القمة",
-    btnColor: "#000",
     icon: BitcoinIcon,
   },
   dodgeball: {
@@ -73,11 +59,6 @@ const MODES: Record<string, ModeTheme> = {
     accent: "#22d3ee",
     accentDim: "#22d3ee22",
     accentBorder: "#22d3ee45",
-    label: "Time Wizard",
-    labelAr: "ساحر الوقت",
-    tagline: "Stop the clock — exactly 10.00s",
-    taglineAr: "أوقف الزمن — 10.00 ثانية بالضبط",
-    btnColor: "#000",
     icon: StopwatchIcon,
   },
   hotpotato: {
@@ -86,11 +67,6 @@ const MODES: Record<string, ModeTheme> = {
     accent: "#facc15",
     accentDim: "#facc1522",
     accentBorder: "#facc1545",
-    label: "Pass It",
-    labelAr: "مرّرها",
-    tagline: "Pass the bomb before it blows",
-    taglineAr: "مرّر القنبلة قبل أن تنفجر",
-    btnColor: "#000",
     icon: DynamiteIcon,
   },
   lavafloor: {
@@ -99,16 +75,11 @@ const MODES: Record<string, ModeTheme> = {
     accent: "#ff4422",
     accentDim: "#ff442222",
     accentBorder: "#ff442245",
-    label: "Lava Floor",
-    labelAr: "أرضية الحمم",
-    tagline: "Survive before the lava swallows you",
-    taglineAr: "اصمدوا قبل أن تبتلعكم الحمم",
-    btnColor: "#fff",
     icon: LavaBucketIcon,
   },
 };
 
-type Stage = "code" | "reveal" | "name" | "boot" | "launch" | "arena";
+type Stage = "code" | "name" | "boot" | "launch" | "arena";
 
 // ─── Join ───────────────────────────────────────────────────────────────────
 const Join = () => {
@@ -190,8 +161,7 @@ const Join = () => {
       return;
     }
     setSession(data);
-    setStage("reveal");
-    setTimeout(() => setStage("name"), 2000);
+    setStage("name");
   };
 
   // Cell input handlers
@@ -356,42 +326,26 @@ const Join = () => {
     );
   }
 
-  // ── Mode reveal splash (2s) ───────────────────────────────────
-  if (stage === "reveal") {
-    return (
-      <div className="fixed inset-0 flex flex-col items-center justify-center overflow-hidden" style={{ background: theme.glow }}>
-        <div className="text-center space-y-6 animate-fade-up">
-          <div
-            className="mx-auto flex h-24 w-24 items-center justify-center rounded-3xl"
-            style={{ background: theme.accentDim, border: `2px solid ${theme.accentBorder}` }}
-          >
-            <Icon className="h-12 w-12" style={{ color: theme.accent }} strokeWidth={2} />
-          </div>
-          <div className="text-[clamp(3.5rem,14vw,7rem)] font-black text-white leading-none tracking-tight">
-            {ar ? theme.labelAr : theme.label}
-          </div>
-          <div className="font-mono text-base tracking-widest" style={{ color: theme.accent }}>
-            {ar ? theme.taglineAr : theme.tagline}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // ── Name entry (mode-themed) ──────────────────────────────────
+  // ── Name entry (mode-agnostic — matches the code entry page) ──
   if (stage === "name") {
     return (
-      <div className="fixed inset-0 flex flex-col items-center justify-center p-6 safe-top safe-bottom overflow-hidden" style={{ background: theme.glow }}>
-        <div className="w-full max-w-sm space-y-8 animate-fade-up">
-          <div className="space-y-3">
-            <div
-              className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-mono tracking-[0.2em] uppercase"
-              style={{ background: theme.accentDim, color: theme.accent, border: `1px solid ${theme.accentBorder}` }}
-            >
-              <Icon className="h-3.5 w-3.5" strokeWidth={2} />
-              {ar ? theme.labelAr : theme.label}
-            </div>
-            <h1 className="text-4xl font-black text-white">{ar ? "اسمك في اللعبة؟" : "What's your name?"}</h1>
+      <div
+        className="fixed inset-0 flex flex-col items-center justify-center p-6 safe-top safe-bottom overflow-hidden"
+        style={{ background: "radial-gradient(ellipse at 50% 35%, #141928 0%, #080a10 70%)" }}
+      >
+        <div
+          className="absolute inset-0 opacity-[0.04] pointer-events-none"
+          style={{
+            backgroundImage:
+              "linear-gradient(#fff 1px,transparent 1px),linear-gradient(90deg,#fff 1px,transparent 1px)",
+            backgroundSize: "48px 48px",
+          }}
+        />
+
+        <div className="relative z-10 w-full max-w-xs text-center space-y-12 animate-fade-up">
+          <div className="space-y-3 flex flex-col items-center">
+            <img src={logoLight} alt="n7elha" className="h-16 w-16 object-contain" />
+            <div className="text-white/30 text-sm tracking-wide">{ar ? "اسمك في اللعبة؟" : "What's your name?"}</div>
           </div>
 
           <form onSubmit={submitName} className="space-y-4">
@@ -401,20 +355,21 @@ const Join = () => {
               onChange={e => setName(e.target.value)}
               maxLength={24}
               placeholder={ar ? "اسم اللاعب..." : "Player name..."}
-              className="w-full h-14 px-4 text-lg font-bold rounded-2xl text-white
-                         bg-white/[0.07] border-2 focus:outline-none
-                         placeholder:text-white/20 transition-colors duration-150"
-              style={{ borderColor: theme.accentBorder }}
-              onFocus={e => (e.target.style.borderColor = theme.accent)}
-              onBlur={e => (e.target.style.borderColor = theme.accentBorder)}
+              className={cn(
+                "w-full h-14 px-4 text-center text-lg font-bold rounded-2xl text-white",
+                "bg-white/[0.06] border-2 border-white/[0.14]",
+                "focus:border-white/50 focus:bg-white/[0.10] focus:outline-none",
+                "placeholder:text-white/20 transition-all duration-150"
+              )}
             />
             <button
               type="submit"
               disabled={!name.trim()}
-              className="w-full h-14 rounded-2xl font-black text-lg
-                         transition-transform active:scale-[0.97] hover:brightness-110
-                         disabled:opacity-40 disabled:active:scale-100"
-              style={{ background: theme.accent, color: theme.btnColor }}
+              className={cn(
+                "w-full h-14 rounded-2xl font-black text-lg bg-white text-[#080a10]",
+                "transition-transform active:scale-[0.97] hover:brightness-90",
+                "disabled:opacity-30 disabled:active:scale-100"
+              )}
             >
               {ar ? "دخول" : "Join"}
             </button>
