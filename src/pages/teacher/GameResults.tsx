@@ -116,8 +116,8 @@ const GameResults = () => {
   // ── Loading ──────────────────────────────────────────────────────────────
   if (phase === "loading") {
     return (
-      <div className="theme-game fixed inset-0 bg-background flex items-center justify-center">
-        <span className="font-mono text-primary/50 text-sm animate-pulse tracking-widest">LOADING...</span>
+      <div className="fixed inset-0 bg-background flex items-center justify-center">
+        <span className="text-primary/50 text-sm animate-pulse tracking-widest">LOADING...</span>
       </div>
     );
   }
@@ -127,13 +127,11 @@ const GameResults = () => {
     const second = ranked[1];
     const third  = ranked[2];
     return (
-      <div className="theme-game fixed inset-0 overflow-hidden font-mono flex flex-col items-center justify-center"
-        style={{ background: "hsl(199 32% 8%)" }}>
+      <div className="fixed inset-0 overflow-hidden flex flex-col items-center justify-center"
+        style={{ background: "linear-gradient(135deg, hsl(40 47% 85%) 0%, hsl(40 60% 94%) 100%)" }}>
 
         {/* Grid */}
-        <div className="pointer-events-none absolute inset-0 bg-grid opacity-[0.07]" />
-        {/* Scanlines */}
-        <div className="pointer-events-none absolute inset-0 terminal-scanlines opacity-10" />
+        <div className="pointer-events-none absolute inset-0 bg-grid opacity-[0.03]" />
 
         {/* GAME OVER label */}
         <div className="absolute top-10 inset-x-0 text-center"
@@ -210,9 +208,8 @@ const GameResults = () => {
 
   // ── Full results ─────────────────────────────────────────────────────────
   return (
-    <div className="theme-game min-h-[100dvh] bg-background text-foreground font-mono">
-      <div className="pointer-events-none fixed inset-0 bg-grid opacity-[0.06]" />
-      <div className="pointer-events-none fixed inset-0 terminal-scanlines opacity-[0.07]" />
+    <div className="min-h-[100dvh] bg-background text-foreground font-sans">
+      <div className="pointer-events-none fixed inset-0 bg-grid opacity-[0.02]" />
 
       <div className="relative max-w-7xl mx-auto px-4 py-8 space-y-6"
         style={{ animation: "fade-up 0.45s both" }}>
