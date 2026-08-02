@@ -5,11 +5,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import logoLight from "@/assets/logo-light.png";
-import { BitcoinIcon, StopwatchIcon, LavaBucketIcon, DynamiteIcon } from "@/components/game/icons";
-import { ListChecks } from "lucide-react";
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type IconComponent = React.ComponentType<any>;
 
 // ─── Password pools (Crypto Rush only) ─────────────────────────────────────
 // English pool: trendy internet-slang flavored, keeps the "hacker handle" feel
@@ -26,60 +21,10 @@ const PASSWORD_POOL_AR = [
   "sigma_67", "gyatt_alert", "labubu_67", "goated_af",
 ];
 
-// ─── Mode themes ────────────────────────────────────────────────────────────
-type ModeTheme = {
-  bg: string;
-  glow: string;        // radial gradient for splash backgrounds
-  accent: string;
-  accentDim: string;
-  accentBorder: string;
-  icon: IconComponent;
-};
+// Crypto Rush terminal theme (used by boot + launch stages only)
+const CR = { bg: "#06110d", accent: "#00ff88", accentDim: "#00ff8825", accentBorder: "#00ff8845" };
 
-const MODES: Record<string, ModeTheme> = {
-  classic: {
-    bg: "#150b08",
-    glow: "radial-gradient(ellipse at 50% 30%, #2b140a 0%, #150b08 70%)",
-    accent: "#FF8254",
-    accentDim: "#FF825422",
-    accentBorder: "#FF825445",
-    icon: ListChecks,
-  },
-  crypto_rush: {
-    bg: "#06110d",
-    glow: "radial-gradient(ellipse at 50% 30%, #0c2b1f 0%, #06110d 70%)",
-    accent: "#00ff88",
-    accentDim: "#00ff8825",
-    accentBorder: "#00ff8845",
-    icon: BitcoinIcon,
-  },
-  dodgeball: {
-    bg: "#070914",
-    glow: "radial-gradient(ellipse at 50% 30%, #0e1538 0%, #070914 70%)",
-    accent: "#22d3ee",
-    accentDim: "#22d3ee22",
-    accentBorder: "#22d3ee45",
-    icon: StopwatchIcon,
-  },
-  hotpotato: {
-    bg: "#0a0a0a",
-    glow: "radial-gradient(ellipse at 50% 30%, #1a1306 0%, #0a0a0a 70%)",
-    accent: "#facc15",
-    accentDim: "#facc1522",
-    accentBorder: "#facc1545",
-    icon: DynamiteIcon,
-  },
-  lavafloor: {
-    bg: "#120605",
-    glow: "radial-gradient(ellipse at 50% 110%, #3a0f0a 0%, #120605 60%)",
-    accent: "#ff4422",
-    accentDim: "#ff442222",
-    accentBorder: "#ff442245",
-    icon: LavaBucketIcon,
-  },
-};
-
-type Stage = "code" | "name" | "boot" | "launch" | "arena";
+type Stage = "code" | "name" | "boot" | "launch";
 
 // ─── Join ───────────────────────────────────────────────────────────────────
 const Join = () => {
@@ -119,8 +64,6 @@ const Join = () => {
 
   const code  = cells.join("");
   const mode  = (session?.settings?.mode as string) ?? "crypto_rush";
-  const theme = MODES[mode] ?? MODES.crypto_rush;
-  const Icon  = theme.icon;
   // teacher's language, once known; falls back to the browser's current language pre-session
   const ar = (session?.settings?.lang ?? i18n.language) === "ar";
 
@@ -233,16 +176,6 @@ const Join = () => {
     return () => { cancelled = true; };
   }, [stage]);
 
-  // ── Non-crypto modes: brief themed entry then navigate ────────
-  useEffect(() => {
-    if (stage !== "arena" || !session) return;
-    const snap = { session, name };
-    const t = setTimeout(async () => {
-      await doInsert(snap.session, snap.name, "");
-    }, 2400);
-    return () => clearTimeout(t);
-  }, [stage]);
-
   const doInsert = async (sess: any, playerName: string, password: string) => {
     try {
       const { data: student, error } = await supabase
@@ -262,7 +195,7 @@ const Join = () => {
     e.preventDefault();
     if (!name.trim()) return;
     if (mode === "crypto_rush") setStage("boot");
-    else setStage("arena");
+    else doInsert(session, name, "");
   };
 
   // ════════════════════════════════════════════════════════════
@@ -381,7 +314,7 @@ const Join = () => {
 
   // ── Crypto Rush: boot + password ─────────────────────────────
   if (stage === "boot") {
-    const cr = MODES.crypto_rush;
+    const cr = CR;
     return (
       <div className="fixed inset-0 font-mono overflow-y-auto" style={{ background: cr.bg, color: cr.accent }}>
         <div className="pointer-events-none fixed inset-0 terminal-scanlines opacity-[0.18]" />
@@ -418,37 +351,13 @@ const Join = () => {
 
   // ── Crypto Rush: launch sequence ─────────────────────────────
   if (stage === "launch") {
-    const cr = MODES.crypto_rush;
+    const cr = CR;
     return (
       <div className="fixed inset-0 font-mono p-6 md:p-16 py-12" style={{ background: cr.bg, color: cr.accent }}>
         <div className="pointer-events-none fixed inset-0 terminal-scanlines opacity-[0.18]" />
         <div className="relative space-y-3 text-base md:text-xl">
           {launchLines.map((l, i) => <div key={i}>{l}</div>)}
           <div className="animate-pulse mt-2">▌</div>
-        </div>
-      </div>
-    );
-  }
-
-  // ── Non-crypto modes: themed entry splash ─────────────────────
-  if (stage === "arena") {
-    return (
-      <div className="fixed inset-0 flex flex-col items-center justify-center overflow-hidden" style={{ background: theme.glow }}>
-        {/* concentric pulsing rings tinted to the mode */}
-        <div className="absolute w-[28rem] h-[28rem] rounded-full animate-ping" style={{ border: `2px solid ${theme.accent}30` }} />
-        <div className="absolute w-72 h-72 rounded-full" style={{ border: `2px solid ${theme.accent}50` }} />
-        <div
-          className="absolute flex h-40 w-40 items-center justify-center rounded-full"
-          style={{ border: `3px solid ${theme.accent}70`, background: theme.accentDim }}
-        >
-          <Icon className="h-16 w-16" style={{ color: theme.accent }} strokeWidth={1.75} />
-        </div>
-
-        <div className="relative text-center space-y-4 animate-fade-up z-10 mt-[22rem]">
-          <div className="text-5xl md:text-6xl font-black text-white">{name}</div>
-          <div className="font-mono text-sm tracking-widest animate-pulse" style={{ color: theme.accent }}>
-            {ar ? "> الدخول إلى اللعبة..." : "> entering the game..."}
-          </div>
         </div>
       </div>
     );
