@@ -354,9 +354,9 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
             {/* arcane header */}
             <div className="text-center mb-5">
               <CrystalIcon className="h-10 w-10 mx-auto mb-1.5" />
-              <h1 className="text-2xl font-black text-primary tracking-widest"
+              <h1 className="text-3xl font-black text-primary tracking-widest"
                 style={{ textShadow: "0 0 20px hsl(190 100% 60% / 0.7)" }}>
-                {ar ? "ساحر الوقت" : "TIME WIZARD"}
+                {ar ? "تحدي السرعة" : "SPEED CHALLENGE"}
               </h1>
               {session?.quizzes?.title && (
                 <p className="text-muted-foreground/60 text-xs font-mono mt-1 truncate max-w-[240px] mx-auto">{session.quizzes.title}</p>
