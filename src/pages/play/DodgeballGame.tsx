@@ -319,7 +319,7 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
       {/* Freeze flash overlay */}
       {showFreeze && (
         <div className="pointer-events-none fixed inset-0 z-50 animate-freeze-flash"
-          style={{ background: "radial-gradient(ellipse at center, hsl(200 100% 92% / 0.75) 0%, hsl(220 100% 72% / 0.35) 55%, transparent 80%)" }} />
+          style={{ background: "radial-gradient(ellipse at center, hsl(45 100% 72% / 0.75) 0%, hsl(40 100% 60% / 0.35) 55%, transparent 80%)" }} />
       )}
 
       {/* Ambient top arcane glow */}
@@ -453,7 +453,7 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
                 >
                   {survived ? (ar ? "سيد الوقت" : "TIME MASTER") : (ar ? "انزلق الوقت" : "TIME DRIFTED")}
                 </div>
-                <div className="font-mono text-xs mt-1.5 tracking-[0.3em]" style={{ color: "hsl(190 50% 55%)" }}>
+                <div className="font-mono text-xs mt-1.5 tracking-[0.3em]" style={{ color: "hsl(40 90% 55%)" }}>
                   {survived
                     ? (ar ? "أوقفت الزمن عند 10.00" : "You stopped time at 10.00")
                     : (ar ? `المركز #${myRank} من ${students.length}` : `Rank #${myRank} of ${students.length}`)}
@@ -466,13 +466,13 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
                   className="rounded-2xl px-6 py-3"
                   style={{
                     background: "hsl(220 30% 14% / 0.85)",
-                    border: "1px solid hsl(190 60% 35% / 0.45)",
+                    border: "1px solid hsl(40 85% 35% / 0.45)",
                   }}
                 >
                   <div className="font-black text-4xl tabular-nums text-center" style={{ color: "hsl(220 12% 75%)" }}>
                     #{myRank}
                   </div>
-                  <div className="text-[10px] mt-0.5 text-center tracking-widest" style={{ color: "hsl(190 30% 55%)" }}>
+                  <div className="text-[10px] mt-0.5 text-center tracking-widest" style={{ color: "hsl(40 75% 55%)" }}>
                     {ar ? `من ${students.length}` : `OF ${students.length}`}
                   </div>
                 </div>
@@ -531,11 +531,11 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
               <CrystalIcon className="h-20 w-20" dim />
               {/* Shard fragments */}
               <div className="absolute -top-2 -right-2 w-3 h-4 rounded-sm opacity-40 rotate-[20deg]"
-                style={{ background: "hsl(190 60% 50%)", clipPath: "polygon(50% 0%, 100% 100%, 0% 100%)" }} />
+                style={{ background: "hsl(40 95% 50%)", clipPath: "polygon(50% 0%, 100% 100%, 0% 100%)" }} />
               <div className="absolute -bottom-1 -left-3 w-2 h-3 rounded-sm opacity-30 -rotate-[15deg]"
-                style={{ background: "hsl(190 60% 50%)", clipPath: "polygon(50% 0%, 100% 100%, 0% 100%)" }} />
+                style={{ background: "hsl(40 95% 50%)", clipPath: "polygon(50% 0%, 100% 100%, 0% 100%)" }} />
               <div className="absolute top-2 -left-4 w-2 h-2 rounded-sm opacity-25 rotate-[40deg]"
-                style={{ background: "hsl(190 60% 50%)", clipPath: "polygon(50% 0%, 100% 100%, 0% 100%)" }} />
+                style={{ background: "hsl(40 95% 50%)", clipPath: "polygon(50% 0%, 100% 100%, 0% 100%)" }} />
             </div>
             <h2 className="text-2xl font-black text-muted-foreground">{ar ? "تحطمت بلورتك" : "Your crystal shattered"}</h2>
             <p className="text-xs text-muted-foreground/50">{ar ? "بانتظار نهاية اللعبة..." : "Waiting for the game to end..."}</p>
