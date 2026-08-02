@@ -371,17 +371,28 @@
     0%, 100% { background-position: 0% 50%; }
     50%      { background-position: 100% 50%; }
   }
+  @keyframes lava-undulate {
+    0%, 100% { transform: translateY(0) scaleY(1); }
+    50%      { transform: translateY(1px) scaleY(1.02); }
+  }
   @keyframes lava-bubble {
-    0%, 100% { transform: translateY(0) scaleX(1); }
-    25%      { transform: translateY(-3px) scaleX(1.02); }
-    75%      { transform: translateY(2px) scaleX(0.99); }
+    0%, 100% { transform: translateY(0) scaleX(1) scaleY(1); }
+    25%      { transform: translateY(-4px) scaleX(1.05) scaleY(0.95); }
+    50%      { transform: translateY(-2px) scaleX(1.02) scaleY(1.01); }
+    75%      { transform: translateY(1px) scaleX(0.98) scaleY(1.03); }
   }
   .lava-fill {
-    background: linear-gradient(90deg, #c0392b, #e74c3c, #ff6b35, #e74c3c, #c0392b);
-    background-size: 400% 100%;
-    animation: lava-shift 3s ease-in-out infinite;
+    background:
+      linear-gradient(135deg, transparent 0%, rgba(255,107,53,0.3) 25%, transparent 50%),
+      linear-gradient(45deg, rgba(192,57,43,0.4) 0%, transparent 40%),
+      linear-gradient(90deg, #8b2e1f 0%, #b83e2a 15%, #d84b2e 30%, #ff6b35 45%, #e85d28 65%, #c0392b 85%, #8b2e1f 100%);
+    background-size: 300% 100%, 400% 100%, 500% 100%;
+    background-position: 0% 50%, 50% 50%, 0% 50%;
+    animation:
+      lava-shift 4.2s ease-in-out infinite,
+      lava-undulate 2.8s ease-in-out infinite;
   }
-  .lava-fill-anim { animation: lava-bubble 2.5s ease-in-out infinite; }
+  .lava-fill-anim { animation: lava-bubble 3s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite; }
   .border-glow { box-shadow: none; }
 
   @keyframes lava-wave-x {

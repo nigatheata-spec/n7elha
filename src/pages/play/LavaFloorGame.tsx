@@ -43,8 +43,8 @@ const EMBERS = [
   { left: 89, delay: 1.45, dur: 1.6, size: 3, bright: true  },
 ];
 
-// Seamless lava wave path — 2400px wide (2× viewport), 8 wave cycles
-const WAVE_PATH = "M0,22 C75,0 225,44 300,22 C375,0 525,44 600,22 C675,0 825,44 900,22 C975,0 1125,44 1200,22 C1275,0 1425,44 1500,22 C1575,0 1725,44 1800,22 C1875,0 2025,44 2100,22 C2175,0 2325,44 2400,22 L2400,60 L0,60 Z";
+// Seamless lava wave path — 2400px wide (2× viewport), 10 wave cycles with more detail
+const WAVE_PATH = "M0,20 Q40,8 80,20 T160,20 T240,20 T320,20 T400,20 T480,20 T560,20 T640,20 T720,20 T800,20 T880,20 T960,20 T1040,20 T1120,20 T1200,20 T1280,20 T1360,20 T1440,20 T1520,20 T1600,20 T1680,20 T1760,20 T1840,20 T1920,20 T2000,20 T2080,20 T2160,20 T2240,20 T2320,20 T2400,20 L2400,65 L0,65 Z";
 
 interface Props { sessionId: string; studentId: string; }
 
@@ -271,20 +271,34 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
       <div className="absolute inset-x-0 bottom-0 h-full pointer-events-none"
         style={{ transform: `translateY(${100 - lavaPct}%)`, transition: "transform 0.55s cubic-bezier(0.25,0.46,0.45,0.94)", willChange: "transform" }}>
 
-        {/* Wave surface — two layers, opposite directions for turbulence */}
+        {/* Wave surface — three layers with depth and highlights */}
         <div className="absolute inset-x-0 -top-9 h-[60px] overflow-hidden">
+          {/* Darkest base layer */}
           <svg className="absolute top-0 left-0 h-full opacity-100"
-            style={{ width: "200%", animation: "lava-wave-x 5s linear infinite" }}
+            style={{ width: "200%", animation: "lava-wave-x 6.2s linear infinite" }}
             viewBox="0 0 2400 60" preserveAspectRatio="none">
-            <path d={WAVE_PATH} fill="#bf3a20" />
+            <path d={WAVE_PATH} fill="#7d1a0d" />
           </svg>
-          <svg className="absolute top-1 left-0 h-full opacity-50"
-            style={{ width: "200%", animation: "lava-wave-x 3.8s linear infinite reverse" }}
+          {/* Mid-tone layer */}
+          <svg className="absolute top-0.5 left-0 h-full opacity-75"
+            style={{ width: "200%", animation: "lava-wave-x 4.8s linear infinite reverse" }}
+            viewBox="0 0 2400 60" preserveAspectRatio="none">
+            <path d={WAVE_PATH} fill="#c0392b" />
+          </svg>
+          {/* Bright active layer */}
+          <svg className="absolute top-1 left-0 h-full opacity-90"
+            style={{ width: "200%", animation: "lava-wave-x 3.5s linear infinite" }}
             viewBox="0 0 2400 60" preserveAspectRatio="none">
             <path d={WAVE_PATH} fill="#e74c3c" />
           </svg>
-          {/* Hot bright line at very top of wave */}
-          <div className="absolute inset-x-0 top-0 h-px" style={{ background: "hsl(35 100% 80% / 0.6)", boxShadow: "0 0 10px 3px hsl(35 100% 65% / 0.4)" }} />
+          {/* Highlight layer — bright yellow-white peak */}
+          <svg className="absolute top-1.5 left-0 h-full opacity-60"
+            style={{ width: "200%", animation: "lava-wave-x 2.8s linear infinite reverse", filter: "drop-shadow(0 0 4px hsl(35 100% 70% / 0.8))" }}
+            viewBox="0 0 2400 60" preserveAspectRatio="none">
+            <path d={WAVE_PATH} fill="#ffb366" />
+          </svg>
+          {/* Glow edge at very top */}
+          <div className="absolute inset-x-0 top-0 h-1.5" style={{ background: "linear-gradient(to bottom, hsl(35 100% 85% / 0.8), hsl(35 100% 70% / 0.2))", boxShadow: "0 -2px 8px hsl(35 100% 70% / 0.6), 0 2px 12px hsl(35 100% 60% / 0.4)" }} />
         </div>
 
         {/* Lava body */}
@@ -382,13 +396,7 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
                 <div className="text-[10px] tracking-[0.55em] uppercase mb-2" style={{ color: "hsl(14 60% 50%)" }}>
                   {ar ? "الأرضية حمم" : "THE FLOOR IS LAVA"}
                 </div>
-                <div className="relative inline-block">
-                  <Avatar name={me?.name ?? "?"} size="xl" />
-                  <div className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full flex items-center justify-center"
-                    style={{ background: "hsl(14 100% 55%)", animation: "lava-bubble 2s ease-in-out infinite" }}>
-                    <Flame className="h-3 w-3 text-white" />
-                  </div>
-                </div>
+                <Avatar name={me?.name ?? "?"} size="xl" />
                 <div className="font-black text-base tracking-tight mt-2" style={{ color: "hsl(30 18% 85%)" }}>
                   {me?.name ?? "—"}
                 </div>
@@ -440,27 +448,7 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
                     </div>
                   );
                 })}
-                {students.length < 4 && Array.from({ length: 4 - students.length }).map((_, i) => (
-                  <div
-                    key={`empty-${i}`}
-                    className="flex items-center gap-2.5 p-2.5 rounded-xl"
-                    style={{
-                      border: "1px dashed hsl(14 50% 30% / 0.45)",
-                      opacity: 0.5,
-                    }}
-                  >
-                    <div className="h-8 w-8 rounded-full shrink-0 flex items-center justify-center"
-                      style={{ background: "hsl(14 50% 18%)", color: "hsl(14 30% 35%)" }}>
-                      ?
-                    </div>
-                    <div className="font-mono text-xs" style={{ color: "hsl(14 30% 35%)" }}>{ar ? "بالانتظار..." : "waiting..."}</div>
-                  </div>
-                ))}
               </div>
-
-              <p className="mt-6 font-mono text-xs text-center" style={{ color: "hsl(14 50% 50%)", animation: "heat-flicker 2s ease-in-out infinite" }}>
-                {ar ? "> بانتظار المعلّم..." : "> waiting for the teacher..."}
-              </p>
             </div>
           )}
 

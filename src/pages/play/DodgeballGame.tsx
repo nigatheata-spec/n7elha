@@ -38,41 +38,40 @@ const Avatar = ({ name, size = "md" }: { name: string; size?: "sm" | "md" | "xl"
   );
 };
 
-// Stopwatch icon — represents Time Wizard's time-stop mechanic
+// Starmap icon — represents astronomical mastery
 const CrystalIcon = ({ className, dim = false }: { className?: string; dim?: boolean }) => {
-  const main   = dim ? "hsl(240 20% 45%)" : "hsl(190 100% 65%)";
-  const accent = dim ? "hsl(240 15% 65%)" : "hsl(200 100% 92%)";
+  const main   = dim ? "hsl(30 25% 45%)" : "hsl(39 95% 58%)";
+  const accent = dim ? "hsl(30 20% 65%)" : "hsl(45 100% 72%)";
   const op     = dim ? 0.4 : 1;
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke={main} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" opacity={op}>
-      {/* crown stem */}
-      <path d="M10 2h4" />
-      <path d="M12 2v2.5" />
-      {/* side button */}
-      <path d="M18.5 4.2l1.3 1.3" />
-      {/* face */}
-      <circle cx="12" cy="14" r="8" fill={dim ? "transparent" : "hsl(190 100% 65% / 0.10)"} />
-      {/* center dot */}
-      <circle cx="12" cy="14" r="0.9" fill={accent} stroke="none" />
-      {/* hand pointing up-right (frozen at 10s) */}
-      <path d="M12 14l3.5 -2.5" stroke={accent} strokeWidth="2" />
-      {/* tick marks at 12 / 3 / 6 / 9 */}
-      <path d="M12 7.5v1" />
-      <path d="M12 19.5v1" />
-      <path d="M5.5 14h1" />
-      <path d="M17.5 14h1" />
+      {/* outer celestial ring */}
+      <circle cx="12" cy="12" r="10" />
+      {/* inner constellation dots */}
+      <circle cx="12" cy="5" r="0.8" fill={accent} stroke="none" />
+      <circle cx="17" cy="12" r="0.8" fill={accent} stroke="none" />
+      <circle cx="12" cy="19" r="0.8" fill={accent} stroke="none" />
+      <circle cx="7" cy="12" r="0.8" fill={accent} stroke="none" />
+      {/* constellation lines connecting stars */}
+      <path d="M12 5l5 7" strokeWidth="1.2" opacity="0.6" />
+      <path d="M17 12l-5 7" strokeWidth="1.2" opacity="0.6" />
+      <path d="M12 19l-5 -7" strokeWidth="1.2" opacity="0.6" />
+      <path d="M7 12l5 -7" strokeWidth="1.2" opacity="0.6" />
+      {/* center star */}
+      <circle cx="12" cy="12" r="1.2" fill={accent} stroke="none" />
     </svg>
   );
 };
 
-// Stable starfield — computed once outside component, never regenerates
-const STARS = Array.from({ length: 40 }, (_, i) => ({
+// Stable starfield with constellations — computed once outside component, never regenerates
+const STARS = Array.from({ length: 50 }, (_, i) => ({
   x:        (i * 37 + 11) % 100,
   y:        (i * 53 + 17) % 100,
-  size:     1 + (i % 3),
-  color:    i % 6 === 0 ? "hsl(290 80% 82%)" : i % 4 === 0 ? "hsl(200 100% 88%)" : "hsl(260 50% 92%)",
+  size:     1 + (i % 4),
+  color:    i % 7 === 0 ? "hsl(45 100% 82%)" : i % 5 === 0 ? "hsl(40 95% 75%)" : i % 3 === 0 ? "hsl(39 85% 70%)" : "hsl(44 80% 78%)",
   duration: 2.5 + (i % 4) * 0.7,
   delay:    (i * 0.31) % 4,
+  isConstellation: i % 8 === 0,
 }));
 
 interface Props { sessionId: string; studentId: string; }
@@ -334,7 +333,7 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
         <div className="flex items-center gap-1">
           {lives > 0
             ? Array.from({ length: Math.min(lives, 6) }).map((_, i) => (
-                <div key={i} style={{ filter: "drop-shadow(0 0 5px hsl(190 100% 60% / 0.8))" }}>
+                <div key={i} style={{ filter: "drop-shadow(0 0 6px hsl(40 100% 55% / 0.8))" }}>
                   <CrystalIcon className="h-5 w-5" />
                 </div>
               ))
@@ -354,8 +353,8 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
             {/* arcane header */}
             <div className="text-center mb-5">
               <CrystalIcon className="h-10 w-10 mx-auto mb-1.5" />
-              <h1 className="text-3xl font-black text-primary tracking-widest"
-                style={{ textShadow: "0 0 20px hsl(190 100% 60% / 0.7)" }}>
+              <h1 className="text-3xl font-black tracking-widest"
+                style={{ color: "hsl(40 100% 55%)", textShadow: "0 0 24px hsl(40 100% 55% / 0.65)" }}>
                 {ar ? "تحدي السرعة" : "SPEED CHALLENGE"}
               </h1>
               {session?.quizzes?.title && (
@@ -367,15 +366,15 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
             <div
               className="flex items-center justify-between text-xs font-mono px-3 py-2 mb-3"
               style={{
-                borderTop: "1px solid hsl(190 100% 60% / 0.25)",
-                borderBottom: "1px solid hsl(190 100% 60% / 0.25)",
-                color: "hsl(190 50% 65%)",
+                borderTop: "1px solid hsl(40 100% 55% / 0.3)",
+                borderBottom: "1px solid hsl(40 100% 55% / 0.3)",
+                color: "hsl(39 85% 58%)",
               }}
             >
               <span className="tracking-widest">{ar ? "المستدعَون" : "SUMMONED"}</span>
               <span className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full animate-pulse" style={{ background: "hsl(190 100% 60%)" }} />
-                <span className="font-bold tabular-nums text-primary text-sm">
+                <span className="h-2 w-2 rounded-full animate-pulse" style={{ background: "hsl(40 100% 55%)" }} />
+                <span className="font-bold tabular-nums text-sm" style={{ color: "hsl(40 100% 55%)" }}>
                   {students.length.toString().padStart(2, "0")}
                 </span>
               </span>
@@ -390,15 +389,15 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
                     key={s.id}
                     className="flex items-center gap-2.5 p-2.5 rounded-xl transition-all"
                     style={{
-                      background: isMe ? "hsl(190 100% 60% / 0.14)" : "hsl(190 100% 60% / 0.05)",
-                      border: `1px solid hsl(190 100% 60% / ${isMe ? 0.55 : 0.22})`,
-                      boxShadow: isMe ? "0 0 18px hsl(190 100% 60% / 0.25)" : "none",
+                      background: isMe ? "hsl(40 100% 55% / 0.16)" : "hsl(40 100% 55% / 0.06)",
+                      border: `1px solid hsl(40 100% 55% / ${isMe ? 0.5 : 0.25})`,
+                      boxShadow: isMe ? "0 0 20px hsl(40 100% 55% / 0.3)" : "none",
                       animation: `fade-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) ${Math.min(i * 60, 600)}ms both`,
                     }}
                   >
                     <Avatar name={s.name} size="sm" />
                     <div className="min-w-0 flex-1">
-                      <div className="text-sm font-bold truncate" style={{ color: isMe ? "hsl(190 100% 75%)" : "hsl(190 30% 80%)" }}>
+                      <div className="text-sm font-bold truncate" style={{ color: isMe ? "hsl(45 100% 68%)" : "hsl(40 70% 72%)" }}>
                         {s.name}
                       </div>
                       {isMe && (
@@ -409,27 +408,7 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
                   </div>
                 );
               })}
-              {students.length < 4 && Array.from({ length: 4 - students.length }).map((_, i) => (
-                <div
-                  key={`empty-${i}`}
-                  className="flex items-center gap-2.5 p-2.5 rounded-xl"
-                  style={{
-                    border: "1px dashed hsl(190 100% 60% / 0.15)",
-                    opacity: 0.5,
-                  }}
-                >
-                  <div className="h-8 w-8 rounded-full shrink-0 flex items-center justify-center"
-                    style={{ background: "hsl(190 100% 60% / 0.06)", color: "hsl(190 30% 40%)" }}>
-                    ?
-                  </div>
-                  <div className="font-mono text-xs" style={{ color: "hsl(190 20% 35%)" }}>{ar ? "بالانتظار..." : "waiting..."}</div>
-                </div>
-              ))}
             </div>
-
-            <p className="mt-6 text-primary/50 font-mono text-xs text-center animate-pulse">
-              {ar ? "> بانتظار الساحر..." : "> awaiting the wizard..."}
-            </p>
           </div>
         )}
 
@@ -441,21 +420,21 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
           const top      = ranked.slice(0, 5);
           return (
             <div className="max-w-md mx-auto py-8 px-4 flex flex-col items-center gap-6">
-              {/* Aurora frame around stopwatch */}
+              {/* Aurora frame around starmap */}
               <div className="relative">
                 {/* outer ring */}
                 <div
                   className="absolute inset-0 rounded-full animate-ping"
-                  style={{ border: "2px solid hsl(190 100% 60% / 0.25)", margin: "-24px" }}
+                  style={{ border: "2px solid hsl(40 100% 55% / 0.3)", margin: "-24px" }}
                 />
                 <div
                   className="absolute inset-0 rounded-full"
-                  style={{ border: "1px solid hsl(190 100% 60% / 0.4)", margin: "-12px" }}
+                  style={{ border: "1px solid hsl(40 100% 55% / 0.5)", margin: "-12px" }}
                 />
                 <div
                   className={cn("relative", survived ? "" : "opacity-40")}
                   style={{
-                    filter: survived ? "drop-shadow(0 0 38px hsl(190 100% 60% / 0.9))" : "blur(1px)",
+                    filter: survived ? "drop-shadow(0 0 40px hsl(40 100% 55% / 0.85))" : "blur(1px)",
                     animation: survived ? "fade-up 0.6s ease-out both" : undefined,
                   }}
                 >
@@ -468,8 +447,8 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
                 <div
                   className="text-3xl md:text-4xl font-black tracking-tight"
                   style={{
-                    color: survived ? "hsl(190 100% 75%)" : "hsl(220 12% 60%)",
-                    textShadow: survived ? "0 0 28px hsl(190 100% 60% / 0.55)" : "none",
+                    color: survived ? "hsl(45 100% 68%)" : "hsl(220 12% 60%)",
+                    textShadow: survived ? "0 0 30px hsl(40 100% 55% / 0.6)" : "none",
                   }}
                 >
                   {survived ? (ar ? "سيد الوقت" : "TIME MASTER") : (ar ? "انزلق الوقت" : "TIME DRIFTED")}
@@ -502,7 +481,7 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
               {/* Constellation leaderboard */}
               {students.length > 1 && (
                 <div className="w-full space-y-1.5">
-                  <div className="text-xs tracking-widest uppercase text-center" style={{ color: "hsl(190 50% 55%)" }}>
+                  <div className="text-xs tracking-widest uppercase text-center" style={{ color: "hsl(39 85% 58%)" }}>
                     {ar ? "━ الترتيب ━" : "━ Constellation ━"}
                   </div>
                   {top.map((s, i) => {
@@ -513,21 +492,21 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
                         key={s.id}
                         className="flex items-center gap-2.5 px-3 py-2 rounded-xl"
                         style={{
-                          background: isMe ? "hsl(190 100% 60% / 0.10)" : "hsl(240 30% 12%)",
-                          border: `1px solid hsl(190 100% 60% / ${isMe ? 0.45 : 0.15})`,
-                          boxShadow: isLast ? "0 0 22px hsl(190 100% 60% / 0.25)" : "none",
+                          background: isMe ? "hsl(40 100% 55% / 0.12)" : "hsl(240 30% 12%)",
+                          border: `1px solid hsl(40 100% 55% / ${isMe ? 0.4 : 0.15})`,
+                          boxShadow: isLast ? "0 0 24px hsl(40 100% 55% / 0.28)" : "none",
                         }}
                       >
                         <CrystalIcon className="h-4 w-4 shrink-0" dim={i > 2} />
-                        <span className="text-xs font-bold tabular-nums w-4" style={{ color: "hsl(190 50% 65%)" }}>#{i + 1}</span>
+                        <span className="text-xs font-bold tabular-nums w-4" style={{ color: "hsl(39 85% 58%)" }}>#{i + 1}</span>
                         <span
                           className="flex-1 text-sm font-bold truncate"
-                          style={{ color: isMe ? "hsl(190 100% 80%)" : "hsl(190 30% 75%)" }}
+                          style={{ color: isMe ? "hsl(45 100% 68%)" : "hsl(40 70% 72%)" }}
                         >
                           {s.name}
                         </span>
                         {!s.eliminated && (
-                          <Check className="h-3.5 w-3.5" style={{ color: "hsl(190 100% 60%)" }} />
+                          <Check className="h-3.5 w-3.5" style={{ color: "hsl(40 100% 55%)" }} />
                         )}
                       </div>
                     );
@@ -568,13 +547,13 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
         {phase === "revived" && (
           <div className="flex-1 flex flex-col items-center justify-center text-center gap-4">
             <div className="animate-crystal-burst">
-              <div style={{ filter: "drop-shadow(0 0 24px hsl(190 100% 60% / 0.9))" }}>
+              <div style={{ filter: "drop-shadow(0 0 28px hsl(40 100% 55% / 0.9))" }}>
                 <CrystalIcon className="h-24 w-24" />
               </div>
             </div>
             <h2 className="text-2xl font-black text-primary"
-              style={{ textShadow: "0 0 20px hsl(190 100% 60% / 0.6)" }}>
-              {ar ? "استعدت بلورتك!" : "Your crystal is restored!"}
+              style={{ textShadow: "0 0 22px hsl(40 100% 55% / 0.65)" }}>
+              {ar ? "استعدت بلورتك!" : "Your starmap is restored!"}
             </h2>
             <p className="text-sm text-muted-foreground">{ar ? "عد إلى الساحة السحرية..." : "Back to the arcane arena..."}</p>
           </div>
@@ -619,11 +598,11 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
           </div>
         )}
 
-        {/* TIMER — mystical STOP orb */}
+        {/* TIMER — astronomical STOP orb */}
         {(phase === "timer" || phase === "tapped") && (() => {
           const arcPct   = Math.min(100, (timerMs / 10_000) * 100);
           const arcColor = timerMs < 9_000
-            ? "hsl(190 100% 60%)"
+            ? "hsl(40 100% 55%)"
             : timerMs <= 10_500
               ? "hsl(140 100% 55%)"
               : "hsl(0 90% 60%)";
@@ -729,7 +708,7 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
           <div className="flex-1 flex flex-col pt-5 gap-4">
             <div className="text-center">
               <div className="animate-crystal-burst inline-block mb-2">
-                <div style={{ filter: "drop-shadow(0 0 20px hsl(190 100% 60% / 0.8))" }}>
+                <div style={{ filter: "drop-shadow(0 0 24px hsl(40 100% 55% / 0.85))" }}>
                   <CrystalIcon className="h-14 w-14" />
                 </div>
               </div>
