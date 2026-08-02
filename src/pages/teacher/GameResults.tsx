@@ -218,7 +218,7 @@ const GameResults = () => {
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex items-center gap-4">
             <button onClick={() => nav("/app")}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-primary/50 bg-primary/10 hover:bg-primary/20 text-primary text-[10px] tracking-[0.3em] uppercase transition-all font-bold">
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg border-2 border-[hsl(var(--nb-border))] bg-white text-primary text-[10px] tracking-[0.3em] uppercase font-bold shadow-[3px_3px_0_0_hsl(var(--nb-border))] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0_0_hsl(var(--nb-border))] transition-all">
               <ArrowLeft className="h-3 w-3" />Dashboard
             </button>
             <div className="h-4 w-px bg-primary/25" />
@@ -242,8 +242,7 @@ const GameResults = () => {
           <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)] gap-4">
             {/* Winner */}
             {winner && (
-              <div className="rounded-2xl border-2 border-primary bg-primary/8 p-7 flex flex-col items-center justify-center text-center gap-4"
-                style={{ boxShadow: "0 0 70px -12px hsl(16 100% 66% / 0.22)" }}>
+              <div className="rounded-2xl border-2 border-[hsl(var(--nb-border))] bg-white p-7 flex flex-col items-center justify-center text-center gap-4 shadow-[5px_5px_0_0_hsl(var(--nb-border))]">
                 <div className="text-[10px] tracking-[0.5em] text-primary/70 uppercase flex items-center gap-2">
                   <Trophy className="h-3 w-3 text-amber-400" />
                   Champion
@@ -270,7 +269,7 @@ const GameResults = () => {
                 const acc = s.total_answers ? (s.correct_answers / s.total_answers) * 100 : 0;
                 return (
                   <div key={s.id}
-                    className="rounded-xl border border-primary/30 bg-primary/8 px-4 py-3 flex items-center gap-3"
+                    className="rounded-xl border-2 border-[hsl(var(--nb-border))] bg-white px-4 py-3 flex items-center gap-3 shadow-[3px_3px_0_0_hsl(var(--nb-border))]"
                     style={{ animation: `fade-up 0.4s ${idx * 70}ms both` }}>
                     <span className="text-primary/60 font-black tabular-nums text-sm w-5 shrink-0">{rank}</span>
                     <Avatar name={s.name} size="sm" />
@@ -293,21 +292,21 @@ const GameResults = () => {
         {/* ── Tabs ── */}
         <div>
           <div className="flex items-center justify-between gap-4 mb-4">
-            <div className="flex gap-1 rounded-lg border border-primary/40 bg-primary/5 p-1">
+            <div className="flex gap-2">
               {(["rank", "qa"] as const).map(t => (
                 <button key={t} onClick={() => setTab(t)}
                   className={cn(
-                    "px-5 py-2 rounded-md text-[10px] tracking-[0.35em] uppercase font-black transition-all",
+                    "px-5 py-2 rounded-lg text-[10px] tracking-[0.35em] uppercase font-bold transition-all border-2",
                     tab === t
-                      ? "bg-primary text-primary-foreground shadow-sm"
-                      : "text-primary hover:bg-primary/15"
+                      ? "bg-white text-primary border-[hsl(var(--nb-border))] shadow-[3px_3px_0_0_hsl(var(--nb-border))]"
+                      : "bg-white text-primary border-primary/30 shadow-[2px_2px_0_0_hsl(var(--nb-border)_/_0.3)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0_0_hsl(var(--nb-border)_/_0.3)]"
                   )}>
                   {t === "rank" ? "Leaderboard" : "Questions"}
                 </button>
               ))}
             </div>
             <button onClick={exportCsv}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-primary bg-transparent text-primary text-[10px] tracking-widest uppercase font-bold hover:bg-primary/15 transition-all">
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg border-2 border-[hsl(var(--nb-border))] bg-white text-primary text-[10px] tracking-widest uppercase font-bold shadow-[3px_3px_0_0_hsl(var(--nb-border))] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0_0_hsl(var(--nb-border))] transition-all">
               <Download className="h-3.5 w-3.5" />Export
             </button>
           </div>
