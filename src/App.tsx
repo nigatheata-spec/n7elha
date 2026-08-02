@@ -1,5 +1,6 @@
+import { useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
+import { BrowserRouter, Route, Routes, Navigate, useLocation } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -24,13 +25,32 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <LangTransitionOverlay />
-      <BrowserRouter>
+const AppContent = () => {
+  const location = useLocation();
+
+  const getSweepColor = () => {
+    if (location.pathname.startsWith("/play")) {
+      return "rgba(255,255,255,0.7)";
+    }
+    return "#EBDFC7";
+  };
+
+  useEffect(() => {
+    const sweep = document.getElementById("app-scan-sweep");
+    if (sweep) {
+      const handleAnimEnd = () => sweep.remove();
+      sweep.addEventListener("animationend", handleAnimEnd);
+      return () => sweep.removeEventListener("animationend", handleAnimEnd);
+    }
+  }, []);
+
+  return (
+    <>
+      <div id="app-scan-sweep" className="scan-sweep" style={{ "--sweep-color": getSweepColor() } as React.CSSProperties} />
+      <div className="scan-sweep-fade">
+        <Toaster />
+        <Sonner />
+        <LangTransitionOverlay />
         <AuthProvider>
           <Routes>
             <Route path="/" element={<Landing />} />
@@ -54,9 +74,21 @@ const App = () => (
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+      </div>
+    </>
+  );
+};
+
+const App = () => {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <BrowserRouter>
+          <AppContent />
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;

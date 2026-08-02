@@ -143,12 +143,12 @@ const Join = () => {
         for (let i = 1; i <= BOOT_LINES[li].length; i++) {
           if (cancelled) return;
           setBootCurrent(BOOT_LINES[li].slice(0, i));
-          await new Promise(r => setTimeout(r, 34));
+          await new Promise(r => setTimeout(r, 58));
         }
         if (cancelled) return;
         setBootLines(prev => [...prev, BOOT_LINES[li]]);
         setBootCurrent(""); li++;
-        await new Promise(r => setTimeout(r, 240));
+        await new Promise(r => setTimeout(r, 408));
       }
     })();
     return () => { cancelled = true; };
@@ -168,7 +168,7 @@ const Join = () => {
       for (const line of LAUNCH_LINES) {
         if (cancelled) return;
         setLaunchLines(prev => [...prev, line]);
-        await new Promise(r => setTimeout(r, 620));
+        await new Promise(r => setTimeout(r, 1054));
       }
       if (cancelled) return;
       await doInsert(snap.session, snap.name, snap.chosen ?? "");
@@ -314,12 +314,13 @@ const Join = () => {
 
   // ── Crypto Rush: boot + password ─────────────────────────────
   if (stage === "boot") {
-    const cr = CR;
     return (
-      <div className="fixed inset-0 font-mono overflow-y-auto" style={{ background: cr.bg, color: cr.accent }}>
-        <div className="pointer-events-none fixed inset-0 terminal-scanlines opacity-[0.18]" />
-        <div className="relative p-6 md:p-16 py-12 min-h-full">
-          <h1 className="text-3xl md:text-5xl font-black tracking-wider mb-8" style={{ filter: `drop-shadow(0 0 18px ${cr.accent}70)` }}>
+      <div className="fixed inset-0 font-mono overflow-y-auto terminal-screen" style={{ color: CR.accent }}>
+        <div className="scan-sweep" style={{ "--sweep-color": CR.accent } as React.CSSProperties} />
+        <div className="pointer-events-none fixed inset-0 terminal-scanlines" />
+        <div className="pointer-events-none fixed inset-0 terminal-vignette" />
+        <div className="relative p-6 md:p-16 py-12 min-h-full font-pixel scan-sweep-fade">
+          <h1 className="text-3xl md:text-5xl font-black tracking-wider mb-8" style={{ filter: `drop-shadow(0 0 18px ${CR.accent}70)` }}>
             {ar ? "أهلاً أيها المخترق" : "WELCOME HACKER"}
           </h1>
 
@@ -335,11 +336,11 @@ const Join = () => {
                   key={p}
                   onClick={() => { setChosen(p); setStage("launch"); }}
                   className="px-4 py-2 border-2 rounded text-sm md:text-base break-all transition-all active:scale-[0.96]"
-                  style={{ borderColor: cr.accentBorder, color: cr.accent }}
-                  onMouseEnter={e => (e.currentTarget.style.background = cr.accentDim)}
+                  style={{ borderColor: CR.accentBorder, color: CR.accent }}
+                  onMouseEnter={e => (e.currentTarget.style.background = CR.accentDim)}
                   onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
                 >
-                  {p}
+                  [ {p} ]
                 </button>
               ))}
             </div>
@@ -351,11 +352,12 @@ const Join = () => {
 
   // ── Crypto Rush: launch sequence ─────────────────────────────
   if (stage === "launch") {
-    const cr = CR;
     return (
-      <div className="fixed inset-0 font-mono p-6 md:p-16 py-12" style={{ background: cr.bg, color: cr.accent }}>
-        <div className="pointer-events-none fixed inset-0 terminal-scanlines opacity-[0.18]" />
-        <div className="relative space-y-3 text-base md:text-xl">
+      <div className="fixed inset-0 font-mono terminal-screen" style={{ color: CR.accent }}>
+        <div className="scan-sweep" style={{ "--sweep-color": CR.accent } as React.CSSProperties} />
+        <div className="pointer-events-none fixed inset-0 terminal-scanlines" />
+        <div className="pointer-events-none fixed inset-0 terminal-vignette" />
+        <div className="relative p-6 md:p-16 py-12 space-y-3 text-base md:text-xl font-pixel scan-sweep-fade">
           {launchLines.map((l, i) => <div key={i}>{l}</div>)}
           <div className="animate-pulse mt-2">▌</div>
         </div>
