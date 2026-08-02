@@ -93,8 +93,13 @@ const GameMonitor = () => {
   };
 
   if (!session) return (
-    <div style={{ background: "#050505", color: GREEN }} className="fixed inset-0 flex items-center justify-center font-mono text-sm">
-      {">"} initializing...
+    <div style={{ background: "#050505" }} className="fixed inset-0 flex flex-col items-center justify-center font-mono gap-6">
+      <div className="flex items-center gap-3">
+        <div className="w-2 h-2 rounded-full animate-bounce" style={{ background: GREEN, animationDelay: "0ms" }} />
+        <div className="w-2 h-2 rounded-full animate-bounce" style={{ background: GREEN, animationDelay: "150ms" }} />
+        <div className="w-2 h-2 rounded-full animate-bounce" style={{ background: GREEN, animationDelay: "300ms" }} />
+      </div>
+      <p className="text-sm tracking-wider opacity-70" style={{ color: GREEN }}>Loading session...</p>
     </div>
   );
 
