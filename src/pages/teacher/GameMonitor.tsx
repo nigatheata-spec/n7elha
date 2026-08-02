@@ -23,6 +23,7 @@ const GameMonitor = () => {
   const { sessionId } = useParams();
   const nav = useNavigate();
   const [session, setSession] = useState<any>(null);
+  const [showLoading, setShowLoading] = useState(false);
   const [students, setStudents] = useState<any[]>([]);
   const [hacks, setHacks] = useState<any[]>([]);
   const [now, setNow] = useState(Date.now());
@@ -92,7 +93,14 @@ const GameMonitor = () => {
     (el.requestFullscreen || el.webkitRequestFullscreen)?.call(el);
   };
 
-  if (!session) return (
+  // Only show loading screen if session takes >400ms to load (avoids flash on fast navigation)
+  useEffect(() => {
+    if (session) { setShowLoading(false); return; }
+    const t = setTimeout(() => setShowLoading(true), 400);
+    return () => clearTimeout(t);
+  }, [session]);
+
+  if (showLoading) return (
     <div style={{ background: "#050505" }} className="fixed inset-0 flex flex-col items-center justify-center font-mono gap-6">
       <div className="flex items-center gap-3">
         <div className="w-2 h-2 rounded-full animate-bounce" style={{ background: GREEN, animationDelay: "0ms" }} />
@@ -102,6 +110,8 @@ const GameMonitor = () => {
       <p className="text-sm tracking-wider opacity-70" style={{ color: GREEN }}>Loading session...</p>
     </div>
   );
+
+  if (!session) return null;
 
   if (session.settings?.mode === "dodgeball") return <DodgeballMonitor session={session} sessionId={sessionId!} />;
   if (session.settings?.mode === "hotpotato") return <HotPotatoMonitor session={session} sessionId={sessionId!} />;

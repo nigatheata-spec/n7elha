@@ -45,6 +45,7 @@ const Game = () => {
   const navigate = useNavigate();
   const { i18n } = useTranslation();
   const [session, setSession] = useState<any>(isPreview ? getMockSession() : null);
+  const [showLoading, setShowLoading] = useState(false);
   const [questions, setQuestions] = useState<Q[]>(isPreview ? [MOCK_Q] : []);
   const [students, setStudents] = useState<any[]>(isPreview ? MOCK_STUDENTS : []);
   const [me, setMe] = useState<any>(isPreview ? MOCK_STUDENTS[2] : null);
@@ -78,6 +79,13 @@ const Game = () => {
       window.removeEventListener("pointerdown", onFirstTouch);
     };
   }, []);
+
+  // Only show loading screen if session takes >400ms to load (avoids flash on fast navigation)
+  useEffect(() => {
+    if (session) { setShowLoading(false); return; }
+    const t = setTimeout(() => setShowLoading(true), 400);
+    return () => clearTimeout(t);
+  }, [session]);
 
   // initial load
   useEffect(() => {
@@ -216,7 +224,7 @@ const Game = () => {
     setTimeout(() => { setQSeed(s => s + 1); setPhase("question"); }, 1200);
   };
 
-  if (!session) return (
+  if (showLoading) return (
     <div className="theme-game terminal-screen min-h-screen text-foreground flex flex-col items-center justify-center font-mono gap-6">
       <div className="flex items-center gap-3">
         <div className="w-2 h-2 bg-[hsl(120_90%_62%)] rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
@@ -226,6 +234,8 @@ const Game = () => {
       <p className="text-[hsl(120_90%_62%)] text-sm tracking-wider opacity-70">Connecting...</p>
     </div>
   );
+
+  if (!session) return null;
 
   const ar = session.settings?.lang === "ar";
 
