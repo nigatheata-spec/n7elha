@@ -4,8 +4,16 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
-import { Trophy } from "lucide-react";
+import { Trophy, Check, X } from "lucide-react";
 import { playSelect, playCorrect, playWrong, playGameOver, primeAudio } from "@/lib/sound";
+import beanPair from "@/assets/doodles/bean-pair.png";
+import commaPair from "@/assets/doodles/comma-pair.png";
+import zigzagTrio from "@/assets/doodles/zigzag-trio.png";
+import triangleTrio from "@/assets/doodles/triangle-trio.png";
+import flaskDoodle from "@/assets/doodles/flask.png";
+import keyDoodle from "@/assets/doodles/key.png";
+import notebookDoodle from "@/assets/doodles/notebook.png";
+import catDoodle from "@/assets/doodles/cool-cat.png";
 
 type Q = { id: string; text: string; options: string[]; correct_index: number; position: number; image_url?: string };
 type Phase = "waiting" | "question" | "answered" | "done";
@@ -47,6 +55,43 @@ const MOCK_Q: Q = {
   options: ["Venus", "Mars", "Jupiter", "Saturn"],
 };
 const MOCK_SESSION = { id: "preview", code: "DEMO", quiz_id: "mock", status: "running", settings: { lang: "en", timePerQ: 20 } };
+
+// The 4 accent colors from the host's mode-picker icon badges, reused as answer button fills.
+const ANSWER_COLORS = ["#3a9e6e", "#3F5A63", "#C8783A", "#8B4A3A"];
+
+// Background scatter doodles — hand-drawn stickers to fill dead space. Sits behind
+// content at z-0; opaque white cards naturally clip them to just the empty gaps.
+const CONFETTI = [beanPair, commaPair, zigzagTrio, triangleTrio];
+const SCATTER = Array.from({ length: 10 }, (_, i) => {
+  const src = CONFETTI[i % CONFETTI.length];
+  const seed = i * 53 + 7;
+  return {
+    src,
+    top: `${(seed * 7) % 90}%`,
+    left: `${(seed * 13) % 92}%`,
+    rotate: (seed * 17) % 360,
+    size: 26 + (seed % 20),
+    opacity: 0.5 + ((seed % 4) * 0.08),
+  };
+});
+const HERO_STICKERS = [
+  { src: flaskDoodle, top: "8%", left: "3%", size: 46, rotate: -6, opacity: 0.6 },
+  { src: keyDoodle, top: "83%", left: "74%", size: 52, rotate: 8, opacity: 0.6 },
+  { src: notebookDoodle, top: "70%", left: "4%", size: 40, rotate: 5, opacity: 0.55 },
+  { src: catDoodle, top: "6%", left: "72%", size: 42, rotate: -4, opacity: 0.55 },
+];
+const DoodleLayer = () => (
+  <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+    {SCATTER.map((d, i) => (
+      <img key={i} src={d.src} alt="" draggable={false}
+        style={{ position: "absolute", top: d.top, left: d.left, width: d.size, height: "auto", opacity: d.opacity, transform: `rotate(${d.rotate}deg)` }} />
+    ))}
+    {HERO_STICKERS.map((h, i) => (
+      <img key={`hero-${i}`} src={h.src} alt="" draggable={false}
+        style={{ position: "absolute", top: h.top, left: h.left, width: h.size, height: "auto", opacity: h.opacity, transform: `rotate(${h.rotate}deg)` }} />
+    ))}
+  </div>
+);
 
 interface Props { sessionId: string; studentId: string; }
 
@@ -200,16 +245,17 @@ const ClassicGame = ({ sessionId, studentId }: Props) => {
 
   return (
     <div className="min-h-[100dvh] flex flex-col overflow-hidden" style={{ background: "hsl(var(--background))", color: "hsl(var(--foreground))" }}>
+      <DoodleLayer />
 
       {/* top strip */}
-      <header className="shrink-0 flex items-center justify-between px-4 py-3">
+      <header className="relative z-10 shrink-0 flex items-center justify-between px-4 py-3">
         <span className="font-bold text-sm truncate max-w-[50%]" style={{ color: "#3F5A63" }}>{me?.name ?? "—"}</span>
         <span className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-full font-black text-sm tabular-nums bg-white", NB, "shadow-[3px_3px_0_0_hsl(var(--nb-border))]")} style={{ color: "#3F5A63" }}>
           ⭐ {fmt(me?.crypto ?? 0)}
         </span>
       </header>
 
-      <main className="relative flex-1 flex flex-col min-h-0 overflow-hidden px-4">
+      <main className="relative z-10 flex-1 flex flex-col min-h-0 overflow-hidden px-4">
 
         {/* WAITING ──────────────────────────────────────────────────────────── */}
         {phase === "waiting" && (
@@ -262,20 +308,18 @@ const ClassicGame = ({ sessionId, studentId }: Props) => {
                 const isPicked  = picked === i;
                 const showResult = picked !== null;
 
-                let bg = "white";
-                let color = "#3F5A63";
-                let shadowColor = "hsl(var(--nb-border))";
+                let bg = ANSWER_COLORS[i % ANSWER_COLORS.length];
+                let color = "white";
                 let opacity = 1;
                 let shadow = "shadow-[4px_4px_0_0_hsl(var(--nb-border))]";
 
                 if (showResult) {
                   if (isCorrect) {
-                    bg = "#FF8254"; color = "white";
                     shadow = "shadow-[5px_5px_0_0_hsl(var(--nb-border))] scale-[1.02]";
                   } else if (isPicked) {
-                    bg = "hsl(0 84% 60%)"; color = "white";
+                    bg = "hsl(0 84% 60%)";
                   } else {
-                    opacity = 0.4;
+                    opacity = 0.35;
                   }
                 }
 
@@ -290,6 +334,8 @@ const ClassicGame = ({ sessionId, studentId }: Props) => {
                     )}
                     style={{ background: bg, color, opacity }}
                   >
+                    {showResult && isCorrect && <Check className="h-4 w-4 shrink-0 absolute left-2 top-2" strokeWidth={3} />}
+                    {showResult && isPicked && !isCorrect && <X className="h-4 w-4 shrink-0 absolute left-2 top-2" strokeWidth={3} />}
                     {opt}
                     {showResult && isPicked && lastGain !== null && (
                       <span className="absolute -top-2.5 -right-2 px-2 py-0.5 rounded-full text-[11px] font-black bg-white text-[#3F5A63] border-2 border-[hsl(var(--nb-border))]">
