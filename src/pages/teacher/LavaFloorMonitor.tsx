@@ -3,7 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Square, Maximize, Flame, Shield, Trophy, Skull } from "lucide-react";
+import { Square, Maximize } from "lucide-react";
+import { PixelShield, PixelFlame } from "@/components/PixelIcons";
+import { PixelLavaCrest, PixelLavaBody } from "@/components/PixelLava";
 
 const fmt = (n: number) => n.toLocaleString();
 
@@ -17,8 +19,8 @@ const av = (name: string) => {
 const Avatar = ({ name }: { name: string }) => {
   const { bg, letter } = av(name);
   return (
-    <div style={{ background: bg }}
-      className="h-9 w-9 rounded-full flex items-center justify-center font-black text-white text-sm select-none shrink-0 font-mono">
+    <div style={{ background: bg, borderColor: bg }}
+      className="pixel-avatar h-9 w-9 flex items-center justify-center font-black text-white text-sm select-none shrink-0 font-mono">
       {letter}
     </div>
   );
@@ -180,8 +182,6 @@ const LavaFloorMonitor = ({ session, sessionId }: Props) => {
   const critical    = lavaDisplay >= 92;
   const totalBricks = students.reduce((a, s) => a + (s.crypto ?? 0), 0);
 
-  const WAVE = "M0,22 C75,0 225,44 300,22 C375,0 525,44 600,22 C675,0 825,44 900,22 C975,0 1125,44 1200,22 C1275,0 1425,44 1500,22 C1575,0 1725,44 1800,22 C1875,0 2025,44 2100,22 C2175,0 2325,44 2400,22 L2400,60 L0,60 Z";
-
   return (
     <div className="theme-lavafloor fixed inset-0 text-foreground overflow-hidden font-mono"
       style={{ background: "radial-gradient(ellipse at 50% 120%, hsl(14 70% 8%) 0%, hsl(0 0% 4%) 58%)" }}>
@@ -189,17 +189,8 @@ const LavaFloorMonitor = ({ session, sessionId }: Props) => {
       {/* ── Rising lava body (GPU translateY, behind all content) ─────── */}
       <div className="absolute inset-x-0 bottom-0 h-full pointer-events-none"
         style={{ transform: `translateY(${100 - lavaDisplay}%)`, transition: "transform 0.6s cubic-bezier(0.25,0.46,0.45,0.94)", willChange: "transform", zIndex: 1 }}>
-        {/* Dual wave at surface */}
-        <div className="absolute inset-x-0 -top-9 h-[60px] overflow-hidden">
-          <svg className="absolute top-0 left-0 h-full" style={{ width: "200%", animation: "lava-wave-x 5s linear infinite" }} viewBox="0 0 2400 60" preserveAspectRatio="none">
-            <path d={WAVE} fill="#bf3a20" />
-          </svg>
-          <svg className="absolute top-1 left-0 h-full opacity-50" style={{ width: "200%", animation: "lava-wave-x 3.8s linear infinite reverse" }} viewBox="0 0 2400 60" preserveAspectRatio="none">
-            <path d={WAVE} fill="#e74c3c" />
-          </svg>
-          <div className="absolute inset-x-0 top-0 h-px" style={{ background: "hsl(35 100% 78% / 0.65)", boxShadow: "0 0 10px 3px hsl(35 100% 62% / 0.4)" }} />
-        </div>
-        <div className="absolute inset-0 lava-fill lava-fill-anim" />
+        <PixelLavaCrest className="absolute inset-x-0 -top-11 h-11" />
+        <PixelLavaBody className="absolute inset-0" />
       </div>
 
       {/* Ambient heat glow rising up */}
@@ -224,8 +215,7 @@ const LavaFloorMonitor = ({ session, sessionId }: Props) => {
           </span>
         </div>
         <div className={cn("font-black text-3xl tabular-nums transition-colors",
-          left < 30 ? "text-red-500" : "text-success")}
-          style={{ textShadow: left < 30 ? "0 0 20px hsl(0 85% 55% / 0.8)" : "0 0 14px hsl(142 65% 42% / 0.7)" }}>
+          left < 30 ? "text-red-500" : "text-success")}>
           {mm}:{ss}
         </div>
         <div className="flex gap-2">
@@ -245,19 +235,16 @@ const LavaFloorMonitor = ({ session, sessionId }: Props) => {
           <div className="text-xs text-muted-foreground tracking-widest uppercase">Lava</div>
 
           {/* Vertical lava bar */}
-          <div className="flex-1 w-20 relative rounded-xl overflow-hidden border-2 border-primary/40 bg-muted/20">
+          <div className="pixel-progress flex-1 w-20 relative overflow-hidden bg-muted/20" style={{ borderColor: danger ? "hsl(14 72% 52%)" : "hsl(14 25% 30%)" }}>
             {/* Fill from bottom */}
             <div className="absolute bottom-0 left-0 right-0 lava-fill lava-fill-anim transition-all duration-700"
-              style={{
-                height: lavaHeight,
-                boxShadow: danger ? "0 0 30px hsl(14 100% 55% / 0.8)" : "none",
-              }} />
+              style={{ height: lavaHeight }} />
             {critical && (
-              <div className="absolute inset-0 animate-pulse" style={{ background: "hsl(14 100% 55% / 0.15)" }} />
+              <div className="absolute inset-0 animate-pulse" style={{ background: "hsl(14 72% 52% / 0.15)" }} />
             )}
             {/* % label */}
             <div className="absolute inset-x-0 top-2 text-center">
-              <span className={cn("font-black text-sm", danger ? "text-primary text-glow-lava" : "text-muted-foreground")}>
+              <span className={cn("font-pixel font-black text-sm", danger ? "text-primary" : "text-muted-foreground")}>
                 {Math.round(lavaDisplay)}%
               </span>
             </div>
@@ -269,12 +256,15 @@ const LavaFloorMonitor = ({ session, sessionId }: Props) => {
             disabled={spiking}
             size="sm"
             className={cn(
-              "w-20 font-bold text-xs border-2 transition-all",
+              "pixel-button w-20 font-bold text-xs transition-all",
               spiking
-                ? "border-primary bg-primary/30 text-primary animate-pulse"
-                : "border-primary/60 bg-primary/10 text-primary hover:bg-primary/25"
-            )}>
-            <Flame className="h-3 w-3 me-1" />+10%
+                ? "bg-primary/30 text-primary animate-pulse"
+                : "bg-primary/10 text-primary hover:bg-primary/25"
+            )}
+            style={{
+              borderColor: spiking ? "hsl(14 72% 52%)" : "hsl(14 30% 35%)",
+            }}>
+            <PixelFlame className="h-3 w-3 me-1" color="currentColor" />+10%
           </Button>
           <div className="text-[9px] text-muted-foreground/50 text-center leading-tight">spike<br/>lava</div>
         </div>
@@ -295,21 +285,21 @@ const LavaFloorMonitor = ({ session, sessionId }: Props) => {
                 const wrong       = (s.total_answers ?? 0) - correct;
                 return (
                   <div key={s.id} className={cn(
-                    "rounded-2xl border-2 px-4 py-3 flex items-center gap-3 transition-all",
+                    "pixel-panel border-2 px-4 py-3 flex items-center gap-3 transition-all",
                     i === 0
-                      ? "border-success bg-success/10 shadow-[0_0_20px_-5px_hsl(142_65%_42%/0.5)]"
+                      ? "border-success bg-success/10"
                       : "border-primary/25 bg-primary/5"
                   )}>
                     <span className="font-black text-xl w-8 shrink-0 text-muted-foreground/60">{i + 1}</span>
                     <Avatar name={s.name} />
-                    <span className={cn("font-bold text-lg flex-1 truncate", i === 0 ? "text-success text-glow-green" : "text-foreground")}>
+                    <span className={cn("font-bold text-lg flex-1 truncate", i === 0 ? "text-success" : "text-foreground")}>
                       {s.name}
                     </span>
                     <div className="flex items-center gap-3 text-sm shrink-0">
                       <span className="text-green-400 font-bold tabular-nums">✓{correct}</span>
                       {wrong > 0 && <span className="text-red-400 font-bold tabular-nums">✗{wrong}</span>}
                       <div className="flex items-center gap-1 text-success font-black tabular-nums">
-                        <Shield className="h-4 w-4" />
+                        <PixelShield className="h-4 w-4" color="currentColor" />
                         {bricks}
                       </div>
                     </div>
@@ -320,23 +310,23 @@ const LavaFloorMonitor = ({ session, sessionId }: Props) => {
           </div>
 
           {/* Class stats bar */}
-          <div className="rounded-2xl border-2 border-primary/30 bg-primary/5 p-4 grid grid-cols-3 gap-4">
+          <div className="pixel-panel border-2 border-primary/30 bg-primary/5 p-4 grid grid-cols-3 gap-4">
             <div className="text-center">
-              <div className="text-2xl font-black text-success">{students.reduce((a, s) => a + (s.correct_answers ?? 0), 0)}</div>
+              <div className="text-2xl font-pixel font-black text-success">{students.reduce((a, s) => a + (s.correct_answers ?? 0), 0)}</div>
               <div className="text-[10px] text-muted-foreground uppercase tracking-widest">correct</div>
             </div>
             <div className="text-center">
               <div className="flex items-center justify-center gap-1">
-                <Shield className="h-5 w-5 text-success" />
-                <span className="text-2xl font-black text-success">{fmt(totalBricks)}</span>
+                <PixelShield className="h-5 w-5" color="currentColor" style={{ color: "hsl(142 65% 42%)" }} />
+                <span className="text-2xl font-pixel font-black text-success">{fmt(totalBricks)}</span>
               </div>
               <div className="text-[10px] text-muted-foreground uppercase tracking-widest">bricks left</div>
             </div>
             <div className="text-center">
               {danger ? (
-                <div className="text-2xl font-black text-primary text-glow-lava animate-pulse">DANGER</div>
+                <div className="text-2xl font-pixel font-black text-primary animate-pulse">DANGER</div>
               ) : (
-                <div className="text-2xl font-black text-success text-glow-green">SAFE</div>
+                <div className="text-2xl font-pixel font-black text-success">SAFE</div>
               )}
               <div className="text-[10px] text-muted-foreground uppercase tracking-widest">status</div>
             </div>

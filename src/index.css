@@ -220,24 +220,22 @@
     --card-foreground: 20 20% 92%;
     --popover: 14 40% 12%;
     --popover-foreground: 20 20% 92%;
-    --primary: 14 100% 55%;
+    --primary: 14 72% 52%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 25 90% 50%;
+    --secondary: 25 62% 46%;
     --secondary-foreground: 0 0% 100%;
     --muted: 14 25% 22%;
     --muted-foreground: 20 15% 65%;
-    --accent: 35 100% 50%;
+    --accent: 33 78% 52%;
     --accent-foreground: 14 50% 8%;
     --destructive: 0 85% 55%;
     --destructive-foreground: 0 0% 100%;
     --success: 142 65% 42%;
     --success-foreground: 0 0% 100%;
-    --border: 14 60% 32%;
+    --border: 14 42% 30%;
     --input: 14 40% 14%;
-    --ring: 14 100% 55%;
+    --ring: 14 72% 52%;
   }
-  .theme-lavafloor .text-glow-lava { text-shadow: 0 0 20px hsl(14 100% 55% / 0.9); }
-  .theme-lavafloor .text-glow-green { text-shadow: 0 0 14px hsl(142 65% 42% / 0.8); }
 }
 
 @layer base {
@@ -422,7 +420,37 @@
       lava-shift 4.2s ease-in-out infinite,
       lava-undulate 2.8s ease-in-out infinite;
   }
+  /* Pixel-art lava body: hard-stop bands, no smooth gradients, so it matches
+     the blocky crest instead of fading like the old molten gradient. */
+  .lava-pixel-body {
+    background:
+      repeating-linear-gradient(
+        to bottom,
+        #E8722B 0px,  #E8722B 20px,
+        #DE6528 20px, #DE6528 36px,
+        #D25A28 36px, #D25A28 52px,
+        #DE6528 52px, #DE6528 64px
+      );
+    background-size: 100% 64px;
+    animation: lava-band-drift 4s steps(4, end) infinite;
+  }
+  @keyframes lava-band-drift {
+    from { background-position: 0 0; }
+    to   { background-position: 0 -64px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .lava-pixel-body { animation: none; }
+  }
+
   .lava-fill-anim { animation: lava-bubble 3s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite; }
+  /* Both classes together: keep the molten background shift alongside the bubble
+     wobble. Listing only lava-bubble here would drop the shift entirely, since
+     the shorthand replaces whatever .lava-fill set. */
+  .lava-fill.lava-fill-anim {
+    animation:
+      lava-shift 4.2s ease-in-out infinite,
+      lava-bubble 3s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
+  }
   .border-glow { box-shadow: none; }
 
   @keyframes lava-wave-x {
@@ -563,5 +591,82 @@
   @keyframes result-fade-in {
     from { opacity: 0; }
     to   { opacity: 1; }
+  }
+
+  /* ─────────────────────────────────────────────────────────────────────── */
+  /* PIXEL-ART PANEL SYSTEM — Neo-brutalist hard borders + offset shadows   */
+  /* ─────────────────────────────────────────────────────────────────────── */
+
+  .pixel-panel {
+    border-radius: 0;
+    border: 2px solid;
+    box-shadow: 3px 3px 0 hsl(0 0% 0% / 0.4);
+    transition: box-shadow 0.08s, transform 0.08s;
+  }
+  .pixel-panel:active {
+    box-shadow: 1px 1px 0 hsl(0 0% 0% / 0.4);
+    transform: translate(2px, 2px);
+  }
+
+  /* Pixel button — press shift instead of scale */
+  .pixel-button {
+    border-radius: 0;
+    border: 2px solid currentColor;
+    box-shadow: 2px 2px 0 hsl(0 0% 0% / 0.5);
+    transition: box-shadow 0.08s, transform 0.08s;
+    font-weight: bold;
+    font-size: 0.875rem;
+  }
+  .pixel-button:hover:not(:disabled) {
+    box-shadow: 2px 2px 0 hsl(0 0% 0% / 0.6);
+  }
+  .pixel-button:active:not(:disabled) {
+    box-shadow: 1px 1px 0 hsl(0 0% 0% / 0.5);
+    transform: translate(1px, 1px);
+  }
+  .pixel-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* Pixel avatar — square with hard border instead of circle */
+  .pixel-avatar {
+    border-radius: 0;
+    border: 2px solid;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 900;
+    user-select: none;
+    flex-shrink: 0;
+  }
+
+  /* Segmented progress bar — discrete blocks instead of smooth gradient */
+  .pixel-progress {
+    border-radius: 0;
+    border: 1px solid;
+    overflow: hidden;
+    background: hsl(0 0% 0% / 0.3);
+  }
+  .pixel-progress-fill {
+    height: 100%;
+    background: inherit;
+    transition: width 0.25s steps(4, end);
+  }
+
+  /* Pixel progress segments — show as discrete steps */
+  .pixel-segments {
+    display: flex;
+    gap: 1px;
+    height: 100%;
+  }
+  .pixel-segment {
+    flex: 1;
+    background: inherit;
+    opacity: 0;
+    transition: opacity 0.15s steps(1, end);
+  }
+  .pixel-segment.active {
+    opacity: 1;
   }
 }

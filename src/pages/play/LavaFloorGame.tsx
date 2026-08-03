@@ -4,8 +4,9 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
-import { Trophy, Shield, Flame } from "lucide-react";
-import { LavaBucketIcon as VolcanoIcon } from "@/components/game/icons";
+import { PixelShield, PixelFlame } from "@/components/PixelIcons";
+import { PixelVolcano } from "@/components/PixelVolcano";
+import { PixelLavaCrest, PixelLavaBody } from "@/components/PixelLava";
 import { playSelect, playCorrect, playWrong, playBrick, playGameOver, primeAudio } from "@/lib/sound";
 
 type Q = { id: string; text: string; options: string[]; correct_index: number; image_url?: string };
@@ -25,8 +26,8 @@ const Avatar = ({ name, size = "md" }: { name: string; size?: "sm" | "md" | "xl"
   const { bg, letter } = av(name);
   const cls = size === "xl" ? "h-16 w-16 text-2xl" : size === "md" ? "h-9 w-9 text-sm" : "h-7 w-7 text-xs";
   return (
-    <div style={{ background: bg }}
-      className={cn("rounded-full flex items-center justify-center font-black text-white select-none shrink-0 ring-2 ring-white/10", cls)}>
+    <div style={{ background: bg, borderColor: bg }}
+      className={cn("pixel-avatar flex items-center justify-center font-black text-white select-none shrink-0", cls)}>
       {letter}
     </div>
   );
@@ -42,9 +43,6 @@ const EMBERS = [
   { left: 77, delay: 0.2,  dur: 2.4, size: 2, bright: false },
   { left: 89, delay: 1.45, dur: 1.6, size: 3, bright: true  },
 ];
-
-// Seamless lava wave path — 2400px wide (2× viewport), 10 wave cycles with more detail
-const WAVE_PATH = "M0,20 Q40,8 80,20 T160,20 T240,20 T320,20 T400,20 T480,20 T560,20 T640,20 T720,20 T800,20 T880,20 T960,20 T1040,20 T1120,20 T1200,20 T1280,20 T1360,20 T1440,20 T1520,20 T1600,20 T1680,20 T1760,20 T1840,20 T1920,20 T2000,20 T2080,20 T2160,20 T2240,20 T2320,20 T2400,20 L2400,65 L0,65 Z";
 
 interface Props { sessionId: string; studentId: string; }
 
@@ -241,16 +239,15 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
               top: "50%", transform: "translateY(-50%)",
               background: canSpend ? (spendFlash ? "hsl(142 55% 12%)" : "hsl(142 40% 8%)") : "hsl(0 0% 7%)",
               border: `2px solid ${btnColor}`,
-              boxShadow: canSpend ? `0 0 18px hsl(142 55% 30% / 0.5)` : "none",
               color: canSpend ? "hsl(142 65% 60%)" : "hsl(0 0% 32%)",
               minWidth: 56,
               cursor: canSpend ? "pointer" : "default",
-              transition: "background 0.25s, border-color 0.25s, box-shadow 0.25s, color 0.25s",
+              transition: "background 0.25s, border-color 0.25s, color 0.25s",
             }}>
-            <Shield className="h-5 w-5 shrink-0" />
+            <PixelShield className="h-5 w-5 shrink-0" color="currentColor" />
             {/* Brick progress */}
-            <div className="w-full rounded-full overflow-hidden" style={{ height: 3, background: "hsl(0 0% 15%)" }}>
-              <div className="h-full rounded-full transition-all duration-300"
+            <div className="pixel-progress w-full" style={{ height: 4, borderColor: canSpend ? "hsl(142 55% 45%)" : "hsl(0 0% 30%)", background: "hsl(0 0% 15%)" }}>
+              <div className="pixel-progress-fill"
                 style={{ width: `${fillPct}%`, background: canSpend ? "hsl(142 55% 45%)" : "hsl(0 0% 30%)" }} />
             </div>
             <span className="text-[10px] font-black tabular-nums leading-none">{bricks}/{SPEND_COST}</span>
@@ -261,54 +258,12 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
         );
       })()}
 
-      {/* ── VOLCANIC CRACKS background texture ───────────────────────── */}
-      <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-[0.04]" xmlns="http://www.w3.org/2000/svg">
-        <filter id="noise"><feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter>
-        <rect width="100%" height="100%" filter="url(#noise)" />
-      </svg>
-
       {/* ── RISING LAVA BODY (GPU: transform translateY) ──────────────── */}
       <div className="absolute inset-x-0 bottom-0 h-full pointer-events-none"
         style={{ transform: `translateY(${100 - lavaPct}%)`, transition: "transform 0.55s cubic-bezier(0.25,0.46,0.45,0.94)", willChange: "transform" }}>
 
-        {/* Wave surface — three layers with depth and highlights */}
-        <div className="absolute inset-x-0 -top-9 h-[60px] overflow-hidden">
-          {/* Darkest base layer */}
-          <svg className="absolute top-0 left-0 h-full opacity-100"
-            style={{ width: "200%", animation: "lava-wave-x 6.2s linear infinite" }}
-            viewBox="0 0 2400 60" preserveAspectRatio="none">
-            <path d={WAVE_PATH} fill="#7d1a0d" />
-          </svg>
-          {/* Mid-tone layer */}
-          <svg className="absolute top-0.5 left-0 h-full opacity-75"
-            style={{ width: "200%", animation: "lava-wave-x 4.8s linear infinite reverse" }}
-            viewBox="0 0 2400 60" preserveAspectRatio="none">
-            <path d={WAVE_PATH} fill="#c0392b" />
-          </svg>
-          {/* Bright active layer */}
-          <svg className="absolute top-1 left-0 h-full opacity-90"
-            style={{ width: "200%", animation: "lava-wave-x 3.5s linear infinite" }}
-            viewBox="0 0 2400 60" preserveAspectRatio="none">
-            <path d={WAVE_PATH} fill="#e74c3c" />
-          </svg>
-          {/* Highlight layer — bright yellow-white peak */}
-          <svg className="absolute top-1.5 left-0 h-full opacity-60"
-            style={{ width: "200%", animation: "lava-wave-x 2.8s linear infinite reverse", filter: "drop-shadow(0 0 4px hsl(35 100% 70% / 0.8))" }}
-            viewBox="0 0 2400 60" preserveAspectRatio="none">
-            <path d={WAVE_PATH} fill="#ffb366" />
-          </svg>
-          {/* Glow edge at very top */}
-          <div className="absolute inset-x-0 top-0 h-1.5" style={{ background: "linear-gradient(to bottom, hsl(35 100% 85% / 0.8), hsl(35 100% 70% / 0.2))", boxShadow: "0 -2px 8px hsl(35 100% 70% / 0.6), 0 2px 12px hsl(35 100% 60% / 0.4)" }} />
-        </div>
-
-        {/* Lava body */}
-        <div className="absolute inset-0 lava-fill lava-fill-anim" />
-
-        {/* Surface bubbles */}
-        <div className="absolute top-4  left-[17%] h-3 w-3 rounded-full bg-black/20 lava-fill-anim" style={{ animationDelay: "0s" }} />
-        <div className="absolute top-7  left-[44%] h-2 w-2 rounded-full bg-black/15" style={{ animation: "lava-bubble 3.1s ease-in-out 1.1s infinite" }} />
-        <div className="absolute top-3  left-[68%] h-4 w-4 rounded-full bg-black/12 lava-fill-anim" style={{ animationDelay: "0.6s" }} />
-        <div className="absolute top-10 left-[83%] h-2 w-2 rounded-full bg-black/18" style={{ animation: "lava-bubble 2.7s ease-in-out 0.4s infinite" }} />
+        <PixelLavaCrest className="absolute inset-x-0 -top-11 h-11" />
+        <PixelLavaBody className="absolute inset-0" />
       </div>
 
       {/* ── EMBER PARTICLES (rise from surface) ──────────────────────── */}
@@ -360,15 +315,15 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
 
           {/* Danger label — always in DOM, visibility toggled to prevent layout shift */}
           <div className="flex items-center gap-1 text-[10px] font-black tracking-[0.35em] uppercase"
-            style={{ color: "hsl(14 100% 65%)", animation: danger ? "heat-flicker 0.7s ease-in-out infinite" : "none", visibility: danger ? "visible" : "hidden" }}>
-            <Flame className="h-3 w-3" />
+            style={{ color: "hsl(14 72% 62%)", animation: danger ? "heat-flicker 0.7s ease-in-out infinite" : "none", visibility: danger ? "visible" : "hidden" }}>
+            <PixelFlame className="h-3 w-3" color="currentColor" />
             {ar ? (critical ? "حرج" : "خطر") : (critical ? "CRITICAL" : "DANGER")}
           </div>
 
           {/* Bricks */}
           <div className="flex items-center gap-1.5 shrink-0">
-            <Shield className="h-3.5 w-3.5" style={{ color: "hsl(35 100% 62%)" }} />
-            <span className="font-black tabular-nums text-sm" style={{ color: "hsl(35 100% 68%)" }}>{bricks}</span>
+            <PixelShield className="h-3.5 w-3.5" color="hsl(33 78% 58%)" />
+            <span className="font-black tabular-nums text-sm" style={{ color: "hsl(33 78% 64%)" }}>{bricks}</span>
           </div>
         </header>
 
@@ -378,7 +333,7 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
             style={{ width: `${lavaPct}%` }} />
           {lavaPct > 0 && (
             <div className="absolute inset-y-0 right-0 flex items-center pe-2">
-              <span className="text-[8px] font-black tabular-nums" style={{ color: danger ? "hsl(14 100% 65%)" : "hsl(14 60% 50%)" }}>
+              <span className="text-[8px] font-black tabular-nums" style={{ color: danger ? "hsl(14 72% 62%)" : "hsl(14 60% 50%)" }}>
                 {Math.round(lavaPct)}%
               </span>
             </div>
@@ -413,7 +368,7 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
               >
                 <span className="tracking-widest">{ar ? "الناجون" : "SURVIVORS"}</span>
                 <span className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full animate-pulse" style={{ background: "hsl(14 100% 55%)" }} />
+                  <span className="h-2 w-2 rounded-full animate-pulse" style={{ background: "hsl(14 72% 52%)" }} />
                   <span className="font-bold tabular-nums text-sm" style={{ color: "hsl(30 80% 75%)" }}>
                     {students.length.toString().padStart(2, "0")}
                   </span>
@@ -427,24 +382,23 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
                   return (
                     <div
                       key={s.id}
-                      className="flex items-center gap-2.5 p-2.5 rounded-xl transition-all"
+                      className="pixel-panel flex items-center gap-2.5 p-2 transition-all"
                       style={{
-                        background: isMe ? "hsl(14 100% 55% / 0.14)" : "hsl(14 60% 35% / 0.10)",
-                        border: `1px solid hsl(14 100% 55% / ${isMe ? 0.55 : 0.25})`,
-                        boxShadow: isMe ? "0 0 18px hsl(14 100% 55% / 0.30)" : "none",
+                        background: isMe ? "hsl(14 72% 52% / 0.14)" : "hsl(14 60% 35% / 0.10)",
+                        borderColor: `hsl(14 72% 52% / ${isMe ? 0.55 : 0.25})`,
                         animation: `fade-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) ${Math.min(i * 60, 600)}ms both`,
                       }}
                     >
                       <Avatar name={s.name} size="sm" />
                       <div className="min-w-0 flex-1">
-                        <div className="text-sm font-bold truncate" style={{ color: isMe ? "hsl(30 100% 80%)" : "hsl(30 18% 75%)" }}>
+                        <div className="text-sm font-bold truncate" style={{ color: isMe ? "hsl(30 62% 80%)" : "hsl(30 18% 75%)" }}>
                           {s.name}
                         </div>
                         {isMe && (
                           <div className="font-mono text-[9px]" style={{ color: "hsl(14 80% 65%)" }}>{ar ? "أنت" : "you"}</div>
                         )}
                       </div>
-                      {isMe && <Flame className="h-3.5 w-3.5 shrink-0" style={{ color: "hsl(14 100% 65%)" }} />}
+                      {isMe && <PixelFlame className="h-3.5 w-3.5 shrink-0" color="hsl(14 72% 62%)" />}
                     </div>
                   );
                 })}
@@ -464,7 +418,7 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
             const subtitle = ar
               ? (myRank === 1 ? "تحدّيت الحمم" : survived ? "نجوت من الحريق" : "ابتلعتك الحمم")
               : (myRank === 1 ? "YOU DEFIED THE LAVA" : survived ? "YOU SURVIVED THE FIRE" : "THE LAVA GOT YOU");
-            const rankColor = myRank === 1 ? "hsl(45 100% 58%)"
+            const rankColor = myRank === 1 ? "hsl(45 76% 56%)"
               : survived    ? "hsl(30 80% 65%)"
               :               "hsl(14 80% 55%)";
             return (
@@ -475,7 +429,7 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
                   <div
                     className="absolute top-0 w-44 h-44 rounded-full"
                     style={{
-                      background: "radial-gradient(circle, hsl(14 100% 55% / 0.22) 0%, transparent 65%)",
+                      background: "radial-gradient(circle, hsl(14 72% 52% / 0.22) 0%, transparent 65%)",
                       animation: "heat-flicker 2s ease-in-out infinite",
                     }}
                   />
@@ -483,16 +437,15 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
                     className="relative"
                     style={{
                       color: rankColor,
-                      filter: `drop-shadow(0 0 22px ${rankColor}aa)`,
                       animation: "fade-up 0.6s cubic-bezier(0.34,1.4,0.64,1) both",
                     }}
                   >
-                    <VolcanoIcon size={120} strokeWidth={1.6} />
+                    <PixelVolcano size={120} />
                   </div>
                   <div className="text-center mt-3">
                     <div
                       className="text-2xl md:text-3xl font-black tracking-tight"
-                      style={{ color: rankColor, textShadow: `0 0 22px ${rankColor}88` }}
+                      style={{ color: rankColor }}
                     >
                       {verdict}
                     </div>
@@ -504,15 +457,14 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
 
                 {/* rank tile */}
                 <div
-                  className="rounded-2xl p-4 flex items-center gap-4"
+                  className="pixel-panel p-4 flex items-center gap-4"
                   style={{
                     background: `${rankColor}10`,
-                    border: `1px solid ${rankColor}50`,
-                    boxShadow: survived ? `0 0 22px ${rankColor}33` : "none",
+                    borderColor: `${rankColor}`,
                   }}
                 >
                   <div className="flex flex-col items-center justify-center min-w-[3.5rem]">
-                    <div className="text-3xl font-black tabular-nums leading-none" style={{ color: rankColor }}>
+                    <div className="text-3xl font-pixel font-black tabular-nums leading-none" style={{ color: rankColor }}>
                       #{myRank}
                     </div>
                     <div className="text-[9px] tracking-widest mt-1" style={{ color: "hsl(30 25% 55%)" }}>
@@ -524,8 +476,8 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
                     <div>
                       <div className="text-[9px] tracking-widest" style={{ color: "hsl(30 25% 55%)" }}>{ar ? "الطوب" : "BRICKS"}</div>
                       <div className="flex items-center gap-1">
-                        <Shield className="h-3.5 w-3.5" style={{ color: "hsl(35 100% 62%)" }} />
-                        <span className="text-xl font-black tabular-nums" style={{ color: "hsl(35 100% 70%)" }}>{bricks}</span>
+                        <PixelShield className="h-3.5 w-3.5" color="hsl(33 78% 58%)" />
+                        <span className="text-xl font-black tabular-nums" style={{ color: "hsl(33 78% 66%)" }}>{bricks}</span>
                       </div>
                     </div>
                     <div>
@@ -544,15 +496,15 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
                       {ar ? "━ الناجون ━" : "━ SURVIVORS ━"}
                     </div>
                     {top3.map((s: any, i: number) => {
-                      const mc = i === 0 ? "hsl(45 100% 58%)" : i === 1 ? "hsl(220 12% 76%)" : "hsl(24 70% 56%)";
+                      const mc = i === 0 ? "hsl(45 76% 56%)" : i === 1 ? "hsl(220 12% 76%)" : "hsl(24 70% 56%)";
                       const isMe = s.id === studentId;
                       return (
                         <div
                           key={s.id}
-                          className="flex items-center gap-2.5 rounded-xl px-3 py-2.5"
+                          className="pixel-panel flex items-center gap-2.5 px-3 py-2"
                           style={{
                             background: isMe ? `${mc}18` : "hsl(14 35% 9%)",
-                            border: `1px solid ${isMe ? `${mc}60` : "hsl(14 25% 18%)"}`,
+                            borderColor: isMe ? `${mc}` : "hsl(14 25% 18%)",
                           }}
                         >
                           <span className="font-black text-sm w-5 tabular-nums text-center" style={{ color: mc }}>{i + 1}</span>
@@ -560,8 +512,8 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
                           <span className="flex-1 text-sm font-bold truncate" style={{ color: isMe ? "hsl(30 35% 88%)" : "hsl(30 18% 72%)" }}>
                             {s.name}{isMe && " ←"}
                           </span>
-                          <Flame className="h-3.5 w-3.5" style={{ color: i === 0 ? mc : "hsl(14 60% 45%)" }} />
-                          <span className="text-sm font-black tabular-nums" style={{ color: "hsl(35 100% 65%)" }}>{s.crypto ?? 0}</span>
+                          <PixelFlame className="h-3.5 w-3.5" color={i === 0 ? mc : "hsl(14 60% 45%)"} />
+                          <span className="text-sm font-black tabular-nums" style={{ color: "hsl(33 78% 62%)" }}>{s.crypto ?? 0}</span>
                         </div>
                       );
                     })}
@@ -569,14 +521,14 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
                       <>
                         <div className="text-center text-xs" style={{ color: "hsl(14 30% 30%)" }}>···</div>
                         <div
-                          className="flex items-center gap-2.5 rounded-xl px-3 py-2.5"
-                          style={{ background: `${rankColor}18`, border: `1px solid ${rankColor}60` }}
+                          className="pixel-panel flex items-center gap-2.5 px-3 py-2"
+                          style={{ background: `${rankColor}18`, borderColor: `${rankColor}` }}
                         >
                           <span className="font-black text-sm w-5 tabular-nums text-center" style={{ color: rankColor }}>{myRank}</span>
                           <Avatar name={me?.name ?? "?"} size="sm" />
                           <span className="flex-1 text-sm font-bold truncate" style={{ color: "hsl(30 35% 88%)" }}>{me?.name} ←</span>
-                          <Flame className="h-3.5 w-3.5" style={{ color: rankColor }} />
-                          <span className="text-sm font-black tabular-nums" style={{ color: "hsl(35 100% 65%)" }}>{bricks}</span>
+                          <PixelFlame className="h-3.5 w-3.5" color={rankColor} />
+                          <span className="text-sm font-black tabular-nums" style={{ color: "hsl(33 78% 62%)" }}>{bricks}</span>
                         </div>
                       </>
                     )}
@@ -585,14 +537,14 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
 
                 <button
                   onClick={() => navigate("/play")}
-                  className="mt-2 px-6 py-3 rounded-xl font-black text-sm tracking-widest transition-all active:scale-[0.97]"
+                  className="pixel-button mt-2 px-6 py-3"
                   style={{
-                    background: "hsl(14 100% 55% / 0.15)",
-                    border: "1.5px solid hsl(14 100% 55% / 0.5)",
-                    color: "hsl(14 100% 75%)",
+                    background: "hsl(14 72% 52% / 0.15)",
+                    borderColor: "hsl(14 72% 52%)",
+                    color: "hsl(14 70% 72%)",
                   }}
                 >
-                  {ar ? "خروج" : "Exit"}
+                  {ar ? "خروج" : "EXIT"}
                 </button>
               </div>
             );
@@ -604,20 +556,17 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
             <div className="flex-1 flex flex-col gap-2.5 max-w-2xl mx-auto w-full min-h-0 pe-[72px] lg:pe-0">
 
               {/* Question card */}
-              <div className="shrink-0 rounded-2xl px-4 py-4 relative"
+              <div className="pixel-panel shrink-0 px-4 py-4 relative"
                 style={{
                   background: `hsl(0 0% ${6 + glowStrength * 2}%)`,
-                  border: `1.5px solid hsl(14 ${55 + glowStrength * 30}% ${22 + glowStrength * 20}% / ${0.45 + glowStrength * 0.45})`,
-                  boxShadow: glowStrength > 0.25
-                    ? `inset 0 0 ${Math.round(glowStrength * 24)}px hsl(14 100% 55% / ${glowStrength * 0.18})`
-                    : undefined,
-                  transition: "border-color 0.4s, box-shadow 0.4s",
+                  borderColor: `hsl(14 ${55 + glowStrength * 30}% ${22 + glowStrength * 20}%)`,
+                  transition: "border-color 0.4s, background 0.4s",
                 }}>
                 {currentQ.image_url && (
                   <img
                     src={currentQ.image_url}
                     alt=""
-                    className="mx-auto max-h-[24vh] w-auto object-contain rounded-xl mb-3 border border-white/5"
+                    className="mx-auto max-h-[24vh] w-auto object-contain mb-3 border-2 border-white/20"
                   />
                 )}
                 <p className="text-base md:text-lg font-bold leading-snug text-center"
@@ -625,17 +574,16 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
                   {currentQ.text}
                 </p>
 
-                {/* Timer bar — depletes like burning fuel */}
-                <div className="mt-3 h-1 rounded-full overflow-hidden" style={{ background: "hsl(0 0% 10%)" }}>
-                  <div className="h-full rounded-full"
+                {/* Timer bar — stepped segments */}
+                <div className="pixel-progress mt-3 h-2" style={{ background: "hsl(0 0% 10%)", borderColor: timerColor }}>
+                  <div className="pixel-progress-fill"
                     style={{
                       width: `${timerFrac * 100}%`,
-                      background: `linear-gradient(90deg, ${timerColor}, hsl(35 100% 65%))`,
-                      boxShadow: `0 0 8px ${timerColor}60`,
+                      background: timerColor,
                       transition: "width 0.2s linear, background 0.5s",
                     }} />
                 </div>
-                <div className="mt-1.5 text-right text-[10px] font-black tabular-nums"
+                <div className="mt-1.5 text-right text-[10px] font-pixel font-black tabular-nums"
                   style={{ color: timerColor, transition: "color 0.5s" }}>
                   {timeLeft}s
                 </div>
@@ -658,13 +606,13 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
 
                   return (
                     <button key={i} disabled={picked !== null} onClick={() => submit(i)}
-                      className="relative flex items-center justify-center px-3 py-3 text-sm font-bold text-center rounded-xl transition-all duration-200 active:scale-[0.97]"
+                      className="pixel-button relative flex items-center justify-center px-3 py-3 text-sm font-bold text-center transition-all duration-200"
                       style={{
                         minHeight: "72px",
                         background: bg,
-                        border: `1.5px solid ${borderColor}`,
+                        borderColor: borderColor,
                         color,
-                        transition: "background 0.25s, border-color 0.25s, color 0.25s, transform 0.1s",
+                        transition: "background 0.25s, border-color 0.25s, color 0.25s, transform 0.08s",
                       }}>
                       <span className="absolute top-2 left-2.5 text-[9px] font-black opacity-35 tracking-widest">
                         {["A","B","C","D"][i]}
