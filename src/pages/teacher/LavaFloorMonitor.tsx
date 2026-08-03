@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { Square, Maximize } from "lucide-react";
 import { PixelShield, PixelFlame } from "@/components/PixelIcons";
 import { PixelLavaCrest, PixelLavaBody } from "@/components/PixelLava";
+import { PixelRockCeiling } from "@/components/PixelRockCeiling";
 
 const fmt = (n: number) => n.toLocaleString();
 
@@ -184,12 +185,15 @@ const LavaFloorMonitor = ({ session, sessionId }: Props) => {
 
   return (
     <div className="theme-lavafloor fixed inset-0 text-foreground overflow-hidden font-mono"
-      style={{ background: "radial-gradient(ellipse at 50% 120%, hsl(14 70% 8%) 0%, hsl(0 0% 4%) 58%)" }}>
+      style={{ background: "#0A0610" }}>
+
+      {/* ── CAVE ROCK CEILING — static pixel-art background ──────────── */}
+      <PixelRockCeiling className="absolute inset-0" />
 
       {/* ── Rising lava body (GPU translateY, behind all content) ─────── */}
       <div className="absolute inset-x-0 bottom-0 h-full pointer-events-none"
         style={{ transform: `translateY(${100 - lavaDisplay}%)`, transition: "transform 0.6s cubic-bezier(0.25,0.46,0.45,0.94)", willChange: "transform", zIndex: 1 }}>
-        <PixelLavaCrest className="absolute inset-x-0 -top-11 h-11" />
+        <PixelLavaCrest className="absolute inset-x-0 -top-16 h-16" />
         <PixelLavaBody className="absolute inset-0" />
       </div>
 

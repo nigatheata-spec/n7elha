@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { PixelShield, PixelFlame } from "@/components/PixelIcons";
 import { PixelVolcano } from "@/components/PixelVolcano";
 import { PixelLavaCrest, PixelLavaBody } from "@/components/PixelLava";
+import { PixelRockCeiling } from "@/components/PixelRockCeiling";
 import { playSelect, playCorrect, playWrong, playBrick, playGameOver, primeAudio } from "@/lib/sound";
 
 type Q = { id: string; text: string; options: string[]; correct_index: number; image_url?: string };
@@ -219,9 +220,12 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
 
   return (
     <div className="theme-lavafloor fixed inset-0 text-foreground overflow-hidden"
-      style={{ fontFamily: "'JetBrains Mono', monospace", background: "radial-gradient(ellipse at 50% 120%, hsl(14 70% 8%) 0%, hsl(0 0% 4%) 58%)",
+      style={{ fontFamily: "'JetBrains Mono', monospace", background: "#0A0610",
         boxShadow: danger ? `inset 0 0 ${critical ? 80 : 40}px hsl(14 100% ${critical ? 45 : 35}% / ${critical ? 0.6 : 0.35})` : "none",
         transition: "box-shadow 0.8s ease" }}>
+
+      {/* ── CAVE ROCK CEILING — static pixel-art background ──────────── */}
+      <PixelRockCeiling className="absolute inset-0" />
 
       {/* ── SPEND BRICKS — fixed floating button, never affects layout ── */}
       {(() => {
@@ -262,7 +266,7 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
       <div className="absolute inset-x-0 bottom-0 h-full pointer-events-none"
         style={{ transform: `translateY(${100 - lavaPct}%)`, transition: "transform 0.55s cubic-bezier(0.25,0.46,0.45,0.94)", willChange: "transform" }}>
 
-        <PixelLavaCrest className="absolute inset-x-0 -top-11 h-11" />
+        <PixelLavaCrest className="absolute inset-x-0 -top-16 h-16" />
         <PixelLavaBody className="absolute inset-0" />
       </div>
 

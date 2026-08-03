@@ -1,80 +1,53 @@
 import { CSSProperties } from "react";
+import lavaCrest1 from "@/assets/lava/lava-crest-1.png";
+import lavaCrest2 from "@/assets/lava/lava-crest-2.png";
+import lavaCrest3 from "@/assets/lava/lava-crest-3.png";
+import lavaBodyUrl from "@/assets/lava/lava-body.png";
 
 /**
- * Pixel-art lava surface.
+ * Pixel-art lava surface, built from real frames extracted from the
+ * reference animation (not procedural rects, not AI-approximated art) —
+ * cropped, color-quantized to remove JPEG noise, and quantized colors snap
+ * back to flat blocks so image-rendering:pixelated stays crisp on scale.
  *
- * Everything is drawn on a 4-unit pixel grid with shapeRendering="crispEdges"
- * and 2px-wide steps, so the crest stays hard-edged and chunky at any scale
- * instead of smoothing into the vector waves this replaces. The tile repeats
- * via a duplicated <g>, and the crest scrolls by animating a double-width SVG.
+ * The crest cycles through the 3 actual animation frames via hard opacity
+ * swaps (no fade — real pixel-art flipbook motion), each tiling horizontally
+ * on its own. The body is a single tile cropped so its top row matches its
+ * bottom row exactly, so it repeats vertically with no seam.
  */
 
-const PX = 4;                 // one "pixel"
-const STEP = 2;                // step width in pixels — wider steps read as chunkier rock
-const COLS = 16;                // steps per tile
-const TILE = COLS * STEP * PX;  // tile width in svg units
-const CREST_ROWS = 4;           // rows of stepped edge above the hot band
+const CREST_FRAMES = [lavaCrest1, lavaCrest2, lavaCrest3];
+const FRAME_CLASS = ["lava-crest-frame-a", "lava-crest-frame-b", "lava-crest-frame-c"];
 
-// Per-step crest height, in pixel rows down from the top. Hand-tuned rather
-// than random so the silhouette reads as chunky lava rock, not noise.
-const CREST = [1, 0, 1, 2, 1, 0, 1, 1, 2, 1, 0, 1, 2, 1, 1, 0];
-
-const C = {
-  tip:    "#FFD37A", // lit crest pixel
-  bright: "#F9A62B", // hot surface band
-  band:   "#EE7B2A", // base of the hot band, meets the body
-  bubble: "#8C3A22", // dark arch mouth
-};
-
-/** Bubble arches sitting in the hot band, like the reference art. */
-const BUBBLES = [
-  { x: 4,  y: 7 },
-  { x: 14, y: 8 },
-  { x: 24, y: 7 },
-];
-
-const CrestTile = ({ idOffset }: { idOffset: number }) => (
-  <g transform={`translate(${idOffset * TILE} 0)`}>
-    {CREST.map((top, i) => {
-      const x = i * STEP * PX;
-      const w = STEP * PX;
-      return (
-        <g key={i}>
-          <rect x={x} y={top * PX} width={w} height={PX} fill={C.tip} />
-          <rect x={x} y={(top + 1) * PX} width={w} height={(CREST_ROWS - top) * PX} fill={C.bright} />
-        </g>
-      );
-    })}
-    {BUBBLES.map((b, i) => (
-      <g key={`b${i}`}>
-        <rect x={b.x * PX}       y={b.y * PX}       width={PX * 3} height={PX} fill={C.bubble} />
-        <rect x={b.x * PX}       y={(b.y + 1) * PX} width={PX}     height={PX} fill={C.bubble} />
-        <rect x={(b.x + 2) * PX} y={(b.y + 1) * PX} width={PX}     height={PX} fill={C.bubble} />
-      </g>
-    ))}
-  </g>
-);
-
-/** The stepped, scrolling top edge of the lava. */
 export const PixelLavaCrest = ({ className, style }: { className?: string; style?: CSSProperties }) => (
-  <div className={`relative overflow-hidden ${className ?? ""}`} style={style}>
-    <svg
-      className="absolute inset-y-0 left-0 h-full"
-      style={{ width: "200%", animation: "lava-wave-x 7s linear infinite" }}
-      viewBox={`0 0 ${TILE * 2} 44`}
-      preserveAspectRatio="none"
-      shapeRendering="crispEdges"
-      aria-hidden
-    >
-      {/* base fill under the crest so no background shows through the steps */}
-      <rect x="0" y={CREST_ROWS * PX} width={TILE * 2} height={44} fill={C.band} />
-      <CrestTile idOffset={0} />
-      <CrestTile idOffset={1} />
-    </svg>
+  <div className={`relative ${className ?? ""}`} style={style} aria-hidden>
+    {CREST_FRAMES.map((url, i) => (
+      <div
+        key={i}
+        className={`absolute inset-0 lava-crest-frame ${FRAME_CLASS[i]}`}
+        style={{
+          backgroundImage: `url(${url})`,
+          backgroundRepeat: "repeat-x",
+          backgroundSize: "auto 100%",
+          backgroundPosition: "bottom left",
+          imageRendering: "pixelated",
+        }}
+      />
+    ))}
   </div>
 );
 
-/** The molten body below the surface: hard-stop horizontal bands. */
+/** The molten body below the surface — tiles seamlessly, drifts slowly upward. */
 export const PixelLavaBody = ({ className, style }: { className?: string; style?: CSSProperties }) => (
-  <div className={`lava-pixel-body ${className ?? ""}`} style={style} aria-hidden />
+  <div
+    className={`lava-pixel-body-img ${className ?? ""}`}
+    style={{
+      backgroundImage: `url(${lavaBodyUrl})`,
+      backgroundRepeat: "repeat",
+      backgroundSize: "150px 20px",
+      imageRendering: "pixelated",
+      ...style,
+    }}
+    aria-hidden
+  />
 );
