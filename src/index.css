@@ -166,7 +166,7 @@
     --card-foreground: 210 15% 88%;
     --popover: 210 18% 11%;
     --popover-foreground: 210 15% 88%;
-    --primary: 72 100% 44%;             /* PCB yellow-green */
+    --primary: 71 48% 47%;              /* PCB silkscreen — muted, not neon */
     --primary-foreground: 210 22% 7%;
     --secondary: 210 18% 17%;           /* steel panel */
     --secondary-foreground: 210 15% 88%;
@@ -180,10 +180,8 @@
     --success-foreground: 210 22% 7%;
     --border: 210 20% 20%;
     --input: 210 18% 10%;
-    --ring: 72 100% 44%;
+    --ring: 71 48% 47%;
   }
-  .theme-hotpotato .text-glow-fire { text-shadow: 0 0 18px hsl(0 85% 55% / 0.85); }
-  .theme-hotpotato .text-glow-pcb  { text-shadow: 0 0 16px hsl(72 100% 44% / 0.9); }
 
   /* Metallic panel buttons */
   .theme-hotpotato .btn-panel {
@@ -204,13 +202,13 @@
   .theme-hotpotato .btn-panel-correct {
     background: linear-gradient(160deg, hsl(140 50% 17%), hsl(140 50% 10%)) !important;
     border-color: hsl(140 65% 35%) !important;
-    box-shadow: inset 0 1.5px 0 hsl(140 50% 36%), 0 0 26px hsl(140 70% 40% / 0.55) !important;
+    box-shadow: inset 0 1.5px 0 hsl(140 50% 36%) !important;
     color: hsl(140 80% 82%) !important;
   }
   .theme-hotpotato .btn-panel-wrong {
     background: linear-gradient(160deg, hsl(0 60% 17%), hsl(0 60% 10%)) !important;
     border-color: hsl(0 75% 38%) !important;
-    box-shadow: inset 0 1.5px 0 hsl(0 60% 36%), 0 0 26px hsl(0 80% 40% / 0.5) !important;
+    box-shadow: inset 0 1.5px 0 hsl(0 60% 36%) !important;
     color: hsl(0 80% 80%) !important;
   }
 
@@ -275,9 +273,10 @@
     70%  { transform: scale(0.95) rotate(2deg); }
     100% { opacity: 1; transform: scale(1) rotate(0deg); filter: brightness(1); }
   }
+  /* Bomb row marker — flat border/background pulse, no bloom. */
   @keyframes hp-bomb-pulse {
-    0%, 100% { box-shadow: 0 0 12px hsl(0 80% 45% / 0.4); }
-    50%      { box-shadow: 0 0 32px hsl(0 85% 55% / 0.85), 0 0 60px hsl(0 80% 40% / 0.35); }
+    0%, 100% { border-color: hsl(0 55% 36%); background-color: hsl(0 40% 12% / 0.35); }
+    50%      { border-color: hsl(0 70% 52%); background-color: hsl(0 45% 16% / 0.55); }
   }
   .animate-hp-explode    { animation: hp-explode 0.6s ease-out; }
   .animate-hp-bomb-pulse { animation: hp-bomb-pulse 1.2s ease-in-out infinite; }
@@ -344,6 +343,31 @@
   @keyframes star-twinkle {
     0%, 100% { opacity: 0.1;  transform: scale(1); }
     50%      { opacity: 0.75; transform: scale(1.5); }
+  }
+
+  /* Dynamite — flame flicker + embers thrown off the burning cord */
+  .bomb-burst {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: bomb-burst-crackle 0.3s steps(2, end) infinite alternate;
+  }
+  @keyframes bomb-burst-crackle {
+    from { transform: scale(0.82) rotate(0deg);  opacity: 0.85; }
+    to   { transform: scale(1.08) rotate(22deg); opacity: 1; }
+  }
+  .bomb-spark {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: bomb-spark-fly 1.5s ease-out infinite;
+  }
+  @keyframes bomb-spark-fly {
+    0%   { transform: translate(0, 0) scale(1);   opacity: 0.95; }
+    70%  { opacity: 0.5; }
+    100% { transform: translate(var(--dx), var(--dy)) scale(0.25); opacity: 0; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .bomb-burst { animation: none; }
+    .bomb-spark { animation: none; opacity: 0; }
   }
 
   /* Space backdrop — slow drifting rock debris */
@@ -508,13 +532,17 @@
     background-size: 32px 32px;
   }
 
-  /* Pass It — PCB circuit board trace pattern (real image, black bg blends via screen mode) */
+  /* Pass It — PCB trace texture. Kept faint and large-scale so it reads as a
+     surface the UI sits on, not wallpaper competing with it. Masked to fade out
+     behind the centre column where the game content lives. */
   .pcb-trace-bg {
     background-image: url("/pcb-bg.png");
-    background-size: 520px auto;
+    background-size: 860px auto;
     background-repeat: repeat;
     mix-blend-mode: screen;
-    opacity: 0.55;
+    opacity: 0.13;
+    -webkit-mask-image: radial-gradient(ellipse 62% 52% at 50% 45%, transparent 0%, rgba(0,0,0,0.55) 46%, #000 78%);
+    mask-image: radial-gradient(ellipse 62% 52% at 50% 45%, transparent 0%, rgba(0,0,0,0.55) 46%, #000 78%);
   }
 
   /* Results page cinematic animations */

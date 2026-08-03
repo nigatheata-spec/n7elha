@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { BombIcon } from "@/components/BombIcon";
 import { Trophy, Zap, Check, X as XIcon } from "lucide-react";
 import { playSelect, playCorrect, playWrong, playExplode, playGameOver, primeAudio } from "@/lib/sound";
 
@@ -30,24 +31,6 @@ const Avatar = ({ name, size = "md" }: { name: string; size?: "sm" | "md" | "xl"
     </div>
   );
 };
-
-// Dynamite icon — three TNT sticks bundled, lit fuse with spark
-const BombIcon = ({ className, style }: { className?: string; style?: React.CSSProperties }) => (
-  <svg className={className} style={style} viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-    {/* three sticks */}
-    <rect x="5"  y="13" width="6" height="16" rx="1.2" fill="currentColor" opacity="0.95" />
-    <rect x="13" y="13" width="6" height="16" rx="1.2" fill="currentColor" />
-    <rect x="21" y="13" width="6" height="16" rx="1.2" fill="currentColor" opacity="0.95" />
-    {/* binding band */}
-    <rect x="3.5" y="18" width="25" height="2.6" fill="hsl(30 30% 25%)" />
-    {/* fuse from middle stick, curling */}
-    <path d="M16 13 C 16 9, 19 8, 18 4" stroke="hsl(30 35% 60%)" strokeWidth="1.6" fill="none" strokeLinecap="round" />
-    {/* spark / flame at tip */}
-    <circle cx="17.5" cy="3" r="2.4" fill="#ff8c00" />
-    <circle cx="17" cy="2.5" r="1.2" fill="#ffd400" />
-  </svg>
-);
-
 
 interface Props { sessionId: string; studentId: string; }
 
@@ -83,7 +66,7 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
   const bombExplodesAt  = settings.bombExplodesAt as string | null;
   const fuseMs          = bombExplodesAt ? Math.max(0, new Date(bombExplodesAt).getTime() - now) : 0;
   const fusePct         = bombExplodesAt ? Math.min(100, (fuseMs / 90_000) * 100) : 100;
-  const fuseColor       = fuseMs > 30_000 ? "hsl(142 70% 52%)" : fuseMs > 10_000 ? "hsl(38 90% 55%)" : "hsl(0 85% 58%)";
+  const fuseColor       = fuseMs > 30_000 ? "hsl(71 48% 55%)" : fuseMs > 10_000 ? "hsl(42 55% 58%)" : "hsl(32 62% 58%)";
   const bombHolder = useMemo(() => students.find(s => s.id === settings.bombHolderId), [students, settings.bombHolderId]);
 
   // ── Initial load ─────────────────────────────────────────────────────────
@@ -292,8 +275,6 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
   const points = me?.crypto ?? 0;
   const ar = (session?.settings?.lang ?? i18n.language) === "ar";
 
-  const dangerAlpha  = hasBomb ? ((1 - fusePct / 100) * 0.45).toFixed(2) : "0";
-  const dangerSpread = hasBomb ? 50 + (1 - fusePct / 100) * 80 : 0;
 
   // Shared metal panel style
   const metalPanel = {
@@ -306,7 +287,6 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
     <div className="theme-hotpotato fixed inset-0 overflow-hidden text-foreground font-mono"
       style={{
         background: "radial-gradient(ellipse at 30% 10%, hsl(210 28% 11%) 0%, hsl(210 22% 7%) 55%, hsl(210 18% 5%) 100%)",
-        boxShadow: hasBomb ? `inset 0 0 ${dangerSpread}px hsl(0 85% 40% / ${dangerAlpha})` : "none",
       }}>
       {/* PCB circuit board trace — background texture only, panels are solid */}
       <div className="pcb-trace-bg pointer-events-none absolute inset-0" style={{ zIndex: 0 }} />
@@ -328,7 +308,7 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
         <header className="relative shrink-0 flex items-center justify-between px-5 py-3 safe-top z-10"
           style={{ ...metalPanel, borderRadius: 0, borderLeft: "none", borderRight: "none", borderTop: "none" }}>
           <div className="flex items-center gap-2 min-w-0">
-            {hasBomb && <BombIcon className="h-5 w-5 shrink-0" style={{ color: fuseColor }} />}
+            {hasBomb && <BombIcon className="h-5 w-5 shrink-0" burn={fusePct / 100} />}
             <span className="text-sm font-bold truncate" style={{ color: "hsl(210 10% 80%)" }}>{me?.name ?? "—"}</span>
           </div>
           <div className="flex items-center gap-1.5 font-black tabular-nums text-lg text-success">
@@ -344,7 +324,7 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
             <div className="max-w-3xl mx-auto w-full py-5 px-1">
               {/* header */}
               <div className="text-center mb-5">
-                <BombIcon className="h-10 w-10 mx-auto mb-1.5" style={{ color: "hsl(210 10% 55%)" }} />
+                <BombIcon className="h-10 w-10 mx-auto mb-1.5" sparks />
                 <h1 className="text-2xl font-black tracking-widest" style={{ color: "hsl(210 10% 82%)" }}>{ar ? "مرّرها" : "PASS IT"}</h1>
                 {session?.quizzes?.title && (
                   <p className="text-muted-foreground/60 text-xs font-mono mt-1 truncate max-w-[240px] mx-auto">{session.quizzes.title}</p>
@@ -462,8 +442,7 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
                       <BombIcon
                         className="h-12 w-12"
                         style={{
-                          color: rank === 1 ? "hsl(48 90% 58%)" : survived ? "hsl(210 15% 75%)" : "hsl(0 70% 55%)",
-                          filter: rank === 1 ? "drop-shadow(0 0 18px hsl(48 90% 50% / 0.7))" : "none",
+                          color: rank === 1 ? "hsl(48 70% 55%)" : survived ? "hsl(210 15% 75%)" : "hsl(0 70% 55%)",
                         }}
                       />
                       <div className="text-left">
@@ -555,8 +534,8 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
           {/* ── EXPLODED ── */}
           {phase === "exploded" && (
             <div className="flex-1 flex flex-col items-center justify-center text-center gap-5 animate-hp-explode">
-              <BombIcon className="h-24 w-24" style={{ color: "hsl(0 70% 60%)" }} />
-              <h2 className="text-3xl font-black" style={{ color: "hsl(0 70% 65%)", textShadow: "0 0 20px hsl(0 80% 50% / 0.6)" }}>{ar ? "انفجرت!" : "You exploded!"}</h2>
+              <BombIcon className="h-24 w-24" sparks />
+              <h2 className="text-3xl font-black" style={{ color: "hsl(210 12% 88%)" }}>{ar ? "انفجرت!" : "You exploded!"}</h2>
               <p className="text-muted-foreground text-base">{ar ? "تم تصفير نقاطك" : "Your score was reset"}</p>
               <p className="text-muted-foreground/50 text-xs">{ar ? "تعود للعبة الآن..." : "Back to the game..."}</p>
             </div>
@@ -566,30 +545,19 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
           {(phase === "question" || phase === "answered") && currentQ && (
             <div key={qSeed} className="flex-1 flex flex-col max-w-2xl mx-auto w-full pt-3 animate-question-in">
 
-              {/* Bomb holder alert — metal warning panel */}
-              {hasBomb && phase === "question" && (
-                <div className="relative mb-3 flex items-center gap-3 px-4 py-2.5 rounded-xl" style={{
-                  background: "linear-gradient(160deg, hsl(0 30% 13%), hsl(210 20% 11%))",
-                  border: "1.5px solid hsl(0 40% 28%)",
-                  boxShadow: `inset 0 1px 0 hsl(0 30% 25%), 0 0 ${8 + (1 - fusePct/100) * 14}px hsl(0 80% 40% / ${(0.2 + (1 - fusePct/100) * 0.35).toFixed(2)})`,
-                  transition: "box-shadow 0.5s ease",
-                }}>
-                  <BombIcon className={cn("h-5 w-5 shrink-0", fuseMs < 12_000 && "animate-fuse-critical")} style={{ color: fuseColor }} />
-                  <span className="text-sm font-bold flex-1" style={{ color: "hsl(0 60% 72%)" }}>{ar ? "لديك القنبلة" : "You have the bomb"}</span>
-                  <span className="font-mono tabular-nums text-sm font-bold" style={{ color: fuseColor }}>{Math.ceil(fuseMs / 1000)}s</span>
-                  {/* Fuse bar */}
-                  <div className="absolute bottom-0 inset-x-0 h-[3px] rounded-b-xl overflow-hidden">
-                    <div className="h-full transition-all duration-300" style={{ width: `${fusePct}%`, background: `linear-gradient(90deg, ${fuseColor}66, ${fuseColor})` }} />
-                  </div>
-                </div>
-              )}
-
-              {/* Non-bomb: who has it */}
-              {!hasBomb && bombHolder && phase === "question" && (
-                <div className="relative mb-2 flex items-center gap-2 px-3 py-1.5 rounded-lg" style={metalPanel}>
-                  <BombIcon className="h-3.5 w-3.5 shrink-0" style={{ color: "hsl(210 10% 50%)" }} />
-                  <span className="flex-1 truncate text-xs font-mono" style={{ color: "hsl(210 10% 58%)" }}>{ar ? `${bombHolder.name} يحمل القنبلة` : `${bombHolder.name} has the bomb`}</span>
-                  <span className="tabular-nums text-xs font-mono font-bold" style={{ color: fuseColor }}>{Math.ceil(fuseMs / 1000)}s</span>
+              {/* Bomb strip — bomb + seconds, same shape whoever holds it. */}
+              {(hasBomb || bombHolder) && phase === "question" && (
+                <div className="mb-3 flex items-center gap-2.5 px-3 py-2 rounded-lg" style={metalPanel}>
+                  <BombIcon className="h-4 w-4 shrink-0" burn={fusePct / 100} sparks={hasBomb} />
+                  <span className="flex-1 truncate text-xs font-mono"
+                    style={{ color: hasBomb ? "hsl(210 12% 88%)" : "hsl(210 10% 58%)" }}>
+                    {hasBomb
+                      ? (ar ? "لديك القنبلة" : "You have the bomb")
+                      : (ar ? `${bombHolder.name} يحمل القنبلة` : `${bombHolder.name} has the bomb`)}
+                  </span>
+                  <span className="tabular-nums text-xs font-mono font-bold" style={{ color: fuseColor }}>
+                    {Math.ceil(fuseMs / 1000)}s
+                  </span>
                 </div>
               )}
 
@@ -644,7 +612,7 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
           {phase === "passing" && (
             <div className="flex-1 flex flex-col pt-4 gap-4 max-w-md mx-auto w-full">
               <div className="text-center">
-                <BombIcon className="h-12 w-12 mx-auto mb-2" style={{ color: fuseColor }} />
+                <BombIcon className="h-12 w-12 mx-auto mb-2" sparks />
                 <h2 className="text-xl font-black" style={{ color: "hsl(210 10% 82%)" }}>{ar ? "مرّر القنبلة!" : "Pass the bomb!"}</h2>
                 <p className="text-sm text-muted-foreground mt-1">
                   {ar ? `عندك ${passSecsLeft}ث — اختر من تعطيها` : `You have ${passSecsLeft}s — pick someone to give it to`}

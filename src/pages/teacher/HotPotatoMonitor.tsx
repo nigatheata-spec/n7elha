@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Square, Maximize, Trophy } from "lucide-react";
+import { BombIcon } from "@/components/BombIcon";
 
 const fmt = (n: number) => n.toLocaleString();
 
@@ -24,15 +25,6 @@ const Avatar = ({ name }: { name: string }) => {
   );
 };
 
-const BombIcon = ({ className }: { className?: string }) => (
-  <svg className={className} viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="15" cy="19" r="10" fill="currentColor" opacity="0.9" />
-    <rect x="14" y="7" width="2.5" height="6" rx="1.2" fill="currentColor" />
-    <path d="M20 4 L24 8" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-    <circle cx="24" cy="4" r="2.5" fill="#ff8c00" />
-    <circle cx="11" cy="15" r="2.5" fill="white" opacity="0.25" />
-  </svg>
-);
 
 // Shared metal panel style — matches student screen
 const metalPanel = {
@@ -42,7 +34,7 @@ const metalPanel = {
 };
 
 const GUN_BG = "radial-gradient(ellipse at 30% 10%, hsl(210 28% 11%) 0%, hsl(210 22% 7%) 55%, hsl(210 18% 5%) 100%)";
-const PCB_GREEN = "hsl(72 100% 44%)";
+const PCB_GREEN = "hsl(71 48% 47%)";
 
 interface Props { session: any; sessionId: string; }
 
@@ -173,8 +165,8 @@ const HotPotatoMonitor = ({ session, sessionId }: Props) => {
   const bombHolder   = students.find(s => s.id === bombHolderId);
   const fuseMs       = bombExplodesAt ? Math.max(0, new Date(bombExplodesAt).getTime() - now) : 0;
   const fusePct      = bombExplodesAt ? Math.min(100, (fuseMs / 90_000) * 100) : 100;
-  // PCB green → amber → red as bomb ticks down
-  const fuseColor    = fuseMs > 30_000 ? PCB_GREEN : fuseMs > 12_000 ? "hsl(38 90% 55%)" : "hsl(0 85% 58%)";
+  // PCB green → muted amber as the bomb ticks down
+  const fuseColor    = fuseMs > 30_000 ? PCB_GREEN : fuseMs > 12_000 ? "hsl(42 55% 58%)" : "hsl(32 62% 58%)";
   const fuseCritical = fuseMs < 10_000 && fuseMs > 0;
 
   // ── GAME OVER ─────────────────────────────────────────────────────────────
@@ -189,8 +181,8 @@ const HotPotatoMonitor = ({ session, sessionId }: Props) => {
         style={{ background: GUN_BG, fontFamily: "monospace" }}>
         <div className="pcb-trace-bg pointer-events-none absolute inset-0 z-0" />
         <div className="relative z-10 text-center">
-          <BombIcon className="h-20 w-20 mx-auto mb-4" style={{ color: PCB_GREEN }} />
-          <div className="text-6xl font-black tracking-widest" style={{ color: PCB_GREEN, textShadow: `0 0 40px ${PCB_GREEN}99` }}>
+          <BombIcon className="h-20 w-20 mx-auto mb-4" sparks />
+          <div className="text-6xl font-black tracking-widest" style={{ color: PCB_GREEN }}>
             GAME OVER
           </div>
         </div>
@@ -240,7 +232,7 @@ const HotPotatoMonitor = ({ session, sessionId }: Props) => {
             CODE <span className="font-black tracking-widest text-base" style={{ color: PCB_GREEN }}>{session?.code}</span>
           </div>
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-mono text-sm whitespace-nowrap"
-            style={{ background: "hsl(72 100% 44% / 0.08)", border: "1px solid hsl(72 100% 44% / 0.3)" }}>
+            style={{ background: "hsl(71 48% 47% / 0.08)", border: "1px solid hsl(71 48% 47% / 0.3)" }}>
             <BombIcon className="h-3.5 w-3.5 shrink-0" style={{ color: PCB_GREEN }} />
             <span className="font-bold tabular-nums" style={{ color: PCB_GREEN }}>{explosionCount}</span>
             <span className="text-muted-foreground">/ {maxExplosions}</span>
@@ -252,11 +244,9 @@ const HotPotatoMonitor = ({ session, sessionId }: Props) => {
           <div className="px-5 py-1.5 rounded-xl font-mono font-black text-3xl tabular-nums tracking-widest"
             style={{
               background: "hsl(210 22% 6%)",
-              border: `2px solid ${critical ? "hsl(0 80% 40%)" : "hsl(210 20% 22%)"}`,
-              color: critical ? "hsl(0 100% 62%)" : "hsl(210 10% 82%)",
-              boxShadow: critical
-                ? "0 0 24px hsl(0 100% 50% / 0.5), inset 0 0 18px hsl(0 100% 30% / 0.2)"
-                : "inset 0 1px 0 hsl(210 18% 26%), 0 4px 14px hsl(0 0% 0% / 0.4)",
+              border: `2px solid ${critical ? "hsl(32 45% 42%)" : "hsl(210 20% 22%)"}`,
+              color: critical ? "hsl(32 62% 66%)" : "hsl(210 10% 82%)",
+              boxShadow: "inset 0 1px 0 hsl(210 18% 26%), 0 4px 14px hsl(0 0% 0% / 0.4)",
             }}>
             {mm}:{ss}
           </div>
@@ -286,31 +276,25 @@ const HotPotatoMonitor = ({ session, sessionId }: Props) => {
             students.slice(0, 9).map((s, i) => {
               const isBomb  = s.id === bombHolderId;
               const isFirst = i === 0;
-              const rowStyle = isBomb
-                ? { ...metalPanel, border: "1.5px solid hsl(0 70% 35%)", boxShadow: `${metalPanel.boxShadow}, 0 0 22px hsl(0 80% 40% / 0.3)` }
-                : isFirst
-                ? { ...metalPanel, border: `1.5px solid hsl(72 100% 44% / 0.45)`, boxShadow: `${metalPanel.boxShadow}, 0 0 12px hsl(72 100% 44% / 0.12)` }
+              const rowStyle = isFirst
+                ? { ...metalPanel, border: `1.5px solid hsl(71 48% 47% / 0.45)` }
                 : metalPanel;
               return (
                 <div key={s.id}
-                  className={cn("rounded-xl px-4 py-2.5 flex items-center gap-3 transition-all duration-500",
-                    isBomb && "animate-hp-bomb-pulse")}
+                  className="rounded-xl px-4 py-2.5 flex items-center gap-3 transition-all duration-500"
                   style={rowStyle}>
                   <span className="font-mono font-black text-lg w-8 shrink-0 tabular-nums"
-                    style={{ color: isBomb ? "hsl(0 70% 62%)" : isFirst ? PCB_GREEN : "hsl(210 10% 38%)" }}>
+                    style={{ color: isFirst ? PCB_GREEN : "hsl(210 10% 38%)" }}>
                     {i + 1}
                   </span>
                   <Avatar name={s.name} />
                   <span className="font-mono text-lg font-bold flex-1 truncate"
-                    style={{ color: isBomb ? "hsl(0 60% 75%)" : isFirst ? "hsl(210 10% 92%)" : "hsl(210 10% 72%)" }}>
+                    style={{ color: isFirst ? "hsl(210 10% 92%)" : "hsl(210 10% 72%)" }}>
                     {s.name}
                   </span>
-                  {isBomb && (
-                    <BombIcon className={cn("h-6 w-6 shrink-0", fuseCritical && "animate-fuse-critical")}
-                      style={{ color: fuseColor }} />
-                  )}
+                  {isBomb && <BombIcon className="h-6 w-6 shrink-0" burn={fusePct / 100} />}
                   <span className="font-mono text-lg font-black tabular-nums shrink-0"
-                    style={{ color: isBomb ? "hsl(0 70% 70%)" : isFirst ? PCB_GREEN : "hsl(210 10% 50%)" }}>
+                    style={{ color: isFirst ? PCB_GREEN : "hsl(210 10% 50%)" }}>
                     {fmt(s.crypto ?? 0)}
                   </span>
                 </div>
@@ -323,15 +307,13 @@ const HotPotatoMonitor = ({ session, sessionId }: Props) => {
         <div className="grid grid-rows-[auto_1fr] gap-4 overflow-hidden">
 
           {/* Bomb holder card — no fuse bar */}
-          <div className="rounded-2xl p-4" style={bombHolder
-            ? { ...metalPanel, border: "1.5px solid hsl(0 60% 32%)", boxShadow: `${metalPanel.boxShadow}, 0 0 24px hsl(0 70% 40% / 0.28)` }
-            : metalPanel}>
+          <div className="rounded-2xl p-4" style={metalPanel}>
             <div className="text-xs font-mono tracking-widest uppercase mb-3" style={{ color: "hsl(210 10% 40%)" }}>
               Bomb Holder
             </div>
             {bombHolder ? (
               <div className="flex items-center gap-3">
-                <BombIcon className={cn("h-10 w-10 shrink-0", fuseCritical && "animate-fuse-critical")}
+                <BombIcon sparks burn={fusePct / 100} className={cn("h-10 w-10 shrink-0", fuseCritical && "animate-fuse-critical")}
                   style={{ color: fuseColor }} />
                 <div className="flex-1 min-w-0">
                   <div className="font-black text-xl truncate" style={{ color: fuseColor }}>{bombHolder.name}</div>
@@ -347,7 +329,7 @@ const HotPotatoMonitor = ({ session, sessionId }: Props) => {
                     strokeDashoffset={125.66 * (1 - fusePct / 100)}
                     strokeLinecap="round"
                     transform="rotate(-90 24 24)"
-                    style={{ transition: "stroke-dashoffset 0.4s linear", filter: `drop-shadow(0 0 4px ${fuseColor})` }} />
+                    style={{ transition: "stroke-dashoffset 0.4s linear" }} />
                 </svg>
               </div>
             ) : (
@@ -375,10 +357,10 @@ const HotPotatoMonitor = ({ session, sessionId }: Props) => {
                 explosionFeed.map((e) => (
                   <div key={e.at}
                     className="animate-blast-in flex items-center gap-2.5 px-2.5 py-2 rounded-lg"
-                    style={{ background: "hsl(0 35% 10% / 0.7)", border: "1px solid hsl(0 45% 22% / 0.6)" }}>
-                    <BombIcon className="h-4 w-4 shrink-0" style={{ color: "hsl(0 70% 58%)" }} />
+                    style={{ background: "hsl(210 18% 12% / 0.7)", border: "1px solid hsl(210 20% 22%)" }}>
+                    <BombIcon className="h-4 w-4 shrink-0" style={{ color: "hsl(210 10% 62%)" }} />
                     <span className="font-mono text-sm">
-                      <span className="font-black" style={{ color: "hsl(0 65% 72%)" }}>{e.name}</span>
+                      <span className="font-black" style={{ color: "hsl(210 12% 88%)" }}>{e.name}</span>
                       <span className="text-muted-foreground"> — wiped</span>
                     </span>
                   </div>
