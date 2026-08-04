@@ -141,10 +141,11 @@ i18n.use(LanguageDetector).use(initReactI18next).init({
   detection: { order: ["localStorage", "navigator"], caches: ["localStorage"], lookupLocalStorage: "hash_lang" },
 });
 
-// Always LTR layout regardless of language. Only the text translates.
+// Set text direction: RTL for Arabic, LTR for English
 const applyDir = () => {
-  document.documentElement.lang = i18n.language || "ar";
-  document.documentElement.dir = "ltr";
+  const lang = i18n.language || "ar";
+  document.documentElement.lang = lang;
+  document.documentElement.dir = lang === "ar" ? "rtl" : "ltr";
 };
 applyDir();
 i18n.on("languageChanged", applyDir);
