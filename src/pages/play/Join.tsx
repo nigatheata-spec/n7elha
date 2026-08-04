@@ -235,7 +235,7 @@ const Join = () => {
                   onKeyDown={e => handleCellKey(i, e)}
                   maxLength={2}
                   autoFocus={i === 0}
-                  inputMode="text"
+                  inputMode="numeric"
                   className={cn(
                     "w-[68px] h-[84px] text-center font-mono text-[32px] font-black",
                     "bg-white/[0.06] border-2 border-white/[0.14] text-white rounded-2xl",
