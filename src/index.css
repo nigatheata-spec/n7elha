@@ -424,7 +424,7 @@
      (top row color-matched to bottom row, so it repeats vertically with no
      seam) — drifts slowly upward in hard steps, not a scrolling wallpaper. */
   .lava-pixel-body-img {
-    animation: lava-body-drift 6s steps(4, end) infinite;
+    animation: lava-body-drift 3.5s steps(4, end) infinite;
   }
   @keyframes lava-body-drift {
     from { background-position: 0 0; }
@@ -437,9 +437,9 @@
   /* Lava crest — cycles through 3 real animation frames via hard opacity
      swaps (no cross-fade), so it plays back like the source flipbook. */
   .lava-crest-frame { opacity: 0; }
-  .lava-crest-frame-a { animation: lava-crest-fa 1.2s steps(1) infinite; }
-  .lava-crest-frame-b { animation: lava-crest-fb 1.2s steps(1) infinite; }
-  .lava-crest-frame-c { animation: lava-crest-fc 1.2s steps(1) infinite; }
+  .lava-crest-frame-a { animation: lava-crest-fa 0.7s steps(1) infinite; }
+  .lava-crest-frame-b { animation: lava-crest-fb 0.7s steps(1) infinite; }
+  .lava-crest-frame-c { animation: lava-crest-fc 0.7s steps(1) infinite; }
   @keyframes lava-crest-fa {
     0%, 33%     { opacity: 1; }
     33.01%, 100% { opacity: 0; }
