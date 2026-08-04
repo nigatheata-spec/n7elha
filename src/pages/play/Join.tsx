@@ -57,6 +57,15 @@ const Join = () => {
     };
   }, []);
 
+  // Keep join screen LTR regardless of language
+  useEffect(() => {
+    const prevDir = document.documentElement.dir;
+    document.documentElement.dir = "ltr";
+    return () => {
+      document.documentElement.dir = prevDir;
+    };
+  }, []);
+
   // Typewriter buffers
   const [bootLines, setBootLines]     = useState<string[]>([]);
   const [bootCurrent, setBootCurrent] = useState("");
