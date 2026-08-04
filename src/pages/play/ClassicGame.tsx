@@ -8,6 +8,7 @@ import { Trophy, Check, X } from "lucide-react";
 import { playSelect, playCorrect, playWrong, playGameOver, primeAudio } from "@/lib/sound";
 import beanPair from "@/assets/doodles/bean-pair.png";
 import commaPair from "@/assets/doodles/comma-pair.png";
+import logoLight from "@/assets/logo-light.png";
 import zigzagTrio from "@/assets/doodles/zigzag-trio.png";
 import triangleTrio from "@/assets/doodles/triangle-trio.png";
 import flaskDoodle from "@/assets/doodles/flask.png";
@@ -249,7 +250,10 @@ const ClassicGame = ({ sessionId, studentId }: Props) => {
 
       {/* top strip */}
       <header className="relative z-10 shrink-0 flex items-center justify-between px-4 py-3">
-        <span className="font-bold text-sm truncate max-w-[50%]" style={{ color: "#3F5A63" }}>{me?.name ?? "—"}</span>
+        <div className="flex items-center gap-2 min-w-0 max-w-[50%]">
+          <img src={logoLight} alt="n7elha" className="h-6 w-6 object-contain shrink-0" />
+          <span className="font-bold text-sm truncate" style={{ color: "#3F5A63" }}>{me?.name ?? "—"}</span>
+        </div>
         <span className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-full font-black text-sm tabular-nums bg-white", NB, "shadow-[3px_3px_0_0_hsl(var(--nb-border))]")} style={{ color: "#3F5A63" }}>
           ⭐ {fmt(me?.crypto ?? 0)}
         </span>

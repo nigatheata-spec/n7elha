@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
+import logoLight from "@/assets/logo-light.png";
 import { HackingFlow } from "@/components/game/HackingFlow";
 import { BreachModal } from "@/components/game/BreachModal";
 import { OutputCards, OutputResult } from "@/components/game/OutputCards";
@@ -259,11 +260,9 @@ const Game = () => {
       <div className="pointer-events-none fixed inset-0 terminal-scanlines z-20" />
       <div className="pointer-events-none fixed inset-0 terminal-vignette z-20" />
 
-      {/* minimal top strip — small wordmark left, balance right, sits directly on the CRT glass */}
+      {/* minimal top strip — logo left, balance right, sits directly on the CRT glass */}
       <header className="relative shrink-0 flex items-center justify-between px-4 pt-3 pb-1 z-10">
-        <span className="text-[11px] font-bold tracking-widest" style={{ color: "hsl(120 60% 42%)" }}>
-          n7elha
-        </span>
+        <img src={logoLight} alt="n7elha" className="h-6 w-6 object-contain" />
         <span className="flex items-center gap-1.5 text-sm font-bold tabular-nums" style={{ color: "hsl(120 100% 68%)" }}>
           ₿ {fmt(me?.crypto ?? 0)}
         </span>

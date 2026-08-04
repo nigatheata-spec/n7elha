@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Trophy, Check } from "lucide-react";
+import logoLight from "@/assets/logo-light.png";
 import { playGameOver, primeAudio } from "@/lib/sound";
 import { AsteroidCard } from "@/components/AsteroidCard";
 import { SpaceBackdrop } from "@/components/SpaceBackdrop";
@@ -329,7 +330,10 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
       {/* Header */}
       <header className="relative flex items-center justify-between px-4 py-3 safe-top border-b border-primary/30 sticky top-0 z-10"
         style={{ background: "hsl(255 40% 6% / 0.85)", backdropFilter: "blur(8px)" }}>
-        <div className="text-sm font-bold truncate max-w-[50%] text-primary">{me?.name ?? "—"}</div>
+        <div className="flex items-center gap-2 min-w-0 max-w-[50%]">
+          <img src={logoLight} alt="n7elha" className="h-6 w-6 object-contain shrink-0" />
+          <div className="text-sm font-bold truncate text-primary">{me?.name ?? "—"}</div>
+        </div>
         <div className="flex items-center gap-1">
           {lives > 0
             ? Array.from({ length: Math.min(lives, 6) }).map((_, i) => (

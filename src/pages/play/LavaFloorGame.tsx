@@ -8,6 +8,7 @@ import { PixelShield, PixelFlame } from "@/components/PixelIcons";
 import { PixelVolcano } from "@/components/PixelVolcano";
 import { PixelLavaCrest, PixelLavaBody } from "@/components/PixelLava";
 import { PixelRockCeiling } from "@/components/PixelRockCeiling";
+import logoLight from "@/assets/logo-light.png";
 import { playSelect, playCorrect, playWrong, playBrick, playGameOver, primeAudio } from "@/lib/sound";
 
 type Q = { id: string; text: string; options: string[]; correct_index: number; image_url?: string };
@@ -311,6 +312,7 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
             transition: "border-color 0.4s",
           }}>
           <div className="flex items-center gap-2 min-w-0">
+            <img src={logoLight} alt="n7elha" className="h-6 w-6 object-contain shrink-0" />
             <Avatar name={me?.name ?? "?"} size="sm" />
             <span className="text-sm font-bold truncate" style={{ color: "hsl(30 18% 82%)" }}>
               {me?.name ?? "—"}
