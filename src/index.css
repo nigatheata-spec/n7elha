@@ -420,18 +420,17 @@
       lava-shift 4.2s ease-in-out infinite,
       lava-undulate 2.8s ease-in-out infinite;
   }
-  /* Pixel-art lava body texture — cropped from the real reference animation
-     (top row color-matched to bottom row, so it repeats vertically with no
-     seam) — drifts slowly upward in hard steps, not a scrolling wallpaper. */
-  .lava-pixel-body-img {
-    animation: lava-body-drift 3.5s steps(4, end) infinite;
+  /* Lava body — rises vertically with a seamless tileable texture. */
+  .lava-body-rise {
+    animation: none;
   }
-  @keyframes lava-body-drift {
-    from { background-position: 0 0; }
-    to   { background-position: 0 -20px; }
+  @keyframes lava-body-rise {
+    from { background-position-y: 0; }
+    to   { background-position-y: -100%; }
   }
+
   @media (prefers-reduced-motion: reduce) {
-    .lava-pixel-body-img { animation: none; }
+    .lava-body-rise { animation: none; }
   }
 
   /* Lava crest — cycles through 3 real animation frames via hard opacity

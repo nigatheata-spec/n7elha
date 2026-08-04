@@ -142,9 +142,15 @@ const LavaFloorMonitor = ({ session, sessionId }: Props) => {
         status: "finished",
         ended_at: new Date().toISOString(),
         settings: { ...settingsRef.current },
-      }).eq("id", sessionId).catch(() => {});
+      }).eq("id", sessionId).then(() => {
+        // Navigate immediately to avoid blank screen on DB lag or failure
+        nav(`/app/games/${sessionId}/results`, { replace: true });
+      }).catch(() => {
+        // If DB fails, still navigate locally
+        nav(`/app/games/${sessionId}/results`, { replace: true });
+      });
     }
-  }, [left, session, ending]);
+  }, [left, session, ending, sessionId, nav]);
 
   // ── Navigate to results ───────────────────────────────────────────────────
   useEffect(() => {
