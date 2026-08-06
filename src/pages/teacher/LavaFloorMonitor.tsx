@@ -133,7 +133,7 @@ const LavaFloorMonitor = ({ session, sessionId }: Props) => {
         dbWriteRef.current = n;
         supabase.from("game_sessions").update({
           settings: { ...settingsRef.current, lavaLevel: lavaRef.current, lavaSnapshotAt: new Date().toISOString() }
-        }).eq("id", sessionId).catch(() => {});
+        }).eq("id", sessionId).then(undefined, () => {});
       }
 
       // Lava reached 100% → auto-end
@@ -143,7 +143,7 @@ const LavaFloorMonitor = ({ session, sessionId }: Props) => {
           status: "finished",
           ended_at: new Date().toISOString(),
           settings: { ...settingsRef.current, lavaLevel: 100 },
-        }).eq("id", sessionId).catch(() => {});
+        }).eq("id", sessionId).then(undefined, () => {});
       }
 
       setNow(Date.now()); // trigger re-render for lava display

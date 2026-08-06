@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import { Store } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { PixelShield, PixelFlame, PixelPlank, PixelBrick, PixelStaircase, PixelHouse } from "@/components/PixelIcons";
@@ -10,13 +11,12 @@ import { PixelLavaCrest, PixelLavaBody } from "@/components/PixelLava";
 import { PixelRockCeiling } from "@/components/PixelRockCeiling";
 import logoLight from "@/assets/logo-light.png";
 import { playSelect, playCorrect, playWrong, playBrick, playGameOver, primeAudio } from "@/lib/sound";
-import { BLOCK_TYPES, BLOCK_BY_KEY, cheapestBlock, type BlockKey } from "@/lib/lavaFloorBlocks";
+import { BLOCK_TYPES, BLOCK_BY_KEY, INCOME_TIERS, STREAK_TIERS, streakMultiplier, type BlockKey } from "@/lib/lavaFloorBlocks";
 
 type Q = { id: string; text: string; options: string[]; correct_index: number; image_url?: string };
 type Phase = "waiting" | "question" | "answered" | "done";
 type Build = { id: string; student_id: string; student_name: string; block_type: BlockKey; height_added: number; cost: number; created_at: string };
-
-const BRICKS_PER_CORRECT = 5;
+type ShopTab = "upgrades" | "build";
 
 const BLOCK_ICON: Record<BlockKey, typeof PixelPlank> = {
   plank: PixelPlank, brick: PixelBrick, staircase: PixelStaircase, house: PixelHouse,
@@ -66,6 +66,7 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
   const [qSeed, setQSeed]             = useState(0);
   const [displayLava, setDisplayLava] = useState(0);
   const [showShop, setShowShop]       = useState(false);
+  const [shopTab, setShopTab]         = useState<ShopTab>("build");
   const [towerHeight, setTowerHeight] = useState(0);
   const [recentBuilds, setRecentBuilds] = useState<Build[]>([]);
   const [buyFlash, setBuyFlash]       = useState<BlockKey | null>(null);
@@ -74,6 +75,7 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
   const askedRef   = useRef(0);
   const pickedRef  = useRef<number | null>(null);
   const buyingRef  = useRef(false);
+  const localWriteAtRef = useRef(0);
 
   const settings = session?.settings ?? {};
   const bricks   = me?.crypto ?? 0;
@@ -113,6 +115,9 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
           const { data: ss } = await supabase.from("game_students").select("*").eq("session_id", sessionId);
           const sorted = (ss ?? []).sort((a: any, b: any) => (b.crypto ?? 0) - (a.crypto ?? 0));
           setStudents(sorted);
+          // Another player's change also fires this. Skip adopting the server copy of
+          // my own row while a local write is still in flight, or it reverts the HUD.
+          if (Date.now() - localWriteAtRef.current < 2000) return;
           const m = sorted.find((x: any) => x.id === studentId);
           if (m) setMe(m);
         })
@@ -215,18 +220,36 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
     if (correct) { playCorrect(); playBrick(); } else playWrong();
     setPicked(idx);
     setTimeout(() => setPhase("answered"), 700);
-    const updates: any = { total_answers: (me.total_answers ?? 0) + 1 };
+
+    const tier = INCOME_TIERS.find(t => t.level === (me.income_tier ?? 1)) ?? INCOME_TIERS[0];
+    const newStreak = correct ? (me.streak ?? 0) + 1 : 0;
+    const newMult = streakMultiplier(newStreak, me.streak_tier ?? 1);
+    const payout = correct ? tier.payout * newMult : 0;
+
+    const updates: any = { total_answers: (me.total_answers ?? 0) + 1, streak: newStreak };
     if (correct) {
       updates.correct_answers = (me.correct_answers ?? 0) + 1;
-      updates.crypto = (me.crypto ?? 0) + BRICKS_PER_CORRECT;
+      updates.crypto = (me.crypto ?? 0) + payout;
     } else {
       updates.hacks_received = (me.hacks_received ?? 0) + 1;
     }
-    supabase.from("game_students").update(updates).eq("id", me.id).catch(() => {});
+    // Reflect locally right away — realtime echo can lag, and the HUD must not wait on it
+    localWriteAtRef.current = Date.now();
+    setMe((prev: any) => ({ ...prev, ...updates }));
+    if (correct) {
+      toast.success(
+        newMult > 1
+          ? `+$${payout}  ($${tier.payout} ×${newMult} ${ar ? "سلسلة" : "streak"} ${newStreak})`
+          : `+$${payout}`
+      );
+    } else if ((me.streak ?? 0) >= 2) {
+      toast.error(ar ? `انقطعت السلسلة!` : `Streak broken!`);
+    }
+    supabase.from("game_students").update(updates).eq("id", me.id).then(undefined, () => {});
     supabase.from("question_responses").insert({
       session_id: sessionId, student_id: me.id, question_id: currentQ.id,
       question_index: askedRef.current, answer_index: idx, is_correct: correct,
-    }).catch(() => {});
+    }).then(undefined, () => {});
   }, [currentQ, me, sessionId]);
 
   const submit = (idx: number) => { if (pickedRef.current !== null) return; handleAnswer(idx); };
@@ -236,16 +259,45 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
     const block = BLOCK_BY_KEY[key];
     if (!me || bricks < block.cost || buyingRef.current) return;
     buyingRef.current = true;
+    const remaining = Math.max(0, bricks - block.cost);
+    localWriteAtRef.current = Date.now();
+    setMe((prev: any) => ({ ...prev, crypto: remaining }));
     supabase.from("game_students").update({
-      crypto: Math.max(0, bricks - block.cost),
-    }).eq("id", me.id).catch(() => {});
+      crypto: remaining,
+    }).eq("id", me.id).then(undefined, () => {});
     supabase.from("lava_floor_builds").insert({
       session_id: sessionId, student_id: me.id, student_name: me.name,
       block_type: key, height_added: block.height, cost: block.cost,
-    }).catch(() => {});
+    }).then(undefined, () => {});
     playBrick();
     setBuyFlash(key);
     setTimeout(() => { setBuyFlash(null); buyingRef.current = false; }, 500);
+  };
+
+  // ── Upgrades shop: income tier (payout) and streak tier (multiplier ladder) ──
+  const incomeTier    = INCOME_TIERS.find(t => t.level === (me?.income_tier ?? 1)) ?? INCOME_TIERS[0];
+  const streak        = me?.streak ?? 0;
+  const streakTierLvl = me?.streak_tier ?? 1;
+  const streakTier    = STREAK_TIERS.find(t => t.level === streakTierLvl) ?? STREAK_TIERS[0];
+  const nextTier      = INCOME_TIERS.find(t => t.level === incomeTier.level + 1);
+  const nextStreakTier = STREAK_TIERS.find(t => t.level === streakTier.level + 1);
+  const mult          = streakMultiplier(streak, streakTierLvl);
+
+  // Both upgrade tracks buy the same way: pay, bump the tier, reflect locally at once.
+  const buyTierUpgrade = (kind: "income" | "streak") => {
+    const t = kind === "income" ? nextTier : nextStreakTier;
+    if (!me || !t || bricks < t.cost || buyingRef.current) return;
+    buyingRef.current = true;
+    const remaining = Math.max(0, bricks - t.cost);
+    const patch = kind === "income"
+      ? { crypto: remaining, income_tier: t.level }
+      : { crypto: remaining, streak_tier: t.level };
+    localWriteAtRef.current = Date.now();
+    setMe((prev: any) => ({ ...prev, ...patch }));
+    toast.success(ar ? `تمت الترقية: ${t.nameAr}` : `Upgraded: ${t.nameEn}`);
+    supabase.from("game_students").update(patch).eq("id", me.id).then(undefined, () => {});
+    playBrick();
+    setTimeout(() => { buyingRef.current = false; }, 500);
   };
 
   // Derived visual values
@@ -263,39 +315,24 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
       {/* ── CAVE ROCK CEILING — static pixel-art background ──────────── */}
       <PixelRockCeiling className="absolute inset-0" />
 
-      {/* ── BUILD SHOP — fixed floating trigger, never affects layout ── */}
-      {(() => {
-        const canBuy  = bricks >= cheapestBlock.cost && (phase === "question" || phase === "answered");
-        const fillPct = Math.min(100, (bricks / cheapestBlock.cost) * 100);
-        const btnColor = canBuy ? "hsl(142 45% 35%)" : "hsl(0 0% 22%)";
-        return (
-          <button
-            onClick={() => canBuy && setShowShop(true)}
-            disabled={!canBuy}
-            className="fixed right-3 z-30 flex flex-col items-center gap-1 rounded-2xl px-3 py-2.5 transition-all active:scale-95"
-            style={{
-              top: "50%", transform: "translateY(-50%)",
-              background: canBuy ? "hsl(142 40% 8%)" : "hsl(0 0% 7%)",
-              border: `2px solid ${btnColor}`,
-              color: canBuy ? "hsl(142 65% 60%)" : "hsl(0 0% 32%)",
-              minWidth: 56,
-              cursor: canBuy ? "pointer" : "default",
-              transition: "background 0.25s, border-color 0.25s, color 0.25s",
-            }}>
-            <PixelHouse className="h-5 w-5 shrink-0" color="currentColor" />
-            <div className="pixel-progress w-full" style={{ height: 4, borderColor: canBuy ? "hsl(142 55% 45%)" : "hsl(0 0% 30%)", background: "hsl(0 0% 15%)" }}>
-              <div className="pixel-progress-fill"
-                style={{ width: `${fillPct}%`, background: canBuy ? "hsl(142 55% 45%)" : "hsl(0 0% 30%)" }} />
-            </div>
-            <span className="text-[10px] font-black tabular-nums leading-none">{bricks}/{cheapestBlock.cost}</span>
-            {canBuy && (
-              <span className="text-[9px] font-bold leading-none opacity-80">{ar ? "متجر" : "SHOP"}</span>
-            )}
-          </button>
-        );
-      })()}
+      {/* ── SHOP — fixed floating trigger, always visible + labeled during play ── */}
+      {(phase === "question" || phase === "answered") && (
+        <button
+          onClick={() => setShowShop(true)}
+          className="fixed right-3 z-30 flex flex-col items-center gap-1 rounded-2xl px-3 py-2.5 transition-all active:scale-95"
+          style={{
+            top: "50%", transform: "translateY(-50%)",
+            background: "hsl(142 40% 8%)",
+            border: "2px solid hsl(142 45% 35%)",
+            color: "hsl(142 65% 60%)",
+            minWidth: 56,
+          }}>
+          <Store className="h-5 w-5 shrink-0" />
+          <span className="text-[9px] font-black tracking-wide leading-none">{ar ? "متجر" : "SHOP"}</span>
+        </button>
+      )}
 
-      {/* ── BUILD SHOP PANEL ─────────────────────────────────────────── */}
+      {/* ── SHOP PANEL — Upgrades / Build tabs ──────────────────────────── */}
       {showShop && (
         <div className="fixed inset-0 z-40 flex items-center justify-center px-4"
           style={{ background: "hsl(0 0% 0% / 0.75)", backdropFilter: "blur(4px)" }}
@@ -305,42 +342,182 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
             onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-3">
               <span className="text-sm font-black tracking-widest" style={{ color: "hsl(30 18% 85%)" }}>
-                {ar ? "متجر البناء" : "BUILD SHOP"}
+                {ar ? "المتجر" : "SHOP"}
               </span>
               <div className="flex items-center gap-1.5">
                 <PixelShield className="h-4 w-4" color="hsl(33 78% 58%)" />
                 <span className="font-black tabular-nums text-sm" style={{ color: "hsl(33 78% 64%)" }}>{bricks}</span>
               </div>
             </div>
-            <div className="space-y-2">
-              {BLOCK_TYPES.map(b => {
-                const Icon = BLOCK_ICON[b.key];
-                const affordable = bricks >= b.cost;
-                const flashing = buyFlash === b.key;
-                return (
-                  <button
-                    key={b.key}
-                    disabled={!affordable}
-                    onClick={() => buyBlock(b.key)}
-                    className="pixel-button w-full flex items-center gap-3 px-3 py-2.5 text-start transition-all"
-                    style={{
-                      background: flashing ? "hsl(142 55% 12%)" : affordable ? "hsl(142 30% 8%)" : "hsl(0 0% 5%)",
-                      borderColor: affordable ? "hsl(142 45% 35%)" : "hsl(0 0% 15%)",
-                      color: affordable ? "hsl(30 18% 88%)" : "hsl(30 8% 35%)",
-                    }}>
-                    <Icon className="h-6 w-6 shrink-0" color={affordable ? "hsl(33 78% 64%)" : "currentColor"} />
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-bold truncate">{ar ? b.labelAr : b.labelEn}</div>
-                      <div className="text-[10px] opacity-70">+{b.height} {ar ? "ارتفاع" : "height"}</div>
-                    </div>
-                    <div className="flex items-center gap-1 shrink-0 font-black tabular-nums text-sm">
-                      <PixelShield className="h-3.5 w-3.5" color="currentColor" />
-                      {b.cost}
-                    </div>
-                  </button>
-                );
-              })}
+
+            {/* Tabs */}
+            <div className="flex gap-2 mb-3">
+              {(["upgrades", "build"] as ShopTab[]).map(tab => (
+                <button
+                  key={tab}
+                  onClick={() => setShopTab(tab)}
+                  className="pixel-button flex-1 py-2 text-xs font-black transition-all"
+                  style={{
+                    background: shopTab === tab ? "hsl(142 30% 8%)" : "hsl(0 0% 5%)",
+                    borderColor: shopTab === tab ? "hsl(142 45% 35%)" : "hsl(0 0% 15%)",
+                    color: shopTab === tab ? "hsl(30 18% 88%)" : "hsl(30 8% 40%)",
+                  }}>
+                  {tab === "upgrades" ? (ar ? "الأدوات" : "UPGRADES") : (ar ? "البناء" : "BUILD")}
+                </button>
+              ))}
             </div>
+
+            {/* UPGRADES TAB — two tracks: payout per answer, and streak multiplier */}
+            {shopTab === "upgrades" && (
+              <div className="space-y-3">
+                {/* Live earnings readout */}
+                <div className="pixel-panel px-3 py-2.5 flex items-center gap-3"
+                  style={{ background: "hsl(142 20% 7%)", borderColor: "hsl(142 30% 25%)" }}>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[10px] tracking-widest uppercase" style={{ color: "hsl(30 25% 55%)" }}>
+                      {ar ? "دخلك لكل إجابة" : "your payout / answer"}
+                    </div>
+                    <div className="text-[11px] mt-0.5" style={{ color: "hsl(30 18% 75%)" }}>
+                      ${incomeTier.payout} × {mult}
+                      <span className="opacity-60"> · {ar ? "سلسلة" : "streak"} {streak}</span>
+                    </div>
+                  </div>
+                  <div className="font-black tabular-nums text-xl" style={{ color: "hsl(142 65% 60%)" }}>
+                    ${incomeTier.payout * mult}
+                  </div>
+                </div>
+
+                {/* ── TOOL track (base payout) ── */}
+                <div>
+                  <div className="flex items-center justify-between px-1 pb-1.5 text-[10px] tracking-widest uppercase"
+                    style={{ color: "hsl(30 25% 50%)" }}>
+                    <span>{ar ? "الأداة" : "TOOL"}</span>
+                    <span style={{ color: "hsl(33 78% 60%)" }}>{ar ? incomeTier.nameAr : incomeTier.nameEn}</span>
+                  </div>
+                  {nextTier ? (
+                    <button
+                      disabled={bricks < nextTier.cost}
+                      onClick={() => buyTierUpgrade("income")}
+                      className="pixel-button w-full flex items-center gap-3 px-3 py-2.5 text-start transition-all"
+                      style={{
+                        background: bricks >= nextTier.cost ? "hsl(142 30% 8%)" : "hsl(0 0% 5%)",
+                        borderColor: bricks >= nextTier.cost ? "hsl(142 45% 35%)" : "hsl(0 0% 15%)",
+                        color: bricks >= nextTier.cost ? "hsl(30 18% 88%)" : "hsl(30 8% 35%)",
+                      }}>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-bold truncate">{ar ? nextTier.nameAr : nextTier.nameEn}</div>
+                        <div className="text-[10px] opacity-70">
+                          ${incomeTier.payout} → ${nextTier.payout} {ar ? "لكل إجابة" : "per answer"}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0 font-black tabular-nums text-sm">
+                        <PixelShield className="h-3.5 w-3.5" color="currentColor" />
+                        {nextTier.cost}
+                      </div>
+                    </button>
+                  ) : (
+                    <div className="text-center text-xs py-2" style={{ color: "hsl(45 76% 56%)" }}>
+                      {ar ? "أقصى مستوى!" : "MAX LEVEL"}
+                    </div>
+                  )}
+                </div>
+
+                {/* ── STREAK track (multiplier ladder) ── */}
+                <div>
+                  <div className="flex items-center justify-between px-1 pb-1.5 text-[10px] tracking-widest uppercase"
+                    style={{ color: "hsl(30 25% 50%)" }}>
+                    <span className="flex items-center gap-1">
+                      <PixelFlame className="h-3 w-3" color="hsl(14 72% 62%)" />
+                      {ar ? "السلسلة" : "STREAK"}
+                    </span>
+                    <span style={{ color: "hsl(14 72% 62%)" }}>{ar ? streakTier.nameAr : streakTier.nameEn}</span>
+                  </div>
+
+                  {/* current ladder */}
+                  <div className="flex gap-1 mb-1.5">
+                    {([[0, "0-1"], [1, "2-4"], [2, "5-7"], [3, "8+"]] as const).map(([i, label]) => {
+                      const active =
+                        (i === 0 && streak < 2) || (i === 1 && streak >= 2 && streak < 5) ||
+                        (i === 2 && streak >= 5 && streak < 8) || (i === 3 && streak >= 8);
+                      return (
+                        <div key={label} className="flex-1 text-center py-1 rounded"
+                          style={{
+                            background: active ? "hsl(14 72% 52% / 0.18)" : "hsl(0 0% 8%)",
+                            border: `1px solid ${active ? "hsl(14 72% 52%)" : "hsl(0 0% 14%)"}`,
+                            color: active ? "hsl(14 78% 68%)" : "hsl(30 10% 42%)",
+                          }}>
+                          <div className="text-[9px] opacity-70">{label}</div>
+                          <div className="text-xs font-black">×{streakTier.ladder[i]}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {nextStreakTier ? (
+                    <button
+                      disabled={bricks < nextStreakTier.cost}
+                      onClick={() => buyTierUpgrade("streak")}
+                      className="pixel-button w-full flex items-center gap-3 px-3 py-2.5 text-start transition-all"
+                      style={{
+                        background: bricks >= nextStreakTier.cost ? "hsl(14 40% 9%)" : "hsl(0 0% 5%)",
+                        borderColor: bricks >= nextStreakTier.cost ? "hsl(14 60% 42%)" : "hsl(0 0% 15%)",
+                        color: bricks >= nextStreakTier.cost ? "hsl(30 18% 88%)" : "hsl(30 8% 35%)",
+                      }}>
+                      <PixelFlame className="h-5 w-5 shrink-0"
+                        color={bricks >= nextStreakTier.cost ? "hsl(14 72% 62%)" : "currentColor"} />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-bold truncate">{ar ? nextStreakTier.nameAr : nextStreakTier.nameEn}</div>
+                        <div className="text-[10px] opacity-70">
+                          ×{streakTier.ladder.slice(1).join("/")} → ×{nextStreakTier.ladder.slice(1).join("/")}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0 font-black tabular-nums text-sm">
+                        <PixelShield className="h-3.5 w-3.5" color="currentColor" />
+                        {nextStreakTier.cost}
+                      </div>
+                    </button>
+                  ) : (
+                    <div className="text-center text-xs py-2" style={{ color: "hsl(45 76% 56%)" }}>
+                      {ar ? "أقصى مستوى!" : "MAX LEVEL"}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* BUILD TAB */}
+            {shopTab === "build" && (
+              <div className="space-y-2">
+                {BLOCK_TYPES.map(b => {
+                  const Icon = BLOCK_ICON[b.key];
+                  const affordable = bricks >= b.cost;
+                  const flashing = buyFlash === b.key;
+                  return (
+                    <button
+                      key={b.key}
+                      disabled={!affordable}
+                      onClick={() => buyBlock(b.key)}
+                      className="pixel-button w-full flex items-center gap-3 px-3 py-2.5 text-start transition-all"
+                      style={{
+                        background: flashing ? "hsl(142 55% 12%)" : affordable ? "hsl(142 30% 8%)" : "hsl(0 0% 5%)",
+                        borderColor: affordable ? "hsl(142 45% 35%)" : "hsl(0 0% 15%)",
+                        color: affordable ? "hsl(30 18% 88%)" : "hsl(30 8% 35%)",
+                      }}>
+                      <Icon className="h-6 w-6 shrink-0" color={affordable ? "hsl(33 78% 64%)" : "currentColor"} />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-bold truncate">{ar ? b.labelAr : b.labelEn}</div>
+                        <div className="text-[10px] opacity-70">+{b.height} {ar ? "ارتفاع" : "height"}</div>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0 font-black tabular-nums text-sm">
+                        <PixelShield className="h-3.5 w-3.5" color="currentColor" />
+                        {b.cost}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
             <button
               onClick={() => setShowShop(false)}
               className="pixel-button w-full mt-3 py-2 text-xs font-bold"
@@ -414,8 +591,19 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
             {ar ? (critical ? "حرج" : "خطر") : (critical ? "CRITICAL" : "DANGER")}
           </div>
 
-          {/* Tower + Bricks */}
+          {/* Streak + Tower + Bricks */}
           <div className="flex items-center gap-3 shrink-0">
+            {/* Streak — always shown so the multiplier ladder is legible from turn one */}
+            <div className="flex items-center gap-1 px-1.5 py-0.5 rounded"
+              style={{
+                color: streak >= 2 ? "hsl(14 78% 66%)" : "hsl(30 14% 45%)",
+                background: streak >= 2 ? "hsl(14 72% 52% / 0.14)" : "transparent",
+                animation: streak >= 5 ? "heat-flicker 0.9s ease-in-out infinite" : "none",
+              }}>
+              <PixelFlame className="h-3.5 w-3.5" color="currentColor" />
+              <span className="font-black tabular-nums text-xs">{streak}</span>
+              <span className="font-black tabular-nums text-xs opacity-80">×{mult}</span>
+            </div>
             <div className="flex items-center gap-1.5" style={{ color: "hsl(200 60% 65%)" }}>
               <PixelHouse className="h-3.5 w-3.5" color="currentColor" />
               <span className="font-black tabular-nums text-sm">{towerHeight}</span>
