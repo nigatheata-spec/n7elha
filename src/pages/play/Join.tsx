@@ -187,9 +187,17 @@ const Join = () => {
 
   const doInsert = async (sess: any, playerName: string, password: string) => {
     try {
+      const payload: any = { session_id: sess.id, name: playerName.trim(), password };
+      if (sess.settings?.mode === "humansvszombies") {
+        const { data: existing } = await supabase.from("game_students").select("team").eq("session_id", sess.id) as any;
+        const humanCount  = (existing ?? []).filter((s: any) => s.team === "human").length;
+        const zombieCount = (existing ?? []).filter((s: any) => s.team === "zombie").length;
+        payload.team = humanCount === zombieCount ? (Math.random() < 0.5 ? "human" : "zombie")
+          : humanCount < zombieCount ? "human" : "zombie";
+      }
       const { data: student, error } = await supabase
         .from("game_students")
-        .insert({ session_id: sess.id, name: playerName.trim(), password })
+        .insert(payload)
         .select().single();
       if (error) throw error;
       localStorage.setItem(`hash_student_${sess.id}`, student.id);

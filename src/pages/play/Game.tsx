@@ -14,6 +14,7 @@ import DodgeballGame from "./DodgeballGame";
 import HotPotatoGame from "./HotPotatoGame";
 import LavaFloorGame from "./LavaFloorGame";
 import ClassicGame from "./ClassicGame";
+import HumansVsZombiesGame from "./HumansVsZombiesGame";
 import { playSelect, playCorrect, playWrong, playHackAlert, playGameOver, primeAudio } from "@/lib/sound";
 
 type Q = { id: string; text: string; options: string[]; correct_index: number; position: number };
@@ -252,6 +253,9 @@ const Game = () => {
   }
   if (session.settings?.mode === "classic" && studentId) {
     return <ClassicGame sessionId={sessionId!} studentId={studentId} />;
+  }
+  if (session.settings?.mode === "humansvszombies" && studentId) {
+    return <HumansVsZombiesGame sessionId={sessionId!} studentId={studentId} />;
   }
 
   return (

@@ -70,8 +70,9 @@ const GameResults = () => {
   }, [phase]);
 
   const mode = session?.settings?.mode ?? "crypto_rush";
-  // classic mode also scores by accumulated points stored in the `crypto` column
-  const isPointsMode = mode === "crypto_rush" || mode === "classic";
+  // classic and humansvszombies also score by accumulated points stored in the `crypto` column
+  const isPointsMode = mode === "crypto_rush" || mode === "classic" || mode === "humansvszombies";
+  const hvzWinner = session?.settings?.winner as ("humans" | "zombies" | undefined);
 
   const ranked = useMemo(() => {
     if (mode === "dodgeball") {
@@ -83,8 +84,16 @@ const GameResults = () => {
         return 0;
       });
     }
+    if (mode === "humansvszombies") {
+      const winningTeam = hvzWinner === "zombies" ? "zombie" : "human";
+      return [...students].sort((a, b) => {
+        if (a.team === winningTeam && b.team !== winningTeam) return -1;
+        if (a.team !== winningTeam && b.team === winningTeam) return 1;
+        return (b.crypto ?? 0) - (a.crypto ?? 0);
+      });
+    }
     return students;
-  }, [students, mode]);
+  }, [students, mode, hvzWinner]);
 
   const stats = useMemo(() => {
     const total = responses.length;
@@ -137,7 +146,9 @@ const GameResults = () => {
         <div className="absolute top-10 inset-x-0 text-center"
           style={{ animation: "result-fade-in 0.5s 0.3s both" }}>
           <span className="text-[10px] tracking-[0.6em] text-primary/40 uppercase">
-            Game Over
+            {mode === "humansvszombies"
+              ? (hvzWinner === "zombies" ? "Zombies Win — Fully Infected" : "Humans Win — Survived the Apocalypse")
+              : "Game Over"}
           </span>
         </div>
 
@@ -320,7 +331,8 @@ const GameResults = () => {
                     {["#", "Player",
                       isPointsMode ? "Points" : "Status",
                       "Correct", "Accuracy",
-                      ...(mode === "crypto_rush" ? ["Hacks"] : [])
+                      ...(mode === "crypto_rush" ? ["Hacks"] : []),
+                      ...(mode === "humansvszombies" ? ["Team"] : []),
                     ].map(h => (
                       <th key={h} className="px-4 py-3 text-[10px] tracking-widest text-primary/70 text-start first:text-start text-center first-of-type:text-start font-bold">
                         {h}
@@ -360,6 +372,14 @@ const GameResults = () => {
                         {mode === "crypto_rush" &&
                           <td className="px-4 py-3 text-center text-primary/60 text-xs">
                             {s.hacks_made ?? 0}/{s.hacks_received ?? 0}
+                          </td>
+                        }
+                        {mode === "humansvszombies" &&
+                          <td className="px-4 py-3 text-center">
+                            <span className={cn("text-[10px] font-bold tracking-widest uppercase",
+                              s.team === "zombie" ? "text-emerald-600" : "text-blue-600")}>
+                              {s.team ?? "—"}
+                            </span>
                           </td>
                         }
                       </tr>

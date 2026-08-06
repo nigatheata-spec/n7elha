@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
-import { Copy, Play, Users, Trash2, Zap, Heart, Skull, Timer, Trophy, Flame, ChevronLeft, Check, Minus, Plus, ListChecks } from "lucide-react";
+import { Copy, Play, Users, Trash2, Zap, Heart, Skull, Timer, Trophy, Flame, ChevronLeft, Check, Minus, Plus, ListChecks, Biohazard } from "lucide-react";
 import { BitcoinIcon, StopwatchIcon, LavaBucketIcon, DynamiteIcon } from "@/components/game/icons";
 import { toast } from "sonner";
 
@@ -12,7 +12,7 @@ const genCode = () => {
   return Array.from({ length: 4 }, () => c[Math.floor(Math.random() * c.length)]).join("");
 };
 
-type GameMode = "crypto_rush" | "dodgeball" | "hotpotato" | "lavafloor" | "classic";
+type GameMode = "crypto_rush" | "dodgeball" | "hotpotato" | "lavafloor" | "classic" | "humansvszombies";
 
 const MODES: { id: GameMode; icon: React.ReactNode; label: string; labelAr: string; desc: string; descAr: string; accent: string; num: string }[] = [
   {
@@ -64,6 +64,16 @@ const MODES: { id: GameMode; icon: React.ReactNode; label: string; labelAr: stri
     descAr: "اصمدوا معاً قبل أن تبتلعكم الحمم",
     accent: "#8B4A3A",
     num: "04",
+  },
+  {
+    id: "humansvszombies",
+    icon: <Biohazard className="h-6 w-6" strokeWidth={2} />,
+    label: "Humans vs Zombies",
+    labelAr: "البشر ضد الزومبي",
+    desc: "Two teams, two health bars — heal, upgrade, sabotage, survive",
+    descAr: "فريقان، شريطا صحة — عالج، طوّر، خرّب، انجُ",
+    accent: "#4a7a3a",
+    num: "05",
   },
 ];
 
@@ -395,6 +405,19 @@ const HostGame = () => {
                   <div className="flex items-center gap-2 text-black/45">
                     <Flame className="h-4 w-4 shrink-0" style={{ color: selectedAccent }} />
                     <span>{ar ? "اصمدوا معاً حتى النهاية" : "Survive together to the end"}</span>
+                  </div>
+                </>
+              )}
+              {mode === "humansvszombies" && (
+                <>
+                  <p className="text-black/65 leading-relaxed">
+                    {ar
+                      ? "ينقسم الطلاب إلى فريقين، ولكل فريق شريط صحة ينخفض تلقائياً مع الوقت. الإجابات الصحيحة تكسب نقوداً لعلاج فريقك أو لتخريب الفريق الآخر. يفوز الفريق الذي يبقى شريط صحته فوق الصفر — أو صاحب الصحة الأعلى عند نهاية اليوم الخامس."
+                      : "Students split into two teams, each with a health bar that drains automatically over time. Correct answers earn cash to heal your own team or sabotage the other side. Whichever team's health survives — or is higher by the end of Day 5 — wins."}
+                  </p>
+                  <div className="flex items-center gap-2 text-black/45">
+                    <Biohazard className="h-4 w-4 shrink-0" style={{ color: selectedAccent }} />
+                    <span>{ar ? "فريقان، نتيجة واحدة" : "Two teams, one outcome"}</span>
                   </div>
                 </>
               )}
