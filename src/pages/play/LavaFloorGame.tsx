@@ -4,19 +4,23 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
-import { PixelShield, PixelFlame } from "@/components/PixelIcons";
+import { PixelShield, PixelFlame, PixelPlank, PixelBrick, PixelStaircase, PixelHouse } from "@/components/PixelIcons";
 import { PixelVolcano } from "@/components/PixelVolcano";
 import { PixelLavaCrest, PixelLavaBody } from "@/components/PixelLava";
 import { PixelRockCeiling } from "@/components/PixelRockCeiling";
 import logoLight from "@/assets/logo-light.png";
 import { playSelect, playCorrect, playWrong, playBrick, playGameOver, primeAudio } from "@/lib/sound";
+import { BLOCK_TYPES, BLOCK_BY_KEY, cheapestBlock, type BlockKey } from "@/lib/lavaFloorBlocks";
 
 type Q = { id: string; text: string; options: string[]; correct_index: number; image_url?: string };
 type Phase = "waiting" | "question" | "answered" | "done";
+type Build = { id: string; student_id: string; student_name: string; block_type: BlockKey; height_added: number; cost: number; created_at: string };
 
 const BRICKS_PER_CORRECT = 5;
-const SPEND_COST = 5;
-const SPEND_LAVA_REDUCTION = 2;
+
+const BLOCK_ICON: Record<BlockKey, typeof PixelPlank> = {
+  plank: PixelPlank, brick: PixelBrick, staircase: PixelStaircase, house: PixelHouse,
+};
 
 const AV_COLORS = ["#2563eb","#16a34a","#b45309","#dc2626","#7c3aed","#0891b2","#c2410c","#0f766e"];
 const av = (name: string) => {
@@ -61,11 +65,15 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
   const [timeLeft, setTimeLeft]       = useState(20);
   const [qSeed, setQSeed]             = useState(0);
   const [displayLava, setDisplayLava] = useState(0);
-  const [spendFlash, setSpendFlash]   = useState(false);
+  const [showShop, setShowShop]       = useState(false);
+  const [towerHeight, setTowerHeight] = useState(0);
+  const [recentBuilds, setRecentBuilds] = useState<Build[]>([]);
+  const [buyFlash, setBuyFlash]       = useState<BlockKey | null>(null);
 
   const qStartRef  = useRef(Date.now());
   const askedRef   = useRef(0);
   const pickedRef  = useRef<number | null>(null);
+  const buyingRef  = useRef(false);
 
   const settings = session?.settings ?? {};
   const bricks   = me?.crypto ?? 0;
@@ -108,9 +116,30 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
           const m = sorted.find((x: any) => x.id === studentId);
           if (m) setMe(m);
         })
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "lava_floor_builds", filter: `session_id=eq.${sessionId}` },
+        (p: any) => {
+          const b = p.new as Build;
+          setTowerHeight(h => h + b.height_added);
+          setRecentBuilds(list => [b, ...list].slice(0, 12));
+          const label = ar ? BLOCK_BY_KEY[b.block_type].labelAr : BLOCK_BY_KEY[b.block_type].labelEn;
+          toast.success(ar
+            ? `${b.student_name} بنى ${label}! +${b.height_added}`
+            : `${b.student_name} built a ${label}! +${b.height_added}`);
+        })
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [sessionId, studentId]);
+
+  // ── Load existing tower state ───────────────────────────────────────────────
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from("lava_floor_builds").select("*")
+        .eq("session_id", sessionId).order("created_at", { ascending: false });
+      const rows = (data ?? []) as Build[];
+      setTowerHeight(rows.reduce((a, r) => a + r.height_added, 0));
+      setRecentBuilds(rows.slice(0, 12));
+    })();
+  }, [sessionId]);
 
   // ── Status sync ───────────────────────────────────────────────────────────
   useEffect(() => {
@@ -202,15 +231,21 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
 
   const submit = (idx: number) => { if (pickedRef.current !== null) return; handleAnswer(idx); };
 
-  // ── Spend bricks ──────────────────────────────────────────────────────────
-  const spendBricks = () => {
-    if (!me || bricks < SPEND_COST || phase !== "question") return;
+  // ── Build shop: buy a block ──────────────────────────────────────────────
+  const buyBlock = (key: BlockKey) => {
+    const block = BLOCK_BY_KEY[key];
+    if (!me || bricks < block.cost || buyingRef.current) return;
+    buyingRef.current = true;
     supabase.from("game_students").update({
-      crypto: Math.max(0, bricks - SPEND_COST),
-      hacks_made: (me.hacks_made ?? 0) + SPEND_COST,
-    }).eq("id", me.id).then(undefined, () => {});
-    setSpendFlash(true);
-    setTimeout(() => setSpendFlash(false), 600);
+      crypto: Math.max(0, bricks - block.cost),
+    }).eq("id", me.id).catch(() => {});
+    supabase.from("lava_floor_builds").insert({
+      session_id: sessionId, student_id: me.id, student_name: me.name,
+      block_type: key, height_added: block.height, cost: block.cost,
+    }).catch(() => {});
+    playBrick();
+    setBuyFlash(key);
+    setTimeout(() => { setBuyFlash(null); buyingRef.current = false; }, 500);
   };
 
   // Derived visual values
@@ -228,40 +263,93 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
       {/* ── CAVE ROCK CEILING — static pixel-art background ──────────── */}
       <PixelRockCeiling className="absolute inset-0" />
 
-      {/* ── SPEND BRICKS — fixed floating button, never affects layout ── */}
+      {/* ── BUILD SHOP — fixed floating trigger, never affects layout ── */}
       {(() => {
-        const canSpend = bricks >= SPEND_COST && phase === "question";
-        const fillPct  = Math.min(100, (bricks / SPEND_COST) * 100);
-        const btnColor = canSpend
-          ? (spendFlash ? "hsl(142 60% 45%)" : "hsl(142 45% 35%)")
-          : "hsl(0 0% 22%)";
+        const canBuy  = bricks >= cheapestBlock.cost && (phase === "question" || phase === "answered");
+        const fillPct = Math.min(100, (bricks / cheapestBlock.cost) * 100);
+        const btnColor = canBuy ? "hsl(142 45% 35%)" : "hsl(0 0% 22%)";
         return (
           <button
-            onClick={spendBricks}
-            disabled={!canSpend}
+            onClick={() => canBuy && setShowShop(true)}
+            disabled={!canBuy}
             className="fixed right-3 z-30 flex flex-col items-center gap-1 rounded-2xl px-3 py-2.5 transition-all active:scale-95"
             style={{
               top: "50%", transform: "translateY(-50%)",
-              background: canSpend ? (spendFlash ? "hsl(142 55% 12%)" : "hsl(142 40% 8%)") : "hsl(0 0% 7%)",
+              background: canBuy ? "hsl(142 40% 8%)" : "hsl(0 0% 7%)",
               border: `2px solid ${btnColor}`,
-              color: canSpend ? "hsl(142 65% 60%)" : "hsl(0 0% 32%)",
+              color: canBuy ? "hsl(142 65% 60%)" : "hsl(0 0% 32%)",
               minWidth: 56,
-              cursor: canSpend ? "pointer" : "default",
+              cursor: canBuy ? "pointer" : "default",
               transition: "background 0.25s, border-color 0.25s, color 0.25s",
             }}>
-            <PixelShield className="h-5 w-5 shrink-0" color="currentColor" />
-            {/* Brick progress */}
-            <div className="pixel-progress w-full" style={{ height: 4, borderColor: canSpend ? "hsl(142 55% 45%)" : "hsl(0 0% 30%)", background: "hsl(0 0% 15%)" }}>
+            <PixelHouse className="h-5 w-5 shrink-0" color="currentColor" />
+            <div className="pixel-progress w-full" style={{ height: 4, borderColor: canBuy ? "hsl(142 55% 45%)" : "hsl(0 0% 30%)", background: "hsl(0 0% 15%)" }}>
               <div className="pixel-progress-fill"
-                style={{ width: `${fillPct}%`, background: canSpend ? "hsl(142 55% 45%)" : "hsl(0 0% 30%)" }} />
+                style={{ width: `${fillPct}%`, background: canBuy ? "hsl(142 55% 45%)" : "hsl(0 0% 30%)" }} />
             </div>
-            <span className="text-[10px] font-black tabular-nums leading-none">{bricks}/{SPEND_COST}</span>
-            {canSpend && (
-              <span className="text-[9px] font-bold leading-none opacity-80">−{SPEND_LAVA_REDUCTION}%</span>
+            <span className="text-[10px] font-black tabular-nums leading-none">{bricks}/{cheapestBlock.cost}</span>
+            {canBuy && (
+              <span className="text-[9px] font-bold leading-none opacity-80">{ar ? "متجر" : "SHOP"}</span>
             )}
           </button>
         );
       })()}
+
+      {/* ── BUILD SHOP PANEL ─────────────────────────────────────────── */}
+      {showShop && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center px-4"
+          style={{ background: "hsl(0 0% 0% / 0.75)", backdropFilter: "blur(4px)" }}
+          onClick={() => setShowShop(false)}>
+          <div className="pixel-panel w-full max-w-sm p-4"
+            style={{ background: "hsl(0 0% 6%)", borderColor: "hsl(14 60% 40%)" }}
+            onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm font-black tracking-widest" style={{ color: "hsl(30 18% 85%)" }}>
+                {ar ? "متجر البناء" : "BUILD SHOP"}
+              </span>
+              <div className="flex items-center gap-1.5">
+                <PixelShield className="h-4 w-4" color="hsl(33 78% 58%)" />
+                <span className="font-black tabular-nums text-sm" style={{ color: "hsl(33 78% 64%)" }}>{bricks}</span>
+              </div>
+            </div>
+            <div className="space-y-2">
+              {BLOCK_TYPES.map(b => {
+                const Icon = BLOCK_ICON[b.key];
+                const affordable = bricks >= b.cost;
+                const flashing = buyFlash === b.key;
+                return (
+                  <button
+                    key={b.key}
+                    disabled={!affordable}
+                    onClick={() => buyBlock(b.key)}
+                    className="pixel-button w-full flex items-center gap-3 px-3 py-2.5 text-start transition-all"
+                    style={{
+                      background: flashing ? "hsl(142 55% 12%)" : affordable ? "hsl(142 30% 8%)" : "hsl(0 0% 5%)",
+                      borderColor: affordable ? "hsl(142 45% 35%)" : "hsl(0 0% 15%)",
+                      color: affordable ? "hsl(30 18% 88%)" : "hsl(30 8% 35%)",
+                    }}>
+                    <Icon className="h-6 w-6 shrink-0" color={affordable ? "hsl(33 78% 64%)" : "currentColor"} />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-bold truncate">{ar ? b.labelAr : b.labelEn}</div>
+                      <div className="text-[10px] opacity-70">+{b.height} {ar ? "ارتفاع" : "height"}</div>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0 font-black tabular-nums text-sm">
+                      <PixelShield className="h-3.5 w-3.5" color="currentColor" />
+                      {b.cost}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+            <button
+              onClick={() => setShowShop(false)}
+              className="pixel-button w-full mt-3 py-2 text-xs font-bold"
+              style={{ background: "hsl(0 0% 8%)", borderColor: "hsl(0 0% 22%)", color: "hsl(30 14% 60%)" }}>
+              {ar ? "إغلاق" : "CLOSE"}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── RISING LAVA BODY (GPU: transform translateY) ──────────────── */}
       <div className="absolute inset-x-0 bottom-0 h-full pointer-events-none"
@@ -326,12 +414,44 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
             {ar ? (critical ? "حرج" : "خطر") : (critical ? "CRITICAL" : "DANGER")}
           </div>
 
-          {/* Bricks */}
-          <div className="flex items-center gap-1.5 shrink-0">
-            <PixelShield className="h-3.5 w-3.5" color="hsl(33 78% 58%)" />
-            <span className="font-black tabular-nums text-sm" style={{ color: "hsl(33 78% 64%)" }}>{bricks}</span>
+          {/* Tower + Bricks */}
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="flex items-center gap-1.5" style={{ color: "hsl(200 60% 65%)" }}>
+              <PixelHouse className="h-3.5 w-3.5" color="currentColor" />
+              <span className="font-black tabular-nums text-sm">{towerHeight}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <PixelShield className="h-3.5 w-3.5" color="hsl(33 78% 58%)" />
+              <span className="font-black tabular-nums text-sm" style={{ color: "hsl(33 78% 64%)" }}>{bricks}</span>
+            </div>
           </div>
         </header>
+
+        {/* BUILD FEED — recent tower contributions, newest first */}
+        {recentBuilds.length > 0 && (
+          <div className="shrink-0 flex items-center gap-2 px-3 py-1 overflow-x-auto"
+            style={{ background: "hsl(0 0% 4% / 0.7)", borderBottom: "1px solid hsl(200 30% 20% / 0.4)" }}>
+            {recentBuilds.slice(0, 6).map(b => {
+              const Icon = BLOCK_ICON[b.block_type];
+              return (
+                <div key={b.id}
+                  className="flex items-center gap-1 shrink-0 px-1.5 py-0.5 rounded"
+                  style={{
+                    background: "hsl(200 40% 15% / 0.4)",
+                    animation: "fade-up 0.35s cubic-bezier(0.16,1,0.3,1) both",
+                  }}>
+                  <Icon className="h-3 w-3" color="hsl(200 60% 65%)" />
+                  <span className="text-[9px] font-bold truncate max-w-[64px]" style={{ color: "hsl(200 30% 75%)" }}>
+                    {b.student_name}
+                  </span>
+                  <span className="text-[9px] font-black tabular-nums" style={{ color: "hsl(200 60% 65%)" }}>
+                    +{b.height_added}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        )}
 
         {/* LAVA LEVEL STRIP */}
         <div className="shrink-0 relative h-1.5 w-full overflow-hidden" style={{ background: "hsl(0 0% 7%)" }}>

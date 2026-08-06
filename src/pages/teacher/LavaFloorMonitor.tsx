@@ -1,12 +1,19 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Square, Maximize } from "lucide-react";
-import { PixelShield, PixelFlame } from "@/components/PixelIcons";
+import { PixelShield, PixelFlame, PixelHouse, PixelPlank, PixelBrick, PixelStaircase } from "@/components/PixelIcons";
 import { PixelLavaCrest, PixelLavaBody } from "@/components/PixelLava";
 import { PixelRockCeiling } from "@/components/PixelRockCeiling";
+import { BLOCK_BY_KEY, type BlockKey } from "@/lib/lavaFloorBlocks";
+
+type Build = { id: string; student_id: string; student_name: string; block_type: BlockKey; height_added: number; cost: number; created_at: string };
+const BLOCK_ICON: Record<BlockKey, typeof PixelPlank> = {
+  plank: PixelPlank, brick: PixelBrick, staircase: PixelStaircase, house: PixelHouse,
+};
 
 const fmt = (n: number) => n.toLocaleString();
 
@@ -29,21 +36,21 @@ const Avatar = ({ name }: { name: string }) => {
 
 // % per wrong answer lava penalty
 const WRONG_PENALTY = 1;
-// lava reduction per brick spent (1 brick = this many %)
-const BRICK_LAVA_RATE = WRONG_PENALTY * 2 / 5; // 5 bricks = -2%
 
 interface Props { session: any; sessionId: string; }
 
 const LavaFloorMonitor = ({ session, sessionId }: Props) => {
   const nav = useNavigate();
-  const [students, setStudents] = useState<any[]>([]);
-  const [now, setNow]           = useState(Date.now());
-  const [ending, setEnding]     = useState(false);
-  const [spiking, setSpiking]   = useState(false);
+  const [students, setStudents]     = useState<any[]>([]);
+  const [now, setNow]               = useState(Date.now());
+  const [ending, setEnding]         = useState(false);
+  const [spiking, setSpiking]       = useState(false);
+  const [towerHeight, setTowerHeight] = useState(0);
+  const [recentBuilds, setRecentBuilds] = useState<Build[]>([]);
 
   const lavaRef        = useRef(0);
   const dbWriteRef     = useRef(0);
-  const prevTotals     = useRef({ wrong: 0, bricksSpent: 0 });
+  const prevTotals     = useRef({ wrong: 0 });
   const initializedRef = useRef(false);
   const settingsRef    = useRef<any>({});
 
@@ -67,22 +74,33 @@ const LavaFloorMonitor = ({ session, sessionId }: Props) => {
       const loaded = ss ?? [];
       setStudents(loaded);
 
-      // Apply player-driven lava deltas
-      const totalWrong       = loaded.reduce((a, s) => a + ((s.hacks_received ?? 0)), 0);
-      const totalBricksSpent = loaded.reduce((a, s) => a + ((s.hacks_made ?? 0)), 0);
-
-      const deltaWrong  = totalWrong       - prevTotals.current.wrong;
-      const deltaBricks = totalBricksSpent - prevTotals.current.bricksSpent;
-
-      if (deltaWrong > 0)  lavaRef.current = Math.min(100, lavaRef.current + deltaWrong  * WRONG_PENALTY);
-      if (deltaBricks > 0) lavaRef.current = Math.max(0,   lavaRef.current - deltaBricks * BRICK_LAVA_RATE);
-
-      prevTotals.current = { wrong: totalWrong, bricksSpent: totalBricksSpent };
+      // Apply player-driven lava deltas — wrong answers speed the lava up
+      const totalWrong = loaded.reduce((a, s) => a + ((s.hacks_received ?? 0)), 0);
+      const deltaWrong = totalWrong - prevTotals.current.wrong;
+      if (deltaWrong > 0) lavaRef.current = Math.min(100, lavaRef.current + deltaWrong * WRONG_PENALTY);
+      prevTotals.current = { wrong: totalWrong };
     };
     refresh();
+
+    const loadBuilds = async () => {
+      const { data } = await supabase.from("lava_floor_builds").select("*")
+        .eq("session_id", sessionId).order("created_at", { ascending: false });
+      const rows = (data ?? []) as Build[];
+      setTowerHeight(rows.reduce((a, r) => a + r.height_added, 0));
+      setRecentBuilds(rows.slice(0, 8));
+    };
+    loadBuilds();
+
     const ch = supabase.channel(`lf-monitor-${sessionId}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "game_sessions",  filter: `id=eq.${sessionId}` }, refresh)
       .on("postgres_changes", { event: "*", schema: "public", table: "game_students", filter: `session_id=eq.${sessionId}` }, refresh)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "lava_floor_builds", filter: `session_id=eq.${sessionId}` },
+        (p: any) => {
+          const b = p.new as Build;
+          setTowerHeight(h => h + b.height_added);
+          setRecentBuilds(list => [b, ...list].slice(0, 8));
+          toast.success(`${b.student_name} built a ${BLOCK_BY_KEY[b.block_type].labelEn}! +${b.height_added}`);
+        })
       .subscribe();
     const tick = setInterval(() => setNow(Date.now()), 500);
     return () => { supabase.removeChannel(ch); clearInterval(tick); };
@@ -280,7 +298,7 @@ const LavaFloorMonitor = ({ session, sessionId }: Props) => {
         </div>
 
         {/* RIGHT: leaderboard + stats */}
-        <div className="grid grid-rows-[1fr_auto] gap-4 overflow-hidden min-h-0">
+        <div className="grid grid-rows-[1fr_auto_auto] gap-4 overflow-hidden min-h-0">
 
           {/* Leaderboard */}
           <div className="space-y-2 overflow-y-auto">
@@ -319,8 +337,25 @@ const LavaFloorMonitor = ({ session, sessionId }: Props) => {
             )}
           </div>
 
+          {/* Build feed — recent tower contributions */}
+          {recentBuilds.length > 0 && (
+            <div className="pixel-panel border-2 border-primary/20 bg-primary/5 px-3 py-2 flex items-center gap-2 overflow-x-auto">
+              {recentBuilds.map(b => {
+                const Icon = BLOCK_ICON[b.block_type];
+                return (
+                  <div key={b.id} className="flex items-center gap-1.5 shrink-0 px-2 py-1 rounded"
+                    style={{ background: "hsl(200 40% 15% / 0.4)" }}>
+                    <Icon className="h-4 w-4" color="hsl(200 60% 65%)" />
+                    <span className="text-xs font-bold" style={{ color: "hsl(200 30% 78%)" }}>{b.student_name}</span>
+                    <span className="text-xs font-black tabular-nums" style={{ color: "hsl(200 60% 65%)" }}>+{b.height_added}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
           {/* Class stats bar */}
-          <div className="pixel-panel border-2 border-primary/30 bg-primary/5 p-4 grid grid-cols-3 gap-4">
+          <div className="pixel-panel border-2 border-primary/30 bg-primary/5 p-4 grid grid-cols-4 gap-4">
             <div className="text-center">
               <div className="text-2xl font-pixel font-black text-success">{students.reduce((a, s) => a + (s.correct_answers ?? 0), 0)}</div>
               <div className="text-[10px] text-muted-foreground uppercase tracking-widest">correct</div>
@@ -331,6 +366,13 @@ const LavaFloorMonitor = ({ session, sessionId }: Props) => {
                 <span className="text-2xl font-pixel font-black text-success">{fmt(totalBricks)}</span>
               </div>
               <div className="text-[10px] text-muted-foreground uppercase tracking-widest">bricks left</div>
+            </div>
+            <div className="text-center">
+              <div className="flex items-center justify-center gap-1">
+                <PixelHouse className="h-5 w-5" color="currentColor" style={{ color: "hsl(200 60% 55%)" }} />
+                <span className="text-2xl font-pixel font-black" style={{ color: "hsl(200 60% 65%)" }}>{fmt(towerHeight)}</span>
+              </div>
+              <div className="text-[10px] text-muted-foreground uppercase tracking-widest">tower height</div>
             </div>
             <div className="text-center">
               {danger ? (
