@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -42,6 +43,8 @@ const randomBombMs = () => 30_000 + Math.random() * 60_000;
 
 const HotPotatoMonitor = ({ session, sessionId }: Props) => {
   const nav = useNavigate();
+  const { i18n } = useTranslation();
+  const ar = (session?.settings?.lang ?? i18n.language) === "ar";
   const [students, setStudents] = useState<any[]>([]);
   const [explosionFeed, setExplosionFeed] = useState<{ name: string; at: string }[]>([]);
   const [now, setNow] = useState(Date.now());
@@ -152,7 +155,7 @@ const HotPotatoMonitor = ({ session, sessionId }: Props) => {
 
   const endNow = async () => {
     if (!session) return;
-    if (!confirm("End the game now?")) return;
+    if (!confirm(ar ? "إنهاء اللعبة الآن؟" : "End the game now?")) return;
     await supabase.from("game_sessions").update({ status: "finished", ended_at: new Date().toISOString() }).eq("id", session.id);
     nav(`/app/games/${session.id}/results`);
   };
@@ -183,7 +186,7 @@ const HotPotatoMonitor = ({ session, sessionId }: Props) => {
         <div className="relative z-10 text-center">
           <BombIcon className="h-20 w-20 mx-auto mb-4" sparks />
           <div className="text-6xl font-black tracking-widest" style={{ color: PCB_GREEN }}>
-            GAME OVER
+            {ar ? "انتهت اللعبة" : "GAME OVER"}
           </div>
         </div>
         {top3.length > 0 && (
@@ -209,7 +212,7 @@ const HotPotatoMonitor = ({ session, sessionId }: Props) => {
         <Button onClick={() => nav(`/app/games/${session.id}/results`)}
           className="relative z-10 text-lg px-10 py-5 font-mono font-bold"
           style={{ background: PCB_GREEN, color: "hsl(210 22% 7%)" }}>
-          <Trophy className="h-5 w-5 me-2" /> View Full Results
+          <Trophy className="h-5 w-5 me-2" /> {ar ? "عرض النتائج الكاملة" : "View Full Results"}
         </Button>
       </div>
     );
@@ -229,7 +232,7 @@ const HotPotatoMonitor = ({ session, sessionId }: Props) => {
         {/* Left: session code + explosion count */}
         <div className="flex items-center gap-3 min-w-0">
           <div className="text-muted-foreground font-mono text-sm whitespace-nowrap">
-            CODE <span className="font-black tracking-widest text-base" style={{ color: PCB_GREEN }}>{session?.code}</span>
+            {ar ? "الرمز" : "CODE"} <span className="font-black tracking-widest text-base" style={{ color: PCB_GREEN }}>{session?.code}</span>
           </div>
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-mono text-sm whitespace-nowrap"
             style={{ background: "hsl(71 48% 47% / 0.08)", border: "1px solid hsl(71 48% 47% / 0.3)" }}>
@@ -259,7 +262,7 @@ const HotPotatoMonitor = ({ session, sessionId }: Props) => {
           </Button>
           <Button size="sm" onClick={endNow}
             className="bg-destructive hover:bg-destructive/90 text-destructive-foreground font-mono font-bold">
-            <Square className="h-4 w-4 me-1" />END
+            <Square className="h-4 w-4 me-1" />{ar ? "إنهاء" : "END"}
           </Button>
         </div>
       </header>
@@ -271,7 +274,7 @@ const HotPotatoMonitor = ({ session, sessionId }: Props) => {
         <div className="space-y-1.5 overflow-hidden flex flex-col">
           {students.length === 0 ? (
             <div className="flex-1 flex items-center justify-center font-mono text-2xl animate-pulse"
-              style={{ color: PCB_GREEN }}>{"> WAITING FOR PLAYERS..."}</div>
+              style={{ color: PCB_GREEN }}>{ar ? "> في انتظار اللاعبين..." : "> WAITING FOR PLAYERS..."}</div>
           ) : (
             students.slice(0, 9).map((s, i) => {
               const isBomb  = s.id === bombHolderId;
@@ -309,7 +312,7 @@ const HotPotatoMonitor = ({ session, sessionId }: Props) => {
           {/* Bomb holder card — no fuse bar */}
           <div className="rounded-2xl p-4" style={metalPanel}>
             <div className="text-xs font-mono tracking-widest uppercase mb-3" style={{ color: "hsl(210 10% 40%)" }}>
-              Bomb Holder
+              {ar ? "حامل القنبلة" : "Bomb Holder"}
             </div>
             {bombHolder ? (
               <div className="flex items-center gap-3">
@@ -318,7 +321,7 @@ const HotPotatoMonitor = ({ session, sessionId }: Props) => {
                 <div className="flex-1 min-w-0">
                   <div className="font-black text-xl truncate" style={{ color: fuseColor }}>{bombHolder.name}</div>
                   <div className="text-sm font-mono tabular-nums mt-0.5 font-bold" style={{ color: fuseColor }}>
-                    {Math.ceil(fuseMs / 1000)}s remaining
+                    {ar ? `${Math.ceil(fuseMs / 1000)} ث متبقية` : `${Math.ceil(fuseMs / 1000)}s remaining`}
                   </div>
                 </div>
                 {/* Countdown ring */}
@@ -333,7 +336,7 @@ const HotPotatoMonitor = ({ session, sessionId }: Props) => {
                 </svg>
               </div>
             ) : (
-              <div className="font-mono text-sm animate-pulse" style={{ color: "hsl(210 10% 38%)" }}>Assigning...</div>
+              <div className="font-mono text-sm animate-pulse" style={{ color: "hsl(210 10% 38%)" }}>{ar ? "جارٍ التعيين..." : "Assigning..."}</div>
             )}
           </div>
 
@@ -341,7 +344,7 @@ const HotPotatoMonitor = ({ session, sessionId }: Props) => {
           <div className="rounded-2xl p-4 overflow-hidden flex flex-col" style={metalPanel}>
             <div className="font-mono text-xs mb-3 flex items-center justify-between uppercase tracking-widest"
               style={{ color: "hsl(210 10% 42%)" }}>
-              <span>Blast Log</span>
+              <span>{ar ? "سجل الانفجارات" : "Blast Log"}</span>
               <div className="flex items-center gap-1.5">
                 <span className="tabular-nums font-bold" style={{ color: PCB_GREEN }}>{explosionCount}</span>
                 <span className="h-2 w-2 rounded-full animate-pulse" style={{ background: PCB_GREEN }} />
@@ -351,7 +354,7 @@ const HotPotatoMonitor = ({ session, sessionId }: Props) => {
             <div className="flex-1 overflow-hidden space-y-2">
               {explosionFeed.length === 0 ? (
                 <div className="font-mono text-sm pt-1" style={{ color: "hsl(210 10% 28%)" }}>
-                  {"> awaiting first explosion..."}
+                  {ar ? "> في انتظار أول انفجار..." : "> awaiting first explosion..."}
                 </div>
               ) : (
                 explosionFeed.map((e) => (
@@ -361,7 +364,7 @@ const HotPotatoMonitor = ({ session, sessionId }: Props) => {
                     <BombIcon className="h-4 w-4 shrink-0" style={{ color: "hsl(210 10% 62%)" }} />
                     <span className="font-mono text-sm">
                       <span className="font-black" style={{ color: "hsl(210 12% 88%)" }}>{e.name}</span>
-                      <span className="text-muted-foreground"> — wiped</span>
+                      <span className="text-muted-foreground">{ar ? " — انفجرت" : " — wiped"}</span>
                     </span>
                   </div>
                 ))
@@ -372,13 +375,13 @@ const HotPotatoMonitor = ({ session, sessionId }: Props) => {
             <div className="mt-3 pt-3 grid grid-cols-2 gap-3"
               style={{ borderTop: "1px solid hsl(210 20% 18%)" }}>
               <div>
-                <div className="text-xs font-mono mb-0.5 uppercase tracking-widest" style={{ color: "hsl(210 10% 40%)" }}>Top Score</div>
+                <div className="text-xs font-mono mb-0.5 uppercase tracking-widest" style={{ color: "hsl(210 10% 40%)" }}>{ar ? "أعلى نتيجة" : "Top Score"}</div>
                 <div className="font-mono font-black text-xl tabular-nums" style={{ color: PCB_GREEN }}>
                   {fmt(Math.max(...students.map(s => s.crypto ?? 0), 0))}
                 </div>
               </div>
               <div>
-                <div className="text-xs font-mono mb-0.5 uppercase tracking-widest" style={{ color: "hsl(210 10% 40%)" }}>Players</div>
+                <div className="text-xs font-mono mb-0.5 uppercase tracking-widest" style={{ color: "hsl(210 10% 40%)" }}>{ar ? "اللاعبون" : "Players"}</div>
                 <div className="font-mono font-black text-xl tabular-nums" style={{ color: "hsl(210 10% 72%)" }}>
                   {students.length}
                 </div>

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { Bitcoin, Square, Maximize, ArrowRight, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -32,6 +33,8 @@ const GameMonitor = () => {
   const [ending, setEnding] = useState(false);
   const sessionRef = useRef<any>(null);
   sessionRef.current = session;
+  const { i18n } = useTranslation();
+  const ar = (session?.settings?.lang ?? i18n.language) === "ar";
 
   useEffect(() => {
     if (!sessionId) return;
@@ -85,7 +88,7 @@ const GameMonitor = () => {
 
   const endNow = async () => {
     if (!session) return;
-    if (!confirm("End the game now?")) return;
+    if (!confirm(ar ? "إنهاء اللعبة الآن؟" : "End the game now?")) return;
     await supabase.from("game_sessions").update({ status: "finished", ended_at: new Date().toISOString() }).eq("id", session.id);
     nav(`/app/games/${session.id}/results`);
   };
@@ -109,7 +112,7 @@ const GameMonitor = () => {
         <div className="w-2 h-2 rounded-full animate-bounce" style={{ background: GREEN, animationDelay: "150ms" }} />
         <div className="w-2 h-2 rounded-full animate-bounce" style={{ background: GREEN, animationDelay: "300ms" }} />
       </div>
-      <p className="text-sm tracking-wider opacity-70" style={{ color: GREEN }}>Loading session...</p>
+      <p className="text-sm tracking-wider opacity-70" style={{ color: GREEN }}>{ar ? "جارٍ تحميل الجلسة..." : "Loading session..."}</p>
     </div>
   );
 
@@ -164,7 +167,7 @@ const GameMonitor = () => {
         style={{ borderBottom: `1px solid ${GREEN_FAINT}` }}
       >
         <div style={{ color: GREEN_DIM }} className="text-xs tracking-widest uppercase">
-          CODE&nbsp;<span style={{ color: GREEN }} className="text-base font-black tracking-[0.25em]">{session.code}</span>
+          {ar ? "الرمز" : "CODE"}&nbsp;<span style={{ color: GREEN }} className="text-base font-black tracking-[0.25em]">{session.code}</span>
         </div>
 
         {mm != null && (
@@ -187,14 +190,14 @@ const GameMonitor = () => {
             onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = GREEN; (e.currentTarget as HTMLElement).style.color = GREEN; }}
             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = GREEN_FAINT; (e.currentTarget as HTMLElement).style.color = GREEN_DIM; }}
           >
-            [ FULLSCREEN ]
+            {ar ? "[ ملء الشاشة ]" : "[ FULLSCREEN ]"}
           </button>
           <button
             onClick={endNow}
             className="text-xs px-3 py-1 font-bold transition-colors"
             style={{ background: "hsl(0 84% 60%)", color: "#fff" }}
           >
-            [ END GAME ]
+            {ar ? "[ إنهاء اللعبة ]" : "[ END GAME ]"}
           </button>
         </div>
       </div>
@@ -209,7 +212,7 @@ const GameMonitor = () => {
             className="text-xs px-5 py-2 shrink-0"
             style={{ color: GREEN_DIM, borderBottom: `1px solid ${GREEN_FAINT}` }}
           >
-            $ LEADERBOARD.LIVE &nbsp;<span className="animate-pulse">█</span>
+            {ar ? "$ لوحة_الصدارة.مباشر" : "$ LEADERBOARD.LIVE"} &nbsp;<span className="animate-pulse">█</span>
           </div>
 
           {/* column headers */}
@@ -222,16 +225,16 @@ const GameMonitor = () => {
               letterSpacing: "0.12em",
             }}
           >
-            <span>RANK</span>
-            <span>ALIAS</span>
-            <span>₿ CRYPTO</span>
+            <span>{ar ? "الترتيب" : "RANK"}</span>
+            <span>{ar ? "الاسم" : "ALIAS"}</span>
+            <span>{ar ? "₿ العملة" : "₿ CRYPTO"}</span>
           </div>
 
           {/* rows */}
           <div className="flex-1 overflow-y-auto">
             {students.length === 0 ? (
               <div className="px-5 py-8 text-sm animate-pulse" style={{ color: GREEN_DIM }}>
-                {">"} awaiting hackers...
+                {">"} {ar ? "في انتظار المخترقين..." : "awaiting hackers..."}
               </div>
             ) : (
               students.map((s, i) => {
@@ -287,14 +290,14 @@ const GameMonitor = () => {
               className="text-xs px-5 py-2 flex items-center justify-between shrink-0"
               style={{ color: GREEN_DIM, borderBottom: `1px solid ${GREEN_FAINT}` }}
             >
-              <span>$ TAIL HACK_LOG.LIVE</span>
+              <span>{ar ? "$ سجل_الاختراقات.مباشر" : "$ TAIL HACK_LOG.LIVE"}</span>
               <span className="h-2 w-2 rounded-full animate-pulse" style={{ background: GREEN }} />
             </div>
 
             <div className="flex-1 overflow-y-auto px-5 py-3 space-y-2">
               {hacks.length === 0 ? (
                 <div className="text-xs" style={{ color: GREEN_DIM }}>
-                  {">"} awaiting breach events...
+                  {">"} {ar ? "في انتظار أحداث الاختراق..." : "awaiting breach events..."}
                 </div>
               ) : (
                 hacks.map((h, idx) => {
@@ -311,8 +314,12 @@ const GameMonitor = () => {
                       </span>
                       <span>
                         {h.success
-                          ? <><b>{hk}</b> breached <b>{tg}</b> · stole ₿{fmt(h.crypto_transferred)}</>
-                          : <><b>{hk}</b> failed to breach <b>{tg}</b></>
+                          ? (ar
+                              ? <><b>{hk}</b> اخترق <b>{tg}</b> · سرق ₿{fmt(h.crypto_transferred)}</>
+                              : <><b>{hk}</b> breached <b>{tg}</b> · stole ₿{fmt(h.crypto_transferred)}</>)
+                          : (ar
+                              ? <>فشل <b>{hk}</b> في اختراق <b>{tg}</b></>
+                              : <><b>{hk}</b> failed to breach <b>{tg}</b></>)
                         }
                       </span>
                     </div>
@@ -328,7 +335,7 @@ const GameMonitor = () => {
             style={{ borderTop: `1px solid ${GREEN_FAINT}` }}
           >
             <div>
-              <div className="text-xs mb-0.5" style={{ color: GREEN_DIM }}>TOTAL IN CIRCULATION</div>
+              <div className="text-xs mb-0.5" style={{ color: GREEN_DIM }}>{ar ? "الإجمالي المتداول" : "TOTAL IN CIRCULATION"}</div>
               <div
                 className="text-3xl font-black tabular-nums"
                 style={{ color: GREEN, textShadow: `0 0 20px hsl(120 100% 55% / 0.5)` }}
@@ -337,10 +344,10 @@ const GameMonitor = () => {
               </div>
             </div>
             <div className="text-right">
-              <div className="text-xs" style={{ color: GREEN_DIM }}>{students.length} HACKERS ONLINE</div>
+              <div className="text-xs" style={{ color: GREEN_DIM }}>{students.length} {ar ? "مخترق متصل" : "HACKERS ONLINE"}</div>
               {cap != null && (
                 <div className="text-xs mt-0.5" style={{ color: reachedCap ? GREEN : GREEN_DIM }}>
-                  GOAL: ₿{fmt(cap)}
+                  {ar ? "الهدف" : "GOAL"}: ₿{fmt(cap)}
                 </div>
               )}
             </div>

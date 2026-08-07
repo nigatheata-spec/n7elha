@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Download, Trophy, Check, Clock, Users, Target } from "lucide-react";
@@ -41,6 +42,7 @@ const GameResults = () => {
   const [phase, setPhase]         = useState<"loading" | "cinematic" | "results">("loading");
   const [tab, setTab]             = useState<"rank" | "qa">("rank");
   const nav = useNavigate();
+  const { i18n } = useTranslation();
 
   useEffect(() => {
     if (!sessionId) return;
@@ -69,6 +71,7 @@ const GameResults = () => {
     return () => clearTimeout(t);
   }, [phase]);
 
+  const ar = (session?.settings?.lang ?? i18n.language) === "ar";
   const mode = session?.settings?.mode ?? "crypto_rush";
   // classic and humansvszombies also score by accumulated points stored in the `crypto` column
   const isPointsMode = mode === "crypto_rush" || mode === "classic" || mode === "humansvszombies" || mode === "dontlookdown";
@@ -113,10 +116,12 @@ const GameResults = () => {
   const winner = ranked[0];
 
   const exportCsv = () => {
-    const header = ["Rank","Name", mode === "crypto_rush" ? "Crypto" : mode === "classic" ? "Points" : "Status", "Correct","Total","Accuracy%"];
+    const header = ar
+      ? ["الترتيب","الاسم", mode === "crypto_rush" ? "العملة" : mode === "classic" ? "النقاط" : "الحالة", "صحيح","الإجمالي","الدقة%"]
+      : ["Rank","Name", mode === "crypto_rush" ? "Crypto" : mode === "classic" ? "Points" : "Status", "Correct","Total","Accuracy%"];
     const rows = ranked.map((s, i) => {
       const a = s.total_answers ? (s.correct_answers / s.total_answers) * 100 : 0;
-      const metric = isPointsMode ? String(s.crypto) : (s.eliminated ? "Eliminated" : "Survived");
+      const metric = isPointsMode ? String(s.crypto) : (s.eliminated ? (ar ? "أُقصي" : "Eliminated") : (ar ? "نجا" : "Survived"));
       return [String(i + 1), s.name, metric, String(s.correct_answers), String(s.total_answers), a.toFixed(0)];
     });
     const csv = [header, ...rows].map(r => r.map(c => `"${c}"`).join(",")).join("\n");
@@ -130,7 +135,7 @@ const GameResults = () => {
   if (phase === "loading") {
     return (
       <div className="fixed inset-0 bg-background flex items-center justify-center">
-        <span className="text-primary/50 text-sm animate-pulse tracking-widest">LOADING...</span>
+        <span className="text-primary/50 text-sm animate-pulse tracking-widest">{ar ? "جارٍ التحميل..." : "LOADING..."}</span>
       </div>
     );
   }
@@ -151,8 +156,10 @@ const GameResults = () => {
           style={{ animation: "result-fade-in 0.5s 0.3s both" }}>
           <span className="text-[10px] tracking-[0.6em] text-primary/40 uppercase">
             {mode === "humansvszombies"
-              ? (hvzWinner === "zombies" ? "Zombies Win — Fully Infected" : "Humans Win — Survived the Apocalypse")
-              : "Game Over"}
+              ? (hvzWinner === "zombies"
+                  ? (ar ? "فاز الزومبي — عدوى كاملة" : "Zombies Win — Fully Infected")
+                  : (ar ? "فاز البشر — نجوا من الفناء" : "Humans Win — Survived the Apocalypse"))
+              : (ar ? "انتهت اللعبة" : "Game Over")}
           </span>
         </div>
 
@@ -174,7 +181,7 @@ const GameResults = () => {
             </div>
             <div style={{ animation: "result-fade-in 0.5s 1.95s both", opacity: 0 }}>
               <span className="text-[10px] tracking-[0.4em] text-primary/45 uppercase">
-                1st Place
+                {ar ? "المركز الأول" : "1st Place"}
                 {session?.quizzes?.title ? ` · ${session.quizzes.title}` : ""}
               </span>
             </div>
@@ -193,7 +200,7 @@ const GameResults = () => {
               <div className="flex items-center gap-2.5">
                 <Avatar name={second.name} size="sm" />
                 <div>
-                  <div className="text-[9px] tracking-widest text-primary/30 uppercase">2nd</div>
+                  <div className="text-[9px] tracking-widest text-primary/30 uppercase">{ar ? "الثاني" : "2nd"}</div>
                   <div className="text-sm font-bold text-primary/65">{second.name}</div>
                 </div>
               </div>
@@ -203,7 +210,7 @@ const GameResults = () => {
               <div className="flex items-center gap-2.5">
                 <Avatar name={third.name} size="sm" />
                 <div>
-                  <div className="text-[9px] tracking-widest text-primary/30 uppercase">3rd</div>
+                  <div className="text-[9px] tracking-widest text-primary/30 uppercase">{ar ? "الثالث" : "3rd"}</div>
                   <div className="text-sm font-bold text-primary/65">{third.name}</div>
                 </div>
               </div>
@@ -215,7 +222,7 @@ const GameResults = () => {
         <button onClick={() => setPhase("results")}
           className="absolute bottom-5 right-6 text-[10px] tracking-[0.4em] text-primary/25 hover:text-primary/55 transition-colors uppercase"
           style={{ animation: "result-fade-in 0.4s 3.5s both", opacity: 0 }}>
-          Skip
+          {ar ? "تخطي" : "Skip"}
         </button>
       </div>
     );
@@ -234,21 +241,21 @@ const GameResults = () => {
           <div className="flex items-center gap-4">
             <button onClick={() => nav("/app")}
               className="flex items-center gap-1.5 px-4 py-2 rounded-lg border-2 border-[hsl(var(--nb-border))] bg-white text-primary text-[10px] tracking-[0.3em] uppercase font-bold shadow-[3px_3px_0_0_hsl(var(--nb-border))] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0_0_hsl(var(--nb-border))] transition-all">
-              <ArrowLeft className="h-3 w-3" />Dashboard
+              <ArrowLeft className="h-3 w-3" />{ar ? "لوحة التحكم" : "Dashboard"}
             </button>
             <div className="h-4 w-px bg-primary/25" />
             <div>
-              <div className="text-[10px] tracking-[0.5em] text-primary/60 uppercase mb-1">Results</div>
+              <div className="text-[10px] tracking-[0.5em] text-primary/60 uppercase mb-1">{ar ? "النتائج" : "Results"}</div>
               <h1 className="text-2xl md:text-3xl font-black tracking-tight text-primary leading-none">
-                {session?.quizzes?.title ?? "Game"}
+                {session?.quizzes?.title ?? (ar ? "اللعبة" : "Game")}
               </h1>
             </div>
           </div>
           <div className="flex items-center gap-5 shrink-0">
-            <Stat icon={<Clock className="h-3 w-3" />} label="Duration"
+            <Stat icon={<Clock className="h-3 w-3" />} label={ar ? "المدة" : "Duration"}
               value={`${stats.mm}:${String(stats.ss).padStart(2, "0")}`} />
-            <Stat icon={<Users className="h-3 w-3" />} label="Players" value={String(ranked.length)} />
-            <Stat icon={<Target className="h-3 w-3" />} label="Accuracy" value={pct(stats.avgAcc)} />
+            <Stat icon={<Users className="h-3 w-3" />} label={ar ? "اللاعبون" : "Players"} value={String(ranked.length)} />
+            <Stat icon={<Target className="h-3 w-3" />} label={ar ? "الدقة" : "Accuracy"} value={pct(stats.avgAcc)} />
           </div>
         </div>
 
@@ -260,7 +267,7 @@ const GameResults = () => {
               <div className="rounded-2xl border-2 border-[hsl(var(--nb-border))] bg-white p-7 flex flex-col items-center justify-center text-center gap-4 shadow-[5px_5px_0_0_hsl(var(--nb-border))]">
                 <div className="text-[10px] tracking-[0.5em] text-primary/70 uppercase flex items-center gap-2">
                   <Trophy className="h-3 w-3 text-amber-400" />
-                  Champion
+                  {ar ? "البطل" : "Champion"}
                 </div>
                 <Avatar name={winner.name} size="xl" />
                 <div className="text-2xl md:text-3xl font-black tracking-tight text-primary leading-none">
@@ -272,7 +279,7 @@ const GameResults = () => {
                     {fmt(winner.crypto)}
                   </div>
                 ) : (
-                  <div className="text-xs tracking-[0.35em] text-primary/80 uppercase font-bold">Last Standing</div>
+                  <div className="text-xs tracking-[0.35em] text-primary/80 uppercase font-bold">{ar ? "آخر الناجين" : "Last Standing"}</div>
                 )}
               </div>
             )}
@@ -294,7 +301,7 @@ const GameResults = () => {
                       ? <span className="font-black tabular-nums text-primary text-sm shrink-0">{fmt(s.crypto)}</span>
                       : <span className={cn("text-[10px] font-bold tracking-widest shrink-0",
                           s.eliminated ? "text-destructive/80" : "text-primary/80")}>
-                          {s.eliminated ? "OUT" : "ALIVE"}
+                          {s.eliminated ? (ar ? "خارج" : "OUT") : (ar ? "حي" : "ALIVE")}
                         </span>
                     }
                   </div>
@@ -316,13 +323,13 @@ const GameResults = () => {
                       ? "bg-white text-primary border-[hsl(var(--nb-border))] shadow-[3px_3px_0_0_hsl(var(--nb-border))]"
                       : "bg-white text-primary border-primary/30 shadow-[2px_2px_0_0_hsl(var(--nb-border)_/_0.3)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0_0_hsl(var(--nb-border)_/_0.3)]"
                   )}>
-                  {t === "rank" ? "Leaderboard" : "Questions"}
+                  {t === "rank" ? (ar ? "لوحة الصدارة" : "Leaderboard") : (ar ? "الأسئلة" : "Questions")}
                 </button>
               ))}
             </div>
             <button onClick={exportCsv}
               className="flex items-center gap-1.5 px-4 py-2 rounded-lg border-2 border-[hsl(var(--nb-border))] bg-white text-primary text-[10px] tracking-widest uppercase font-bold shadow-[3px_3px_0_0_hsl(var(--nb-border))] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0_0_hsl(var(--nb-border))] transition-all">
-              <Download className="h-3.5 w-3.5" />Export
+              <Download className="h-3.5 w-3.5" />{ar ? "تصدير" : "Export"}
             </button>
           </div>
 
@@ -332,12 +339,12 @@ const GameResults = () => {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-primary/25 bg-primary/10">
-                    {["#", "Player",
-                      isPointsMode ? "Points" : "Status",
-                      "Correct", "Accuracy",
-                      ...(mode === "crypto_rush" ? ["Hacks"] : []),
-                      ...(mode === "humansvszombies" ? ["Team"] : []),
-                      ...(mode === "dontlookdown" ? ["Height"] : []),
+                    {[ar ? "#" : "#", ar ? "اللاعب" : "Player",
+                      isPointsMode ? (ar ? "النقاط" : "Points") : (ar ? "الحالة" : "Status"),
+                      ar ? "صحيح" : "Correct", ar ? "الدقة" : "Accuracy",
+                      ...(mode === "crypto_rush" ? [ar ? "الاختراقات" : "Hacks"] : []),
+                      ...(mode === "humansvszombies" ? [ar ? "الفريق" : "Team"] : []),
+                      ...(mode === "dontlookdown" ? [ar ? "الارتفاع" : "Height"] : []),
                     ].map(h => (
                       <th key={h} className="px-4 py-3 text-[10px] tracking-widest text-primary/70 text-start first:text-start text-center first-of-type:text-start font-bold">
                         {h}
@@ -366,7 +373,7 @@ const GameResults = () => {
                           : <td className="px-4 py-3 text-center">
                               <span className={cn("text-[10px] font-bold tracking-widest",
                                 s.eliminated ? "text-destructive/80" : "text-primary")}>
-                                {s.eliminated ? "ELIMINATED" : "CHAMPION"}
+                                {s.eliminated ? (ar ? "أُقصي" : "ELIMINATED") : (ar ? "بطل" : "CHAMPION")}
                               </span>
                             </td>
                         }
@@ -383,7 +390,9 @@ const GameResults = () => {
                           <td className="px-4 py-3 text-center">
                             <span className={cn("text-[10px] font-bold tracking-widest uppercase",
                               s.team === "zombie" ? "text-emerald-600" : "text-blue-600")}>
-                              {s.team ?? "—"}
+                              {s.team === "zombie" ? (ar ? "زومبي" : "zombie")
+                                : s.team === "human" ? (ar ? "بشر" : "human")
+                                : "—"}
                             </span>
                           </td>
                         }
@@ -405,7 +414,7 @@ const GameResults = () => {
             <div className="space-y-3">
               {questions.length === 0 && (
                 <div className="rounded-xl border border-primary/18 py-16 text-center text-primary/30 text-sm">
-                  No question data available
+                  {ar ? "لا توجد بيانات أسئلة متاحة" : "No question data available"}
                 </div>
               )}
               {questions.map((q, idx) => {

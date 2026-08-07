@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -80,6 +81,8 @@ const TIMER_MAX_MS = 15_000;
 
 const DodgeballMonitor = ({ session, sessionId }: Props) => {
   const nav = useNavigate();
+  const { i18n } = useTranslation();
+  const ar = (session?.settings?.lang ?? i18n.language) === "ar";
   const [students, setStudents] = useState<any[]>([]);
   const [taps, setTaps]         = useState<any[]>([]);
   const [timerMs, setTimerMs]   = useState(0);
@@ -179,7 +182,7 @@ const DodgeballMonitor = ({ session, sessionId }: Props) => {
   };
 
   const endGame = async () => {
-    if (!confirm("End the game now?")) return;
+    if (!confirm(ar ? "إنهاء اللعبة الآن؟" : "End the game now?")) return;
     await supabase.from("game_sessions").update({ status: "finished", ended_at: new Date().toISOString() }).eq("id", sessionId);
     nav(`/app/games/${sessionId}/results`);
   };
@@ -216,14 +219,14 @@ const DodgeballMonitor = ({ session, sessionId }: Props) => {
       {/* Top bar */}
       <div className="absolute top-3 inset-x-3 z-20 flex items-center justify-between font-mono text-xs gap-3">
         <div className="text-muted-foreground">
-          CODE <span className="text-primary text-base font-black tracking-widest">{session.code}</span>
+          {ar ? "الرمز" : "CODE"} <span className="text-primary text-base font-black tracking-widest">{session.code}</span>
         </div>
         <div className="flex gap-2">
           <Button size="sm" variant="ghost" onClick={goFullscreen} className="text-primary hover:text-primary hover:bg-primary/10">
             <Maximize className="h-4 w-4" />
           </Button>
           <Button size="sm" onClick={endGame} className="bg-destructive hover:bg-destructive/90 text-destructive-foreground font-mono font-bold">
-            <Square className="h-4 w-4 me-1" />END
+            <Square className="h-4 w-4 me-1" />{ar ? "إنهاء" : "END"}
           </Button>
         </div>
       </div>
@@ -234,7 +237,7 @@ const DodgeballMonitor = ({ session, sessionId }: Props) => {
         <div className="overflow-y-auto">
           {students.length === 0 ? (
             <div className="flex items-center justify-center h-full font-mono text-2xl text-primary animate-pulse">
-              {"> WAITING FOR PLAYERS..."}
+              {ar ? "> في انتظار اللاعبين..." : "> WAITING FOR PLAYERS..."}
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -259,7 +262,7 @@ const DodgeballMonitor = ({ session, sessionId }: Props) => {
             }}>
             <div className="flex items-center justify-between mb-3">
               <span className="font-mono text-xs text-muted-foreground flex items-center gap-2">
-                <Timer className="h-3 w-3" /> TIMER CHALLENGE
+                <Timer className="h-3 w-3" /> {ar ? "تحدي المؤقت" : "TIMER CHALLENGE"}
               </span>
               {timerActive && <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />}
             </div>
@@ -305,13 +308,13 @@ const DodgeballMonitor = ({ session, sessionId }: Props) => {
                           style={{ color: arcColor }}>
                           {timerSec}s
                         </div>
-                        <div className="text-[10px] text-muted-foreground font-mono mt-1">TARGET 10s</div>
+                        <div className="text-[10px] text-muted-foreground font-mono mt-1">{ar ? "الهدف ١٠ث" : "TARGET 10s"}</div>
                       </div>
                     </div>
                   );
                 })()}
                 <div className="text-center text-xs text-muted-foreground font-mono">
-                  {taps.length} tap{taps.length !== 1 ? "s" : ""} in
+                  {ar ? `${taps.length} نقرة وردت` : `${taps.length} tap${taps.length !== 1 ? "s" : ""} in`}
                 </div>
                 <div className="space-y-1 max-h-32 overflow-y-auto">
                   {taps.map(tap => {
@@ -330,29 +333,29 @@ const DodgeballMonitor = ({ session, sessionId }: Props) => {
                   })}
                 </div>
                 <Button onClick={endTimer} className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-mono font-bold">
-                  END TIMER
+                  {ar ? "إنهاء المؤقت" : "END TIMER"}
                 </Button>
               </div>
             ) : winnerName ? (
               <div className="text-center space-y-2">
                 <Trophy className="h-10 w-10 mx-auto text-amber-400" />
                 <div className="font-mono font-black text-xl text-primary">{winnerName}</div>
-                <div className="text-xs text-muted-foreground font-mono">won the timer round — +1 crystal</div>
+                <div className="text-xs text-muted-foreground font-mono">{ar ? "فاز بجولة المؤقت — بلورة إضافية" : "won the timer round — +1 crystal"}</div>
                 <Button onClick={fireTimer} disabled={!canFireTimer}
                   className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-mono font-bold disabled:opacity-35">
                   <Zap className="h-4 w-4 me-1" />
-                  {canFireTimer ? "FIRE TIMER" : finalRound ? "DISABLED (FINAL ROUND)" : "NEED > 3 ALIVE"}
+                  {canFireTimer ? (ar ? "إطلاق المؤقت" : "FIRE TIMER") : finalRound ? (ar ? "معطل (الجولة الأخيرة)" : "DISABLED (FINAL ROUND)") : (ar ? "يلزم أكثر من ٣ أحياء" : "NEED > 3 ALIVE")}
                 </Button>
               </div>
             ) : (
               <div className="space-y-3">
                 <div className="text-sm text-muted-foreground font-mono">
-                  {alive.length <= 3 ? "Final round — timer disabled" : "Launch a surprise timer challenge"}
+                  {alive.length <= 3 ? (ar ? "الجولة الأخيرة — المؤقت معطل" : "Final round — timer disabled") : (ar ? "أطلق تحدي مؤقت مفاجئ" : "Launch a surprise timer challenge")}
                 </div>
                 <Button onClick={fireTimer} disabled={!canFireTimer}
                   className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-mono font-bold disabled:opacity-35">
                   <Zap className="h-4 w-4 me-1" />
-                  {canFireTimer ? "FIRE TIMER" : finalRound ? "DISABLED (FINAL ROUND)" : "NEED > 3 ALIVE"}
+                  {canFireTimer ? (ar ? "إطلاق المؤقت" : "FIRE TIMER") : finalRound ? (ar ? "معطل (الجولة الأخيرة)" : "DISABLED (FINAL ROUND)") : (ar ? "يلزم أكثر من ٣ أحياء" : "NEED > 3 ALIVE")}
                 </Button>
               </div>
             )}
@@ -363,17 +366,17 @@ const DodgeballMonitor = ({ session, sessionId }: Props) => {
             style={{ background: "hsl(255 40% 8% / 0.7)", backdropFilter: "blur(6px)" }}>
             <div className="text-center">
               <div className="text-3xl font-black text-primary tabular-nums">{alive.length}</div>
-              <div className="text-[10px] tracking-widest text-muted-foreground uppercase">Alive</div>
+              <div className="text-[10px] tracking-widest text-muted-foreground uppercase">{ar ? "أحياء" : "Alive"}</div>
             </div>
             <div className="h-10 w-px bg-border" />
             <div className="text-center">
               <div className="text-3xl font-black text-muted-foreground tabular-nums">{eliminated.length}</div>
-              <div className="text-[10px] tracking-widest text-muted-foreground uppercase">Out</div>
+              <div className="text-[10px] tracking-widest text-muted-foreground uppercase">{ar ? "خارج" : "Out"}</div>
             </div>
             <div className="h-10 w-px bg-border" />
             <div className="text-center">
               <div className="text-3xl font-black text-primary tabular-nums">{students.length}</div>
-              <div className="text-[10px] tracking-widest text-muted-foreground uppercase">Total</div>
+              <div className="text-[10px] tracking-widest text-muted-foreground uppercase">{ar ? "الإجمالي" : "Total"}</div>
             </div>
           </div>
         </div>

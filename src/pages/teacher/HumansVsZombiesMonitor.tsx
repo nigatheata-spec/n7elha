@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -39,6 +40,8 @@ interface Props { session: any; sessionId: string; }
 
 const HumansVsZombiesMonitor = ({ session, sessionId }: Props) => {
   const nav = useNavigate();
+  const { i18n } = useTranslation();
+  const ar = (session?.settings?.lang ?? i18n.language) === "ar";
   const [students, setStudents] = useState<any[]>([]);
   const [now, setNow] = useState(Date.now());
   const [ending, setEnding] = useState(false);
@@ -188,7 +191,7 @@ const HumansVsZombiesMonitor = ({ session, sessionId }: Props) => {
   }, [session?.status]);
 
   const endNow = async () => {
-    if (!session || !confirm("End the game now?")) return;
+    if (!session || !confirm(ar ? "إنهاء اللعبة الآن؟" : "End the game now?")) return;
     const winner = health.human >= health.zombie ? "humans" : "zombies";
     await supabase.from("game_sessions").update({
       status: "finished", ended_at: new Date().toISOString(),
@@ -209,7 +212,7 @@ const HumansVsZombiesMonitor = ({ session, sessionId }: Props) => {
     <div className="flex flex-col gap-2 min-h-0">
       <div className="flex items-center gap-1.5 text-xs font-black tracking-widest uppercase shrink-0" style={{ color: TEAM_COLOR[team] }}>
         {team === "human" ? <Users className="h-4 w-4" /> : <Biohazard className="h-4 w-4" />}
-        {team === "human" ? "Humans" : "Zombies"} ({list.length})
+        {team === "human" ? (ar ? "البشر" : "Humans") : (ar ? "الزومبي" : "Zombies")} ({list.length})
       </div>
       <div className="space-y-1.5 overflow-y-auto">
         {list.map((s, i) => (
@@ -233,18 +236,18 @@ const HumansVsZombiesMonitor = ({ session, sessionId }: Props) => {
         {/* Top bar */}
         <div className="flex items-center justify-between text-xs gap-3 shrink-0">
           <div className="text-muted-foreground">
-            CODE <span className="text-primary text-base font-black tracking-widest">{session?.code}</span>
+            {ar ? "الرمز" : "CODE"} <span className="text-primary text-base font-black tracking-widest">{session?.code}</span>
             <span className="mx-3 text-muted-foreground/30">|</span>
-            DAY <span className="font-bold text-foreground">{daysSurvived}/{WIN_DAYS}</span>
+            {ar ? "اليوم" : "DAY"} <span className="font-bold text-foreground">{daysSurvived}/{WIN_DAYS}</span>
             <span className="mx-3 text-muted-foreground/30">|</span>
-            <span className="font-bold">{daySecsLeft}s</span>
+            <span className="font-bold">{daySecsLeft}{ar ? "ث" : "s"}</span>
           </div>
           <div className="flex gap-2">
             <Button size="sm" variant="ghost" onClick={goFullscreen} className="text-primary hover:text-primary hover:bg-primary/10">
               <Maximize className="h-4 w-4" />
             </Button>
             <Button size="sm" onClick={endNow} className="bg-destructive hover:bg-destructive/90 text-white font-bold">
-              <Square className="h-4 w-4 me-1" />END
+              <Square className="h-4 w-4 me-1" />{ar ? "إنهاء" : "END"}
             </Button>
           </div>
         </div>
@@ -255,7 +258,7 @@ const HumansVsZombiesMonitor = ({ session, sessionId }: Props) => {
             <div key={t} className="flex items-center gap-3">
               <div className="flex items-center gap-1.5 w-24 shrink-0 text-xs font-black tracking-widest" style={{ color: TEAM_COLOR[t] }}>
                 {t === "human" ? <Users className="h-4 w-4" /> : <Biohazard className="h-4 w-4" />}
-                {t.toUpperCase()}
+                {t === "human" ? (ar ? "البشر" : "HUMAN") : (ar ? "الزومبي" : "ZOMBIE")}
               </div>
               <div className="relative h-4 flex-1 overflow-hidden rounded" style={{ background: "hsl(0 0% 10%)" }}>
                 <div className={cn("absolute inset-y-0 left-0 transition-all duration-500", health[t] < maxHealth[t] * 0.25 && "animate-pulse")}
@@ -287,7 +290,7 @@ const HumansVsZombiesMonitor = ({ session, sessionId }: Props) => {
         <div className="flex-1 grid grid-cols-2 gap-4 min-h-0">
           {students.length === 0 ? (
             <div className="col-span-2 flex items-center justify-center text-primary text-xl animate-pulse">
-              {"> WAITING FOR PLAYERS..."}
+              {ar ? "> في انتظار اللاعبين..." : "> WAITING FOR PLAYERS..."}
             </div>
           ) : (
             <>

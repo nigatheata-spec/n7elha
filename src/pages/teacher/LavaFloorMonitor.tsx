@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -41,6 +42,8 @@ interface Props { session: any; sessionId: string; }
 
 const LavaFloorMonitor = ({ session, sessionId }: Props) => {
   const nav = useNavigate();
+  const { i18n } = useTranslation();
+  const ar = (session?.settings?.lang ?? i18n.language) === "ar";
   const [students, setStudents]     = useState<any[]>([]);
   const [now, setNow]               = useState(Date.now());
   const [ending, setEnding]         = useState(false);
@@ -99,7 +102,9 @@ const LavaFloorMonitor = ({ session, sessionId }: Props) => {
           const b = p.new as Build;
           setTowerHeight(h => h + b.height_added);
           setRecentBuilds(list => [b, ...list].slice(0, 8));
-          toast.success(`${b.student_name} built a ${BLOCK_BY_KEY[b.block_type].labelEn}! +${b.height_added}`);
+          toast.success(ar
+            ? `${b.student_name} بنى ${BLOCK_BY_KEY[b.block_type].labelAr}! +${b.height_added}`
+            : `${b.student_name} built a ${BLOCK_BY_KEY[b.block_type].labelEn}! +${b.height_added}`);
         })
       .subscribe();
     const tick = setInterval(() => setNow(Date.now()), 500);
@@ -178,7 +183,7 @@ const LavaFloorMonitor = ({ session, sessionId }: Props) => {
   }, [session?.status]);
 
   const endNow = async () => {
-    if (!session || !confirm("End the game now?")) return;
+    if (!session || !confirm(ar ? "إنهاء اللعبة الآن؟" : "End the game now?")) return;
     await supabase.from("game_sessions").update({
       status: "finished", ended_at: new Date().toISOString(),
       settings: { ...settingsRef.current },
@@ -236,10 +241,10 @@ const LavaFloorMonitor = ({ session, sessionId }: Props) => {
       {/* Top bar */}
       <div className="absolute top-3 inset-x-3 z-20 flex items-center justify-between text-xs gap-3">
         <div className="text-muted-foreground">
-          CODE <span className="text-primary text-base font-black tracking-widest">{session?.code}</span>
+          {ar ? "الرمز" : "CODE"} <span className="text-primary text-base font-black tracking-widest">{session?.code}</span>
           <span className="mx-3 text-muted-foreground/30">|</span>
           <span className="font-mono font-bold" style={{ color: danger ? "#e74c3c" : "#aaa" }}>
-            {lavaDisplay.toFixed(1)}% LAVA
+            {lavaDisplay.toFixed(1)}% {ar ? "حمم" : "LAVA"}
           </span>
         </div>
         <div className={cn("font-black text-3xl tabular-nums transition-colors",
@@ -251,7 +256,7 @@ const LavaFloorMonitor = ({ session, sessionId }: Props) => {
             <Maximize className="h-4 w-4" />
           </Button>
           <Button size="sm" onClick={endNow} className="bg-destructive hover:bg-destructive/90 text-white font-bold">
-            <Square className="h-4 w-4 me-1" />END
+            <Square className="h-4 w-4 me-1" />{ar ? "إنهاء" : "END"}
           </Button>
         </div>
       </div>
@@ -260,7 +265,7 @@ const LavaFloorMonitor = ({ session, sessionId }: Props) => {
 
         {/* LAVA COLUMN — the main drama */}
         <div className="flex flex-col items-center gap-3 w-full lg:w-28">
-          <div className="text-xs text-muted-foreground tracking-widest uppercase">Lava</div>
+          <div className="text-xs text-muted-foreground tracking-widest uppercase">{ar ? "حمم" : "Lava"}</div>
 
           {/* Vertical lava bar */}
           <div className="pixel-progress flex-1 w-20 relative overflow-hidden bg-muted/20" style={{ borderColor: danger ? "hsl(14 72% 52%)" : "hsl(14 25% 30%)" }}>
@@ -294,7 +299,7 @@ const LavaFloorMonitor = ({ session, sessionId }: Props) => {
             }}>
             <PixelFlame className="h-3 w-3 me-1" color="currentColor" />+10%
           </Button>
-          <div className="text-[9px] text-muted-foreground/50 text-center leading-tight">spike<br/>lava</div>
+          <div className="text-[9px] text-muted-foreground/50 text-center leading-tight">{ar ? <>تفجير<br/>الحمم</> : <>spike<br/>lava</>}</div>
         </div>
 
         {/* RIGHT: leaderboard + stats */}
@@ -304,7 +309,7 @@ const LavaFloorMonitor = ({ session, sessionId }: Props) => {
           <div className="space-y-2 overflow-y-auto">
             {students.length === 0 ? (
               <div className="flex items-center justify-center h-full text-primary text-xl animate-pulse">
-                {"> WAITING FOR PLAYERS..."}
+                {ar ? "> في انتظار اللاعبين..." : "> WAITING FOR PLAYERS..."}
               </div>
             ) : (
               students.map((s, i) => {
@@ -358,29 +363,29 @@ const LavaFloorMonitor = ({ session, sessionId }: Props) => {
           <div className="pixel-panel border-2 border-primary/30 bg-primary/5 p-4 grid grid-cols-4 gap-4">
             <div className="text-center">
               <div className="text-2xl font-pixel font-black text-success">{students.reduce((a, s) => a + (s.correct_answers ?? 0), 0)}</div>
-              <div className="text-[10px] text-muted-foreground uppercase tracking-widest">correct</div>
+              <div className="text-[10px] text-muted-foreground uppercase tracking-widest">{ar ? "صحيح" : "correct"}</div>
             </div>
             <div className="text-center">
               <div className="flex items-center justify-center gap-1">
                 <PixelShield className="h-5 w-5" color="currentColor" style={{ color: "hsl(142 65% 42%)" }} />
                 <span className="text-2xl font-pixel font-black text-success">{fmt(totalBricks)}</span>
               </div>
-              <div className="text-[10px] text-muted-foreground uppercase tracking-widest">bricks left</div>
+              <div className="text-[10px] text-muted-foreground uppercase tracking-widest">{ar ? "طوب متبقٍّ" : "bricks left"}</div>
             </div>
             <div className="text-center">
               <div className="flex items-center justify-center gap-1">
                 <PixelHouse className="h-5 w-5" color="currentColor" style={{ color: "hsl(200 60% 55%)" }} />
                 <span className="text-2xl font-pixel font-black" style={{ color: "hsl(200 60% 65%)" }}>{fmt(towerHeight)}</span>
               </div>
-              <div className="text-[10px] text-muted-foreground uppercase tracking-widest">tower height</div>
+              <div className="text-[10px] text-muted-foreground uppercase tracking-widest">{ar ? "ارتفاع البرج" : "tower height"}</div>
             </div>
             <div className="text-center">
               {danger ? (
-                <div className="text-2xl font-pixel font-black text-primary animate-pulse">DANGER</div>
+                <div className="text-2xl font-pixel font-black text-primary animate-pulse">{ar ? "خطر" : "DANGER"}</div>
               ) : (
-                <div className="text-2xl font-pixel font-black text-success">SAFE</div>
+                <div className="text-2xl font-pixel font-black text-success">{ar ? "آمن" : "SAFE"}</div>
               )}
-              <div className="text-[10px] text-muted-foreground uppercase tracking-widest">status</div>
+              <div className="text-[10px] text-muted-foreground uppercase tracking-widest">{ar ? "الحالة" : "status"}</div>
             </div>
           </div>
         </div>

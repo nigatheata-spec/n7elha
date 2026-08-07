@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Square, Maximize, ChevronUp, Trophy } from "lucide-react";
@@ -13,6 +14,8 @@ interface Props { session: any; sessionId: string; }
 
 const DontLookDownMonitor = ({ session, sessionId }: Props) => {
   const nav = useNavigate();
+  const { i18n } = useTranslation();
+  const ar = (session?.settings?.lang ?? i18n.language) === "ar";
   const [students, setStudents] = useState<any[]>([]);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const peersRef  = useRef<Record<string, Peer>>({});
@@ -99,7 +102,7 @@ const DontLookDownMonitor = ({ session, sessionId }: Props) => {
   }, []);
 
   const endNow = async () => {
-    if (!session || !confirm("End the game now?")) return;
+    if (!session || !confirm(ar ? "إنهاء اللعبة الآن؟" : "End the game now?")) return;
     await supabase.from("game_sessions").update({
       status: "finished", ended_at: new Date().toISOString(),
     }).eq("id", sessionId);
@@ -122,18 +125,18 @@ const DontLookDownMonitor = ({ session, sessionId }: Props) => {
       <div className="h-full flex flex-col p-4 gap-3">
         <div className="flex items-center justify-between text-xs gap-3 shrink-0">
           <div style={{ color: "rgba(255,255,255,0.55)" }}>
-            CODE <span className="text-base font-black tracking-widest" style={{ color: "#7dd3fc" }}>{session?.code}</span>
+            {ar ? "الرمز" : "CODE"} <span className="text-base font-black tracking-widest" style={{ color: "#7dd3fc" }}>{session?.code}</span>
             <span className="mx-3 opacity-30">|</span>
-            <span className="font-bold">{students.length} {students.length === 1 ? "CLIMBER" : "CLIMBERS"}</span>
+            <span className="font-bold">{students.length} {ar ? "متسلق" : students.length === 1 ? "CLIMBER" : "CLIMBERS"}</span>
             <span className="mx-3 opacity-30">|</span>
-            SUMMIT <span className="font-bold">{SUMMIT_Y}m</span>
+            {ar ? "القمة" : "SUMMIT"} <span className="font-bold">{SUMMIT_Y}m</span>
           </div>
           <div className="flex gap-2">
             <Button size="sm" variant="ghost" onClick={goFullscreen} className="text-sky-300 hover:text-sky-300 hover:bg-sky-400/10">
               <Maximize className="h-4 w-4" />
             </Button>
             <Button size="sm" onClick={endNow} className="bg-red-600 hover:bg-red-700 text-white font-bold">
-              <Square className="h-4 w-4 me-1" />END
+              <Square className="h-4 w-4 me-1" />{ar ? "إنهاء" : "END"}
             </Button>
           </div>
         </div>
@@ -146,12 +149,12 @@ const DontLookDownMonitor = ({ session, sessionId }: Props) => {
           <div className="flex flex-col gap-2 min-h-0">
             <div className="flex items-center gap-1.5 text-xs font-black tracking-widest uppercase shrink-0"
               style={{ color: "#7dd3fc" }}>
-              <ChevronUp className="h-4 w-4" />Highest Climb
+              <ChevronUp className="h-4 w-4" />{ar ? "أعلى تسلّق" : "Highest Climb"}
             </div>
             <div className="space-y-1.5 overflow-y-auto">
               {ranked.length === 0 && (
                 <div className="text-center py-10 text-sm animate-pulse" style={{ color: "rgba(255,255,255,0.4)" }}>
-                  {"> WAITING FOR CLIMBERS..."}
+                  {ar ? "> بانتظار المتسلقين..." : "> WAITING FOR CLIMBERS..."}
                 </div>
               )}
               {ranked.map((s, i) => (
