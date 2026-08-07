@@ -71,7 +71,7 @@ const GameResults = () => {
 
   const mode = session?.settings?.mode ?? "crypto_rush";
   // classic and humansvszombies also score by accumulated points stored in the `crypto` column
-  const isPointsMode = mode === "crypto_rush" || mode === "classic" || mode === "humansvszombies";
+  const isPointsMode = mode === "crypto_rush" || mode === "classic" || mode === "humansvszombies" || mode === "dontlookdown";
   const hvzWinner = session?.settings?.winner as ("humans" | "zombies" | undefined);
 
   const ranked = useMemo(() => {
@@ -91,6 +91,10 @@ const GameResults = () => {
         if (a.team !== winningTeam && b.team === winningTeam) return 1;
         return (b.crypto ?? 0) - (a.crypto ?? 0);
       });
+    }
+    // Don't Look Down ranks by how high they climbed, not cash
+    if (mode === "dontlookdown") {
+      return [...students].sort((a, b) => (b.height_reached ?? 0) - (a.height_reached ?? 0));
     }
     return students;
   }, [students, mode, hvzWinner]);
@@ -333,6 +337,7 @@ const GameResults = () => {
                       "Correct", "Accuracy",
                       ...(mode === "crypto_rush" ? ["Hacks"] : []),
                       ...(mode === "humansvszombies" ? ["Team"] : []),
+                      ...(mode === "dontlookdown" ? ["Height"] : []),
                     ].map(h => (
                       <th key={h} className="px-4 py-3 text-[10px] tracking-widest text-primary/70 text-start first:text-start text-center first-of-type:text-start font-bold">
                         {h}
@@ -380,6 +385,11 @@ const GameResults = () => {
                               s.team === "zombie" ? "text-emerald-600" : "text-blue-600")}>
                               {s.team ?? "—"}
                             </span>
+                          </td>
+                        }
+                        {mode === "dontlookdown" &&
+                          <td className="px-4 py-3 text-center font-black tabular-nums text-primary">
+                            {s.height_reached ?? 0}m
                           </td>
                         }
                       </tr>

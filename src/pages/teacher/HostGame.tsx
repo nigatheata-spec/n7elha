@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
-import { Copy, Play, Users, Trash2, Zap, Heart, Skull, Timer, Trophy, Flame, ChevronLeft, Check, Minus, Plus, ListChecks, Biohazard } from "lucide-react";
+import { Copy, Play, Users, Trash2, Zap, Heart, Skull, Timer, Trophy, Flame, ChevronLeft, Check, Minus, Plus, ListChecks, Biohazard, ChevronUp } from "lucide-react";
 import { BitcoinIcon, StopwatchIcon, LavaBucketIcon, DynamiteIcon } from "@/components/game/icons";
 import { toast } from "sonner";
 
@@ -12,7 +12,7 @@ const genCode = () => {
   return Array.from({ length: 4 }, () => c[Math.floor(Math.random() * c.length)]).join("");
 };
 
-type GameMode = "crypto_rush" | "dodgeball" | "hotpotato" | "lavafloor" | "classic" | "humansvszombies";
+type GameMode = "crypto_rush" | "dodgeball" | "hotpotato" | "lavafloor" | "classic" | "humansvszombies" | "dontlookdown";
 
 const MODES: { id: GameMode; icon: React.ReactNode; label: string; labelAr: string; desc: string; descAr: string; accent: string; num: string }[] = [
   {
@@ -74,6 +74,16 @@ const MODES: { id: GameMode; icon: React.ReactNode; label: string; labelAr: stri
     descAr: "فريقان، شريطا صحة — عالج، طوّر، خرّب، انجُ",
     accent: "#4a7a3a",
     num: "05",
+  },
+  {
+    id: "dontlookdown",
+    icon: <ChevronUp className="h-6 w-6" strokeWidth={2} />,
+    label: "Don't Look Down",
+    labelAr: "لا تنظر للأسفل",
+    desc: "Climb a tower — answers are the fuel for every jump",
+    descAr: "تسلّق البرج — الإجابات هي وقود كل قفزة",
+    accent: "#2f6f8f",
+    num: "06",
   },
 ];
 
@@ -418,6 +428,19 @@ const HostGame = () => {
                   <div className="flex items-center gap-2 text-black/45">
                     <Biohazard className="h-4 w-4 shrink-0" style={{ color: selectedAccent }} />
                     <span>{ar ? "فريقان، نتيجة واحدة" : "Two teams, one outcome"}</span>
+                  </div>
+                </>
+              )}
+              {mode === "dontlookdown" && (
+                <>
+                  <p className="text-black/65 leading-relaxed">
+                    {ar
+                      ? "لعبة منصات جانبية. كل حركة وقفزة تستهلك طاقة، والطريقة الوحيدة لاستعادتها هي الإجابة الصحيحة. النقود تشتري خزانات طاقة أكبر وقفزة مزدوجة وسقوط الريشة. الفائز هو من يصل لأعلى ارتفاع."
+                      : "A side-scrolling climb. Running and jumping burn energy, and the only way to refill it is answering correctly. Cash buys bigger tanks, a double jump, and Feather Fall. Highest climber wins."}
+                  </p>
+                  <div className="flex items-center gap-2 text-black/45">
+                    <ChevronUp className="h-4 w-4 shrink-0" style={{ color: selectedAccent }} />
+                    <span>{ar ? "أجب لتتسلّق" : "Answer to climb"}</span>
                   </div>
                 </>
               )}
