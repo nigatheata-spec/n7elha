@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Download, Trophy, Check, Clock, Users, Target } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { computeCoverage, type CoverageRow, type Stroke } from "@/lib/paintFight";
 
 const fmt = (n: number) => n.toLocaleString();
 const pct = (n: number) => `${n.toFixed(0)}%`;
@@ -41,6 +42,7 @@ const GameResults = () => {
   const [responses, setResponses] = useState<any[]>([]);
   const [phase, setPhase]         = useState<"loading" | "cinematic" | "results">("loading");
   const [tab, setTab]             = useState<"rank" | "qa">("rank");
+  const [paintCoverage, setPaintCoverage] = useState<CoverageRow[]>([]);
   const nav = useNavigate();
   const { i18n } = useTranslation();
 
@@ -60,6 +62,12 @@ const GameResults = () => {
       ]);
       setStudents(ss ?? []);
       setResponses(rs ?? []);
+      if (s?.settings?.mode === "paintfight") {
+        const { data: strokes } = await supabase.from("paint_fight_strokes")
+          .select("student_id,hue,cell_indices").eq("session_id", sessionId).order("created_at", { ascending: true });
+        const totalCells = (s.settings.arenaCols ?? 0) * (s.settings.arenaRows ?? 0);
+        setPaintCoverage(computeCoverage((strokes ?? []) as Stroke[], totalCells));
+      }
       setPhase("cinematic");
     })();
   }, [sessionId]);
@@ -99,8 +107,15 @@ const GameResults = () => {
     if (mode === "dontlookdown") {
       return [...students].sort((a, b) => (b.height_reached ?? 0) - (a.height_reached ?? 0));
     }
+    // Paint Fight ranks by territory %, from the replayed paint log
+    if (mode === "paintfight") {
+      const pctById = new Map(paintCoverage.map(r => [r.studentId, r.pct]));
+      return [...students].sort((a, b) => (pctById.get(b.id) ?? 0) - (pctById.get(a.id) ?? 0));
+    }
     return students;
-  }, [students, mode, hvzWinner]);
+  }, [students, mode, hvzWinner, paintCoverage]);
+
+  const paintPctFor = (studentId: string) => paintCoverage.find(r => r.studentId === studentId)?.pct ?? 0;
 
   const stats = useMemo(() => {
     const total = responses.length;
@@ -117,11 +132,12 @@ const GameResults = () => {
 
   const exportCsv = () => {
     const header = ar
-      ? ["الترتيب","الاسم", mode === "crypto_rush" ? "العملة" : mode === "classic" ? "النقاط" : "الحالة", "صحيح","الإجمالي","الدقة%"]
-      : ["Rank","Name", mode === "crypto_rush" ? "Crypto" : mode === "classic" ? "Points" : "Status", "Correct","Total","Accuracy%"];
+      ? ["الترتيب","الاسم", mode === "paintfight" ? "المساحة%" : mode === "crypto_rush" ? "العملة" : mode === "classic" ? "النقاط" : "الحالة", "صحيح","الإجمالي","الدقة%"]
+      : ["Rank","Name", mode === "paintfight" ? "Territory%" : mode === "crypto_rush" ? "Crypto" : mode === "classic" ? "Points" : "Status", "Correct","Total","Accuracy%"];
     const rows = ranked.map((s, i) => {
       const a = s.total_answers ? (s.correct_answers / s.total_answers) * 100 : 0;
-      const metric = isPointsMode ? String(s.crypto) : (s.eliminated ? (ar ? "أُقصي" : "Eliminated") : (ar ? "نجا" : "Survived"));
+      const metric = mode === "paintfight" ? paintPctFor(s.id).toFixed(0)
+        : isPointsMode ? String(s.crypto) : (s.eliminated ? (ar ? "أُقصي" : "Eliminated") : (ar ? "نجا" : "Survived"));
       return [String(i + 1), s.name, metric, String(s.correct_answers), String(s.total_answers), a.toFixed(0)];
     });
     const csv = [header, ...rows].map(r => r.map(c => `"${c}"`).join(",")).join("\n");
@@ -273,7 +289,12 @@ const GameResults = () => {
                 <div className="text-2xl md:text-3xl font-black tracking-tight text-primary leading-none">
                   {winner.name}
                 </div>
-                {isPointsMode ? (
+                {mode === "paintfight" ? (
+                  <div className="text-3xl md:text-4xl font-black tabular-nums text-primary"
+                    style={{ textShadow: "0 0 24px hsl(16 100% 66% / 0.5)" }}>
+                    {pct(paintPctFor(winner.id))}
+                  </div>
+                ) : isPointsMode ? (
                   <div className="text-3xl md:text-4xl font-black tabular-nums text-primary"
                     style={{ textShadow: "0 0 24px hsl(16 100% 66% / 0.5)" }}>
                     {fmt(winner.crypto)}
@@ -297,7 +318,9 @@ const GameResults = () => {
                     <Avatar name={s.name} size="sm" />
                     <span className="font-bold text-primary flex-1 truncate min-w-0">{s.name}</span>
                     <span className="text-xs text-primary/65 tabular-nums shrink-0">{pct(acc)}</span>
-                    {isPointsMode
+                    {mode === "paintfight"
+                      ? <span className="font-black tabular-nums text-primary text-sm shrink-0">{pct(paintPctFor(s.id))}</span>
+                      : isPointsMode
                       ? <span className="font-black tabular-nums text-primary text-sm shrink-0">{fmt(s.crypto)}</span>
                       : <span className={cn("text-[10px] font-bold tracking-widest shrink-0",
                           s.eliminated ? "text-destructive/80" : "text-primary/80")}>
@@ -340,7 +363,8 @@ const GameResults = () => {
                 <thead>
                   <tr className="border-b border-primary/25 bg-primary/10">
                     {[ar ? "#" : "#", ar ? "اللاعب" : "Player",
-                      isPointsMode ? (ar ? "النقاط" : "Points") : (ar ? "الحالة" : "Status"),
+                      mode === "paintfight" ? (ar ? "المساحة" : "Territory")
+                        : isPointsMode ? (ar ? "النقاط" : "Points") : (ar ? "الحالة" : "Status"),
                       ar ? "صحيح" : "Correct", ar ? "الدقة" : "Accuracy",
                       ...(mode === "crypto_rush" ? [ar ? "الاختراقات" : "Hacks"] : []),
                       ...(mode === "humansvszombies" ? [ar ? "الفريق" : "Team"] : []),
@@ -368,7 +392,9 @@ const GameResults = () => {
                             {i === 0 && <Trophy className="h-3.5 w-3.5 text-amber-400 shrink-0" />}
                           </div>
                         </td>
-                        {isPointsMode
+                        {mode === "paintfight"
+                          ? <td className="px-4 py-3 text-center font-black tabular-nums text-primary">{pct(paintPctFor(s.id))}</td>
+                          : isPointsMode
                           ? <td className="px-4 py-3 text-center font-black tabular-nums text-primary">{fmt(s.crypto)}</td>
                           : <td className="px-4 py-3 text-center">
                               <span className={cn("text-[10px] font-bold tracking-widest",

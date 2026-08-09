@@ -94,10 +94,31 @@ export const DynamiteIcon = ({ className, size, strokeWidth, style }: IconProps)
   </svg>
 );
 
+// ── Paint Roller ──────────────────────────────────────────────────
+// Paint Fight — exact reference artwork: black handle ring + connecting bar,
+// black roller frame with a diagonal-striped core. Fixed fill colors by
+// design (not currentColor-themed like the other icons here).
+export const PaintRollerIcon = ({ className, size, style }: IconProps) => (
+  <svg className={cn(className)} style={{ width: size, height: size, ...style }} viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <pattern id="pf-diagonal-stripes" width="24" height="24" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+        <rect width="24" height="24" fill="#D85D44" />
+        <rect x="0" y="0" width="12" height="24" fill="#9C3A29" />
+      </pattern>
+    </defs>
+    <rect x="80" y="97" width="58" height="16" fill="#000000" />
+    <rect x="8" y="90" width="88" height="30" rx="10" ry="10" fill="#000000" />
+    <rect x="23" y="100" width="58" height="10" rx="5" ry="5" fill="#FFFFFF" />
+    <rect x="132" y="26" width="64" height="178" rx="6" ry="6" fill="#000000" />
+    <rect x="150" y="44" width="28" height="142" rx="2" ry="2" fill="url(#pf-diagonal-stripes)" />
+  </svg>
+);
+
 // ── Map mode key → icon (for shared lookup) ───────────────────────
 export const MODE_ICON = {
   crypto_rush: BitcoinIcon,
   dodgeball: StopwatchIcon,
   hotpotato: DynamiteIcon,
   lavafloor: LavaBucketIcon,
+  paintfight: PaintRollerIcon,
 } as const;

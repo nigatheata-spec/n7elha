@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import logoLight from "@/assets/logo-light.png";
+import { hueForJoinIndex } from "@/lib/paintFight";
 
 // ─── Password pools (Crypto Rush only) ─────────────────────────────────────
 // English pool: trendy internet-slang flavored, keeps the "hacker handle" feel
@@ -194,6 +195,10 @@ const Join = () => {
         const zombieCount = (existing ?? []).filter((s: any) => s.team === "zombie").length;
         payload.team = humanCount === zombieCount ? (Math.random() < 0.5 ? "human" : "zombie")
           : humanCount < zombieCount ? "human" : "zombie";
+      }
+      if (sess.settings?.mode === "paintfight") {
+        const { count } = await supabase.from("game_students").select("id", { count: "exact", head: true }).eq("session_id", sess.id);
+        payload.fight_hue = hueForJoinIndex(count ?? 0);
       }
       const { data: student, error } = await supabase
         .from("game_students")

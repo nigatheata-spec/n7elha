@@ -4,7 +4,8 @@ import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { Copy, Play, Users, Trash2, Zap, Heart, Skull, Timer, Trophy, Flame, ChevronLeft, Check, Minus, Plus, ListChecks, Biohazard, ChevronUp } from "lucide-react";
-import { BitcoinIcon, StopwatchIcon, LavaBucketIcon, DynamiteIcon } from "@/components/game/icons";
+import { BitcoinIcon, StopwatchIcon, LavaBucketIcon, DynamiteIcon, PaintRollerIcon } from "@/components/game/icons";
+import { computeArenaSize } from "@/lib/paintFight";
 import { toast } from "sonner";
 
 const genCode = () => {
@@ -12,7 +13,7 @@ const genCode = () => {
   return Array.from({ length: 4 }, () => c[Math.floor(Math.random() * c.length)]).join("");
 };
 
-type GameMode = "crypto_rush" | "dodgeball" | "hotpotato" | "lavafloor" | "classic" | "humansvszombies" | "dontlookdown";
+type GameMode = "crypto_rush" | "dodgeball" | "hotpotato" | "lavafloor" | "classic" | "humansvszombies" | "dontlookdown" | "paintfight";
 
 const MODES: { id: GameMode; icon: React.ReactNode; label: string; labelAr: string; desc: string; descAr: string; accent: string; num: string }[] = [
   {
@@ -84,6 +85,16 @@ const MODES: { id: GameMode; icon: React.ReactNode; label: string; labelAr: stri
     descAr: "تسلّق البرج — الإجابات هي وقود كل قفزة",
     accent: "#2f6f8f",
     num: "06",
+  },
+  {
+    id: "paintfight",
+    icon: <PaintRollerIcon className="h-6 w-6" strokeWidth={2} />,
+    label: "Paint Fight",
+    labelAr: "معركة الطلاء",
+    desc: "Free-for-all territory battle — answers refill your paint",
+    descAr: "معركة حرة على الأرض — الإجابات تعيد ملء طلائك",
+    accent: "#c2410c",
+    num: "07",
   },
 ];
 
@@ -231,11 +242,20 @@ const HostGame = () => {
 
   const startGame = async () => {
     if (!sessionId) return;
-    await supabase.from("game_sessions").update({
+    const patch: any = {
       status: "running",
       started_at: new Date().toISOString(),
       current_question_started_at: new Date().toISOString(),
-    }).eq("id", sessionId);
+    };
+    if (mode === "paintfight") {
+      // Arena size is fixed for the whole match at the moment of Start, computed
+      // from the confirmed roster — so it doesn't sprawl for 5 players or feel
+      // cramped for 20, and every client renders an identically-sized grid.
+      const { data: cur } = await supabase.from("game_sessions").select("settings").eq("id", sessionId).maybeSingle();
+      const { cols, rows } = computeArenaSize(students.length);
+      patch.settings = { ...(cur?.settings ?? {}), arenaCols: cols, arenaRows: rows };
+    }
+    await supabase.from("game_sessions").update(patch).eq("id", sessionId);
     navigate(`/app/games/${sessionId}/monitor`);
   };
 
@@ -441,6 +461,19 @@ const HostGame = () => {
                   <div className="flex items-center gap-2 text-black/45">
                     <ChevronUp className="h-4 w-4 shrink-0" style={{ color: selectedAccent }} />
                     <span>{ar ? "أجب لتتسلّق" : "Answer to climb"}</span>
+                  </div>
+                </>
+              )}
+              {mode === "paintfight" && (
+                <>
+                  <p className="text-black/65 leading-relaxed">
+                    {ar
+                      ? "كل طالب يتحرك بعصا تحكم افتراضية على أرض مشتركة ويطلي أثره بلونه الخاص. التحرك يستهلك طلاءً، والإجابة الصحيحة هي الطريقة الوحيدة لتعبئته. اجمع قوى الدفع لتتحرك أسرع أو تطلي أوسع أو ترش مساحة فورية. الفائز من يطلي أكبر مساحة عند انتهاء الوقت."
+                      : "Each student drives a virtual joystick around a shared arena, painting a trail in their own color. Moving burns paint, and the only way to refill it is a correct answer. Power-ups let you move faster, roll wider, or splash an instant burst. Most territory painted when time runs out wins."}
+                  </p>
+                  <div className="flex items-center gap-2 text-black/45">
+                    <PaintRollerIcon className="h-4 w-4 shrink-0" style={{ color: selectedAccent }} />
+                    <span>{ar ? "أجب لتملأ الطلاء" : "Answer to refill your paint"}</span>
                   </div>
                 </>
               )}

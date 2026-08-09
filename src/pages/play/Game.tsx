@@ -16,6 +16,7 @@ import LavaFloorGame from "./LavaFloorGame";
 import ClassicGame from "./ClassicGame";
 import HumansVsZombiesGame from "./HumansVsZombiesGame";
 import DontLookDownGame from "./DontLookDownGame";
+import PaintFightGame from "./PaintFightGame";
 import { playSelect, playCorrect, playWrong, playHackAlert, playGameOver, primeAudio } from "@/lib/sound";
 
 type Q = { id: string; text: string; options: string[]; correct_index: number; position: number };
@@ -260,6 +261,9 @@ const Game = () => {
   }
   if (session.settings?.mode === "dontlookdown" && studentId) {
     return <DontLookDownGame sessionId={sessionId!} studentId={studentId} />;
+  }
+  if (session.settings?.mode === "paintfight" && studentId) {
+    return <PaintFightGame sessionId={sessionId!} studentId={studentId} />;
   }
 
   return (
