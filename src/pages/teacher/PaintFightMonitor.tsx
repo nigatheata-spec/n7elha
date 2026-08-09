@@ -7,11 +7,11 @@ import { Square, Maximize, Trophy } from "lucide-react";
 import { CELL, PLAYER_RADIUS, POWERUP_KINDS, computeCoverage, xyOfCell, type CellOwner, type Stroke } from "@/lib/paintFight";
 import {
   resizeCanvas, drawArenaBackground, drawPlayerRoller,
-  drawNameTag, drawPowerup, hueFill, createPaintLayer, strokeTo, blitPaintLayer,
+  drawNameTag, drawPowerup, hueFill, createPaintLayer, strokeTo, stampCell, blitPaintLayer,
   rollerIconSize,
 } from "@/lib/paintFightRender";
 
-type Peer = { id: string; name: string; x: number; y: number; angle: number; hue: number; t: number };
+type Peer = { id: string; name: string; x: number; y: number; angle: number; hue: number; brushWidth?: number; t: number };
 type Powerup = { id: string; kind: "speed" | "roller" | "splash"; cell_index: number };
 
 const MAX_UNCLAIMED_POWERUPS = 3;
@@ -37,13 +37,26 @@ const PaintFightMonitor = ({ session, sessionId }: Props) => {
   const paintLayerRef = useRef<HTMLCanvasElement | null>(null);
   const lastPointRef  = useRef<Map<string, { x: number; y: number }>>(new Map());
 
-  // Same stroke-not-stamp approach as the student view — see paintFightRender.ts.
-  const paintStroke = (id: string, hue: number, x: number, y: number) => {
+  // Live position streams (peer broadcasts) connect with strokeTo — those
+  // points are genuinely path-adjacent. See PaintFightGame.tsx for why the
+  // cell-index log below must NOT use this same connecting approach.
+  const paintStroke = (id: string, hue: number, x: number, y: number, width = BRUSH_WIDTH) => {
     const layer = paintLayerRef.current;
     if (!layer) return;
     const last = lastPointRef.current.get(id);
-    strokeTo(layer, last?.x ?? x, last?.y ?? y, x, y, hue, BRUSH_WIDTH);
+    strokeTo(layer, last?.x ?? x, last?.y ?? y, x, y, hue, width);
     lastPointRef.current.set(id, { x, y });
+  };
+
+  // Reconstruct ownership from the append-only cell-index log — independent
+  // fixed-size dots per cell, not connected lines. A batch's cells arrive in
+  // grid-scan order, not path order, so chaining them with strokeTo drew
+  // chaotic lines fanning across the claim radius every flush ("the brush
+  // keeps expanding into a circle").
+  const stampOwnedCell = (hue: number, x: number, y: number) => {
+    const layer = paintLayerRef.current;
+    if (!layer) return;
+    stampCell(layer, x, y, hue, CELL);
   };
 
   // ── Data + live feeds ─────────────────────────────────────────────────────
@@ -65,7 +78,7 @@ const PaintFightMonitor = ({ session, sessionId }: Props) => {
         for (const idx of s.cell_indices) {
           ownerRef.current.set(idx, { studentId: s.student_id, hue: s.hue });
           const { x, y } = xyOfCell(idx, cols);
-          paintStroke(s.student_id, s.hue, x, y);
+          stampOwnedCell(s.hue, x, y);
         }
       }
       const { data: pu } = await supabase.from("paint_fight_powerups").select("*").eq("session_id", sessionId).is("claimed_by", null);
@@ -78,10 +91,20 @@ const PaintFightMonitor = ({ session, sessionId }: Props) => {
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "paint_fight_strokes", filter: `session_id=eq.${sessionId}` },
         (p: any) => {
           const row = p.new as Stroke;
+          // See PaintFightGame.tsx: a player whose position broadcasts are
+          // actively arriving already has a smooth live trail from
+          // strokeTo — re-stamping their just-claimed cells on top paints a
+          // fixed dot over an already-correct line every flush, bulging out
+          // as a bead ("the line turning into circles"). Only stamp when we
+          // have no live view of them (initial catch-up, or a quiet peer).
+          const peer = peersRef.current[row.student_id];
+          const isLiveTracked = peer && Date.now() - peer.t < 3000;
           for (const idx of row.cell_indices) {
             ownerRef.current.set(idx, { studentId: row.student_id, hue: row.hue });
-            const { x, y } = xyOfCell(idx, cols);
-            paintStroke(row.student_id, row.hue, x, y);
+            if (!isLiveTracked) {
+              const { x, y } = xyOfCell(idx, cols);
+              stampOwnedCell(row.hue, x, y);
+            }
           }
           setStrokes(prev => [...prev, row]);
         })
@@ -92,7 +115,7 @@ const PaintFightMonitor = ({ session, sessionId }: Props) => {
       .on("broadcast", { event: "pos" }, ({ payload }: any) => {
         if (!payload?.id) return;
         peersRef.current[payload.id] = { ...payload, t: Date.now() };
-        paintStroke(payload.id, payload.hue ?? 0, payload.x, payload.y);
+        paintStroke(payload.id, payload.hue ?? 0, payload.x, payload.y, payload.brushWidth ?? BRUSH_WIDTH);
       })
       .subscribe();
     return () => { supabase.removeChannel(ch); };
@@ -145,7 +168,7 @@ const PaintFightMonitor = ({ session, sessionId }: Props) => {
         const p = peersRef.current[id];
         if (p.t < cutoff) { delete peersRef.current[id]; continue; }
         const x = sx(p.x), y = sy(p.y);
-        drawPlayerRoller(ctx, x, y, p.angle ?? 0, p.hue ?? 0, rollerIconSize(BRUSH_WIDTH, scale));
+        drawPlayerRoller(ctx, x, y, p.angle ?? 0, p.hue ?? 0, rollerIconSize(p.brushWidth ?? BRUSH_WIDTH, scale));
         drawNameTag(ctx, x, y + 14 * scale, p.name ?? "", Math.max(0.65, scale));
       }
 

@@ -13,19 +13,23 @@ import {
 } from "@/lib/paintFight";
 import {
   resizeCanvas, drawArenaBackground, drawPlayerRoller,
-  drawNameTag, drawPowerup, hueFill, createPaintLayer, strokeTo, blitPaintLayer, fillSplash,
-  rollerIconSize,
+  drawNameTag, drawPowerup, hueFill, createPaintLayer, strokeTo, stampCell, fillSplash,
+  rollerIconSize, computeCamera, blitPaintLayerCamera, drawMinimap, drawSplashFx, type SplashFx,
 } from "@/lib/paintFightRender";
 
 type Q = { id: string; text: string; options: string[]; correct_index: number; image_url?: string };
 type Phase = "waiting" | "playing" | "done";
-type Peer = { id: string; name: string; x: number; y: number; angle: number; hue: number; t: number };
+type Peer = { id: string; name: string; x: number; y: number; angle: number; hue: number; brushWidth?: number; t: number };
 type Powerup = { id: string; kind: "speed" | "roller" | "splash"; cell_index: number };
 
 const PICKUP_RADIUS = 22;
 const FLUSH_INTERVAL = 0.18;
 const BROADCAST_INTERVAL = 0.07;
 const BRUSH_WIDTH = PLAYER_RADIUS * 2;
+// Fixed zoom for the local camera — screen size determines how much of the
+// arena is visible, not the other way around, same as paper.io.
+const PIXELS_PER_WORLD_UNIT = 3.2;
+const MINIMAP_W = 92, MINIMAP_H = 138, MINIMAP_MARGIN = 12;
 
 interface Props { sessionId: string; studentId: string; }
 
@@ -57,6 +61,7 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
   const localWriteAtRef = useRef(0);
   const meRef      = useRef<any>(null);
   const vectorRef  = useRef<JoystickVector>({ dx: 0, dy: 0, magnitude: 0 });
+  const splashFxRef = useRef<SplashFx[]>([]);
 
   const pRef = useRef({ x: 0, y: 0, angle: 0, paint: PAINT.start, speedUntil: 0, rollerUntil: 0 });
 
@@ -70,14 +75,33 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
 
   // Stroke a round-cap segment from this student's last known point to the
   // new one directly onto the persistent paint bitmap — real paint, not a
-  // shape re-stamped every frame. Used for self movement, peer broadcasts,
-  // and DB-log replay alike, so every source of truth draws identically.
+  // shape re-stamped every frame. Used ONLY for live position streams (self
+  // movement each physics tick, peer position broadcasts) where consecutive
+  // points are genuinely adjacent in time and space, so connecting them
+  // draws the actual path. Never use this for the cell-index log — see
+  // stampOwnedCell below.
   const paintStroke = (id: string, hue: number, x: number, y: number, width = BRUSH_WIDTH) => {
     const layer = paintLayerRef.current;
     if (!layer) return;
     const last = lastPointRef.current.get(id);
     strokeTo(layer, last?.x ?? x, last?.y ?? y, x, y, hue, width);
     lastPointRef.current.set(id, { x, y });
+  };
+
+  // Reconstruct ownership from the append-only cell-index log (initial
+  // history load + realtime INSERT echoes — including echoes of our own
+  // flushes, since postgres_changes delivers INSERTs to every subscriber,
+  // sender included). A single flush can carry a whole disc of cells claimed
+  // in one tick, in grid-scan order, not path order — connecting those
+  // centers with strokeTo lines (like live movement does) draws chaotic
+  // lines criss-crossing the disc every ~180ms, which is what looked like
+  // "the brush keeps expanding into a circle." Independent, fixed-size dots
+  // have no order to get wrong, and touch nothing in lastPointRef so they
+  // never disturb the live-movement stroke chains.
+  const stampOwnedCell = (hue: number, x: number, y: number) => {
+    const layer = paintLayerRef.current;
+    if (!layer) return;
+    stampCell(layer, x, y, hue, CELL);
   };
 
   // ── Initial load ────────────────────────────────────────────────────────
@@ -104,7 +128,7 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
         for (const idx of row.cell_indices) {
           ownerRef.current.set(idx, { studentId: row.student_id, hue: row.hue });
           const { x, y } = xyOfCell(idx, c);
-          paintStroke(row.student_id, row.hue, x, y);
+          stampOwnedCell(row.hue, x, y);
         }
       }
       const { data: pu } = await supabase.from("paint_fight_powerups").select("*").eq("session_id", sessionId).is("claimed_by", null);
@@ -124,10 +148,27 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
         })
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "paint_fight_strokes", filter: `session_id=eq.${sessionId}` },
         (p: any) => {
+          // Postgres delivers this INSERT to every subscriber, including the
+          // client that just wrote it — our own flushes echo straight back.
+          // A player we're already live-tracking (ourselves, always; a peer,
+          // if their position broadcasts are actively arriving) already has
+          // a fully-painted smooth trail from strokeTo — re-stamping their
+          // just-claimed cells on top paints a fixed-size dot directly over
+          // an already-correct line every ~180ms. Since that dot's radius is
+          // slightly larger than the live brush's, it reads as a bead
+          // bulging out of the line at each newly-claimed cell — "the line
+          // turning into circles." Only stamp for reconstruction when there
+          // genuinely isn't a live view of this player yet (initial catch-up
+          // load, or a peer whose broadcasts haven't reached us).
+          const sid = p.new.student_id;
+          const peer = peersRef.current[sid];
+          const isLiveTracked = sid === studentId || (peer && Date.now() - peer.t < 3000);
           for (const idx of p.new.cell_indices) {
-            ownerRef.current.set(idx, { studentId: p.new.student_id, hue: p.new.hue });
-            const { x, y } = xyOfCell(idx, cols);
-            paintStroke(p.new.student_id, p.new.hue, x, y);
+            ownerRef.current.set(idx, { studentId: sid, hue: p.new.hue });
+            if (!isLiveTracked) {
+              const { x, y } = xyOfCell(idx, cols);
+              stampOwnedCell(p.new.hue, x, y);
+            }
           }
         })
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "paint_fight_powerups", filter: `session_id=eq.${sessionId}` },
@@ -137,7 +178,7 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
       .on("broadcast", { event: "pos" }, ({ payload }: any) => {
         if (!payload?.id || payload.id === studentId) return;
         peersRef.current[payload.id] = { ...payload, t: Date.now() };
-        paintStroke(payload.id, payload.hue ?? 0, payload.x, payload.y);
+        paintStroke(payload.id, payload.hue ?? 0, payload.x, payload.y, payload.brushWidth ?? BRUSH_WIDTH);
       })
       .subscribe();
     chanRef.current = ch;
@@ -222,6 +263,7 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
                   pendingRef.current.add(idx);
                 }
                 if (paintLayerRef.current) fillSplash(paintLayerRef.current, cx, cy, POWERUP_DEFS.splash.radius, myHue);
+                splashFxRef.current.push({ x: cx, y: cy, radius: POWERUP_DEFS.splash.radius, startedAt: Date.now() });
               }
             }, () => {});
         }
@@ -231,12 +273,18 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
     const draw = () => {
       const { cssW, cssH } = resizeCanvas(canvas, ctx);
       const worldW = cols * CELL, worldH = rows * CELL;
-      const scale = Math.min(cssW / worldW, cssH / worldH);
-      const offX = (cssW - worldW * scale) / 2, offY = (cssH - worldH * scale) / 2;
+      const scale = PIXELS_PER_WORLD_UNIT;
+      const p = pRef.current;
+      // Fixed-zoom camera centered on the local player — a local view like
+      // paper.io, not the whole arena squeezed to fit the screen.
+      const cam = computeCamera(p.x, p.y, cssW, cssH, scale, worldW, worldH);
+      const offX = -(cam.x - cam.halfW) * scale, offY = -(cam.y - cam.halfH) * scale;
       const sx = (wx: number) => offX + wx * scale, sy = (wy: number) => offY + wy * scale;
 
       drawArenaBackground(ctx, cssW, cssH);
-      if (paintLayerRef.current) blitPaintLayer(ctx, paintLayerRef.current, offX, offY, scale);
+      if (paintLayerRef.current) blitPaintLayerCamera(ctx, paintLayerRef.current, cam, cssW, cssH, scale);
+
+      splashFxRef.current = splashFxRef.current.filter(fx => drawSplashFx(ctx, fx, scale, offX, offY));
 
       const pulse = (Math.sin(Date.now() / 220) + 1) / 2;
       for (const pu of powerups) {
@@ -249,16 +297,29 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
         const peer = peersRef.current[id];
         if (peer.t < cutoff) { delete peersRef.current[id]; continue; }
         const x = sx(peer.x), y = sy(peer.y);
-        drawPlayerRoller(ctx, x, y, peer.angle ?? 0, peer.hue ?? 0, rollerIconSize(BRUSH_WIDTH, scale));
+        drawPlayerRoller(ctx, x, y, peer.angle ?? 0, peer.hue ?? 0, rollerIconSize(peer.brushWidth ?? BRUSH_WIDTH, scale));
         drawNameTag(ctx, x, y + 16 * scale, peer.name ?? "", Math.max(0.7, scale));
       }
 
-      const p = pRef.current;
       const px = sx(p.x), py = sy(p.y);
       const myRollerActive = Date.now() < p.rollerUntil;
       const myBrushWidth = myRollerActive ? BRUSH_WIDTH * POWERUP_DEFS.roller.radiusMult : BRUSH_WIDTH;
       drawPlayerRoller(ctx, px, py, p.angle, myHue, rollerIconSize(myBrushWidth, scale), { frozen: p.paint <= 0 });
       drawNameTag(ctx, px, py + 16 * scale, meRef.current?.name ?? "", Math.max(0.7, scale));
+
+      // Corner overview so a zoomed-in local camera doesn't leave you lost.
+      if (paintLayerRef.current) {
+        const minimapPlayers = [{ x: p.x, y: p.y, hue: myHue }];
+        for (const id of Object.keys(peersRef.current)) {
+          const peer = peersRef.current[id];
+          if (peer.t >= cutoff) minimapPlayers.push({ x: peer.x, y: peer.y, hue: peer.hue ?? 0 });
+        }
+        drawMinimap(ctx, paintLayerRef.current, cam, worldW, worldH, minimapPlayers, {
+          x: cssW - MINIMAP_W - MINIMAP_MARGIN,
+          y: cssH - MINIMAP_H - MINIMAP_MARGIN,
+          w: MINIMAP_W, h: MINIMAP_H,
+        });
+      }
     };
 
     const frame = (t: number) => {
@@ -281,9 +342,13 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
       if (netAcc >= BROADCAST_INTERVAL) {
         netAcc = 0;
         const p = pRef.current;
+        const broadcastBrushWidth = Date.now() < p.rollerUntil ? BRUSH_WIDTH * POWERUP_DEFS.roller.radiusMult : BRUSH_WIDTH;
         chanRef.current?.send({
           type: "broadcast", event: "pos",
-          payload: { id: studentId, name: meRef.current?.name ?? "", x: Math.round(p.x), y: Math.round(p.y), angle: p.angle, hue: myHue },
+          payload: {
+            id: studentId, name: meRef.current?.name ?? "", x: Math.round(p.x), y: Math.round(p.y),
+            angle: p.angle, hue: myHue, brushWidth: broadcastBrushWidth,
+          },
         });
       }
       if (flushAcc >= FLUSH_INTERVAL) {

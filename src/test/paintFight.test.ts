@@ -5,9 +5,9 @@ describe("paintFight", () => {
   it("scales arena size up with more players, clamped at both ends", () => {
     const small = computeArenaSize(5);
     const big = computeArenaSize(20);
-    expect(small.cols).toBeGreaterThanOrEqual(16);
+    expect(small.cols).toBeGreaterThanOrEqual(40);
     expect(big.cols).toBeGreaterThan(small.cols);
-    expect(big.cols).toBeLessThanOrEqual(44);
+    expect(big.cols).toBeLessThanOrEqual(110);
   });
 
   it("assigns distinct hues by join order", () => {

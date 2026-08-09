@@ -17,7 +17,13 @@ export const PAINT = {
 };
 
 export const PLAYER_SPEED = 220;   // base px/s
-export const PLAYER_RADIUS = 9;    // brush footprint radius, logical px — must visually match the roller's drawn frame width (see rollerIconSize in paintFightRender.ts), or paint appears to bleed past the icon
+// Brush footprint radius, logical px. The roller icon's on-screen size is
+// *derived* from this (rollerIconSize in paintFightRender.ts) — grow this
+// number to grow the paint, and the icon grows right along with it,
+// matching exactly. Don't shrink this to chase a size mismatch; the icon
+// side already tracks it correctly, so a mismatch means this number is
+// wrong, not the icon.
+export const PLAYER_RADIUS = 20;
 
 export const POWERUP_DEFS = {
   speed:  { speedMult: 1.5, durationMs: 5000 },
@@ -28,10 +34,15 @@ export const POWERUP_DEFS = {
 export type PowerupKind = keyof typeof POWERUP_DEFS;
 export const POWERUP_KINDS: PowerupKind[] = ["speed", "roller", "splash"];
 
-/** Arena grid sized so 5 players isn't sprawling and 20+ isn't cramped. */
+/**
+ * Arena grid, sized to give a camera-followed player real room to roam
+ * (student view now shows a local zoomed window, not the whole map fit to
+ * screen — see computeCamera in paintFightRender.ts) while still scaling up
+ * for bigger rosters so it doesn't feel cramped at 20+ players.
+ */
 export const computeArenaSize = (playerCount: number) => {
   const n = Math.max(1, playerCount);
-  const cols = Math.round(clamp(14 * Math.sqrt(n / 6), 16, 44));
+  const cols = Math.round(clamp(34 * Math.sqrt(n / 6), 40, 110));
   const rows = Math.round(cols * 1.5); // portrait-ish, matches phone screens
   return { cols, rows };
 };

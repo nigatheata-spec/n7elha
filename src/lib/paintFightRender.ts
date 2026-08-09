@@ -73,22 +73,195 @@ export const strokeTo = (
   }
 };
 
-/** Paint a filled circular burst directly onto the layer — for the splash power-up's instant one-off blot. */
-export const fillSplash = (layer: HTMLCanvasElement, x: number, y: number, radius: number, hue: number) => {
+/**
+ * Stamp a single grid cell as an independent filled dot, sized to overlap its
+ * neighbors (radius > half the cell's diagonal) so a solid block of claimed
+ * cells reads as one seamless area with no gaps. Used only to reconstruct
+ * ownership from the append-only log (initial history load + realtime
+ * INSERT echoes) — never for live movement. That distinction matters: a
+ * single flush can carry a whole disc of cells claimed this tick in
+ * grid-scan order, and connecting those centers with strokeTo lines (like
+ * live movement does) draws chaotic lines criss-crossing the disc — visually
+ * a "circle that keeps expanding" every flush. Independent dots have no
+ * order to get wrong.
+ */
+export const stampCell = (layer: HTMLCanvasElement, x: number, y: number, hue: number, cellSize: number) => {
   const ctx = layer.getContext("2d");
   if (!ctx) return;
   ctx.fillStyle = hueFill(hue);
   ctx.beginPath();
-  ctx.arc(x, y, radius, 0, Math.PI * 2);
+  ctx.arc(x, y, cellSize * 0.62, 0, Math.PI * 2);
   ctx.fill();
 };
 
-/** Blit the accumulated paint layer onto the visible, scaled/letterboxed canvas. */
+/**
+ * Deterministic pseudo-random generator seeded from a world position, so the
+ * same splash always renders the same jagged silhouette (useful if a client
+ * needs to redraw/replay it) without needing to store the shape.
+ */
+const seededRandom = (seed: number) => {
+  let s = seed >>> 0;
+  return () => {
+    s = (s + 0x6D2B79F5) >>> 0;
+    let t = s;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+};
+
+/**
+ * Paint an irregular ink-splatter blot directly onto the layer — for the
+ * splash power-up's instant one-off burst. A real splash isn't a disc: it's
+ * a ragged central blob with a scatter of separate droplets flung outward.
+ * Permanent (painted straight onto the persistent layer), so it stays part
+ * of the player's territory exactly like a stroke does.
+ */
+export const fillSplash = (layer: HTMLCanvasElement, x: number, y: number, radius: number, hue: number) => {
+  const ctx = layer.getContext("2d");
+  if (!ctx) return;
+  const rand = seededRandom((x * 73856093) ^ (y * 19349663));
+  ctx.fillStyle = hueFill(hue);
+
+  // Ragged central blob: a closed loop of points at varying radii, smoothed
+  // through their midpoints so the outline is organic rather than starry.
+  const spikes = 12;
+  const pts: { x: number; y: number }[] = [];
+  for (let i = 0; i < spikes; i++) {
+    const a = (i / spikes) * Math.PI * 2;
+    const r = radius * (0.55 + rand() * 0.55);
+    pts.push({ x: x + Math.cos(a) * r, y: y + Math.sin(a) * r });
+  }
+  ctx.beginPath();
+  const mid = (a: { x: number; y: number }, b: { x: number; y: number }) => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
+  const start = mid(pts[pts.length - 1], pts[0]);
+  ctx.moveTo(start.x, start.y);
+  for (let i = 0; i < pts.length; i++) {
+    const next = pts[(i + 1) % pts.length];
+    const m = mid(pts[i], next);
+    ctx.quadraticCurveTo(pts[i].x, pts[i].y, m.x, m.y);
+  }
+  ctx.closePath();
+  ctx.fill();
+
+  // Flung droplets, scattered around the outside of the main blob.
+  const dropletCount = 7;
+  for (let i = 0; i < dropletCount; i++) {
+    const a = rand() * Math.PI * 2;
+    const dist = radius * (0.85 + rand() * 0.55);
+    const dr = radius * (0.07 + rand() * 0.12);
+    ctx.beginPath();
+    ctx.arc(x + Math.cos(a) * dist, y + Math.sin(a) * dist, dr, 0, Math.PI * 2);
+    ctx.fill();
+  }
+};
+
+export interface SplashFx { x: number; y: number; radius: number; startedAt: number; }
+const SPLASH_FX_DURATION_MS = 260;
+
+/** Brief transient flash on the overlay (not the paint layer) that reads as the moment of impact — separate from the permanent blot painted by fillSplash. Returns false once expired so callers can drop it. */
+export const drawSplashFx = (
+  ctx: CanvasRenderingContext2D, fx: SplashFx, scale: number, offX: number, offY: number,
+): boolean => {
+  const elapsed = Date.now() - fx.startedAt;
+  if (elapsed > SPLASH_FX_DURATION_MS) return false;
+  const t = elapsed / SPLASH_FX_DURATION_MS;
+  const ease = 1 - Math.pow(1 - t, 3);
+  const x = offX + fx.x * scale, y = offY + fx.y * scale;
+  ctx.save();
+  ctx.globalAlpha = (1 - t) * 0.5;
+  ctx.fillStyle = "#ffffff";
+  ctx.beginPath();
+  ctx.arc(x, y, fx.radius * scale * (0.25 + ease * 0.85), 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+  return true;
+};
+
+/** Blit the accumulated paint layer onto the visible, scaled/letterboxed canvas — the whole arena, used by the teacher overview. */
 export const blitPaintLayer = (
   ctx: CanvasRenderingContext2D, layer: HTMLCanvasElement,
   offX: number, offY: number, scale: number,
 ) => {
   ctx.drawImage(layer, offX, offY, layer.width * scale, layer.height * scale);
+};
+
+export interface Camera { x: number; y: number; halfW: number; halfH: number; }
+
+/**
+ * A player's on-screen camera, centered on them at a fixed zoom rather than
+ * shrinking the whole arena to fit — the paper.io-style "local view", not a
+ * bird's-eye map. Clamped so the visible window never shows past the arena
+ * edge (unless the arena itself is smaller than the window, an edge case for
+ * tiny lobbies).
+ */
+export const computeCamera = (
+  px: number, py: number, cssW: number, cssH: number, scale: number, worldW: number, worldH: number,
+): Camera => {
+  const halfW = cssW / scale / 2, halfH = cssH / scale / 2;
+  const clampAxis = (v: number, half: number, worldLen: number) =>
+    worldLen <= half * 2 ? worldLen / 2 : Math.max(half, Math.min(worldLen - half, v));
+  return { x: clampAxis(px, halfW, worldW), y: clampAxis(py, halfH, worldH), halfW, halfH };
+};
+
+/** Blit only the camera's visible slice of the paint layer, at a fixed zoom — the student's local view. */
+export const blitPaintLayerCamera = (
+  ctx: CanvasRenderingContext2D, layer: HTMLCanvasElement, cam: Camera, cssW: number, cssH: number, scale: number,
+) => {
+  const srcX = Math.max(0, cam.x - cam.halfW), srcY = Math.max(0, cam.y - cam.halfH);
+  const srcW = Math.min(layer.width - srcX, cam.halfW * 2), srcH = Math.min(layer.height - srcY, cam.halfH * 2);
+  if (srcW <= 0 || srcH <= 0) return;
+  const destX = (srcX - (cam.x - cam.halfW)) * scale, destY = (srcY - (cam.y - cam.halfH)) * scale;
+  ctx.drawImage(layer, srcX, srcY, srcW, srcH, destX, destY, srcW * scale, srcH * scale);
+};
+
+/**
+ * Small corner overview of the whole arena — the shrunk full-map paper.io
+ * keeps onscreen so a zoomed-in local camera doesn't leave players lost.
+ * Draws the painted territory at a glance, every player as a dot, and a
+ * rectangle marking the current camera's visible window.
+ */
+export const drawMinimap = (
+  ctx: CanvasRenderingContext2D, layer: HTMLCanvasElement, cam: Camera,
+  worldW: number, worldH: number,
+  players: { x: number; y: number; hue: number }[],
+  box: { x: number; y: number; w: number; h: number },
+) => {
+  ctx.save();
+  ctx.fillStyle = "rgba(20,16,10,0.55)";
+  roundRect(ctx, box.x, box.y, box.w, box.h, 8);
+  ctx.fill();
+  ctx.strokeStyle = "rgba(255,255,255,0.35)";
+  ctx.lineWidth = 1.5;
+  roundRect(ctx, box.x, box.y, box.w, box.h, 8);
+  ctx.stroke();
+
+  ctx.beginPath();
+  roundRect(ctx, box.x + 3, box.y + 3, box.w - 6, box.h - 6, 6);
+  ctx.clip();
+  const mScale = Math.min((box.w - 6) / worldW, (box.h - 6) / worldH);
+  const mOffX = box.x + 3 + ((box.w - 6) - worldW * mScale) / 2;
+  const mOffY = box.y + 3 + ((box.h - 6) - worldH * mScale) / 2;
+  ctx.fillStyle = PF_PALETTE.bg;
+  ctx.fillRect(mOffX, mOffY, worldW * mScale, worldH * mScale);
+  ctx.drawImage(layer, mOffX, mOffY, worldW * mScale, worldH * mScale);
+
+  // camera viewport rectangle
+  ctx.strokeStyle = "rgba(255,255,255,0.85)";
+  ctx.lineWidth = 1.2;
+  ctx.strokeRect(
+    mOffX + (cam.x - cam.halfW) * mScale, mOffY + (cam.y - cam.halfH) * mScale,
+    cam.halfW * 2 * mScale, cam.halfH * 2 * mScale,
+  );
+
+  // player dots
+  for (const p of players) {
+    ctx.fillStyle = hueFill(p.hue);
+    ctx.beginPath();
+    ctx.arc(mOffX + p.x * mScale, mOffY + p.y * mScale, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
 };
 
 /**
@@ -104,7 +277,13 @@ export const drawPlayerRoller = (
   opts: { frozen?: boolean; alpha?: number } = {},
 ) => {
   const s = size / 200; // matches the reference artwork's 200x200 viewBox
-  const cx = 102, cy = 115; // artwork's approximate visual center — rotation pivot
+  // Pivot on the striped core's center (x:150-178 → mid 164, y:44-186 → mid
+  // 115) — the part that's actually colored and lays down paint — not the
+  // handle. (x,y) is always exactly where paint is being stroked, so the
+  // pivot has to be the drum, otherwise the drum renders ~62 viewBox units
+  // away from the point it's supposedly painting, and the trail visibly
+  // trails off from underneath the handle instead of the roller head.
+  const cx = 164, cy = 115;
   const ink = opts.frozen ? "#4b5563" : "#000000";
 
   // grounding shadow, unrotated
@@ -162,15 +341,24 @@ export const drawPlayerRoller = (
   ctx.restore();
 };
 
-// The roller's black frame (roundRect(132,26,64,178,...) below) is the part
-// that visually reads as "the brush" — its width is 64 of the artwork's 200
-// viewBox units. Size the drawn icon so that, once scaled to screen, this
-// frame is exactly as wide as the world-space paint stroke it's laying down.
-// Otherwise the icon looks small while paint balloons out past it.
+// A stroke's "width" (BRUSH_WIDTH/strokeTo's lineWidth) is measured
+// PERPENDICULAR to the direction of travel. Local +x in this function is the
+// travel direction (that's the axis `angle` rotates onto), so the drum
+// dimension that corresponds to stroke width is its LOCAL-Y extent — the
+// core's height (roundRect(150,44,28,142,...) above spans y:44..186, a
+// 142-unit run crosswise to travel), not its local-x width (28, the drum's
+// depth/thickness viewed from the side, irrelevant to stroke width). Size
+// the icon so that, once scaled to screen, this crosswise extent is exactly
+// as wide as the world-space paint stroke — anchoring on the depth instead
+// (an easy axis mixup) leaves the drum looking 2-3x wider than the trail no
+// matter how "correctly" the depth is matched. No upper cap: the camera
+// runs at a fixed zoom (not a shrink-to-fit scale that could blow up), so
+// this must stay free to grow — the giant roller power-up doubles
+// brushWidth and needs the icon to visibly double with it.
 const ROLLER_VIEWBOX = 200;
-const ROLLER_FRAME_WIDTH = 64;
+const ROLLER_CORE_LENGTH = 142;
 export const rollerIconSize = (brushWidth: number, scale: number) =>
-  Math.max(20, Math.min(110, (brushWidth * ROLLER_VIEWBOX / ROLLER_FRAME_WIDTH) * scale));
+  Math.max(20, (brushWidth * ROLLER_VIEWBOX / ROLLER_CORE_LENGTH) * scale);
 
 const roundRect = (ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) => {
   ctx.beginPath();
