@@ -1,8 +1,7 @@
 import { useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, Navigate, useLocation } from "react-router-dom";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Notifications } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import "@/lib/i18n";
 import { AuthProvider } from "@/lib/auth";
@@ -49,8 +48,7 @@ const AppContent = () => {
     <>
       <div id="app-scan-sweep" className="scan-sweep" style={{ "--sweep-color": getSweepColor() } as React.CSSProperties} />
       <div className="scan-sweep-fade">
-        <Toaster />
-        <Sonner />
+        <Notifications />
         <LangTransitionOverlay />
         <AuthProvider>
           <Routes>

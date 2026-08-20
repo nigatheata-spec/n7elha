@@ -5,7 +5,7 @@ import { Logo } from "@/components/Logo";
 import logoLight from "@/assets/logo-light.png";
 import { LangToggle } from "@/components/LangToggle";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/sonner";
 import { z } from "zod";
 import { Loader2 } from "lucide-react";
 
@@ -67,8 +67,7 @@ const Auth = () => {
           }
           throw error;
         }
-        toast.success(t("welcome_back"));
-        if (data.session) window.location.assign("/app");
+        if (data.session) window.location.assign("/app"); // redirect is instant — a toast would be gone before it's read
         else toast.info("Check your email to confirm");
       } else {
         const { error, data } = await supabase.auth.signInWithPassword({ email, password });

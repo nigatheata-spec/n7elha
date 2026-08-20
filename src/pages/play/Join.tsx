@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/sonner";
 import { cn } from "@/lib/utils";
 import logoLight from "@/assets/logo-light.png";
 import { hueForJoinIndex } from "@/lib/paintFight";

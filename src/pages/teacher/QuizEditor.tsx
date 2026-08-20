@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Plus, Trash2, Sparkles, Upload, Save, Check, ChevronDown, Image as ImageIcon, X, Wand2 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/sonner";
 
 type Q = { id?: string; text: string; options: string[]; correct_index: number; difficulty: "easy"|"medium"|"hard"; image_url?: string | null };
 
@@ -22,7 +22,8 @@ const QuizEditor = () => {
   const [params] = useSearchParams();
   const aiMode = params.get("ai") === "1";
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const ar = i18n.language === "ar";
   const { user } = useAuth();
 
   const [title, setTitle] = useState("");
@@ -82,8 +83,7 @@ const QuizEditor = () => {
       if (isImage) {
         const url = await fileToDataUrl(file);
         setDocImages(imgs => [...imgs, url]);
-        toast.success(`${file.name} ✓`);
-        return;
+        return; // the file chip appearing is the confirmation
       }
       let text = "";
       if (ext === "txt" || ext === "md") {
@@ -103,8 +103,7 @@ const QuizEditor = () => {
         text = await file.text().catch(() => "");
       }
       setDocText(text.slice(0, 30000));
-      toast.success(`${file.name} ✓`);
-    } catch (e: any) {
+      } catch (e: any) {
       toast.error(e.message || "Error");
     } finally {
       setUploading(false);
@@ -119,8 +118,7 @@ const QuizEditor = () => {
       const { error } = await supabase.storage.from("question-images").upload(path, file, { upsert: false, contentType: file.type });
       if (error) throw error;
       const { data } = supabase.storage.from("question-images").getPublicUrl(path);
-      updateQ(i, { image_url: data.publicUrl });
-      toast.success("✓");
+      updateQ(i, { image_url: data.publicUrl }); // the image rendering inline is the confirmation
     } catch (e: any) {
       toast.error(e.message || "Error");
     } finally {
@@ -145,8 +143,7 @@ const QuizEditor = () => {
       const { error: upErr } = await supabase.storage.from("question-images").upload(path, blob, { contentType: blob.type || "image/png" });
       if (upErr) throw upErr;
       const { data: pub } = supabase.storage.from("question-images").getPublicUrl(path);
-      updateQ(i, { image_url: pub.publicUrl });
-      toast.success("✓");
+      updateQ(i, { image_url: pub.publicUrl }); // the image rendering inline is the confirmation
     } catch (e: any) {
       toast.error(e.message || "Error");
     } finally {
@@ -178,7 +175,7 @@ const QuizEditor = () => {
       if (!title && data?.title) setTitle(data.title);
       setSource("ai");
       setShowAI(false);
-      toast.success(`${qs.length} ✓`);
+      
     } catch (e: any) {
       toast.error(e.message || "Error");
     } finally {
@@ -210,8 +207,7 @@ const QuizEditor = () => {
       }));
       const { error } = await supabase.from("questions").insert(rows);
       if (error) throw error;
-      toast.success("✓");
-      navigate(`/app/quizzes`);
+      navigate(`/app/quizzes`); // landing back on the list with the new card is the confirmation
     } catch (e: any) {
       toast.error(e.message || "Error");
     } finally {

@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/sonner";
 
 const PHRASES = {
   en: [
@@ -137,8 +137,7 @@ const Dashboard = () => {
       const { error } = await supabase.storage.from("question-images").upload(path, file, { upsert: false, contentType: file.type });
       if (error) throw error;
       const { data } = supabase.storage.from("question-images").getPublicUrl(path);
-      updateDraftQ(i, { image_url: data.publicUrl });
-      toast.success("✓");
+      updateDraftQ(i, { image_url: data.publicUrl }); // the image rendering inline is the confirmation
     } catch (e: any) {
       toast.error(e.message || "Error");
     } finally {

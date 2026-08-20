@@ -6,7 +6,7 @@ import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Plus, Sparkles, Play, Trash2, FileQuestion } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/sonner";
 
 type Quiz = {
   id: string; title: string; subject: string | null; grade_level: string | null;
@@ -14,7 +14,8 @@ type Quiz = {
 };
 
 const Quizzes = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const ar = i18n.language === "ar";
   const { user } = useAuth();
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [counts, setCounts] = useState<Record<string, number>>({});
@@ -38,10 +39,9 @@ const Quizzes = () => {
   useEffect(() => { load(); }, [user]);
 
   const remove = async (id: string) => {
-    if (!confirm("?")) return;
+    if (!confirm(ar ? "حذف هذا الاختبار نهائياً؟" : "Delete this quiz permanently?")) return;
     await supabase.from("quizzes").delete().eq("id", id);
-    toast.success("OK");
-    load();
+    load(); // the card disappearing from the grid is the confirmation
   };
 
   return (

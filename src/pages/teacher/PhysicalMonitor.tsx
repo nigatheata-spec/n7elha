@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import QrScanner from "qr-scanner";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/sonner";
 import { Check, ChevronRight, QrCode, Square } from "lucide-react";
 import { SQUARE_TYPES, parseKitQR, parseSquareQR, dispensePhysicalQuestion, type SquareType, type PhysicalQuestion } from "@/lib/physicalGames";
 
@@ -89,8 +89,7 @@ const PhysicalMonitor = ({ session, sessionId }: Props) => {
       }
       await supabase.from("game_sessions").update({ kit_id: kid }).eq("id", sessionId);
       setKitId(kid);
-      setPhase("ready");
-      toast.success(ar ? `متصل باللوحة ${kid}` : `Connected to kit ${kid}`);
+      setPhase("ready"); // the Connected pill on the ready screen says this already
     } finally {
       setBusy(false);
     }

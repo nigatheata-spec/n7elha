@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/sonner";
 import { Store, Syringe, Wind, Zap, Users, Biohazard, Snowflake, TrendingUp, Lock, ArrowUpCircle, Crosshair, Coins, CloudFog } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";

@@ -6,7 +6,7 @@ import { useAuth } from "@/lib/auth";
 import { Copy, Play, Users, Trash2, Zap, Heart, Skull, Timer, Trophy, Flame, ChevronLeft, Check, Minus, Plus, ListChecks, Biohazard, ChevronUp, QrCode } from "lucide-react";
 import { BitcoinIcon, StopwatchIcon, LavaBucketIcon, DynamiteIcon, PaintRollerIcon } from "@/components/game/icons";
 import { computeArenaSize } from "@/lib/paintFight";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/sonner";
 
 const genCode = () => {
   const c = "0123456789";
@@ -239,8 +239,7 @@ const HostGame = () => {
       }
       if (error) throw error;
       setCode(tryCode);
-      setSessionId(data.id);
-      toast.success(ar ? "تم فتح الردهة" : "Lobby opened");
+      setSessionId(data.id); // the roster/cancel/start panel appearing is the confirmation
     } catch (e: any) { toast.error(e.message); }
   };
 
@@ -293,7 +292,7 @@ const HostGame = () => {
     setSessionId(null);
     setStudents([]);
     setCode(genCode()); // the old code is now taken forever by the cancelled row — never reuse it
-    toast.success(ar ? "تم إغلاق الردهة" : "Lobby cancelled");
+    // panel collapsing back to "Open lobby" is the confirmation
   };
 
   const removeStudent = async (id: string) => {
