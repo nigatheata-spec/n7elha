@@ -38,6 +38,7 @@ supabase secrets set KEY=value                      # Set edge function secrets
 - **Humans vs Zombies** (`humansvszombies`) — two teams, two health bars. Correct answers fund team upgrades (`humansVsZombies.ts`: income tiers, streak-drain protection); heal, upgrade, sabotage, survive.
 - **Don't Look Down** (`dontlookdown`) — 2D parkour platformer (`dontLookDown.ts`). Answers fuel an energy meter that's spent on movement and jumps; climb a tower, respawn at your last checkpoint if you fall.
 - **Paint Fight** (`paintfight`) — free-for-all territory painting arena (`paintFight.ts` / `paintFightRender.ts`). Players move with a virtual joystick, leaving a paint trail in their color; a paint bucket drains on movement and refills on correct answers. Power-ups: speed, giant roller, splash. Real-time synced via an append-only stroke log over Supabase (`paint_fight_strokes`), replayed by every client — see that file's header comment for why cell-index batches are logged instead of raw pixels.
+- **Physical Games** (`physical`) — printed board + QR scans, no student devices needed. One shared device (teacher's phone/tablet) scans the board's kit QR once to connect (`kits` table, manually seeded — no admin UI), then scans whichever of the 6 repeated square-type QRs a team lands on (`src/lib/physicalGames.ts`: green/white/red = easy/medium/hard, teal = rest, yellow = double, `?` = wildcard random difficulty) to pull the next unused question of that difficulty from the quiz's own `questions` table, tracked per-session in `physical_used_questions` and reshuffled once exhausted. Question-dispenser only — no live scoring/leaderboard, scoring happens on the physical board. Camera scanning via `qr-scanner`, with a manual text-entry fallback for when camera access fails. `HostGame.tsx` skips the normal lobby/room-code flow for this mode entirely (`startPhysical` creates the session directly as `running`).
 
 Several of the newer modes (Lava Floor, Humans vs Zombies, Don't Look Down) share an "income tier" upgrade-economy pattern: correct answers earn currency, spent on tiered purchases with rising cost/payout, defined as a `{level, cost, payout, nameEn, nameAr}[]` array in that mode's `src/lib/*.ts` file.
 
@@ -78,6 +79,8 @@ Adding a new mode means: a `settings.mode` string, a `*Game.tsx` + `*Monitor.tsx
 - `question_responses` — per-student per-question answer records
 - `dodgeball_timer_taps` — one row per player per timer round: `elapsed_ms`, `timer_round_id` (unique constraint prevents duplicates)
 - `paint_fight_strokes` / `paint_fight_powerups` — Paint Fight's append-only cell-index log and power-up spawn tracking, see `paintFight.ts`'s header comment
+- `kits` — Physical Games boards, `id` is the printed short code (e.g. `K4471`), `status` (active|disabled); manually seeded, no admin UI yet. `game_sessions.kit_id` links a session to its kit.
+- `physical_used_questions` — `(session_id, question_id)`, tracks which of a Physical Games session's own quiz questions have already been dispensed, cleared per-difficulty on exhaustion (see `physicalGames.ts`)
 
 ### Game loop: Crypto Rush
 

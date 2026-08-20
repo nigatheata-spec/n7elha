@@ -11,6 +11,7 @@ import ClassicMonitor from "./ClassicMonitor";
 import HumansVsZombiesMonitor from "./HumansVsZombiesMonitor";
 import DontLookDownMonitor from "./DontLookDownMonitor";
 import PaintFightMonitor from "./PaintFightMonitor";
+import PhysicalMonitor from "./PhysicalMonitor";
 
 const fmt = (n: number) => n.toLocaleString();
 
@@ -126,6 +127,7 @@ const GameMonitor = () => {
   if (session.settings?.mode === "humansvszombies") return <HumansVsZombiesMonitor session={session} sessionId={sessionId!} />;
   if (session.settings?.mode === "dontlookdown") return <DontLookDownMonitor session={session} sessionId={sessionId!} />;
   if (session.settings?.mode === "paintfight") return <PaintFightMonitor session={session} sessionId={sessionId!} />;
+  if (session.settings?.mode === "physical") return <PhysicalMonitor session={session} sessionId={sessionId!} />;
 
   const mm = left != null ? String(Math.floor(left / 60)).padStart(2, "0") : null;
   const ss_str = left != null ? String(left % 60).padStart(2, "0") : null;

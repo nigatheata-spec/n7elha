@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
-import { Copy, Play, Users, Trash2, Zap, Heart, Skull, Timer, Trophy, Flame, ChevronLeft, Check, Minus, Plus, ListChecks, Biohazard, ChevronUp } from "lucide-react";
+import { Copy, Play, Users, Trash2, Zap, Heart, Skull, Timer, Trophy, Flame, ChevronLeft, Check, Minus, Plus, ListChecks, Biohazard, ChevronUp, QrCode } from "lucide-react";
 import { BitcoinIcon, StopwatchIcon, LavaBucketIcon, DynamiteIcon, PaintRollerIcon } from "@/components/game/icons";
 import { computeArenaSize } from "@/lib/paintFight";
 import { toast } from "sonner";
@@ -13,7 +13,7 @@ const genCode = () => {
   return Array.from({ length: 4 }, () => c[Math.floor(Math.random() * c.length)]).join("");
 };
 
-type GameMode = "crypto_rush" | "dodgeball" | "hotpotato" | "lavafloor" | "classic" | "humansvszombies" | "dontlookdown" | "paintfight";
+type GameMode = "crypto_rush" | "dodgeball" | "hotpotato" | "lavafloor" | "classic" | "humansvszombies" | "dontlookdown" | "paintfight" | "physical";
 
 const MODES: { id: GameMode; icon: React.ReactNode; label: string; labelAr: string; desc: string; descAr: string; accent: string; num: string }[] = [
   {
@@ -95,6 +95,16 @@ const MODES: { id: GameMode; icon: React.ReactNode; label: string; labelAr: stri
     descAr: "معركة حرة على الأرض — الإجابات تعيد ملء طلائك",
     accent: "#c2410c",
     num: "07",
+  },
+  {
+    id: "physical",
+    icon: <QrCode className="h-6 w-6" strokeWidth={2} />,
+    label: "Physical Games",
+    labelAr: "الألعاب الفيزيائية",
+    desc: "Play on a printed board — scan squares for questions, no student devices needed",
+    descAr: "العب على لوحة مطبوعة — امسح المربعات للحصول على أسئلة، بدون أجهزة للطلاب",
+    accent: "#5b4636",
+    num: "08",
   },
 ];
 
@@ -259,6 +269,24 @@ const HostGame = () => {
     navigate(`/app/games/${sessionId}/monitor`);
   };
 
+  const startPhysical = async () => {
+    if (!user || !quizId) return;
+    try {
+      const settings: any = { mode: "physical", lang: i18n.language };
+      let tryCode = code;
+      let data, error;
+      for (let attempt = 0; attempt < 5; attempt++) {
+        ({ data, error } = await supabase.from("game_sessions")
+          .insert({ teacher_id: user.id, quiz_id: quizId, code: tryCode, status: "running", started_at: new Date().toISOString(), settings })
+          .select().single());
+        if (!error || error.code !== "23505") break;
+        tryCode = genCode();
+      }
+      if (error) throw error;
+      navigate(`/app/games/${data.id}/monitor`);
+    } catch (e: any) { toast.error(e.message); }
+  };
+
   const cancelLobby = async () => {
     if (!sessionId) return;
     await supabase.from("game_sessions").update({ status: "cancelled" }).eq("id", sessionId);
@@ -332,7 +360,7 @@ const HostGame = () => {
 
   // ── Settings + lobby ──────────────────────────────────────────────────────
   const selectedAccent = selectedMode!.accent;
-  const needsTimer = true;
+  const needsTimer = mode !== "physical";
 
   return (
     <div className="min-h-full p-6 md:p-10" style={{ background: "hsl(var(--background))" }}>
@@ -477,6 +505,19 @@ const HostGame = () => {
                   </div>
                 </>
               )}
+              {mode === "physical" && (
+                <>
+                  <p className="text-black/65 leading-relaxed">
+                    {ar
+                      ? "لا حاجة لأكواد أو أجهزة للطلاب. جهاز واحد فقط يمسح رمز اللوحة عند البداية، ثم يمسح رمز كل مربع يهبط عليه الطلاب للحصول على سؤال بمستوى الصعوبة المطابق."
+                      : "No codes or student devices needed. One device scans the board's QR to begin, then scans each landed-on square's QR to pull a question at that square's difficulty."}
+                  </p>
+                  <div className="flex items-center gap-2 text-black/45">
+                    <QrCode className="h-4 w-4 shrink-0" style={{ color: selectedAccent }} />
+                    <span>{ar ? "امسح، اقرأ، تابعوا اللعب" : "Scan, read aloud, keep playing"}</span>
+                  </div>
+                </>
+              )}
             </div>
 
             {needsTimer && (
@@ -490,6 +531,23 @@ const HostGame = () => {
           </div>
 
           {/* ── Code + lobby card ── */}
+          {mode === "physical" ? (
+            <div className="rounded-2xl p-6 space-y-4 bg-white border-2 border-[hsl(var(--nb-border))] shadow-[4px_4px_0_0_hsl(var(--nb-border))]">
+              <h2 className="font-semibold text-[15px] text-[#3F5A63]">{ar ? "جاهز للبدء" : "Ready to start"}</h2>
+              <p className="text-sm text-black/55 leading-relaxed">
+                {ar
+                  ? "لا حاجة لردهة أو رمز مشاركة. اضغط ابدأ ثم مرر الجهاز إلى من سيمسك اللوحة."
+                  : "No lobby or share code needed. Press start, then hand the device to whoever's scanning the board."}
+              </p>
+              <button
+                onClick={startPhysical}
+                className="w-full flex items-center justify-center gap-2 rounded-xl py-3.5 text-base font-bold border-2 border-[hsl(var(--nb-border))] bg-[#3F5A63] text-white shadow-[4px_4px_0_0_hsl(var(--nb-border))] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_0_hsl(var(--nb-border))] transition-all active:scale-[0.99]"
+              >
+                <QrCode className="h-5 w-5" />
+                {ar ? "ابدأ اللعبة الفيزيائية" : "Start Physical Game"}
+              </button>
+            </div>
+          ) : (
           <div className="rounded-2xl p-6 space-y-4 bg-white border-2 border-[hsl(var(--nb-border))] shadow-[4px_4px_0_0_hsl(var(--nb-border))]">
             <h2 className="font-semibold text-[15px] text-[#3F5A63]">{t("game_code")}</h2>
 
@@ -581,6 +639,7 @@ const HostGame = () => {
               </>
             )}
           </div>
+          )}
         </div>
       </div>
     </div>
