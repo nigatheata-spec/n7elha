@@ -28,10 +28,18 @@ supabase secrets set KEY=value                      # Set edge function secrets
 
 ## What this app is
 
-**n7elha** is an Arabic-first classroom quiz game platform. Teachers create quizzes, host live sessions with a 4-char room code, and students join on their phones. Two game modes:
+**n7elha** is an Arabic-first classroom quiz game platform. Teachers create quizzes, host live sessions with a 4-char room code, and students join on their phones. Eight game modes (`session.settings.mode`, picked in `HostGame.tsx`):
 
-- **Crypto Rush** — hacking/crypto theme. Correct answers earn crypto. Power-up lets players hack rivals to steal crypto.
-- **Dodgeball** — wrong answers cost lives (start with 1). Teacher fires stop-the-clock "timer rounds"; closest tap to 10s wins a bonus life (keep or gift to another player). Last player standing wins.
+- **Classic** (`classic`) — the original quiz race. Answer fast, earn more.
+- **Crypto Rush** (`crypto_rush`) — hacking/crypto theme. Correct answers earn crypto. Power-up lets players hack rivals to steal crypto.
+- **Dodgeball** (`dodgeball`) — wrong answers cost lives (start with 1). Teacher fires stop-the-clock "timer rounds"; closest tap to 10s wins a bonus life (keep or gift to another player). Last player standing wins.
+- **Hot Potato** (`hotpotato`) — a live bomb on a fuse gets passed between players; answer fast or get caught holding it when it blows.
+- **Lava Floor** (`lavafloor`) — co-op survival: correct answers earn currency, spent on blocks (`lavaFloorBlocks.ts`: plank/brick/staircase/house, increasing cost and height) to build above the rising lava.
+- **Humans vs Zombies** (`humansvszombies`) — two teams, two health bars. Correct answers fund team upgrades (`humansVsZombies.ts`: income tiers, streak-drain protection); heal, upgrade, sabotage, survive.
+- **Don't Look Down** (`dontlookdown`) — 2D parkour platformer (`dontLookDown.ts`). Answers fuel an energy meter that's spent on movement and jumps; climb a tower, respawn at your last checkpoint if you fall.
+- **Paint Fight** (`paintfight`) — free-for-all territory painting arena (`paintFight.ts` / `paintFightRender.ts`). Players move with a virtual joystick, leaving a paint trail in their color; a paint bucket drains on movement and refills on correct answers. Power-ups: speed, giant roller, splash. Real-time synced via an append-only stroke log over Supabase (`paint_fight_strokes`), replayed by every client — see that file's header comment for why cell-index batches are logged instead of raw pixels.
+
+Several of the newer modes (Lava Floor, Humans vs Zombies, Don't Look Down) share an "income tier" upgrade-economy pattern: correct answers earn currency, spent on tiered purchases with rising cost/payout, defined as a `{level, cost, payout, nameEn, nameAr}[]` array in that mode's `src/lib/*.ts` file.
 
 Two languages (Arabic default, English toggle), always LTR layout regardless of language.
 
@@ -46,14 +54,16 @@ All state lives in Supabase — no separate backend. Everything is either a dire
 **Teacher (`/app/*`)** — requires auth, wrapped in `TeacherLayout` (fixed sidebar, `collapsible="none"`, 5.5rem wide, icon-above-label style):
 - `/app` → Dashboard
 - `/app/quizzes` → list; `/app/quizzes/new?ai=1` → AI builder; `/app/quizzes/:id/edit` → manual editor
-- `/app/host/:quizId` → mode picker (Crypto Rush / Dodgeball) then lobby config
-- `/app/games/:sessionId/monitor` → projector view — routes internally to `GameMonitor` or `DodgeballMonitor`
+- `/app/host/:quizId` → mode picker (all 8 modes) then lobby config
+- `/app/games/:sessionId/monitor` → single route, `GameMonitor.tsx` — reads `session.settings.mode` and renders the matching `*Monitor` component (`ClassicMonitor`, `DodgeballMonitor`, `HotPotatoMonitor`, `LavaFloorMonitor`, `HumansVsZombiesMonitor`, `DontLookDownMonitor`, `PaintFightMonitor`; unmatched mode falls through to `GameMonitor`'s own Crypto Rush view)
 - `/app/games/:sessionId/results` → cinematic results screen
 - `/app/settings` → account (display name, password) + language switcher
 
 **Student (`/play/*`)** — no auth, identity in `localStorage`:
 - `/play` → join with room code
-- `/play/:sessionId` → `Game.tsx` (Crypto Rush) or `DodgeballGame.tsx`, routed by `session.settings.mode`
+- `/play/:sessionId` → single route, `Game.tsx` — reads `session.settings.mode` and renders the matching `*Game` component (`ClassicGame`, `DodgeballGame`, `HotPotatoGame`, `LavaFloorGame`, `HumansVsZombiesGame`, `DontLookDownGame`, `PaintFightGame`; unmatched mode falls through to `Game.tsx`'s own Crypto Rush view)
+
+Adding a new mode means: a `settings.mode` string, a `*Game.tsx` + `*Monitor.tsx` pair, an entry in `HostGame.tsx`'s `MODES` array, the `if (mode === "...")` branch in both `Game.tsx` and `GameMonitor.tsx`, and usually a per-mode `src/lib/<mode>.ts` (+ a `<mode>Render.ts` for canvas-based modes) plus a migration adding its `game_students`/`game_sessions` columns.
 
 ### Database schema (key tables)
 
@@ -63,10 +73,11 @@ All state lives in Supabase — no separate backend. Everything is either a dire
   - shared: `mode`, `minutes`, `maxStudents`, `timePerQ`
   - Crypto Rush: `cryptoCap`
   - Dodgeball: `timerActive`, `timerWinnerId`, `timerRoundId`, `timerStartedAt`
-- `game_students` — per-player per-session; shared: `correct_answers`, `total_answers`; Crypto Rush: `crypto`, `hacks_made`, `hacks_received`, `is_breached`, `password`; Dodgeball: `lives`, `eliminated`, `eliminated_at`
+- `game_students` — per-player per-session; shared: `correct_answers`, `total_answers`; Crypto Rush: `crypto`, `hacks_made`, `hacks_received`, `is_breached`, `password`; Dodgeball: `lives`, `eliminated`, `eliminated_at`; every other mode adds its own columns in its own migration (e.g. `fight_hue` for Paint Fight, energy/checkpoint columns for Don't Look Down) — check `supabase/migrations/` for the mode's migration file rather than assuming this list is exhaustive
 - `hack_events` — Crypto Rush hack log
 - `question_responses` — per-student per-question answer records
 - `dodgeball_timer_taps` — one row per player per timer round: `elapsed_ms`, `timer_round_id` (unique constraint prevents duplicates)
+- `paint_fight_strokes` / `paint_fight_powerups` — Paint Fight's append-only cell-index log and power-up spawn tracking, see `paintFight.ts`'s header comment
 
 ### Game loop: Crypto Rush
 
@@ -86,6 +97,17 @@ All state lives in Supabase — no separate backend. Everything is either a dire
 - Teacher fires timer rounds from `DodgeballMonitor.tsx`; broadcast via `session.settings.timerActive/timerRoundId/timerStartedAt`
 - Timer winner gets +1 life → `life_gift` phase: keep or gift to any player (gifting eliminated player revives them)
 - **Critical implementation detail**: `handleAnswer` uses `pickedRef` (sync ref, not state) as a double-execution guard. Phase transition fires immediately via `setTimeout` — DB updates are fire-and-forget (`.catch(() => {})`). This pattern is required: awaiting DB before transitioning phase caused the game to freeze when Supabase was slow.
+
+### Game loop: other modes
+
+Briefer than the two above since they're less central, but real and shipped:
+
+- **Classic** — simplest phase machine: `waiting → question → answered → done`. No dev-only preview harness on the others; `ClassicGame.tsx` has one at `/play/preview?preview=1&mode=classic&phase=...` for iterating on a phase's UI without hosting a real session.
+- **Hot Potato** — `waiting → question → answered → passing → exploded → done`. The "potato" (bomb) passes between players on a fuse; whoever's holding it when `exploded` fires is out.
+- **Lava Floor** — co-op economy game. Correct answers earn currency spent on `BLOCK_TYPES` (`lavaFloorBlocks.ts`: plank → brick → staircase → house, each pricier and taller) to build a platform above the rising lava. Shares the income-tier upgrade pattern with Humans vs Zombies and Don't Look Down.
+- **Humans vs Zombies** — two-team economy game (`humansVsZombies.ts`). Each team has its own `INCOME_TIERS` (different flavor text per team, same cost/payout shape) and a `STREAK_DRAIN_TIERS` ladder that softens how much a wrong-answer streak reset costs.
+- **Don't Look Down** — 2D parkour platformer (`dontLookDown.ts` + `dontLookDownRender.ts`). World space is +Y up (renderer flips Y so world-up reads as screen-up); movement/jumping spend an energy meter refilled by correct answers; falling below `WORLD.voidY` respawns the player at their last checkpoint and costs a cash penalty scaled by their insurance tier.
+- **Paint Fight** — see the mode list above; `paintFight.ts` / `paintFightRender.ts` carry the fullest architecture comment of any mode file since it's the only one with continuous real-time position sync (virtual joystick + broadcast channel) rather than discrete per-question state.
 
 ### Results page
 

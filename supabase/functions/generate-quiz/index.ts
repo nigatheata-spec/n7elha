@@ -22,7 +22,11 @@ serve(async (req) => {
       ? "CREATIVE mode: feel free to introduce new numbers, scenarios, twists, and analogies that test the same underlying concept. Make it fun."
       : "BALANCED mode: stay close to the source but you may rephrase, use simple examples, and vary numbers slightly.";
 
-    const systemPrompt = `You are an expert quiz generator for teachers. Generate exactly ${n} multiple-choice questions in ${lang}. Each question has exactly 4 distinct plausible options and ONE correct answer. Difficulty: ${difficulty}. ${topics ? `Teacher's request / focus: ${topics}.` : ""} ${creativityRule} You MUST respond with valid JSON only, matching this exact schema: {"title": string, "questions": [{"text": string, "options": [string, string, string, string], "correct_index": 0|1|2|3, "difficulty": "easy"|"medium"|"hard"}]}. No markdown, no explanation, just JSON.`;
+    const difficultyRule = difficulty === "mixed"
+      ? "Difficulty: MIXED. Spread the questions as evenly as possible across easy, medium, and hard (roughly a third each) and set each question's own \"difficulty\" field to match what you actually wrote."
+      : `Difficulty: ${difficulty}. Set every question's "difficulty" field to "${difficulty}".`;
+
+    const systemPrompt = `You are an expert quiz generator for teachers. Generate exactly ${n} multiple-choice questions in ${lang}. Each question has exactly 4 distinct plausible options and ONE correct answer. ${difficultyRule} ${topics ? `Teacher's request / focus: ${topics}.` : ""} ${creativityRule} You MUST respond with valid JSON only, matching this exact schema: {"title": string, "questions": [{"text": string, "options": [string, string, string, string], "correct_index": 0|1|2|3, "difficulty": "easy"|"medium"|"hard"}]}. No markdown, no explanation, just JSON.`;
 
     const userMessage = content?.trim()
       ? `Source content:\n\n${String(content).slice(0, 25000)}`

@@ -68,6 +68,41 @@ const CREATIVITY = [
   { value: 2, key: "creative", label_ar: "مبدع", label_en: "Creative", desc_ar: "أرقام وأمثلة جديدة", desc_en: "New numbers, twists, examples" },
 ];
 
+const DIFFICULTY = [
+  { key: "easy", label_ar: "سهل", label_en: "Easy" },
+  { key: "medium", label_ar: "متوسط", label_en: "Medium" },
+  { key: "hard", label_ar: "صعب", label_en: "Hard" },
+  { key: "mixed", label_ar: "متنوع", label_en: "Mixed" },
+];
+
+const GENERATING_STATUS = {
+  en: ["Reading your material...", "Thinking of good questions...", "Writing distractors...", "Almost done..."],
+  ar: ["نقرأ المحتوى...", "نفكر في أسئلة جيدة...", "نكتب الخيارات...", "أوشكنا على الانتهاء..."],
+};
+
+const GeneratingSkeleton = ({ count, ar }: { count: number; ar: boolean }) => (
+  <div className="space-y-3">
+    {Array.from({ length: count }).map((_, i) => (
+      <div
+        key={i}
+        className="animate-fade-up rounded-2xl border-2 border-[hsl(var(--nb-border))] bg-white shadow-[3px_3px_0_0_hsl(var(--nb-border))] p-5 space-y-3"
+        style={{ animationDelay: `${i * 120}ms` }}
+      >
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-bold text-primary/40">#{i + 1}</span>
+          <div className="h-6 w-16 rounded-full bg-muted animate-pulse" />
+        </div>
+        <div className="h-4 w-4/5 rounded bg-muted animate-pulse" />
+        <div className="grid sm:grid-cols-2 gap-2">
+          {Array.from({ length: 4 }).map((_, oi) => (
+            <div key={oi} className="h-9 rounded-lg bg-muted/60 animate-pulse" style={{ animationDelay: `${oi * 80}ms` }} />
+          ))}
+        </div>
+      </div>
+    ))}
+  </div>
+);
+
 const Dashboard = () => {
   const { t, i18n } = useTranslation();
   const ar = i18n.language === "ar";
@@ -77,9 +112,17 @@ const Dashboard = () => {
   const [prompt, setPrompt] = useState("");
   const [files, setFiles] = useState<{ name: string; text: string }[]>([]);
   const [creativity, setCreativity] = useState(1);
+  const [difficulty, setDifficulty] = useState("medium");
   const [numQ, setNumQ] = useState(5);
   const [busy, setBusy] = useState(false);
+  const [statusIdx, setStatusIdx] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!busy) { setStatusIdx(0); return; }
+    const t = setInterval(() => setStatusIdx(i => (i + 1) % GENERATING_STATUS.en.length), 2200);
+    return () => clearInterval(t);
+  }, [busy]);
 
   // Review step
   const [draft, setDraft] = useState<{ title: string; questions: any[] } | null>(null);
@@ -159,6 +202,7 @@ const Dashboard = () => {
           content,
           topics: prompt + (extraInstruction ? `\n\nتعديلات المعلم: ${extraInstruction}` : ""),
           numQuestions: numQ,
+          difficulty,
           creativity: CREATIVITY[creativity].key,
           language: i18n.language,
         },
@@ -255,13 +299,14 @@ const Dashboard = () => {
           <TypewriterHeading ar={ar} />
         </h1>
 
-        <div className="rounded-3xl bg-white border-2 border-[hsl(var(--nb-border))] shadow-[4px_4px_0_0_hsl(var(--nb-border))] p-4 md:p-5 text-start">
+        <div className={`rounded-3xl bg-white border-2 border-[hsl(var(--nb-border))] shadow-[4px_4px_0_0_hsl(var(--nb-border))] p-4 md:p-5 text-start transition-opacity ${busy ? "opacity-60" : ""}`}>
           <textarea
             value={prompt}
             onChange={e => setPrompt(e.target.value)}
             placeholder={ar ? "اطلب من نحلها توليد اختبار... (مثال: اختبار عن الكسور للصف الخامس)" : "Ask n7elha to create a quiz... (e.g. Fractions quiz for grade 5)"}
             rows={3}
-            className="w-full resize-none bg-transparent outline-none text-lg placeholder:text-muted-foreground/70"
+            disabled={busy}
+            className="w-full resize-none bg-transparent outline-none text-lg placeholder:text-muted-foreground/70 disabled:cursor-not-allowed"
             maxLength={2000}
           />
 
@@ -279,30 +324,51 @@ const Dashboard = () => {
             </div>
           )}
 
-          <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/60 gap-2 flex-wrap">
+          <div className={`flex items-center justify-between mt-3 pt-3 border-t border-border/60 gap-2 flex-wrap ${busy ? "pointer-events-none" : ""}`}>
             <div className="flex items-center gap-1.5 flex-wrap">
               <input ref={fileRef} type="file" multiple accept=".pdf,.txt,.md" className="hidden"
                 onChange={e => { handleFiles(e.target.files); if (fileRef.current) fileRef.current.value = ""; }} />
-              <Button variant="ghost" size="icon" className="rounded-full h-9 w-9" onClick={() => fileRef.current?.click()}>
+              <Button variant="ghost" size="icon" className="rounded-full h-9 w-9" disabled={busy} onClick={() => fileRef.current?.click()}>
                 <Plus className="h-4 w-4" />
               </Button>
 
+              {files.length > 0 && (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button type="button" className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full bg-primary text-primary-foreground text-xs transition-colors hover:brightness-110">
+                      <span className="font-semibold">{ar ? cur.label_ar : cur.label_en}</span>
+                      <ChevronDown className="h-3 w-3 opacity-80" />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-56 p-1" align="start">
+                    {CREATIVITY.map((c, i) => (
+                      <button key={c.key} type="button" onClick={() => setCreativity(i)}
+                        className={`w-full flex items-start justify-between gap-2 px-2.5 py-2 rounded-md text-sm hover:bg-accent text-start ${creativity === i ? "bg-accent/50" : ""}`}>
+                        <div className="min-w-0">
+                          <div className="font-medium">{ar ? c.label_ar : c.label_en}</div>
+                          <div className="text-[11px] text-muted-foreground">{ar ? c.desc_ar : c.desc_en}</div>
+                        </div>
+                        {creativity === i && <Check className="h-3.5 w-3.5 shrink-0 mt-0.5" />}
+                      </button>
+                    ))}
+                  </PopoverContent>
+                </Popover>
+              )}
+
               <Popover>
                 <PopoverTrigger asChild>
-                  <button type="button" className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full bg-primary text-primary-foreground text-xs transition-colors hover:brightness-110">
-                    <span className="font-semibold">{ar ? cur.label_ar : cur.label_en}</span>
+                  <button type="button" className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full bg-secondary text-secondary-foreground text-xs transition-colors hover:brightness-110">
+                    <Gauge className="h-3 w-3 opacity-80" />
+                    <span className="font-semibold">{ar ? DIFFICULTY.find(d => d.key === difficulty)?.label_ar : DIFFICULTY.find(d => d.key === difficulty)?.label_en}</span>
                     <ChevronDown className="h-3 w-3 opacity-80" />
                   </button>
                 </PopoverTrigger>
-                <PopoverContent className="w-56 p-1" align="start">
-                  {CREATIVITY.map((c, i) => (
-                    <button key={c.key} type="button" onClick={() => setCreativity(i)}
-                      className={`w-full flex items-start justify-between gap-2 px-2.5 py-2 rounded-md text-sm hover:bg-accent text-start ${creativity === i ? "bg-accent/50" : ""}`}>
-                      <div className="min-w-0">
-                        <div className="font-medium">{ar ? c.label_ar : c.label_en}</div>
-                        <div className="text-[11px] text-muted-foreground">{ar ? c.desc_ar : c.desc_en}</div>
-                      </div>
-                      {creativity === i && <Check className="h-3.5 w-3.5 shrink-0 mt-0.5" />}
+                <PopoverContent className="w-40 p-1" align="start">
+                  {DIFFICULTY.map((d) => (
+                    <button key={d.key} type="button" onClick={() => setDifficulty(d.key)}
+                      className={`w-full flex items-center justify-between px-2.5 py-2 rounded-md text-sm hover:bg-accent ${difficulty === d.key ? "bg-accent/50" : ""}`}>
+                      <span>{ar ? d.label_ar : d.label_en}</span>
+                      {difficulty === d.key && <Check className="h-3.5 w-3.5" />}
                     </button>
                   ))}
                 </PopoverContent>
@@ -339,11 +405,22 @@ const Dashboard = () => {
           </div>
         </div>
 
-        <div className="text-sm text-muted-foreground">
-          {ar ? "أو" : "or"}{" "}
-          <Link to="/app/quizzes/new" className="underline underline-offset-4 hover:text-foreground">{ar ? "أنشئ يدوياً" : "build manually"}</Link>
-        </div>
+        {!busy && (
+          <div className="text-sm text-muted-foreground">
+            {ar ? "أو" : "or"}{" "}
+            <Link to="/app/quizzes/new" className="underline underline-offset-4 hover:text-foreground">{ar ? "أنشئ يدوياً" : "build manually"}</Link>
+          </div>
+        )}
       </div>
+
+      {busy && (
+        <div className="max-w-2xl mx-auto space-y-4 text-start">
+          <p className="text-center text-sm font-medium text-muted-foreground">
+            {(ar ? GENERATING_STATUS.ar : GENERATING_STATUS.en)[statusIdx]}
+          </p>
+          <GeneratingSkeleton count={numQ} ar={ar} />
+        </div>
+      )}
 
       {/* Past games */}
       <div>
