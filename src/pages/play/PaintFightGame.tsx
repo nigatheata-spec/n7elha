@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { toast } from "@/components/ui/sonner";
-import { Trophy, X, Droplet } from "lucide-react";
+import { Trophy, X, Droplet, Zap, Droplets } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { PaintRollerIcon } from "@/components/game/icons";
 import PaintJoystick, { type JoystickVector } from "@/components/game/PaintJoystick";
+import { useFloatingRewards, usePowerupBurst } from "@/components/game/GameFeedback";
+import { playCorrect, playWrong, playCrystal } from "@/lib/sound";
 import {
   CELL, PAINT, PLAYER_SPEED, PLAYER_RADIUS, POWERUP_DEFS,
   cellsInRadius, xyOfCell, type CellOwner,
@@ -48,6 +49,9 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
   const [powerups, setPowerups]   = useState<Powerup[]>([]);
   const [hud, setHud] = useState({ paint: PAINT.start, speedUntil: 0, rollerUntil: 0, myPct: 0 });
   const [now, setNow] = useState(Date.now());
+
+  const reward = useFloatingRewards();
+  const powerupBurst = usePowerupBurst();
 
   const canvasRef  = useRef<HTMLCanvasElement | null>(null);
   const peersRef   = useRef<Record<string, Peer>>({});
@@ -254,10 +258,11 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
             .eq("id", pu.id).is("claimed_by", null).select().maybeSingle()
             .then(({ data }: any) => {
               if (!data) return; // someone else claimed it first
-              if (pu.kind === "speed") { p.speedUntil = Date.now() + POWERUP_DEFS.speed.durationMs; toast.success(ar ? "دفعة سرعة!" : "Speed boost!"); }
-              else if (pu.kind === "roller") { p.rollerUntil = Date.now() + POWERUP_DEFS.roller.durationMs; toast.success(ar ? "رولر عملاق!" : "Giant roller!"); }
+              playCrystal();
+              if (pu.kind === "speed") { p.speedUntil = Date.now() + POWERUP_DEFS.speed.durationMs; powerupBurst.fire(Zap, ar ? "دفعة سرعة!" : "Speed boost!", "#eab308"); }
+              else if (pu.kind === "roller") { p.rollerUntil = Date.now() + POWERUP_DEFS.roller.durationMs; powerupBurst.fire(PaintRollerIcon, ar ? "رولر عملاق!" : "Giant roller!", "#6366f1"); }
               else {
-                toast.success(ar ? "رشة طلاء!" : "Paint splash!");
+                powerupBurst.fire(Droplets, ar ? "رشة طلاء!" : "Paint splash!", "#0ea5e9");
                 for (const idx of cellsInRadius(cx, cy, POWERUP_DEFS.splash.radius, cols, rows)) {
                   ownerRef.current.set(idx, { studentId, hue: myHue });
                   pendingRef.current.add(idx);
@@ -373,9 +378,11 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
 
     if (correct) {
       pRef.current.paint = Math.min(PAINT.start, pRef.current.paint + PAINT.rewardPerCorrect);
-      toast.success(`+${PAINT.rewardPerCorrect} ${ar ? "طلاء" : "paint"}`);
+      playCorrect();
+      reward.fire(`+${PAINT.rewardPerCorrect}`, myColor);
     } else {
-      toast.error(ar ? "إجابة خاطئة" : "Wrong answer");
+      playWrong();
+      // no text feedback needed — the picked button turning red already says it
     }
 
     const updates: any = { total_answers: (me.total_answers ?? 0) + 1 };
@@ -450,6 +457,7 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
     <div className="fixed inset-0 overflow-hidden select-none" style={{ background: "#EBDFC7", touchAction: "none" }}>
       <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" />
       {!showQuiz && <PaintJoystick vectorRef={vectorRef} />}
+      <powerupBurst.Layer />
 
       {/* HUD */}
       <div className="absolute inset-x-0 top-0 p-3 pointer-events-none" style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}>
@@ -503,7 +511,7 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
         <div className="absolute inset-0 z-40 flex flex-col" style={{ background: "rgba(8,12,24,0.96)" }}>
           <div className="flex items-center justify-between px-4 py-3 shrink-0"
             style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-            <div className="flex items-center gap-2">
+            <div className="relative flex items-center gap-2">
               <Droplet className="h-4 w-4" style={{ color: myColor }} />
               <span className="text-sm font-black tabular-nums" style={{ color: myColor }}>
                 {Math.round(hud.paint)}/{PAINT.start}
@@ -511,6 +519,7 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
               <span className="text-xs opacity-50" style={{ color: "white" }}>
                 +{PAINT.rewardPerCorrect} {ar ? "لكل إجابة" : "per correct"}
               </span>
+              <reward.Layer />
             </div>
             <button onClick={() => setShowQuiz(false)}
               disabled={frozen}
@@ -539,7 +548,11 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
                   else if (show)             { bg = "rgba(255,255,255,0.03)"; bd = "rgba(255,255,255,0.06)"; col = "rgba(255,255,255,0.3)"; }
                   return (
                     <button key={i} disabled={show} onClick={() => answer(i)}
-                      className="rounded-xl px-3 py-3 text-sm font-bold text-center flex items-center justify-center transition-colors"
+                      className={cn(
+                        "rounded-xl px-3 py-3 text-sm font-bold text-center flex items-center justify-center transition-colors",
+                        show && isCorrect && "animate-answer-correct",
+                        show && isPicked && !isCorrect && "animate-answer-wrong"
+                      )}
                       style={{ background: bg, border: `1.5px solid ${bd}`, color: col }}>
                       {opt}
                     </button>

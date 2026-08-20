@@ -346,6 +346,28 @@
   }
   .animate-question-in { animation: question-slide-in 0.22s ease-out both; }
 
+  /* In-game feedback primitives (GameFeedback.tsx) — reward numbers rise from
+     the HUD stat they change, powerup pickups slam in center-screen. Neither
+     is a toast: a toast flattens every event to the same rectangle, these
+     carry their own weight and fire where the event actually happened. */
+  @keyframes float-reward {
+    0%   { opacity: 0; transform: translate(-50%, 0)      scale(0.7); }
+    18%  { opacity: 1; transform: translate(-50%, -6px)   scale(1.2); }
+    32%  { opacity: 1; transform: translate(-50%, -10px)  scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -46px)  scale(1); }
+  }
+  .animate-float-reward { animation: float-reward 0.9s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+  @keyframes powerup-slam {
+    0%   { opacity: 0; transform: scale(0.4)  rotate(-8deg); }
+    14%  { opacity: 1; transform: scale(1.15) rotate(3deg); }
+    24%  { transform: scale(0.97) rotate(-1deg); }
+    32%  { transform: scale(1)    rotate(0deg); }
+    82%  { opacity: 1; transform: scale(1) rotate(0deg); }
+    100% { opacity: 0; transform: scale(0.92) rotate(0deg) translateY(-8px); }
+  }
+  .animate-powerup-slam { animation: powerup-slam 1.15s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
   /* Pass It — screen shake when fuse is critical */
   @keyframes screen-shake {
     0%, 100% { transform: translate3d(0, 0, 0); }
