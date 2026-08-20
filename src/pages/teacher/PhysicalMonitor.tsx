@@ -127,8 +127,24 @@ const PhysicalMonitor = ({ session, sessionId }: Props) => {
         if (ids.length) await supabase.from("physical_used_questions").delete().eq("session_id", sessionId).in("question_id", ids);
         candidates = await pick();
       }
+
+      // The quiz may just not have any question tagged at this exact difficulty
+      // (e.g. it was generated without a difficulty spread) — fall back to any
+      // unused question in the quiz rather than blocking play on a tagging gap.
       if (!candidates.length) {
-        toast.error(ar ? "لا توجد أسئلة بهذا المستوى في هذا الاختبار" : "No questions at this difficulty in this quiz");
+        const { data: used } = await supabase.from("physical_used_questions").select("question_id").eq("session_id", sessionId);
+        const usedIds = new Set((used ?? []).map((u: any) => u.question_id));
+        const { data: anyPool } = await supabase.from("questions").select("id,text,options,correct_index").eq("quiz_id", session.quiz_id);
+        candidates = (anyPool ?? []).filter((q: any) => !usedIds.has(q.id));
+        if (!candidates.length) {
+          // Every question in the quiz has been shown this session — reshuffle everything.
+          const allIds = (anyPool ?? []).map((q: any) => q.id);
+          if (allIds.length) await supabase.from("physical_used_questions").delete().eq("session_id", sessionId).in("question_id", allIds);
+          candidates = anyPool ?? [];
+        }
+      }
+      if (!candidates.length) {
+        toast.error(ar ? "لا توجد أسئلة في هذا الاختبار" : "This quiz has no questions");
         return;
       }
 
