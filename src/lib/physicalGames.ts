@@ -72,11 +72,24 @@ export const findActiveSessionForKit = async (kitId: string) => {
   return { session };
 };
 
+const SCAN_CACHE_TTL_MS = 30_000;
+
 /** Pulls the next unused question for a square scan, falling back to any unused question, then reshuffling once the whole quiz's been shown this session. */
 export const dispensePhysicalQuestion = async (sessionId: string, quizId: string, typeCode: number): Promise<DispenseResult> => {
   const type = SQUARE_TYPES[typeCode];
   if (!type) return { kind: "error", message: "unknown-type" };
   if (type.kind === "rest") return { kind: "rest", type };
+
+  // Rescanning the same square shortly after — a refresh, a double-tap, a
+  // second phone scanning the same physical square — replays the same
+  // question instead of drawing a new one, so refreshing can't be used to
+  // reroll for an easier question.
+  const { data: cached } = await supabase.from("physical_last_scan").select("question_id,dispensed_at")
+    .eq("session_id", sessionId).eq("type_code", typeCode).maybeSingle();
+  if (cached?.question_id && Date.now() - new Date(cached.dispensed_at).getTime() < SCAN_CACHE_TTL_MS) {
+    const { data: q } = await supabase.from("questions").select("id,text,options,correct_index").eq("id", cached.question_id).maybeSingle();
+    if (q) return { kind: "question", type, q };
+  }
 
   const difficulty = type.kind === "wildcard"
     ? (["easy", "medium", "hard"] as const)[Math.floor(Math.random() * 3)]
@@ -120,5 +133,9 @@ export const dispensePhysicalQuestion = async (sessionId: string, quizId: string
 
   const q = candidates[Math.floor(Math.random() * candidates.length)];
   await supabase.from("physical_used_questions").insert({ session_id: sessionId, question_id: q.id });
+  await supabase.from("physical_last_scan").upsert(
+    { session_id: sessionId, type_code: typeCode, question_id: q.id, dispensed_at: new Date().toISOString() },
+    { onConflict: "session_id,type_code" }
+  );
   return { kind: "question", type, q };
 };
