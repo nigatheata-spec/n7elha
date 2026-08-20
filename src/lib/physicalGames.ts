@@ -4,7 +4,16 @@
 // server-side even after printing. Only 6 square designs exist and repeat
 // across every board, so a square-type scan can never mean "give me this
 // exact square's question" — it always pulls the next unused question of
-// that difficulty from the session's own quiz (see PhysicalMonitor).
+// that difficulty from the session's own quiz.
+//
+// Square scans are meant to be opened by ANY phone's camera app (the printed
+// QR is a real URL to /scan/:kitId/:typeCode, a public unauthenticated
+// route), not just the teacher's device — so dispensePhysicalQuestion below
+// is shared between that public page and PhysicalMonitor's in-app scanner
+// fallback, and every call is a self-contained DB round trip (no client-side
+// session state to coordinate between different students' phones).
+
+import { supabase } from "@/integrations/supabase/client";
 
 export type SquareKind = "difficulty" | "rest" | "double" | "wildcard";
 
@@ -43,4 +52,73 @@ export const parseSquareQR = (raw: string): { kitId: string; typeCode: number } 
   const parts = s.split("/").filter(Boolean);
   if (parts.length === 2 && /^[1-6]$/.test(parts[1])) return { kitId: parts[0], typeCode: Number(parts[1]) };
   return null;
+};
+
+export type PhysicalQuestion = { id: string; text: string; options: string[]; correct_index: number };
+
+export type DispenseResult =
+  | { kind: "question"; type: SquareType; q: PhysicalQuestion }
+  | { kind: "rest"; type: SquareType }
+  | { kind: "error"; message: string };
+
+/** Finds the currently-running session for a kit, so any phone can independently resolve "what game is this board playing right now". */
+export const findActiveSessionForKit = async (kitId: string) => {
+  const { data: kit } = await supabase.from("kits").select("*").eq("id", kitId).maybeSingle();
+  if (!kit || kit.status !== "active") return { error: "kit-inactive" as const };
+  const { data: session } = await supabase.from("game_sessions").select("*")
+    .eq("kit_id", kitId).eq("status", "running")
+    .order("created_at", { ascending: false }).limit(1).maybeSingle();
+  if (!session) return { error: "no-session" as const };
+  return { session };
+};
+
+/** Pulls the next unused question for a square scan, falling back to any unused question, then reshuffling once the whole quiz's been shown this session. */
+export const dispensePhysicalQuestion = async (sessionId: string, quizId: string, typeCode: number): Promise<DispenseResult> => {
+  const type = SQUARE_TYPES[typeCode];
+  if (!type) return { kind: "error", message: "unknown-type" };
+  if (type.kind === "rest") return { kind: "rest", type };
+
+  const difficulty = type.kind === "wildcard"
+    ? (["easy", "medium", "hard"] as const)[Math.floor(Math.random() * 3)]
+    : type.difficulty!;
+
+  const usedIds = async () => {
+    const { data } = await supabase.from("physical_used_questions").select("question_id").eq("session_id", sessionId);
+    return new Set((data ?? []).map((u: any) => u.question_id));
+  };
+
+  const pickByDifficulty = async () => {
+    const used = await usedIds();
+    const { data: pool } = await supabase.from("questions").select("id,text,options,correct_index")
+      .eq("quiz_id", quizId).eq("difficulty", difficulty);
+    return (pool ?? []).filter((q: any) => !used.has(q.id));
+  };
+
+  let candidates = await pickByDifficulty();
+  if (!candidates.length) {
+    const { data: allOfDifficulty } = await supabase.from("questions").select("id").eq("quiz_id", quizId).eq("difficulty", difficulty);
+    const ids = (allOfDifficulty ?? []).map((q: any) => q.id);
+    if (ids.length) await supabase.from("physical_used_questions").delete().eq("session_id", sessionId).in("question_id", ids);
+    candidates = await pickByDifficulty();
+  }
+
+  // The quiz may not have any question tagged at this exact difficulty at all
+  // (e.g. generated without a difficulty spread) — fall back to any unused
+  // question rather than blocking play on a tagging gap.
+  if (!candidates.length) {
+    const used = await usedIds();
+    const { data: anyPool } = await supabase.from("questions").select("id,text,options,correct_index").eq("quiz_id", quizId);
+    candidates = (anyPool ?? []).filter((q: any) => !used.has(q.id));
+    if (!candidates.length) {
+      const allIds = (anyPool ?? []).map((q: any) => q.id);
+      if (allIds.length) await supabase.from("physical_used_questions").delete().eq("session_id", sessionId).in("question_id", allIds);
+      candidates = anyPool ?? [];
+    }
+  }
+
+  if (!candidates.length) return { kind: "error", message: "no-questions" };
+
+  const q = candidates[Math.floor(Math.random() * candidates.length)];
+  await supabase.from("physical_used_questions").insert({ session_id: sessionId, question_id: q.id });
+  return { kind: "question", type, q };
 };

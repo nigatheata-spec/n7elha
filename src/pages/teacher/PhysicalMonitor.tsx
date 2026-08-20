@@ -5,12 +5,11 @@ import QrScanner from "qr-scanner";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Check, ChevronRight, Keyboard, QrCode, Square, X } from "lucide-react";
-import { SQUARE_TYPES, parseKitQR, parseSquareQR, type SquareType } from "@/lib/physicalGames";
+import { SQUARE_TYPES, parseKitQR, parseSquareQR, dispensePhysicalQuestion, type SquareType, type PhysicalQuestion } from "@/lib/physicalGames";
 
 interface Props { session: any; sessionId: string; }
 
 type Phase = "kit" | "ready" | "question" | "rest";
-type Question = { id: string; text: string; options: string[]; correct_index: number };
 
 const PhysicalMonitor = ({ session, sessionId }: Props) => {
   const nav = useNavigate();
@@ -19,7 +18,7 @@ const PhysicalMonitor = ({ session, sessionId }: Props) => {
 
   const [kitId, setKitId] = useState<string | null>(session?.kit_id ?? null);
   const [phase, setPhase] = useState<Phase>(session?.kit_id ? "ready" : "kit");
-  const [current, setCurrent] = useState<{ q: Question; type: SquareType } | null>(null);
+  const [current, setCurrent] = useState<{ q: PhysicalQuestion; type: SquareType } | null>(null);
   const [revealed, setRevealed] = useState(false);
   const [manualOpen, setManualOpen] = useState(false);
   const [manualValue, setManualValue] = useState("");
@@ -98,59 +97,15 @@ const PhysicalMonitor = ({ session, sessionId }: Props) => {
   };
 
   const handleSquare = async (typeCode: number) => {
-    const type = SQUARE_TYPES[typeCode];
-    if (!type) return;
-    if (type.kind === "rest") { setPhase("rest"); return; }
-    await dispenseQuestion(type);
-  };
-
-  const dispenseQuestion = async (type: SquareType) => {
     setBusy(true);
     try {
-      const difficulty = type.kind === "wildcard"
-        ? (["easy", "medium", "hard"] as const)[Math.floor(Math.random() * 3)]
-        : type.difficulty!;
-
-      const pick = async () => {
-        const { data: used } = await supabase.from("physical_used_questions").select("question_id").eq("session_id", sessionId);
-        const usedIds = new Set((used ?? []).map((u: any) => u.question_id));
-        const { data: pool } = await supabase.from("questions").select("id,text,options,correct_index")
-          .eq("quiz_id", session.quiz_id).eq("difficulty", difficulty);
-        return (pool ?? []).filter((q: any) => !usedIds.has(q.id));
-      };
-
-      let candidates = await pick();
-      if (!candidates.length) {
-        // Reshuffle: this session has shown every question at this difficulty — clear them and start over.
-        const { data: allOfDifficulty } = await supabase.from("questions").select("id").eq("quiz_id", session.quiz_id).eq("difficulty", difficulty);
-        const ids = (allOfDifficulty ?? []).map((q: any) => q.id);
-        if (ids.length) await supabase.from("physical_used_questions").delete().eq("session_id", sessionId).in("question_id", ids);
-        candidates = await pick();
-      }
-
-      // The quiz may just not have any question tagged at this exact difficulty
-      // (e.g. it was generated without a difficulty spread) — fall back to any
-      // unused question in the quiz rather than blocking play on a tagging gap.
-      if (!candidates.length) {
-        const { data: used } = await supabase.from("physical_used_questions").select("question_id").eq("session_id", sessionId);
-        const usedIds = new Set((used ?? []).map((u: any) => u.question_id));
-        const { data: anyPool } = await supabase.from("questions").select("id,text,options,correct_index").eq("quiz_id", session.quiz_id);
-        candidates = (anyPool ?? []).filter((q: any) => !usedIds.has(q.id));
-        if (!candidates.length) {
-          // Every question in the quiz has been shown this session — reshuffle everything.
-          const allIds = (anyPool ?? []).map((q: any) => q.id);
-          if (allIds.length) await supabase.from("physical_used_questions").delete().eq("session_id", sessionId).in("question_id", allIds);
-          candidates = anyPool ?? [];
-        }
-      }
-      if (!candidates.length) {
+      const result = await dispensePhysicalQuestion(sessionId, session.quiz_id, typeCode);
+      if (result.kind === "error") {
         toast.error(ar ? "لا توجد أسئلة في هذا الاختبار" : "This quiz has no questions");
         return;
       }
-
-      const q = candidates[Math.floor(Math.random() * candidates.length)];
-      await supabase.from("physical_used_questions").insert({ session_id: sessionId, question_id: q.id });
-      setCurrent({ q, type });
+      if (result.kind === "rest") { setPhase("rest"); return; }
+      setCurrent({ q: result.q, type: result.type });
       setRevealed(false);
       setPhase("question");
     } finally {

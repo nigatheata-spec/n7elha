@@ -21,6 +21,7 @@ import GameResults from "./pages/teacher/GameResults";
 import { Analytics, SettingsPage } from "./pages/teacher/Stubs";
 import Join from "./pages/play/Join";
 import Game from "./pages/play/Game";
+import ScanSquare from "./pages/play/ScanSquare";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -57,6 +58,7 @@ const AppContent = () => {
             <Route path="/auth" element={<Auth />} />
             <Route path="/play" element={<Join />} />
             <Route path="/play/:sessionId" element={<Game />} />
+            <Route path="/scan/:kitId/:typeCode" element={<ScanSquare />} />
             <Route path="/app" element={<RequireAuth><TeacherLayout /></RequireAuth>}>
               <Route index element={<Dashboard />} />
               <Route path="quizzes" element={<Quizzes />} />
