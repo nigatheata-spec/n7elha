@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import QrScanner from "qr-scanner";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Check, ChevronRight, Keyboard, QrCode, Square, X } from "lucide-react";
+import { Check, ChevronRight, QrCode, Square } from "lucide-react";
 import { SQUARE_TYPES, parseKitQR, parseSquareQR, dispensePhysicalQuestion, type SquareType, type PhysicalQuestion } from "@/lib/physicalGames";
 
 interface Props { session: any; sessionId: string; }
@@ -20,8 +20,6 @@ const PhysicalMonitor = ({ session, sessionId }: Props) => {
   const [phase, setPhase] = useState<Phase>(session?.kit_id ? "ready" : "kit");
   const [current, setCurrent] = useState<{ q: PhysicalQuestion; type: SquareType } | null>(null);
   const [revealed, setRevealed] = useState(false);
-  const [manualOpen, setManualOpen] = useState(false);
-  const [manualValue, setManualValue] = useState("");
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -48,7 +46,9 @@ const PhysicalMonitor = ({ session, sessionId }: Props) => {
     const scanner = new QrScanner(
       videoRef.current,
       (result) => handleScan(result.data),
-      { highlightScanRegion: true, highlightCodeOutline: true, maxScansPerSecond: 5 }
+      // 2/sec is plenty for pointing a phone at a printed square, and it stops
+      // the outline from re-drawing frantically while a code sits in frame.
+      { highlightScanRegion: true, highlightCodeOutline: false, maxScansPerSecond: 2 }
     );
     scannerRef.current = scanner;
     scanner.start().catch((e: any) => setCameraError(e?.message || String(e)));
@@ -115,12 +115,6 @@ const PhysicalMonitor = ({ session, sessionId }: Props) => {
 
   const backToScan = () => { setCurrent(null); setPhase("ready"); };
 
-  const submitManual = () => {
-    if (!manualValue.trim()) return;
-    handleScan(manualValue.trim());
-    setManualValue("");
-  };
-
   const endGame = async () => {
     if (!confirm(ar ? "إنهاء اللعبة الآن؟" : "End the game now?")) return;
     await supabase.from("game_sessions").update({ status: "finished", ended_at: new Date().toISOString() }).eq("id", sessionId);
@@ -147,9 +141,13 @@ const PhysicalMonitor = ({ session, sessionId }: Props) => {
           </div>
         )}
         {phase === "ready" && (
-          <div className="text-center space-y-1">
+          <div className="text-center space-y-2.5">
             <h1 className="text-xl font-bold text-[#3F5A63]">{ar ? "جاهز — امسح مربعاً" : "Ready — scan a square"}</h1>
-            <p className="text-sm text-black/50">{ar ? `متصل باللوحة ${kitId}` : `Connected to kit ${kitId}`}</p>
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border-2 border-[hsl(var(--nb-border))] bg-white shadow-[2px_2px_0_0_hsl(var(--nb-border))]">
+              <span className="h-2 w-2 rounded-full bg-[#3a9e6e] animate-pulse shrink-0" />
+              <span className="text-xs font-semibold text-black/55">{ar ? "متصل" : "Connected"}</span>
+              <span className="font-mono text-sm font-black tracking-widest text-[#3F5A63]">{kitId}</span>
+            </div>
           </div>
         )}
 
@@ -163,33 +161,7 @@ const PhysicalMonitor = ({ session, sessionId }: Props) => {
             )}
             {cameraError && (
               <div className="absolute inset-0 bg-white/95 flex items-center justify-center p-4 text-center text-sm text-black/70">
-                {ar ? "تعذّر الوصول إلى الكاميرا. استخدم الإدخال اليدوي أدناه." : "Couldn't access the camera. Use manual entry below."}
-              </div>
-            )}
-          </div>
-        )}
-
-        {scanning && (
-          <div className="text-center">
-            <button
-              onClick={() => setManualOpen(v => !v)}
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-black/45 hover:text-[#3F5A63]"
-            >
-              <Keyboard className="h-3.5 w-3.5" />
-              {ar ? "إدخال يدوي" : "Enter manually"}
-            </button>
-            {manualOpen && (
-              <div className="mt-2 flex gap-2">
-                <input
-                  value={manualValue}
-                  onChange={e => setManualValue(e.target.value)}
-                  onKeyDown={e => e.key === "Enter" && submitManual()}
-                  placeholder={phase === "kit" ? "K4471" : `${kitId}/3`}
-                  className="flex-1 rounded-lg border-2 border-[hsl(var(--nb-border))] px-3 py-2 text-sm outline-none"
-                />
-                <button onClick={submitManual} className="px-4 rounded-lg border-2 border-[hsl(var(--nb-border))] bg-[#3F5A63] text-white text-sm font-semibold">
-                  {ar ? "إرسال" : "Go"}
-                </button>
+                {ar ? "تعذّر الوصول إلى الكاميرا. تحقّق من أذونات المتصفح." : "Couldn't access the camera. Check browser permissions."}
               </div>
             )}
           </div>
