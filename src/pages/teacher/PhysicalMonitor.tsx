@@ -33,6 +33,14 @@ const PhysicalMonitor = ({ session, sessionId }: Props) => {
   const kitIdRef = useRef(kitId);
   kitIdRef.current = kitId;
   const busyRef = useRef(false);
+  const lastUnrecognizedToastRef = useRef(0);
+
+  const warnUnrecognized = (raw: string) => {
+    const now = Date.now();
+    if (now - lastUnrecognizedToastRef.current < 2000) return; // avoid spamming while an unmatched code sits in frame
+    lastUnrecognizedToastRef.current = now;
+    toast.error(ar ? `رمز غير معروف: ${raw.slice(0, 40)}` : `Unrecognized code: ${raw.slice(0, 40)}`);
+  };
 
   const scanning = phase === "kit" || phase === "ready";
 
@@ -53,7 +61,7 @@ const PhysicalMonitor = ({ session, sessionId }: Props) => {
     if (busyRef.current) return;
     if (phaseRef.current === "kit") {
       const kid = parseKitQR(raw);
-      if (!kid) return;
+      if (!kid) { warnUnrecognized(raw); return; }
       busyRef.current = true;
       await connectKit(kid);
       busyRef.current = false;
@@ -61,7 +69,7 @@ const PhysicalMonitor = ({ session, sessionId }: Props) => {
     }
     if (phaseRef.current === "ready") {
       const parsed = parseSquareQR(raw);
-      if (!parsed) return;
+      if (!parsed) { warnUnrecognized(raw); return; }
       if (parsed.kitId !== kitIdRef.current) {
         toast.error(ar ? "هذا الرمز من لوحة مختلفة" : "This square is from a different kit");
         return;
