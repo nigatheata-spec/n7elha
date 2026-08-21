@@ -14,6 +14,7 @@
 
 @layer base {
   :root {
+  --content-max: 1200px;
     /* nfelha palette — sand-dune bg, coral-glow + dark-slate-grey accents */
     --background: 40 47% 85%;        /* sand-dune #EBDFC7 */
     --cream-panel: 43 58% 94%;       /* soft creamy hero surface */
@@ -758,3 +759,7 @@
     opacity: 1;
   }
 }
+
+/* Shared page measure. Without it, sections stretch to the viewport and content
+   drifts apart on wide monitors instead of holding together as a column. */
+.wrap { max-width: var(--content-max); margin-inline: auto; width: 100%; }

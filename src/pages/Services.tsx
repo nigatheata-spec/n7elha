@@ -114,7 +114,7 @@ const Services = () => {
       <SiteNav />
 
       {/* ---------------- HERO ---------------- */}
-      <section className="relative overflow-hidden px-5 sm:px-8 md:px-14 pt-10 sm:pt-16 pb-14 sm:pb-20">
+      <section className="wrap relative overflow-hidden px-5 sm:px-8 md:px-14 pt-10 sm:pt-16 pb-14 sm:pb-20">
         <img src={triDoodle} alt="" aria-hidden className="pointer-events-none absolute end-[6%] top-10 w-24 opacity-25 rotate-6 hidden md:block" />
         <span className={`text-[12px] font-semibold text-[#3F5A63] ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`}>{t.kicker}</span>
         <h1
@@ -127,7 +127,7 @@ const Services = () => {
       </section>
 
       {/* ---------------- FEATURES ---------------- */}
-      <section className="px-5 sm:px-8 md:px-14 pb-16 sm:pb-24 border-t border-black/5 pt-16 sm:pt-24">
+      <section className="wrap px-5 sm:px-8 md:px-14 pb-16 sm:pb-24 pt-16 sm:pt-24">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <FeatureLarge icon={<Sparkles className="h-6 w-6" />} title={t.f1Title} desc={t.f1Desc} tilt="-rotate-[0.5deg]" />
           <Feature icon={<FileText className="h-5 w-5" />} title={t.f2Title} desc={t.f2Desc} tilt="rotate-[0.9deg]" />
@@ -137,9 +137,9 @@ const Services = () => {
       </section>
 
       {/* ---------------- GAME MODES ---------------- */}
-      <section className="bg-[#3F5A63] text-white px-5 sm:px-8 md:px-14 py-16 sm:py-24">
-        <div className="max-w-2xl">
-          <span className={`text-[12px] font-semibold text-white/60 ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`}>{t.modesKicker}</span>
+      <section className="bg-[#14212A] text-white px-5 sm:px-8 md:px-14 py-20 sm:py-28">
+        <div className="wrap"><div className="max-w-2xl">
+          <span className={`text-[12px] font-semibold text-[#FF8254] ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`}>{t.modesKicker}</span>
           <h2 className="mt-3 text-[26px] sm:text-[36px] tracking-tight leading-[1.15] text-white" style={{ fontFamily: "'ArslanWessam', 'Almarai', sans-serif" }}>
             {t.modesTitle}
           </h2>
@@ -149,20 +149,21 @@ const Services = () => {
         <div className="mt-10 sm:mt-14 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {modes.map((m, i) => (
             <div key={m.title} className={`group h-full ${i % 2 === 0 ? "-rotate-[0.4deg]" : "rotate-[0.5deg]"} hover:rotate-0 transition-transform duration-300`}>
-              <div className="relative h-full rounded-2xl border-2 border-[#22333A] bg-white p-5 shadow-[4px_4px_0_0_#22333A] group-hover:shadow-[7px_7px_0_0_#22333A] group-hover:-translate-x-1 group-hover:-translate-y-1 transition-all">
-                <div className="h-9 w-9 rounded-xl border-2 border-[#22333A] bg-[#FF8254] text-white flex items-center justify-center">
+              <div className="relative h-full rounded-2xl border-2 border-[#0B1418] bg-[#3F5A63] p-5 shadow-[4px_4px_0_0_#0B1418] group-hover:shadow-[7px_7px_0_0_#0B1418] group-hover:-translate-x-1 group-hover:-translate-y-1 transition-all">
+                <div className="h-9 w-9 rounded-xl border-2 border-[#0B1418] bg-[#FF8254] text-white flex items-center justify-center">
                   {m.icon}
                 </div>
-                <h3 className="mt-4 text-[15px] font-semibold leading-tight text-[#22333A]">{m.title}</h3>
-                <p className="mt-1.5 text-[13px] leading-relaxed text-black/60">{m.desc}</p>
+                <h3 className="mt-4 text-[15px] font-semibold leading-tight text-white">{m.title}</h3>
+                <p className="mt-1.5 text-[13px] leading-relaxed text-white/65">{m.desc}</p>
               </div>
             </div>
           ))}
         </div>
+        </div>
       </section>
 
       {/* ---------------- HOW IT WORKS ---------------- */}
-      <section id="how" className="px-5 sm:px-8 md:px-14 py-16 sm:py-24 border-t border-black/5">
+      <section id="how" className="wrap px-5 sm:px-8 md:px-14 py-20 sm:py-28">
         <div className="max-w-2xl">
           <span className={`text-[12px] font-semibold text-[#3F5A63] ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`}>{t.howKicker}</span>
           <h2 className="mt-3 text-[28px] sm:text-[40px] tracking-tight leading-[1.1]" style={{ color: "#3F5A63", fontFamily: "'ArslanWessam', 'Almarai', sans-serif" }}>

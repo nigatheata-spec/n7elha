@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Globe, MousePointerClick, LayoutGrid, ArrowUpRight, Compass } from "lucide-react";
-import saudiMap from "@/assets/saudi-map.svg";
+import saudiMap from "@/assets/saudi-map-light.svg";
 import zigzag from "@/assets/doodles/zigzag-trio.png";
 import beans from "@/assets/doodles/bean-pair.png";
 import { SiteNav } from "@/components/site/SiteNav";
@@ -100,7 +100,7 @@ const About = () => {
       <SiteNav />
 
       {/* ---------------- HERO ---------------- */}
-      <section className="px-5 sm:px-8 md:px-14 pt-10 sm:pt-16 pb-14 sm:pb-20">
+      <section className="wrap px-5 sm:px-8 md:px-14 pt-10 sm:pt-16 pb-14 sm:pb-20">
         <span className={`text-[12px] font-semibold text-[#3F5A63] ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`}>{t.kicker}</span>
         <h1
           className="mt-3 max-w-2xl leading-[1.1] tracking-tight text-[32px] sm:text-[46px]"
@@ -112,13 +112,13 @@ const About = () => {
       </section>
 
       {/* ---------------- ORIGIN STORY ---------------- */}
-      <section className="px-5 sm:px-8 md:px-14 py-16 sm:py-24 border-t border-black/5">
-        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] gap-8 lg:gap-16">
+      <section className="bg-[#14212A] text-white px-5 sm:px-8 md:px-14 py-20 sm:py-28">
+        <div className="wrap grid grid-cols-1 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] gap-8 lg:gap-16">
           <div>
             <span className={`text-[12px] font-semibold text-[#FF8254] ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`}>{t.storyKicker}</span>
             <h2
               className="mt-3 text-[26px] sm:text-[34px] tracking-tight leading-[1.15]"
-              style={{ color: "#3F5A63", fontFamily: "'ArslanWessam', 'Almarai', sans-serif" }}
+              style={{ color: "#FFFFFF", fontFamily: "'ArslanWessam', 'Almarai', sans-serif" }}
             >
               {t.storyTitle}
             </h2>
@@ -128,16 +128,16 @@ const About = () => {
               banned side-stripe, so the emphasis comes from scale and the pulled-in rule above. */}
           <div className="max-w-xl relative">
             <div className="h-1 w-16 bg-[#FF8254] rounded-full" />
-            <img src={beans} alt="" aria-hidden className="absolute -end-6 top-24 w-14 opacity-30 rotate-12 hidden lg:block" />
-            <p className="mt-6 text-[17px] sm:text-[19px] leading-relaxed text-[#3F5A63] font-medium">{t.p1}</p>
-            <p className="mt-5 text-[15px] leading-relaxed text-black/65">{t.p2}</p>
-            <p className="mt-5 text-[15px] leading-relaxed text-black/65">{t.p3}</p>
+            <img src={beans} alt="" aria-hidden className="absolute -end-6 top-24 w-14 opacity-20 rotate-12 hidden lg:block invert" />
+            <p className="mt-6 text-[17px] sm:text-[19px] leading-relaxed text-white font-medium">{t.p1}</p>
+            <p className="mt-5 text-[15px] leading-relaxed text-white/60">{t.p2}</p>
+            <p className="mt-5 text-[15px] leading-relaxed text-white/60">{t.p3}</p>
           </div>
         </div>
       </section>
 
       {/* ---------------- PRODUCT FACTS ---------------- */}
-      <section className="px-5 sm:px-8 md:px-14 py-16 sm:py-20 border-t border-black/5">
+      <section className="wrap px-5 sm:px-8 md:px-14 py-16 sm:py-20">
         <span className={`text-[12px] font-semibold text-black/40 ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`}>{t.factsKicker}</span>
         <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {facts.map(f => (
@@ -158,18 +158,18 @@ const About = () => {
       </section>
 
       {/* ---------------- MISSION ---------------- */}
-      <section className="relative overflow-hidden px-5 sm:px-8 md:px-14 py-16 sm:py-24 border-t border-black/5">
+      <section className="relative overflow-hidden bg-[#3F5A63] text-white px-5 sm:px-8 md:px-14 py-20 sm:py-28">
         {/* Oversized wordmark as a graphic element. Arabic script is the one visual
             move the English-first competitors structurally cannot copy. */}
         <span
           aria-hidden
-          className="pointer-events-none select-none absolute -top-6 end-[-2%] text-[150px] sm:text-[230px] leading-none text-[#3F5A63] opacity-[0.05]"
+          className="pointer-events-none select-none absolute -top-6 end-[-2%] text-[150px] sm:text-[230px] leading-none text-white opacity-[0.07]"
           style={{ fontFamily: "'ArslanWessam', 'Almarai', sans-serif" }}
         >
           نفلها
         </span>
 
-        <div className="relative grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)] gap-10 lg:gap-16 items-center">
+        <div className="wrap relative grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)] gap-10 lg:gap-16 items-center">
           <div className="max-w-2xl">
             <div className="inline-flex items-center gap-2 rounded-full border-2 border-[hsl(var(--nb-border))] bg-white px-4 py-1.5 shadow-[3px_3px_0_0_hsl(var(--nb-border))]">
               <Compass className="h-4 w-4 text-[#FF8254]" />
@@ -177,27 +177,27 @@ const About = () => {
             </div>
             <h2
               className="mt-6 text-[28px] sm:text-[40px] tracking-tight leading-[1.1]"
-              style={{ color: "#3F5A63", fontFamily: "'ArslanWessam', 'Almarai', sans-serif" }}
+              style={{ color: "#FFFFFF", fontFamily: "'ArslanWessam', 'Almarai', sans-serif" }}
             >
               {t.missionTitle}
             </h2>
-            <p className="mt-6 text-[16px] sm:text-[17px] leading-relaxed text-black/70">{t.m1}</p>
-            <p className="mt-4 text-[15px] leading-relaxed text-black/65">{t.m2}</p>
+            <p className="mt-6 text-[16px] sm:text-[17px] leading-relaxed text-white/75">{t.m1}</p>
+            <p className="mt-4 text-[15px] leading-relaxed text-white/60">{t.m2}</p>
           </div>
 
           <div className="relative">
-            <img src={zigzag} alt="" aria-hidden className="absolute -top-8 start-0 w-16 opacity-40 -rotate-12" />
+            <img src={zigzag} alt="" aria-hidden className="absolute -top-8 start-0 w-16 opacity-25 -rotate-12 invert" />
             <img src={saudiMap} alt={isAr ? "المملكة العربية السعودية" : "Saudi Arabia"} className="w-full max-w-md mx-auto" />
-            <p className="mt-5 text-center text-[13px] font-semibold text-[#3F5A63]">{t.mapCaption}</p>
+            <p className="mt-5 text-center text-[13px] font-semibold text-white/80">{t.mapCaption}</p>
           </div>
         </div>
       </section>
 
       {/* ---------------- VALUES ---------------- */}
-      <section className="bg-[#3F5A63] text-white px-5 sm:px-8 md:px-14 py-16 sm:py-24">
+      <section className="wrap px-5 sm:px-8 md:px-14 py-20 sm:py-28">
         <div className="max-w-2xl">
-          <span className={`text-[12px] font-semibold text-white/60 ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`}>{t.valuesKicker}</span>
-          <h2 className="mt-3 text-[26px] sm:text-[36px] tracking-tight leading-[1.15] text-white" style={{ fontFamily: "'ArslanWessam', 'Almarai', sans-serif" }}>
+          <span className={`text-[12px] font-semibold text-[#FF8254] ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`}>{t.valuesKicker}</span>
+          <h2 className="mt-3 text-[26px] sm:text-[36px] tracking-tight leading-[1.15] text-[#14212A]" style={{ fontFamily: "'ArslanWessam', 'Almarai', sans-serif" }}>
             {t.valuesTitle}
           </h2>
         </div>
@@ -205,20 +205,20 @@ const About = () => {
         <div className="mt-10 sm:mt-14 grid grid-cols-1 sm:grid-cols-3 gap-4">
           {values.map((v, i) => (
             <div key={v.title} className={`group h-full ${i % 2 === 0 ? "-rotate-[0.5deg]" : "rotate-[0.6deg]"} hover:rotate-0 transition-transform duration-300`}>
-              <div className="relative h-full rounded-2xl border-2 border-[#22333A] bg-white p-6 shadow-[5px_5px_0_0_#22333A] group-hover:shadow-[8px_8px_0_0_#22333A] group-hover:-translate-x-1 group-hover:-translate-y-1 transition-all">
-                <div className="h-10 w-10 rounded-2xl border-2 border-[#22333A] bg-[#FF8254] text-white flex items-center justify-center">
+              <div className="relative h-full rounded-2xl border-2 border-[#14212A] bg-[#3F5A63] p-6 shadow-[5px_5px_0_0_#14212A] group-hover:shadow-[8px_8px_0_0_#14212A] group-hover:-translate-x-1 group-hover:-translate-y-1 transition-all">
+                <div className="h-10 w-10 rounded-2xl border-2 border-[#14212A] bg-[#FF8254] text-white flex items-center justify-center">
                   {v.icon}
                 </div>
-                <h3 className="mt-5 text-[16px] font-semibold leading-tight text-[#22333A]">{v.title}</h3>
-                <p className="mt-2 text-[13.5px] leading-relaxed text-black/65">{v.desc}</p>
+                <h3 className="mt-5 text-[16px] font-semibold leading-tight text-white">{v.title}</h3>
+                <p className="mt-2 text-[13.5px] leading-relaxed text-white/65">{v.desc}</p>
               </div>
             </div>
           ))}
         </div>
 
-        <p className="mt-14 text-[15px] leading-relaxed text-white/65">
+        <p className="mt-14 text-[15px] leading-relaxed text-black/65">
           {t.ctaLine}{" "}
-          <Link to="/services" className="inline-flex items-center gap-1 font-semibold text-white underline decoration-[#FF8254] decoration-2 underline-offset-4">
+          <Link to="/services" className="inline-flex items-center gap-1 font-semibold text-[#3F5A63] underline decoration-[#FF8254] decoration-2 underline-offset-4">
             {t.ctaLink}
             <ArrowUpRight className="h-4 w-4" />
           </Link>

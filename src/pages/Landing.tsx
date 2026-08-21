@@ -127,28 +127,28 @@ const Landing = () => {
         <SiteNav />
 
         {/* ---------------- HERO ---------------- */}
-        <div className="relative grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-8 px-5 sm:px-8 md:px-14 pt-10 sm:pt-16 pb-0">
+        <div className="wrap relative grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] items-center gap-8 lg:gap-10 px-5 sm:px-8 md:px-14 pt-8 sm:pt-12 pb-0">
           <div className="relative z-10">
             <h1
-              className="leading-[1.1] tracking-tight text-[34px] sm:text-[44px] md:text-[60px]"
+              className="leading-[1.05] tracking-tight text-[38px] sm:text-[52px] md:text-[68px]"
               style={{ fontFamily: "'ArslanWessam', 'Almarai', sans-serif", color: "#3F5A63" }}
             >
               <span className="block">{t.line1}</span>
-              <span className="block mt-2">
+              <span className="block">
                 <span className="italic" style={{ color: "#FF8254" }}>{t.line2a}</span>
                 {" "}<span>{t.line2b}</span>
               </span>
-              <span className="block mt-2">
+              <span className="block">
                 {t.line3a && <span>{t.line3a} </span>}
                 <span style={{ color: "#3F5A63" }}>{t.line3b}</span>
               </span>
             </h1>
 
-            <p className="mt-6 sm:mt-8 text-[14px] sm:text-[15px] leading-relaxed text-black/70 max-w-md animate-fade-up animation-delay-200">
+            <p className="mt-5 text-[15px] sm:text-[16px] leading-relaxed text-black/70 max-w-[27rem] animate-fade-up animation-delay-200">
               {t.sub}
             </p>
 
-            <div className="mt-8 flex flex-wrap items-center gap-4 animate-fade-up animation-delay-300">
+            <div className="mt-7 flex flex-wrap items-center gap-3 animate-fade-up animation-delay-300">
               <Link
                 to={user ? "/app" : "/auth?mode=signup"}
                 className="group inline-flex items-center gap-3 rounded-full border-2 border-[hsl(var(--nb-border))] bg-[#3F5A63] text-white pl-6 pr-2 py-2 text-[15px] font-medium shadow-[4px_4px_0_0_hsl(var(--nb-border))] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_0_hsl(var(--nb-border))] transition-all"
@@ -188,7 +188,7 @@ const Landing = () => {
         </div>
 
         {/* ---------------- SPLIT PANEL ---------------- */}
-        <div className="relative -mt-2 px-5 sm:px-8 md:px-14 pb-4">
+        <div className="wrap relative -mt-2 px-5 sm:px-8 md:px-14 pb-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 rounded-[24px] overflow-hidden border-2 border-[hsl(var(--nb-border))] shadow-[6px_6px_0_0_hsl(var(--nb-border))]">
             <Link
               to="/services"
@@ -222,7 +222,7 @@ const Landing = () => {
         <ProductPreview />
 
         {/* ---------------- FEATURES ---------------- */}
-        <section id="features" className="px-5 sm:px-8 md:px-14 py-16 sm:py-24 border-t border-black/5">
+        <section id="features" className="wrap px-5 sm:px-8 md:px-14 py-16 sm:py-24 border-t border-black/5">
           <div className="max-w-2xl flex items-end justify-between gap-6 flex-wrap">
             <div>
               <span className={`text-[12px] font-semibold text-[#3F5A63] ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`}>{t.featuresKicker}</span>
@@ -247,7 +247,7 @@ const Landing = () => {
         </section>
 
         {/* ---------------- HOW IT WORKS ---------------- */}
-        <section id="how" className="px-5 sm:px-8 md:px-14 py-16 sm:py-24 border-t border-black/5">
+        <section id="how" className="wrap px-5 sm:px-8 md:px-14 py-16 sm:py-24 border-t border-black/5">
           <div className="max-w-2xl">
             <span className={`text-[12px] font-semibold text-[#3F5A63] ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`}>{t.howKicker}</span>
             <h2 className="mt-3 text-[28px] sm:text-[40px] tracking-tight leading-[1.1]" style={{ color: "#3F5A63", fontFamily: "'ArslanWessam', 'Almarai', sans-serif" }}>
@@ -263,7 +263,7 @@ const Landing = () => {
         </section>
 
         {/* ---------------- FOR WHO ---------------- */}
-        <section className="px-5 sm:px-8 md:px-14 py-16 sm:py-24 border-t border-black/5">
+        <section className="wrap px-5 sm:px-8 md:px-14 py-16 sm:py-24 border-t border-black/5">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-20">
             <div>
               <span className={`text-[12px] font-semibold text-[#3F5A63] ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`}>

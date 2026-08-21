@@ -54,7 +54,7 @@ const Partners = () => {
       <SiteNav />
 
       {/* ---------------- HERO ---------------- */}
-      <section className="relative overflow-hidden px-5 sm:px-8 md:px-14 pt-10 sm:pt-16 pb-14 sm:pb-20">
+      <section className="wrap relative overflow-hidden px-5 sm:px-8 md:px-14 pt-10 sm:pt-16 pb-14 sm:pb-20">
         <img src={commas} alt="" aria-hidden className="pointer-events-none absolute end-[6%] top-10 w-24 opacity-25 rotate-6 hidden md:block" />
         <span className={`text-[12px] font-semibold text-[#3F5A63] ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`}>{t.kicker}</span>
         <h1
@@ -67,7 +67,7 @@ const Partners = () => {
       </section>
 
       {/* ---------------- TWO PATHS ---------------- */}
-      <section className="px-5 sm:px-8 md:px-14 py-16 sm:py-24 border-t border-black/5">
+      <section className="wrap px-5 sm:px-8 md:px-14 py-20 sm:py-28">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="-rotate-[0.4deg] hover:rotate-0 transition-transform duration-300">
             <div className="relative rounded-2xl border-2 border-[hsl(var(--nb-border))] bg-white p-7 shadow-[5px_5px_0_0_hsl(var(--nb-border))]">
@@ -106,8 +106,8 @@ const Partners = () => {
       </section>
 
       {/* ---------------- CONTACT DETAILS ---------------- */}
-      <section className="bg-[#3F5A63] text-white px-5 sm:px-8 md:px-14 py-16 sm:py-24">
-        <span className={`text-[12px] font-semibold text-white/60 ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`}>{t.contactKicker}</span>
+      <section className="bg-[#14212A] text-white px-5 sm:px-8 md:px-14 py-20 sm:py-28"><div className="wrap">
+        <span className={`text-[12px] font-semibold text-[#FF8254] ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`}>{t.contactKicker}</span>
         <h2 className="mt-3 text-[26px] sm:text-[36px] tracking-tight leading-[1.15] text-white" style={{ fontFamily: "'ArslanWessam', 'Almarai', sans-serif" }}>
           {t.contactTitle}
         </h2>
@@ -133,6 +133,7 @@ const Partners = () => {
               <Github className="h-4 w-4" />
             </a>
           </div>
+        </div>
         </div>
       </section>
 
