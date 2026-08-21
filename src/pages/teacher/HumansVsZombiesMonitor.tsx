@@ -8,6 +8,10 @@ import { cn } from "@/lib/utils";
 import { Square, Maximize, Users, Biohazard } from "lucide-react";
 import { PixelShield } from "@/components/PixelIcons";
 import { BATTLE_ACTIONS, START_HEALTH, HEALTH_DRAIN_PER_SEC, DAY_CYCLE_MS, WIN_DAYS, type Team, type BattleActionKey } from "@/lib/humansVsZombies";
+import { drawBattle, type Fighter } from "@/lib/hvzBattleRender";
+import battlefieldUrl from "@/assets/hvz/battlefield.jpg";
+import knightUrl from "@/assets/hvz/knight.png";
+import zombieUrl from "@/assets/hvz/zombie.png";
 
 type EffectPayload = {
   damage?: { targetTeam: Team; amount: number };
@@ -34,6 +38,51 @@ const Avatar = ({ name, team }: { name: string; team: Team }) => {
       {letter}
     </div>
   );
+};
+
+
+/**
+ * The battlefield. Health drives the front line, so the picture and the bars
+ * always agree — the teacher can read the match from across the room.
+ *
+ * Health is passed through a ref rather than as a prop the loop closes over:
+ * the render loop is started once on mount, and reading props directly would
+ * pin it to whatever the values were on that first frame.
+ */
+const BattleScene = ({ humans, zombies, humanPct, zombiePct }: {
+  humans: Fighter[]; zombies: Fighter[]; humanPct: number; zombiePct: number;
+}) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const stateRef = useRef({ humans, zombies, humanPct, zombiePct });
+  stateRef.current = { humans, zombies, humanPct, zombiePct };
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const load = (src: string) => { const i = new Image(); i.src = src; return i; };
+    const sprites = { field: load(battlefieldUrl), knight: load(knightUrl), zombie: load(zombieUrl) };
+
+    let raf = 0;
+    const frame = (t: number) => {
+      const dpr = window.devicePixelRatio || 1;
+      const cssW = canvas.clientWidth, cssH = canvas.clientHeight;
+      if (cssW && cssH) {
+        if (canvas.width !== cssW * dpr || canvas.height !== cssH * dpr) {
+          canvas.width = cssW * dpr; canvas.height = cssH * dpr;
+        }
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        drawBattle(ctx, cssW, cssH, sprites, { ...stateRef.current, t });
+      }
+      raf = requestAnimationFrame(frame);
+    };
+    raf = requestAnimationFrame(frame);
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
+  return <canvas ref={canvasRef} className="h-full w-full block" />;
 };
 
 interface Props { session: any; sessionId: string; }
@@ -286,10 +335,26 @@ const HumansVsZombiesMonitor = ({ session, sessionId }: Props) => {
           </div>
         )}
 
-        {/* Team rosters */}
-        <div className="flex-1 grid grid-cols-2 gap-4 min-h-0">
+        {/* Battlefield — the main event on the projector.
+            The panel is given the plate's own 1407:768 aspect and centred, so
+            the field is shown whole instead of being cover-cropped to whatever
+            shape the projector happens to be. */}
+        <div className="flex-1 min-h-0 flex items-center justify-center">
+          <div className="pixel-panel overflow-hidden max-h-full"
+            style={{ borderColor: "hsl(150 20% 25%)", aspectRatio: "1407 / 768", width: "min(100%, calc((100vh - 22rem) * 1.832))" }}>
+            <BattleScene
+              humans={humans.map(s => ({ id: s.id, name: s.name }))}
+              zombies={zombies.map(s => ({ id: s.id, name: s.name }))}
+              humanPct={maxHealth.human ? health.human / maxHealth.human : 0}
+              zombiePct={maxHealth.zombie ? health.zombie / maxHealth.zombie : 0}
+            />
+          </div>
+        </div>
+
+        {/* Team rosters — a strip under the field, not the main view any more */}
+        <div className="shrink-0 grid grid-cols-2 gap-4" style={{ maxHeight: "22vh" }}>
           {students.length === 0 ? (
-            <div className="col-span-2 flex items-center justify-center text-primary text-xl animate-pulse">
+            <div className="col-span-2 flex items-center justify-center text-primary text-xl animate-pulse py-6">
               {ar ? "> في انتظار اللاعبين..." : "> WAITING FOR PLAYERS..."}
             </div>
           ) : (

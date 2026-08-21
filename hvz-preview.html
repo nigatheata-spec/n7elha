@@ -1,0 +1,43 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>HvZ battle preview</title>
+<style>
+  body { margin:0; background:#0A0F0A; font:12px ui-monospace,monospace; color:#9fe8a0; }
+  .row { display:flex; gap:14px; padding:8px; align-items:center; flex-wrap:wrap; }
+  .stage { display:flex; align-items:center; justify-content:center; }
+  canvas { display:block; border:2px solid #274; aspect-ratio:1407/768; width:min(96vw, 1300px); }
+</style>
+<div class="row">
+  <label>human hp <input id="h" type="range" min="0" max="100" value="100"></label><span id="hv"></span>
+  <label>zombie hp <input id="z" type="range" min="0" max="100" value="100"></label><span id="zv"></span>
+  <label>#humans <input id="nh" type="number" min="0" max="30" value="6" style="width:56px"></label>
+  <label>#zombies <input id="nz" type="number" min="0" max="30" value="5" style="width:56px"></label>
+</div>
+<div class="stage"><canvas id="c"></canvas></div>
+<script type="module">
+  import { drawBattle } from "/src/lib/hvzBattleRender.ts";
+  import field from "/src/assets/hvz/battlefield.jpg";
+  import knight from "/src/assets/hvz/knight.png";
+  import zombie from "/src/assets/hvz/zombie.png";
+
+  const load = s => { const i = new Image(); i.src = s; return i; };
+  const sprites = { field: load(field), knight: load(knight), zombie: load(zombie) };
+  const c = document.getElementById("c"), ctx = c.getContext("2d");
+  const $ = id => document.getElementById(id);
+  const NAMES = ["Sara","Omar","Layla","Yousef","Nora","Ali","Hind","Faisal","Reem","Tariq",
+                 "Maha","Ziad","Dana","Salem","Aisha","Bandar","Lina","Rakan","Jana","Saud"];
+  const roster = n => Array.from({length:n}, (_,i) => ({ id:"p"+i, name: NAMES[i % NAMES.length] }));
+
+  function frame(t) {
+    const dpr = devicePixelRatio || 1, W = c.clientWidth, H = c.clientHeight;
+    if (c.width !== Math.round(W*dpr)) { c.width = W*dpr; c.height = H*dpr; }
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    $("hv").textContent = $("h").value+"%"; $("zv").textContent = $("z").value+"%";
+    drawBattle(ctx, W, H, sprites, {
+      humans: roster(+$("nh").value), zombies: roster(+$("nz").value),
+      humanPct: $("h").value/100, zombiePct: $("z").value/100, t,
+    });
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+</script>
