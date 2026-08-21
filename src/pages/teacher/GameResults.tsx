@@ -246,8 +246,8 @@ const GameResults = () => {
 
   // ── Full results ─────────────────────────────────────────────────────────
   return (
-    <div className="min-h-[100dvh] bg-background text-foreground font-sans">
-      <div className="pointer-events-none fixed inset-0 bg-grid opacity-[0.02]" />
+    <div className="min-h-[100dvh] text-foreground font-sans" style={{ background: "#14212A" }}>
+      <div className="pointer-events-none fixed inset-0 bg-grid opacity-[0.06]" />
 
       <div className="relative max-w-7xl mx-auto px-4 py-8 space-y-6"
         style={{ animation: "fade-up 0.45s both" }}>
@@ -259,10 +259,10 @@ const GameResults = () => {
               className="flex items-center gap-1.5 px-4 py-2 rounded-lg border-2 border-[hsl(var(--nb-border))] bg-white text-primary text-[10px] tracking-[0.3em] uppercase font-bold shadow-[3px_3px_0_0_hsl(var(--nb-border))] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0_0_hsl(var(--nb-border))] transition-all">
               <ArrowLeft className="h-3 w-3" />{ar ? "لوحة التحكم" : "Dashboard"}
             </button>
-            <div className="h-4 w-px bg-primary/25" />
+            <div className="h-4 w-px bg-white/25" />
             <div>
-              <div className="text-[10px] tracking-[0.5em] text-primary/60 uppercase mb-1">{ar ? "النتائج" : "Results"}</div>
-              <h1 className="text-2xl md:text-3xl font-black tracking-tight text-primary leading-none">
+              <div className="text-[10px] tracking-[0.5em] text-[#FF8254] uppercase mb-1">{ar ? "النتائج" : "Results"}</div>
+              <h1 className="text-2xl md:text-3xl font-black tracking-tight text-white leading-none">
                 {session?.quizzes?.title ?? (ar ? "اللعبة" : "Game")}
               </h1>
             </div>
@@ -275,64 +275,83 @@ const GameResults = () => {
           </div>
         </div>
 
-        {/* ── Podium row ── */}
-        {ranked.length > 0 && (
-          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)] gap-4">
-            {/* Winner */}
-            {winner && (
-              <div className="rounded-2xl border-2 border-[hsl(var(--nb-border))] bg-white p-7 flex flex-col items-center justify-center text-center gap-4 shadow-[5px_5px_0_0_hsl(var(--nb-border))]">
-                <div className="text-[10px] tracking-[0.5em] text-primary/70 uppercase flex items-center gap-2">
-                  <Trophy className="h-3 w-3 text-amber-400" />
-                  {ar ? "البطل" : "Champion"}
-                </div>
-                <Avatar name={winner.name} size="xl" />
-                <div className="text-2xl md:text-3xl font-black tracking-tight text-primary leading-none">
-                  {winner.name}
-                </div>
-                {mode === "paintfight" ? (
-                  <div className="text-3xl md:text-4xl font-black tabular-nums text-primary"
-                    style={{ textShadow: "0 0 24px hsl(16 100% 66% / 0.5)" }}>
-                    {pct(paintPctFor(winner.id))}
-                  </div>
-                ) : isPointsMode ? (
-                  <div className="text-3xl md:text-4xl font-black tabular-nums text-primary"
-                    style={{ textShadow: "0 0 24px hsl(16 100% 66% / 0.5)" }}>
-                    {fmt(winner.crypto)}
-                  </div>
-                ) : (
-                  <div className="text-xs tracking-[0.35em] text-primary/80 uppercase font-bold">{ar ? "آخر الناجين" : "Last Standing"}</div>
-                )}
-              </div>
-            )}
+        {/* ── Podium ──────────────────────────────────────────────────────
+            First, second and third all get the same card. Previously only the
+            winner did and 2nd–5th were thin rows, so a podium finish was
+            invisible unless you came first. Ranks 4+ keep the compact rows. */}
+        {ranked.length > 0 && (() => {
+          const MEDALS = [
+            { color: "#D9A441", labelAr: "البطل",  labelEn: "Champion" },
+            { color: "#9AA7B4", labelAr: "الثاني", labelEn: "Runner-up" },
+            { color: "#B87333", labelAr: "الثالث", labelEn: "Third" },
+          ];
+          const scoreFor = (s: any) =>
+            mode === "paintfight" ? pct(paintPctFor(s.id))
+            : isPointsMode       ? fmt(s.crypto)
+            : null;
 
-            {/* 2–5 */}
-            <div className="flex flex-col gap-2">
-              {ranked.slice(1, 6).map((s, idx) => {
-                const rank = idx + 2;
-                const acc = s.total_answers ? (s.correct_answers / s.total_answers) * 100 : 0;
-                return (
-                  <div key={s.id}
-                    className="rounded-xl border-2 border-[hsl(var(--nb-border))] bg-white px-4 py-3 flex items-center gap-3 shadow-[3px_3px_0_0_hsl(var(--nb-border))]"
-                    style={{ animation: `fade-up 0.4s ${idx * 70}ms both` }}>
-                    <span className="text-primary/60 font-black tabular-nums text-sm w-5 shrink-0">{rank}</span>
-                    <Avatar name={s.name} size="sm" />
-                    <span className="font-bold text-primary flex-1 truncate min-w-0">{s.name}</span>
-                    <span className="text-xs text-primary/65 tabular-nums shrink-0">{pct(acc)}</span>
-                    {mode === "paintfight"
-                      ? <span className="font-black tabular-nums text-primary text-sm shrink-0">{pct(paintPctFor(s.id))}</span>
-                      : isPointsMode
-                      ? <span className="font-black tabular-nums text-primary text-sm shrink-0">{fmt(s.crypto)}</span>
-                      : <span className={cn("text-[10px] font-bold tracking-widest shrink-0",
+          return (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {ranked.slice(0, 3).map((s, i) => {
+                  const m = MEDALS[i];
+                  const score = scoreFor(s);
+                  return (
+                    <div key={s.id}
+                      className="rounded-2xl border-2 border-[hsl(var(--nb-border))] bg-white p-7 flex flex-col items-center justify-center text-center gap-4 shadow-[5px_5px_0_0_hsl(var(--nb-border))]"
+                      style={{ animation: `fade-up 0.45s ${i * 90}ms both` }}>
+                      <div className="text-[10px] tracking-[0.5em] text-primary/70 uppercase flex items-center gap-2">
+                        <Trophy className="h-3 w-3" style={{ color: m.color }} />
+                        {ar ? m.labelAr : m.labelEn}
+                      </div>
+                      <Avatar name={s.name} size="xl" />
+                      <div className="text-2xl md:text-3xl font-black tracking-tight text-primary leading-none truncate max-w-full">
+                        {s.name}
+                      </div>
+                      {score !== null ? (
+                        <div className="text-3xl md:text-4xl font-black tabular-nums text-primary"
+                          style={{ textShadow: "0 0 24px hsl(16 100% 66% / 0.5)" }}>
+                          {score}
+                        </div>
+                      ) : (
+                        <div className={cn("text-xs tracking-[0.35em] uppercase font-bold",
                           s.eliminated ? "text-destructive/80" : "text-primary/80")}>
-                          {s.eliminated ? (ar ? "خارج" : "OUT") : (ar ? "حي" : "ALIVE")}
-                        </span>
-                    }
-                  </div>
-                );
-              })}
+                          {s.eliminated ? (ar ? "خارج" : "Out") : (ar ? "آخر الناجين" : "Last Standing")}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {ranked.length > 3 && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  {ranked.slice(3, 9).map((s, idx) => {
+                    const rank = idx + 4;
+                    const acc = s.total_answers ? (s.correct_answers / s.total_answers) * 100 : 0;
+                    return (
+                      <div key={s.id}
+                        className="rounded-xl border-2 border-[hsl(var(--nb-border))] bg-white px-4 py-3 flex items-center gap-3 shadow-[3px_3px_0_0_hsl(var(--nb-border))]"
+                        style={{ animation: `fade-up 0.4s ${idx * 70}ms both` }}>
+                        <span className="text-primary/60 font-black tabular-nums text-sm w-5 shrink-0">{rank}</span>
+                        <Avatar name={s.name} size="sm" />
+                        <span className="font-bold text-primary flex-1 truncate min-w-0">{s.name}</span>
+                        <span className="text-xs text-primary/65 tabular-nums shrink-0">{pct(acc)}</span>
+                        {scoreFor(s) !== null
+                          ? <span className="font-black tabular-nums text-primary text-sm shrink-0">{scoreFor(s)}</span>
+                          : <span className={cn("text-[10px] font-bold tracking-widest shrink-0",
+                              s.eliminated ? "text-destructive/80" : "text-primary/80")}>
+                              {s.eliminated ? (ar ? "خارج" : "OUT") : (ar ? "حي" : "ALIVE")}
+                            </span>
+                        }
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* ── Tabs ── */}
         <div>
@@ -344,7 +363,7 @@ const GameResults = () => {
                     "px-5 py-2 rounded-lg text-[10px] tracking-[0.35em] uppercase font-bold transition-all border-2",
                     tab === t
                       ? "bg-white text-primary border-[hsl(var(--nb-border))] shadow-[3px_3px_0_0_hsl(var(--nb-border))]"
-                      : "bg-white text-primary border-primary/30 shadow-[2px_2px_0_0_hsl(var(--nb-border)_/_0.3)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0_0_hsl(var(--nb-border)_/_0.3)]"
+                      : "bg-transparent text-white/70 border-white/25 hover:bg-white/10 hover:text-white"
                   )}>
                   {t === "rank" ? (ar ? "لوحة الصدارة" : "Leaderboard") : (ar ? "الأسئلة" : "Questions")}
                 </button>
@@ -358,7 +377,7 @@ const GameResults = () => {
 
           {/* Leaderboard */}
           {tab === "rank" && (
-            <div className="rounded-xl border border-primary/30 overflow-hidden">
+            <div className="rounded-xl border-2 border-[hsl(var(--nb-border))] bg-white overflow-hidden shadow-[4px_4px_0_0_rgba(0,0,0,0.35)]">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-primary/25 bg-primary/10">
@@ -439,7 +458,7 @@ const GameResults = () => {
           {tab === "qa" && (
             <div className="space-y-3">
               {questions.length === 0 && (
-                <div className="rounded-xl border border-primary/18 py-16 text-center text-primary/30 text-sm">
+                <div className="rounded-xl border-2 border-white/20 py-16 text-center text-white/45 text-sm">
                   {ar ? "لا توجد بيانات أسئلة متاحة" : "No question data available"}
                 </div>
               )}
@@ -451,8 +470,8 @@ const GameResults = () => {
                 rs.forEach(r => { if (r.answer_index < 4) dist[r.answer_index]++; });
                 return (
                   <div key={q.id} className={cn(
-                    "rounded-xl border p-5",
-                    a < 50 ? "border-destructive/50 bg-destructive/8" : "border-primary/30 bg-primary/8"
+                    "rounded-xl border-2 p-5 shadow-[4px_4px_0_0_rgba(0,0,0,0.35)]",
+                    a < 50 ? "border-destructive/60 bg-[#FDECEC]" : "border-[hsl(var(--nb-border))] bg-white"
                   )}>
                     <div className="flex items-start justify-between gap-3 mb-4">
                       <p className="text-sm font-bold text-foreground leading-relaxed">{idx + 1}. {q.text}</p>
@@ -500,10 +519,10 @@ const GameResults = () => {
 // ── Tiny stat chip ────────────────────────────────────────────────────────────
 const Stat = ({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) => (
   <div className="text-center">
-    <div className="flex items-center justify-center gap-1 text-[9px] tracking-widest text-primary/65 uppercase mb-0.5">
+    <div className="flex items-center justify-center gap-1 text-[9px] tracking-widest text-white/60 uppercase mb-0.5">
       {icon}{label}
     </div>
-    <div className="font-black tabular-nums text-primary text-sm">{value}</div>
+    <div className="font-black tabular-nums text-white text-sm">{value}</div>
   </div>
 );
 
