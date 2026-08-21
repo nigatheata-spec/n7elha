@@ -329,7 +329,7 @@ const Game = () => {
 
       {/* minimal top strip — logo left, balance right, sits directly on the CRT glass */}
       <header className="relative shrink-0 flex items-center justify-between px-4 pt-3 pb-1 z-10">
-        <img src={logoLight} alt="n7elha" className="h-6 w-6 object-contain" />
+        <img src={logoLight} alt="nfelha" className="h-6 w-6 object-contain" />
         <span className="flex items-center gap-1.5 text-sm font-bold tabular-nums" style={{ color: "hsl(120 100% 68%)" }}>
           ₿ {fmt(me?.crypto ?? 0)}
         </span>

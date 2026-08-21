@@ -30,9 +30,9 @@ const Landing = () => {
         line2b: "",
         line3a: "",
         line3b: "في دقائق",
-        sub: "نحلها يرافقك من فكرة الاختبار حتى تشغيله المباشر، ومن توليد الأسئلة بالذكاء الاصطناعي حتى تحليل أداء طلابك.",
+        sub: "نفلها يرافقك من فكرة الاختبار حتى تشغيله المباشر، ومن توليد الأسئلة بالذكاء الاصطناعي حتى تحليل أداء طلابك.",
         cta: "ابدأ معنا",
-        customers: "معلم",
+        customers: "أنماط لعب",
         joinGame: "ادخل اللعبة",
 
         panel1Title: "نساعد المعلم في التخطيط، التحضير، والبث المباشر.",
@@ -40,7 +40,7 @@ const Landing = () => {
         panel2Title: "تجربة اختبار متكاملة من الفكرة حتى النتيجة.",
         panel2Desc: "نمنح فصلك حضورًا تفاعليًا يعكس أسلوبك في التدريس.",
 
-        featuresKicker: "لماذا نحلها؟",
+        featuresKicker: "لماذا نفلها؟",
         featuresTitle: "أدواتٌ صُممت ليعشقها المعلم والطالب",
         featuresSub: "كل ميزة في المنصة وُلدت من احتياج حقيقي داخل الفصل، لا مجرد رفاهية تقنية.",
         f1Title: "توليد الأسئلة بالذكاء الاصطناعي",
@@ -64,7 +64,7 @@ const Landing = () => {
 
         forWhoKicker: "لمن هذه المنصة؟",
         forWhoTitle: "صُممت للمعلم العربي أولاً",
-        forWho1: "سواء كنت معلمًا في مدرسة حكومية تبحث عن طريقة تجعل مراجعة الدرس أكثر حيوية، أو مدرّسًا خاصًا يريد تتبع مستوى كل طالب بدقة — نحلها صُممت لك.",
+        forWho1: "سواء كنت معلمًا في مدرسة حكومية تبحث عن طريقة تجعل مراجعة الدرس أكثر حيوية، أو مدرّسًا خاصًا يريد تتبع مستوى كل طالب بدقة — نفلها صُممت لك.",
         forWho2: "لا يشترط أن تكون خبيرًا في التكنولوجيا. المنصة تعمل من المتصفح مباشرة، ولا تحتاج الطلاب إلى تحميل أي تطبيق. رمز قصير، وينضم الجميع في ثوانٍ.",
         forWho3: "الأسئلة باللغة العربية، التقارير باللغة العربية، وتجربة الطالب مصممة للشاشات الصغيرة التي يحملها طلابك في جيوبهم.",
         readMore: "اقرأ المزيد عنّا",
@@ -75,9 +75,9 @@ const Landing = () => {
         line2b: "",
         line3a: "",
         line3b: "in minutes.",
-        sub: "n7elha walks with you from idea to live session — from AI-generated questions to real-time student insights.",
+        sub: "nfelha walks with you from idea to live session — from AI-generated questions to real-time student insights.",
         cta: "Get started",
-        customers: "teachers",
+        customers: "game modes",
         joinGame: "JOIN GAME",
 
         panel1Title: "We help teachers with planning, prep, and live broadcast.",
@@ -85,7 +85,7 @@ const Landing = () => {
         panel2Title: "An end-to-end quiz experience.",
         panel2Desc: "We give your classroom a presence that matches how you teach.",
 
-        featuresKicker: "WHY N7ELHA?",
+        featuresKicker: "WHY NFELHA?",
         featuresTitle: "Tools teachers and students actually love",
         featuresSub: "Every feature was born from a real classroom need — not a tech gimmick.",
         f1Title: "AI question generation",
@@ -109,7 +109,7 @@ const Landing = () => {
 
         forWhoKicker: "WHO IS IT FOR",
         forWhoTitle: "Built around the Arabic-speaking teacher",
-        forWho1: "Whether you're a school teacher looking to make lesson reviews more engaging, or a private tutor who wants to track each student's level with precision — n7elha was built for you.",
+        forWho1: "Whether you're a school teacher looking to make lesson reviews more engaging, or a private tutor who wants to track each student's level with precision — nfelha was built for you.",
         forWho2: "You don't need to be tech-savvy. The platform runs entirely in the browser — students don't download anything. One short code and everyone's in within seconds.",
         forWho3: "Questions in Arabic, reports in Arabic, and a student experience designed for the small screens they carry in their pockets.",
         readMore: "Read more about us",
@@ -169,7 +169,7 @@ const Landing = () => {
               </Link>
 
               <div className="h-[58px] px-5 rounded-full border-2 border-[hsl(var(--nb-border))] flex flex-col items-center justify-center leading-tight shadow-[3px_3px_0_0_hsl(var(--nb-border))]">
-                <span className="text-[15px] font-semibold text-black">+120</span>
+                <span className="text-[15px] font-semibold text-black">9</span>
                 <span className="text-[10px] text-black/55">{t.customers}</span>
               </div>
             </div>
@@ -179,7 +179,7 @@ const Landing = () => {
           <div className="relative flex items-end justify-center">
             <img
               src={heroAstro}
-              alt="روّاد نحلها"
+              alt="روّاد نفلها"
               className="relative z-10 w-[88%] sm:w-[78%] max-w-[500px] select-none pointer-events-none drop-shadow-md"
               style={{ filter: "hue-rotate(-135deg)" }}
             />

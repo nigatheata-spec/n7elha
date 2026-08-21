@@ -242,7 +242,7 @@ const Join = () => {
 
         <div className="relative z-10 w-full max-w-xs text-center space-y-12 animate-fade-up">
           <div className="space-y-3 flex flex-col items-center">
-            <img src={logoLight} alt="n7elha" className="h-16 w-16 object-contain" />
+            <img src={logoLight} alt="nfelha" className="h-16 w-16 object-contain" />
             <div className="text-white/30 text-sm tracking-wide">{ar ? "أدخل رمز اللعبة" : "Enter the game code"}</div>
           </div>
 
@@ -299,7 +299,7 @@ const Join = () => {
 
         <div className="relative z-10 w-full max-w-xs text-center space-y-12 animate-fade-up">
           <div className="space-y-3 flex flex-col items-center">
-            <img src={logoLight} alt="n7elha" className="h-16 w-16 object-contain" />
+            <img src={logoLight} alt="nfelha" className="h-16 w-16 object-contain" />
             <div className="text-white/30 text-sm tracking-wide">{ar ? "اسمك في اللعبة؟" : "What's your name?"}</div>
           </div>
 

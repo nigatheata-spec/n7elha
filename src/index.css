@@ -14,7 +14,7 @@
 
 @layer base {
   :root {
-    /* n7elha palette — sand-dune bg, coral-glow + dark-slate-grey accents */
+    /* nfelha palette — sand-dune bg, coral-glow + dark-slate-grey accents */
     --background: 40 47% 85%;        /* sand-dune #EBDFC7 */
     --cream-panel: 43 58% 94%;       /* soft creamy hero surface */
     --foreground: 199 23% 18%;

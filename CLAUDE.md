@@ -28,7 +28,7 @@ supabase secrets set KEY=value                      # Set edge function secrets
 
 ## What this app is
 
-**n7elha** is an Arabic-first classroom quiz game platform. Teachers create quizzes, host live sessions with a 4-char room code, and students join on their phones. Eight game modes (`session.settings.mode`, picked in `HostGame.tsx`):
+**nfelha** is an Arabic-first classroom quiz game platform. Teachers create quizzes, host live sessions with a 4-char room code, and students join on their phones. Nine game modes (`session.settings.mode`, picked in `HostGame.tsx`):
 
 - **Classic** (`classic`) — the original quiz race. Answer fast, earn more.
 - **Crypto Rush** (`crypto_rush`) — hacking/crypto theme. Correct answers earn crypto. Power-up lets players hack rivals to steal crypto.

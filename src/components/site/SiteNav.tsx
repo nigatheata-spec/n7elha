@@ -35,8 +35,8 @@ export const SiteNav = () => {
         <div className="flex items-center justify-between gap-3 bg-white/90 backdrop-blur-md rounded-2xl px-4 py-3 border-2 border-[hsl(var(--nb-border))] shadow-[4px_4px_0_0_hsl(var(--nb-border))]">
 
           <Link to="/" className="flex items-center gap-2 shrink-0">
-            <img src={logoMark} alt="n7elha" className="h-8 w-8 object-contain" />
-            <span className="text-[17px] font-medium tracking-tight text-black">n7elha</span>
+            <img src={logoMark} alt="nfelha" className="h-8 w-8 object-contain" />
+            <span className="text-[17px] font-medium tracking-tight text-black">nfelha</span>
           </Link>
 
           <ul className={`hidden lg:flex items-center gap-10 text-[13px] font-medium text-black/80 ${isAr ? "tracking-normal" : "tracking-[0.18em]"}`}>
@@ -102,8 +102,8 @@ export const SiteNav = () => {
       >
         <div className="flex items-center justify-between px-5 pt-6 pb-4 border-b border-black/[0.06]">
           <Link to="/" className="flex items-center gap-2 shrink-0" onClick={() => setMenuOpen(false)}>
-            <img src={logoMark} alt="n7elha" className="h-7 w-7 object-contain" />
-            <span className="text-[16px] font-medium tracking-tight text-black">n7elha</span>
+            <img src={logoMark} alt="nfelha" className="h-7 w-7 object-contain" />
+            <span className="text-[16px] font-medium tracking-tight text-black">nfelha</span>
           </Link>
           <button
             onClick={() => setMenuOpen(false)}

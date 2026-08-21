@@ -96,8 +96,8 @@ const Auth = () => {
         </svg>
 
         <Link to="/" className="relative z-10 flex items-center gap-2 shrink-0">
-          <img src={logoLight} alt="n7elha" className="h-9 w-9 object-contain" />
-          <span className="text-[17px] font-medium tracking-tight text-white">n7elha</span>
+          <img src={logoLight} alt="nfelha" className="h-9 w-9 object-contain" />
+          <span className="text-[17px] font-medium tracking-tight text-white">nfelha</span>
         </Link>
 
         <div className="relative z-10 flex-1 flex flex-col justify-center">
@@ -114,7 +114,7 @@ const Auth = () => {
           </blockquote>
         </div>
 
-        <p className="relative z-10 text-white/30 text-[12px] tracking-wider">n7elha © 2026</p>
+        <p className="relative z-10 text-white/30 text-[12px] tracking-wider">nfelha © 2026</p>
       </div>
 
       {/* ── Right form panel ── */}

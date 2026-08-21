@@ -39,8 +39,8 @@ const NotFound = () => {
         <span className="pointer-events-none absolute -bottom-4 -right-4 h-8 w-8 rounded-full border-2 border-[#FF8254]/40 select-none" />
 
         <Link to="/" className="inline-flex items-center gap-2 mb-8">
-          <img src={logoMark} alt="n7elha" className="h-8 w-8 object-contain" />
-          <span className="text-[17px] font-medium tracking-tight text-black">n7elha</span>
+          <img src={logoMark} alt="nfelha" className="h-8 w-8 object-contain" />
+          <span className="text-[17px] font-medium tracking-tight text-black">nfelha</span>
         </Link>
 
         <div className="mx-auto mb-6 h-16 w-16 rounded-2xl bg-[#3F5A63]/10 text-[#3F5A63] flex items-center justify-center">

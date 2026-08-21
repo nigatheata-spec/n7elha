@@ -14,7 +14,7 @@ const Partners = () => {
         sub: "سواء كنت تدير مدرسة كاملة أو معلمًا واحدًا يجرّب المنصة لأول مرة، فريقنا يسمعك.",
 
         schoolsTitle: "للمدارس والإدارات التعليمية",
-        schoolsDesc: "نعمل مع المدارس التي تريد تفعيل نحلها على مستوى عدة صفوف أو معلمين، بما في ذلك دعم أنماط الألعاب الفعلية للفصول التي لا تملك أجهزة كافية لكل طالب.",
+        schoolsDesc: "نعمل مع المدارس التي تريد تفعيل نفلها على مستوى عدة صفوف أو معلمين، بما في ذلك دعم أنماط الألعاب الفعلية للفصول التي لا تملك أجهزة كافية لكل طالب.",
         schoolsCta: "راسلنا لمناقشة مدرستك",
 
         teachersTitle: "لمعلم فردي",
@@ -32,7 +32,7 @@ const Partners = () => {
         sub: "Whether you run a whole school or you're one teacher trying the platform for the first time, our team is listening.",
 
         schoolsTitle: "For schools and districts",
-        schoolsDesc: "We work with schools that want to roll out n7elha across multiple classes or teachers, including support for Physical Games mode in classrooms without a device per student.",
+        schoolsDesc: "We work with schools that want to roll out nfelha across multiple classes or teachers, including support for Physical Games mode in classrooms without a device per student.",
         schoolsCta: "Email us about your school",
 
         teachersTitle: "For an individual teacher",
@@ -75,7 +75,7 @@ const Partners = () => {
               <h3 className="mt-5 text-[18px] font-semibold leading-tight" style={{ color: "#3F5A63" }}>{t.schoolsTitle}</h3>
               <p className="mt-2 text-[14px] leading-relaxed text-black/65">{t.schoolsDesc}</p>
               <a
-                href="mailto:hello@n7elha.com?subject=School%20partnership"
+                href="mailto:hello@nfelha.com?subject=School%20partnership"
                 className="mt-5 inline-flex items-center gap-2 rounded-full border-2 border-[hsl(var(--nb-border))] bg-[#3F5A63] text-white px-5 py-2.5 text-[13px] font-semibold shadow-[3px_3px_0_0_hsl(var(--nb-border))] hover:translate-x-px hover:translate-y-px hover:shadow-[2px_2px_0_0_hsl(var(--nb-border))] transition-all"
               >
                 <Mail className="h-4 w-4" />
@@ -92,7 +92,7 @@ const Partners = () => {
               <h3 className="mt-5 text-[18px] font-semibold leading-tight" style={{ color: "#3F5A63" }}>{t.teachersTitle}</h3>
               <p className="mt-2 text-[14px] leading-relaxed text-black/65">{t.teachersDesc}</p>
               <a
-                href="mailto:hello@n7elha.com?subject=Support"
+                href="mailto:hello@nfelha.com?subject=Support"
                 className="mt-5 inline-flex items-center gap-2 rounded-full border-2 border-[hsl(var(--nb-border))] bg-white text-[#3F5A63] px-5 py-2.5 text-[13px] font-semibold shadow-[3px_3px_0_0_hsl(var(--nb-border))] hover:bg-[#3F5A63] hover:text-white hover:translate-x-px hover:translate-y-px hover:shadow-[2px_2px_0_0_hsl(var(--nb-border))] transition-all"
               >
                 <Mail className="h-4 w-4" />
@@ -112,22 +112,22 @@ const Partners = () => {
 
         <div className="mt-8 flex flex-wrap items-center gap-4">
           <a
-            href="mailto:hello@n7elha.com"
-            className="inline-flex items-center gap-2 rounded-full border-2 border-white/20 bg-white px-5 py-2.5 text-[14px] font-medium text-black shadow-[3px_3px_0_0_rgba(0,0,0,0.35)]"
+            href="mailto:hello@nfelha.com"
+            className="inline-flex items-center gap-2 rounded-full border-2 border-[#22333A] bg-white px-5 py-2.5 text-[14px] font-medium text-black shadow-[3px_3px_0_0_#22333A] hover:translate-x-px hover:translate-y-px hover:shadow-[2px_2px_0_0_#22333A] transition-all"
           >
             <Mail className="h-4 w-4 text-[#3F5A63]" />
-            hello@n7elha.com
+            hello@nfelha.com
           </a>
 
           <div className="flex items-center gap-2">
             <span className="text-[13px] text-white/55">{t.socialLabel}</span>
-            <a href="#" className="h-9 w-9 rounded-full border-2 border-white/20 flex items-center justify-center text-white hover:bg-white hover:text-[#3F5A63] transition">
+            <a href="#" className="h-9 w-9 rounded-full border-2 border-[#22333A] bg-white text-[#3F5A63] flex items-center justify-center shadow-[2px_2px_0_0_#22333A] hover:translate-x-px hover:translate-y-px hover:shadow-[1px_1px_0_0_#22333A] transition-all">
               <Twitter className="h-4 w-4" />
             </a>
-            <a href="#" className="h-9 w-9 rounded-full border-2 border-white/20 flex items-center justify-center text-white hover:bg-white hover:text-[#3F5A63] transition">
+            <a href="#" className="h-9 w-9 rounded-full border-2 border-[#22333A] bg-white text-[#3F5A63] flex items-center justify-center shadow-[2px_2px_0_0_#22333A] hover:translate-x-px hover:translate-y-px hover:shadow-[1px_1px_0_0_#22333A] transition-all">
               <Instagram className="h-4 w-4" />
             </a>
-            <a href="#" className="h-9 w-9 rounded-full border-2 border-white/20 flex items-center justify-center text-white hover:bg-white hover:text-[#3F5A63] transition">
+            <a href="#" className="h-9 w-9 rounded-full border-2 border-[#22333A] bg-white text-[#3F5A63] flex items-center justify-center shadow-[2px_2px_0_0_#22333A] hover:translate-x-px hover:translate-y-px hover:shadow-[1px_1px_0_0_#22333A] transition-all">
               <Github className="h-4 w-4" />
             </a>
           </div>

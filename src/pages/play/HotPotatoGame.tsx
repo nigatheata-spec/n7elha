@@ -313,7 +313,7 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
         <header className="relative shrink-0 flex items-center justify-between px-5 py-3 safe-top z-10"
           style={{ ...metalPanel, borderRadius: 0, borderLeft: "none", borderRight: "none", borderTop: "none" }}>
           <div className="flex items-center gap-2 min-w-0">
-            <img src={logoLight} alt="n7elha" className="h-6 w-6 object-contain shrink-0" />
+            <img src={logoLight} alt="nfelha" className="h-6 w-6 object-contain shrink-0" />
             {hasBomb && <BombIcon className="h-5 w-5 shrink-0" burn={fusePct / 100} />}
             <span className="text-sm font-bold truncate" style={{ color: "hsl(210 10% 80%)" }}>{me?.name ?? "—"}</span>
           </div>

@@ -5,7 +5,7 @@ import LanguageDetector from "i18next-browser-languagedetector";
 const resources = {
   ar: {
     translation: {
-      brand: "نحلها",
+      brand: "نفلها",
       tagline: "منصة الاختبارات الذكية للمعلمين",
       hero_title: "اختبارات تفاعلية. لعب ذكي. تعلم لا يُنسى.",
       hero_sub: "أنشئ اختباراتك يدوياً أو بالذكاء الاصطناعي من ملفاتك، استضف لعبة مباشرة، وراقب طلابك في الوقت الفعلي.",
@@ -69,7 +69,7 @@ const resources = {
   },
   en: {
     translation: {
-      brand: "n7elha",
+      brand: "nfelha",
       tagline: "Smart quiz platform for teachers",
       hero_title: "Interactive quizzes. Smart play. Unforgettable learning.",
       hero_sub: "Build quizzes manually or with AI from your documents, host live games, and watch your classroom in real time.",

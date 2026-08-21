@@ -11,7 +11,7 @@ export const SiteFooter = () => {
 
   const t = isAr
     ? {
-        ctaTitle: "جاهز تجرّب نحلها مع فصلك؟",
+        ctaTitle: "جاهز تجرّب نفلها مع فصلك؟",
         ctaSub: "إنشاء الحساب مجاني، وأول اختبار يحتاج دقائق فقط.",
         ctaBtn: "أنشئ حسابك الآن",
         ctaJoin: "ادخل كطالب",
@@ -27,10 +27,10 @@ export const SiteFooter = () => {
         footerCareers: "الوظائف",
         footerPrivacy: "الخصوصية",
         footerTerms: "الشروط",
-        footerRights: "© 2026 نحلها. جميع الحقوق محفوظة.",
+        footerRights: "© 2026 نفلها. جميع الحقوق محفوظة.",
       }
     : {
-        ctaTitle: "Ready to try n7elha with your class?",
+        ctaTitle: "Ready to try nfelha with your class?",
         ctaSub: "Creating an account is free, and your first quiz takes just minutes.",
         ctaBtn: "Create your account",
         ctaJoin: "Join as student",
@@ -46,7 +46,7 @@ export const SiteFooter = () => {
         footerCareers: "Careers",
         footerPrivacy: "Privacy",
         footerTerms: "Terms",
-        footerRights: "© 2026 n7elha. All rights reserved.",
+        footerRights: "© 2026 nfelha. All rights reserved.",
       };
 
   return (
@@ -85,8 +85,8 @@ export const SiteFooter = () => {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
           <div className="col-span-2 md:col-span-1">
             <Link to="/" className="flex items-center gap-2">
-              <img src={logoMark} alt="n7elha" className="h-8 w-8 object-contain brightness-0 invert" />
-              <span className="text-[17px] font-medium tracking-tight text-white">n7elha</span>
+              <img src={logoMark} alt="nfelha" className="h-8 w-8 object-contain brightness-0 invert" />
+              <span className="text-[17px] font-medium tracking-tight text-white">nfelha</span>
             </Link>
             <p className="mt-4 text-[13px] text-white/50 leading-relaxed max-w-xs">{t.footerTagline}</p>
             <div className="mt-5 flex gap-3">
@@ -99,7 +99,7 @@ export const SiteFooter = () => {
               <a href="#" className="h-9 w-9 rounded-full border border-white/20 flex items-center justify-center text-white/60 hover:bg-white hover:text-[#2B3F45] transition">
                 <Github className="h-4 w-4" />
               </a>
-              <a href="mailto:hello@n7elha.com" className="h-9 w-9 rounded-full border border-white/20 flex items-center justify-center text-white/60 hover:bg-white hover:text-[#2B3F45] transition">
+              <a href="mailto:hello@nfelha.com" className="h-9 w-9 rounded-full border border-white/20 flex items-center justify-center text-white/60 hover:bg-white hover:text-[#2B3F45] transition">
                 <Mail className="h-4 w-4" />
               </a>
             </div>

@@ -34,7 +34,7 @@ const AppSidebar = () => {
       {/* Logo */}
       <SidebarHeader className="h-16 flex items-center justify-center border-b border-sidebar-border px-2">
         <Link to="/app" className="flex items-center justify-center">
-          <img src={logoLight} alt="n7elha" className="h-10 w-10 object-contain" />
+          <img src={logoLight} alt="nfelha" className="h-10 w-10 object-contain" />
         </Link>
       </SidebarHeader>
 

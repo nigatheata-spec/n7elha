@@ -27,7 +27,7 @@ const Services = () => {
     ? {
         kicker: "الخدمات",
         title: "كل ما يحتاجه فصلك في مكان واحد",
-        sub: "من تحضير السؤال إلى تحليل النتيجة، نحلها تغطي رحلة الاختبار الكاملة — مصممة لتعمل من أول ثانية بلا تعقيد.",
+        sub: "من تحضير السؤال إلى تحليل النتيجة، نفلها تغطي رحلة الاختبار الكاملة — مصممة لتعمل من أول ثانية بلا تعقيد.",
 
         f1Title: "توليد الأسئلة بالذكاء الاصطناعي",
         f1Desc: "ارفع ملف الدرس (PDF أو Word أو PowerPoint) واترك المنصة تستخرج لك أسئلة دقيقة بمستويات صعوبة مختلفة، جاهزة للمراجعة والتعديل قبل النشر.",
@@ -39,7 +39,7 @@ const Services = () => {
         f4Desc: "اعرف من أتقن الدرس ومن يحتاج إلى مراجعة، عبر تقارير واضحة بعد كل جلسة تُظهر أداء كل طالب وكل سؤال على حدة.",
 
         modesKicker: "أنماط اللعب",
-        modesTitle: "ثمانية أنماط، فكرة واحدة: اجعل المراجعة تجربة",
+        modesTitle: "تسعة أنماط، فكرة واحدة: اجعل المراجعة تجربة",
         modesSub: "كل نمط يحوّل نفس الأسئلة إلى تجربة مختلفة — من سباق سريع إلى بقاء جماعي إلى لوح مطبوع بلا أجهزة إطلاقًا.",
 
         m1: "الوضع الكلاسيكي", m1d: "سباق الاختبار الأصلي — أجب بسرعة، اكسب أكثر.",
@@ -61,7 +61,7 @@ const Services = () => {
     : {
         kicker: "SERVICES",
         title: "Everything your classroom needs, in one place",
-        sub: "From writing the first question to reading the final report, n7elha covers the whole quiz journey — built to work from the first second, no setup friction.",
+        sub: "From writing the first question to reading the final report, nfelha covers the whole quiz journey — built to work from the first second, no setup friction.",
 
         f1Title: "AI question generation",
         f1Desc: "Upload your lesson (PDF, Word or PowerPoint) and let the platform extract precise questions across difficulty levels, ready to review and edit before you publish.",
@@ -73,7 +73,7 @@ const Services = () => {
         f4Desc: "Know who mastered the lesson and who needs a review, through clear reports after every session breaking down each student and each question.",
 
         modesKicker: "GAME MODES",
-        modesTitle: "Eight modes, one idea: make review feel like play",
+        modesTitle: "Nine modes, one idea: make review feel like play",
         modesSub: "Every mode turns the same question set into a different experience — from a fast-paced race to co-op survival to a printed board with no student devices at all.",
 
         m1: "Classic", m1d: "The original quiz race — answer fast, earn more.",
@@ -146,13 +146,13 @@ const Services = () => {
 
         <div className="mt-10 sm:mt-14 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {modes.map((m, i) => (
-            <div key={m.title} className={`group ${i % 2 === 0 ? "-rotate-[0.4deg]" : "rotate-[0.5deg]"} hover:rotate-0 transition-transform duration-300`}>
-              <div className="relative rounded-2xl border-2 border-white/15 bg-white/[0.06] p-5 backdrop-blur-sm group-hover:bg-white/[0.1] group-hover:-translate-x-1 group-hover:-translate-y-1 transition-all">
-                <div className="h-9 w-9 rounded-xl border-2 border-white/20 bg-[#FF8254]/15 text-[#FF8254] flex items-center justify-center">
+            <div key={m.title} className={`group h-full ${i % 2 === 0 ? "-rotate-[0.4deg]" : "rotate-[0.5deg]"} hover:rotate-0 transition-transform duration-300`}>
+              <div className="relative h-full rounded-2xl border-2 border-[#22333A] bg-white p-5 shadow-[4px_4px_0_0_#22333A] group-hover:shadow-[7px_7px_0_0_#22333A] group-hover:-translate-x-1 group-hover:-translate-y-1 transition-all">
+                <div className="h-9 w-9 rounded-xl border-2 border-[#22333A] bg-[#FF8254] text-white flex items-center justify-center">
                   {m.icon}
                 </div>
-                <h3 className="mt-4 text-[15px] font-semibold leading-tight text-white">{m.title}</h3>
-                <p className="mt-1.5 text-[13px] leading-relaxed text-white/60">{m.desc}</p>
+                <h3 className="mt-4 text-[15px] font-semibold leading-tight text-[#22333A]">{m.title}</h3>
+                <p className="mt-1.5 text-[13px] leading-relaxed text-black/60">{m.desc}</p>
               </div>
             </div>
           ))}
