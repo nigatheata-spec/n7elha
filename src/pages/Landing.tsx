@@ -1,22 +1,13 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import { useTranslation } from "react-i18next";
-import {
-  ArrowUpRight,
-  Play,
-  Sparkles,
-  FileText,
-  Radio,
-  BarChart3,
-  Upload,
-  Users,
-  Trophy,
-} from "lucide-react";
+import { ArrowUpRight, Play, Upload, Users, Trophy } from "lucide-react";
 import { useSmoothScroll } from "@/lib/smoothScroll";
 import { SiteNav } from "@/components/site/SiteNav";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { ProductPreview } from "@/components/site/ProductPreview";
 import heroPerson from "@/assets/hero-person.png";
+import saudiMap from "@/assets/saudi-map.svg";
 
 const Landing = () => {
   const { user } = useAuth();
@@ -36,23 +27,12 @@ const Landing = () => {
         customers: "أنماط لعب",
         joinGame: "ادخل اللعبة",
 
-        panel1Title: "نساعد المعلم في التخطيط، التحضير، والبث المباشر.",
-        panel1Link: "الميزات",
-        panel2Title: "تجربة اختبار متكاملة من الفكرة حتى النتيجة.",
-        panel2Desc: "نمنح فصلك حضورًا تفاعليًا يعكس أسلوبك في التدريس.",
-
-        featuresKicker: "لماذا نفلها؟",
-        featuresTitle: "أدواتٌ صُممت ليعشقها المعلم والطالب",
-        featuresSub: "كل ميزة في المنصة وُلدت من احتياج حقيقي داخل الفصل، لا مجرد رفاهية تقنية.",
-        f1Title: "توليد الأسئلة بالذكاء الاصطناعي",
-        f1Desc: "ارفع ملف الدرس (PDF أو Word أو PowerPoint) واترك المنصة تستخرج لك أسئلة دقيقة بمستويات صعوبة مختلفة.",
-        f2Title: "بناء يدوي مرن",
-        f2Desc: "حرر، أضف، وأعد ترتيب الأسئلة بسهولة. اختر الإجابات الصحيحة وحدّد الوقت المناسب لكل سؤال.",
-        f3Title: "بث مباشر للفصل",
-        f3Desc: "ادعُ طلابك برمز قصير، وشاهدهم ينضمون لحظة بلحظة على شاشة العرض في صفك.",
-        f4Title: "تحليلات مفصلة",
-        f4Desc: "اعرف من أتقن الدرس ومن يحتاج إلى مراجعة، عبر تقارير واضحة بعد كل جلسة.",
-        seeAllServices: "كل الخدمات",
+        mapCaption: "من هنا نبدأ",
+        storyKicker: "قصتنا",
+        storyTitle: "كنّا الطلاب الذين لا يرفعون أيديهم",
+        sp1: "نعرف تمامًا كيف تبدو حصة المراجعة. المعلم يسأل، والصف يصمت. ليس لأن أحدًا لم يفهم الدرس، بل لأن لا أحد يريد أن يكون أول من يجيب ويخطئ أمام الجميع.",
+        sp2: "جرّبنا المنصات الجاهزة. كانت مصممة بلغة أخرى وذهنية أخرى، والعربية فيها مجرد ترجمة أُضيفت لاحقًا. الأسئلة تنكسر، والاتجاه يختل، والتجربة تبدو غريبة عن صفوفنا.",
+        sp3: "فقررنا أن نبني ما كنا نتمنى وجوده ونحن على تلك المقاعد: منصة تجعل المراجعة شيئًا ينتظره الطالب، لا شيئًا يتهرب منه. هكذا وُلدت نفلها.",
 
         howKicker: "كيف تعمل؟",
         howTitle: "ثلاث خطوات تفصلك عن أول جلسة",
@@ -81,23 +61,12 @@ const Landing = () => {
         customers: "game modes",
         joinGame: "JOIN GAME",
 
-        panel1Title: "We help teachers with planning, prep, and live broadcast.",
-        panel1Link: "Features",
-        panel2Title: "An end-to-end quiz experience.",
-        panel2Desc: "We give your classroom a presence that matches how you teach.",
-
-        featuresKicker: "WHY NFELHA?",
-        featuresTitle: "Tools teachers and students actually love",
-        featuresSub: "Every feature was born from a real classroom need — not a tech gimmick.",
-        f1Title: "AI question generation",
-        f1Desc: "Upload your lesson (PDF, Word or PowerPoint) and let the platform extract precise questions across difficulty levels.",
-        f2Title: "Flexible manual builder",
-        f2Desc: "Edit, add and reorder questions effortlessly. Choose correct answers and tune the timing per question.",
-        f3Title: "Live classroom broadcast",
-        f3Desc: "Invite your students with a short code and watch them join in real time on your projector.",
-        f4Title: "Deep analytics",
-        f4Desc: "Know who mastered the lesson and who needs a review, through clear reports after every session.",
-        seeAllServices: "See all services",
+        mapCaption: "This is where we start",
+        storyKicker: "OUR STORY",
+        storyTitle: "We were the students who never raised their hands",
+        sp1: "We know exactly what a review lesson looks like. The teacher asks, and the room goes quiet. Not because nobody understood, but because nobody wants to be the first one to answer and get it wrong in front of everyone.",
+        sp2: "We tried the platforms that already existed. They were designed in another language and another mindset, with Arabic added afterwards as a translation. Questions break, direction flips, and the whole thing feels foreign to our classrooms.",
+        sp3: "So we built what we wished we had while we were still sitting in those seats: a platform that makes review something students look forward to instead of something they avoid. That is how nfelha started.",
 
         howKicker: "HOW IT WORKS",
         howTitle: "Three steps to your first live session",
@@ -187,63 +156,26 @@ const Landing = () => {
           </div>
         </div>
 
-        {/* ---------------- SPLIT PANEL ---------------- */}
-        <div className="wrap relative -mt-2 px-5 sm:px-8 md:px-14 pb-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 rounded-[24px] overflow-hidden border-2 border-[hsl(var(--nb-border))] shadow-[6px_6px_0_0_hsl(var(--nb-border))]">
-            <Link
-              to="/services"
-              className="group relative p-8 sm:p-10 min-h-[180px] flex flex-col justify-between bg-[#FF8254]"
-            >
-              <p className="text-[19px] sm:text-[23px] leading-snug font-medium text-white max-w-[280px]">
-                {t.panel1Title}
-              </p>
-              <span className="inline-flex items-center gap-1.5 text-white text-[13px] font-semibold">
-                {t.panel1Link}
-                <ArrowUpRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-              </span>
-            </Link>
-            <div className="relative p-8 sm:p-10 min-h-[180px] flex flex-col justify-between bg-[#2B3F45] border-t-2 sm:border-t-0 sm:border-s-2 border-[hsl(var(--nb-border))]">
-              <div className="flex items-start justify-between gap-4">
-                <p className="text-[19px] sm:text-[23px] leading-snug font-medium text-white max-w-[260px]">
-                  {t.panel2Title}
-                </p>
-                <span className="relative h-7 w-11 shrink-0 mt-1" aria-hidden>
-                  <span className="absolute left-0 top-0 h-7 w-7 rounded-full bg-white/25" />
-                  <span className="absolute right-0 top-0 h-7 w-7 rounded-full bg-[#FF8254]" />
-                </span>
-              </div>
-              <p className="text-[13.5px] leading-relaxed text-white/55 max-w-xs">
-                {t.panel2Desc}
-              </p>
-            </div>
-          </div>
-        </div>
-
         <ProductPreview />
 
-        {/* ---------------- FEATURES ---------------- */}
-        <section id="features" className="bg-[#14212A] text-white px-5 sm:px-8 md:px-14 py-20 sm:py-28">
-          <div className="wrap"><div className="max-w-2xl flex items-end justify-between gap-6 flex-wrap">
+        {/* ---------------- OUR STORY ---------------- */}
+        <section className="bg-[#14212A] text-white px-5 sm:px-8 md:px-14 py-20 sm:py-28">
+          <div className="wrap grid grid-cols-1 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] gap-8 lg:gap-16">
             <div>
-              <span className={`text-[12px] font-semibold text-[#FF8254] ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`}>{t.featuresKicker}</span>
-              <h2 className="mt-3 text-[28px] sm:text-[40px] tracking-tight leading-[1.1]" style={{ color: "#FFFFFF", fontFamily: "'ArslanWessam', 'Almarai', sans-serif" }}>
-                {t.featuresTitle}
+              <span className={`text-[12px] font-semibold text-[#FF8254] ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`}>{t.storyKicker}</span>
+              <h2
+                className="mt-3 text-[26px] sm:text-[34px] tracking-tight leading-[1.15]"
+                style={{ color: "#FFFFFF", fontFamily: "'ArslanWessam', 'Almarai', sans-serif" }}
+              >
+                {t.storyTitle}
               </h2>
-              <p className="mt-4 text-[15px] text-white/65 leading-relaxed">{t.featuresSub}</p>
             </div>
-          </div>
-
-          <div className="mt-10 sm:mt-14 grid grid-cols-1 md:grid-cols-3 gap-4">
-            <FeatureLarge dark icon={<Sparkles className="h-6 w-6" />} title={t.f1Title} desc={t.f1Desc} tilt="-rotate-[0.5deg]" />
-            <Feature dark icon={<FileText className="h-5 w-5" />} title={t.f2Title} desc={t.f2Desc} tilt="rotate-[0.9deg]" />
-            <Feature dark icon={<Radio className="h-5 w-5" />} title={t.f3Title} desc={t.f3Desc} tilt="-rotate-[0.8deg]" />
-            <FeatureLarge dark icon={<BarChart3 className="h-6 w-6" />} title={t.f4Title} desc={t.f4Desc} tilt="rotate-[0.5deg]" />
-          </div>
-
-          <Link to="/services" className="mt-8 inline-flex items-center gap-1.5 text-[14px] font-semibold text-white underline decoration-[#FF8254] decoration-2 underline-offset-4">
-            {t.seeAllServices}
-            <ArrowUpRight className="h-4 w-4" />
-          </Link>
+            <div className="max-w-xl relative">
+              <div className="h-1 w-16 bg-[#FF8254] rounded-full" />
+              <p className="mt-6 text-[17px] sm:text-[19px] leading-relaxed text-white font-medium">{t.sp1}</p>
+              <p className="mt-5 text-[15px] leading-relaxed text-white/60">{t.sp2}</p>
+              <p className="mt-5 text-[15px] leading-relaxed text-white/60">{t.sp3}</p>
+            </div>
           </div>
         </section>
 
@@ -274,6 +206,8 @@ const Landing = () => {
               <h2 className="mt-4 text-[26px] sm:text-[36px] tracking-tight leading-[1.15]" style={{ color: "#3F5A63", fontFamily: "'ArslanWessam', 'Almarai', sans-serif" }}>
                 {t.forWhoTitle}
               </h2>
+              <img src={saudiMap} alt={isAr ? "المملكة العربية السعودية" : "Saudi Arabia"} className="mt-8 w-full max-w-[19rem]" />
+              <p className="mt-4 text-[13px] font-semibold text-[#3F5A63]">{t.mapCaption}</p>
             </div>
             <div className="space-y-6 text-[15px] leading-relaxed text-black/65">
               <p>{t.forWho1}</p>
@@ -295,33 +229,7 @@ const Landing = () => {
 
 /* ---------- helpers ---------- */
 
-const FeatureLarge = ({ icon, title, desc, tilt = "-rotate-[0.6deg]", dark = false }: { icon: React.ReactNode; title: string; desc: string; tilt?: string; dark?: boolean }) => (
-  <div className={`md:col-span-2 group ${tilt} hover:rotate-0 transition-transform duration-300`}>
-    <div className={`relative rounded-2xl border-2 p-7 transition-all group-hover:-translate-x-1 group-hover:-translate-y-1 ${dark ? "border-[#0B1418] bg-[#3F5A63] shadow-[5px_5px_0_0_#0B1418] group-hover:shadow-[8px_8px_0_0_#0B1418]" : "border-[hsl(var(--nb-border))] bg-white shadow-[5px_5px_0_0_hsl(var(--nb-border))] group-hover:shadow-[8px_8px_0_0_hsl(var(--nb-border))]"}`}>
-      <div className="flex items-start gap-5">
-        <div className={`h-12 w-12 rounded-2xl border-2 flex items-center justify-center shrink-0 text-white ${dark ? "border-[#0B1418] bg-[#FF8254]" : "border-[hsl(var(--nb-border))] bg-[#3F5A63]"}`}>
-          {icon}
-        </div>
-        <div>
-          <h3 className="text-[18px] font-semibold leading-tight" style={{ color: dark ? "#FFFFFF" : "#3F5A63" }}>{title}</h3>
-          <p className={`mt-2 text-[14px] leading-relaxed max-w-lg ${dark ? "text-white/65" : "text-black/65"}`}>{desc}</p>
-        </div>
-      </div>
-    </div>
-  </div>
-);
 
-const Feature = ({ icon, title, desc, tilt = "rotate-[0.8deg]", dark = false }: { icon: React.ReactNode; title: string; desc: string; tilt?: string; dark?: boolean }) => (
-  <div className={`group ${tilt} hover:rotate-0 transition-transform duration-300`}>
-    <div className={`relative h-full rounded-2xl border-2 p-6 transition-all group-hover:-translate-x-1 group-hover:-translate-y-1 ${dark ? "border-[#0B1418] bg-[#3F5A63] shadow-[5px_5px_0_0_#0B1418] group-hover:shadow-[8px_8px_0_0_#0B1418]" : "border-[hsl(var(--nb-border))] bg-white shadow-[5px_5px_0_0_hsl(var(--nb-border))] group-hover:shadow-[8px_8px_0_0_hsl(var(--nb-border))]"}`}>
-      <div className={`h-10 w-10 rounded-2xl border-2 flex items-center justify-center transition-colors ${dark ? "border-[#0B1418] bg-[#FF8254] text-white" : "border-[hsl(var(--nb-border))] bg-[#3F5A63]/10 text-[#3F5A63] group-hover:bg-[#3F5A63] group-hover:text-white"}`}>
-        {icon}
-      </div>
-      <h3 className="mt-5 text-[17px] font-semibold leading-tight" style={{ color: dark ? "#FFFFFF" : "#3F5A63" }}>{title}</h3>
-      <p className={`mt-2 text-[13.5px] leading-relaxed ${dark ? "text-white/65" : "text-black/65"}`}>{desc}</p>
-    </div>
-  </div>
-);
 
 const Step = ({ n, icon, title, desc, tilt = "-rotate-[0.7deg]" }: { n: string; icon: React.ReactNode; title: string; desc: string; tilt?: string }) => (
   <div className={`group ${tilt} hover:rotate-0 transition-transform duration-300`}>
