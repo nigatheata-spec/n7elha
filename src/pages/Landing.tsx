@@ -16,7 +16,7 @@ import { useSmoothScroll } from "@/lib/smoothScroll";
 import { SiteNav } from "@/components/site/SiteNav";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { ProductPreview } from "@/components/site/ProductPreview";
-import heroAstro from "@/assets/astro-hero.png";
+import heroPerson from "@/assets/hero-person.png";
 
 const Landing = () => {
   const { user } = useAuth();
@@ -177,12 +177,12 @@ const Landing = () => {
           </div>
 
           {/* RIGHT */}
-          <div className="relative flex items-end justify-center">
+          <div className="relative min-h-[440px] sm:min-h-[560px]">
+            <div className="absolute top-2 end-2 sm:end-4 w-[88%] sm:w-[78%] aspect-square rounded-[24px] sm:rounded-[28px] bg-[#3F5A63] border-2 border-[hsl(var(--nb-border))] shadow-[6px_6px_0_0_hsl(var(--nb-border))]" />
             <img
-              src={heroAstro}
-              alt="روّاد نفلها"
-              className="relative z-10 w-[88%] sm:w-[78%] max-w-[500px] select-none pointer-events-none drop-shadow-md"
-              style={{ filter: "hue-rotate(-135deg)" }}
+              src={heroPerson}
+              alt="معلم نفلها"
+              className="absolute bottom-0 end-2 sm:end-4 w-[88%] sm:w-[78%] h-full object-contain object-bottom select-none pointer-events-none drop-shadow-2xl z-20"
             />
           </div>
         </div>
