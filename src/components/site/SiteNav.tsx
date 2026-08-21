@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import { useTranslation } from "react-i18next";
 import { LangToggle } from "@/components/LangToggle";
@@ -12,6 +12,7 @@ export const SiteNav = () => {
   const { i18n } = useTranslation();
   const isAr = i18n.language === "ar";
   const [menuOpen, setMenuOpen] = useState(false);
+  const { pathname } = useLocation();
 
   useEffect(() => {
     document.body.style.overflow = menuOpen ? "hidden" : "";
@@ -26,8 +27,9 @@ export const SiteNav = () => {
   }, [menuOpen]);
 
   const t = isAr
-    ? { about: "من نحن", services: "الخدمات", partners: "الشركاء", login: "دخول", signup: "تسجيل", dashboard: "لوحتي", joinGame: "ادخل اللعبة" }
-    : { about: "ABOUT", services: "FEATURES", partners: "CONTACT", login: "LOG IN", signup: "SIGN UP", dashboard: "DASHBOARD", joinGame: "JOIN GAME" };
+    ? { home: "الرئيسية", about: "من نحن", services: "الخدمات", partners: "الشركاء", login: "دخول", signup: "تسجيل", dashboard: "لوحتي", joinGame: "ادخل اللعبة" }
+    : { home: "HOME", about: "ABOUT", services: "FEATURES", partners: "CONTACT", login: "LOG IN", signup: "SIGN UP", dashboard: "DASHBOARD", joinGame: "JOIN GAME" };
+
 
   return (
     <>
@@ -40,9 +42,29 @@ export const SiteNav = () => {
           </Link>
 
           <ul className={`hidden lg:flex items-center gap-10 text-[13px] font-medium text-black/80 ${isAr ? "tracking-normal" : "tracking-[0.18em]"}`}>
-            <li><Link to="/services" className="hover:text-black">{t.services}</Link></li>
-            <li><Link to="/about" className="hover:text-black">{t.about}</Link></li>
-            <li><Link to="/partners" className="hover:text-black">{t.partners}</Link></li>
+            {[
+              { to: "/", label: t.home },
+              { to: "/services", label: t.services },
+              { to: "/about", label: t.about },
+              { to: "/partners", label: t.partners },
+            ].map(item => {
+              const active = pathname === item.to;
+              return (
+                <li key={item.to}>
+                  <Link
+                    to={item.to}
+                    aria-current={active ? "page" : undefined}
+                    className={`relative py-1 transition-colors hover:text-black ${active ? "text-black" : ""}`}
+                  >
+                    {item.label}
+                    {/* underline marks the current page, which the nav never indicated */}
+                    <span
+                      className={`absolute inset-x-0 -bottom-0.5 h-[2px] rounded-full bg-[#FF8254] origin-center transition-transform duration-300 ${active ? "scale-x-100" : "scale-x-0"}`}
+                    />
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
 
           <div className="hidden md:flex items-center gap-2">
@@ -122,13 +144,16 @@ export const SiteNav = () => {
             <Languages className="h-4 w-4" />
             {isAr ? "English" : "العربية"}
           </button>
-          <Link to="/services" onClick={() => setMenuOpen(false)} className="w-full px-4 py-2.5 rounded-full border-2 border-[hsl(var(--nb-border))] bg-white text-[#3F5A63] text-[13px] tracking-wider font-medium text-center shadow-[3px_3px_0_0_hsl(var(--nb-border))]">
+          <Link to="/" onClick={() => setMenuOpen(false)} aria-current={pathname === "/" ? "page" : undefined} className={`w-full px-4 py-2.5 rounded-full border-2 border-[hsl(var(--nb-border))] text-[13px] tracking-wider font-medium text-center shadow-[3px_3px_0_0_hsl(var(--nb-border))] ${pathname === "/" ? "bg-[#3F5A63] text-white" : "bg-white text-[#3F5A63]"}`}>
+            {t.home}
+          </Link>
+          <Link to="/services" onClick={() => setMenuOpen(false)} aria-current={pathname === "/services" ? "page" : undefined} className={`w-full px-4 py-2.5 rounded-full border-2 border-[hsl(var(--nb-border))] text-[13px] tracking-wider font-medium text-center shadow-[3px_3px_0_0_hsl(var(--nb-border))] ${pathname === "/services" ? "bg-[#3F5A63] text-white" : "bg-white text-[#3F5A63]"}`}>
             {t.services}
           </Link>
-          <Link to="/about" onClick={() => setMenuOpen(false)} className="w-full px-4 py-2.5 rounded-full border-2 border-[hsl(var(--nb-border))] bg-white text-[#3F5A63] text-[13px] tracking-wider font-medium text-center shadow-[3px_3px_0_0_hsl(var(--nb-border))]">
+          <Link to="/about" onClick={() => setMenuOpen(false)} aria-current={pathname === "/about" ? "page" : undefined} className={`w-full px-4 py-2.5 rounded-full border-2 border-[hsl(var(--nb-border))] text-[13px] tracking-wider font-medium text-center shadow-[3px_3px_0_0_hsl(var(--nb-border))] ${pathname === "/about" ? "bg-[#3F5A63] text-white" : "bg-white text-[#3F5A63]"}`}>
             {t.about}
           </Link>
-          <Link to="/partners" onClick={() => setMenuOpen(false)} className="w-full px-4 py-2.5 rounded-full border-2 border-[hsl(var(--nb-border))] bg-white text-[#3F5A63] text-[13px] tracking-wider font-medium text-center shadow-[3px_3px_0_0_hsl(var(--nb-border))]">
+          <Link to="/partners" onClick={() => setMenuOpen(false)} aria-current={pathname === "/partners" ? "page" : undefined} className={`w-full px-4 py-2.5 rounded-full border-2 border-[hsl(var(--nb-border))] text-[13px] tracking-wider font-medium text-center shadow-[3px_3px_0_0_hsl(var(--nb-border))] ${pathname === "/partners" ? "bg-[#3F5A63] text-white" : "bg-white text-[#3F5A63]"}`}>
             {t.partners}
           </Link>
           <Link to="/play" onClick={() => setMenuOpen(false)} className="w-full px-4 py-2.5 rounded-full border-2 border-[hsl(var(--nb-border))] bg-white text-[#3F5A63] text-[13px] tracking-wider font-medium text-center shadow-[3px_3px_0_0_hsl(var(--nb-border))]">

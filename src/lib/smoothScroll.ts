@@ -34,11 +34,15 @@ export function useSmoothScroll(enabled = true) {
       }, 120);
     });
 
+    // Each frame schedules a fresh id, so cleanup has to cancel the LATEST one.
+    // Cancelling only the first left the loop running against a destroyed Lenis,
+    // leaking another loop every time the landing page remounted.
+    let rafId = 0;
     function raf(time: number) {
       lenis.raf(time);
-      requestAnimationFrame(raf);
+      rafId = requestAnimationFrame(raf);
     }
-    const rafId = requestAnimationFrame(raf);
+    rafId = requestAnimationFrame(raf);
 
     gsap.ticker.lagSmoothing(0);
     ScrollTrigger.refresh();

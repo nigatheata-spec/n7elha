@@ -26,6 +26,8 @@ import Game from "./pages/play/Game";
 import ScanSquare from "./pages/play/ScanSquare";
 import NotFound from "./pages/NotFound";
 
+import { ScrollToTop } from "@/components/ScrollToTop";
+
 const queryClient = new QueryClient();
 
 const AppContent = () => {
@@ -54,6 +56,9 @@ const AppContent = () => {
         <Notifications />
         <LangTransitionOverlay />
         <AuthProvider>
+          <ScrollToTop />
+          {/* keyed on pathname so the enter animation replays per navigation */}
+          <div key={location.pathname} className="page-enter">
           <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/services" element={<Services />} />
@@ -79,6 +84,7 @@ const AppContent = () => {
             <Route path="/index" element={<Navigate to="/" replace />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </div>
         </AuthProvider>
       </div>
     </>

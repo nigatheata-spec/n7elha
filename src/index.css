@@ -763,3 +763,14 @@
 /* Shared page measure. Without it, sections stretch to the viewport and content
    drifts apart on wide monitors instead of holding together as a column. */
 .wrap { max-width: var(--content-max); margin-inline: auto; width: 100%; }
+
+/* Route transition. Navigation previously swapped the tree with no scroll reset
+   and no motion, so a page change read as a hard cut mid-scroll. */
+@keyframes page-enter {
+  from { opacity: 0; transform: translate3d(0, 10px, 0); }
+  to   { opacity: 1; transform: none; }
+}
+.page-enter { animation: page-enter 0.38s cubic-bezier(0.16, 1, 0.3, 1) both; }
+@media (prefers-reduced-motion: reduce) {
+  .page-enter { animation: none; }
+}
