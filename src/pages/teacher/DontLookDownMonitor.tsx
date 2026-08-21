@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Square, Maximize, ChevronUp, Trophy } from "lucide-react";
 import { PixelShield } from "@/components/PixelIcons";
 import { PLATFORMS, SUMMIT_Y, WORLD, colorFor } from "@/lib/dontLookDown";
-import { drawSky, drawCloud, drawPlatform, drawCharacter, drawNameTag, CLOUDS } from "@/lib/dontLookDownRender";
+import { drawSky, drawCloud, drawPlatform, drawCharacter, drawNameTag, drawTopFog, CLOUDS } from "@/lib/dontLookDownRender";
 
 type Peer = { id: string; name: string; x: number; y: number; t: number };
 
@@ -94,6 +94,8 @@ const DontLookDownMonitor = ({ session, sessionId }: Props) => {
         drawCharacter(ctx, sx(p.x), sy(p.y), w, h, colorFor(id), 1);
         drawNameTag(ctx, sx(p.x) + w / 2, sy(p.y) + 2, p.name ?? "", 0.85);
       }
+
+      drawTopFog(ctx, cssW, cssH, 0.35);
 
       raf = requestAnimationFrame(draw);
     };

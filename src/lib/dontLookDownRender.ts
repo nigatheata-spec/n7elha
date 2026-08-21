@@ -67,11 +67,46 @@ export const drawSky = (ctx: CanvasRenderingContext2D, w: number, h: number, alt
   for (let y = 0; y < h; y += 6) ctx.fillRect(0, y, w, 3);
 };
 
+// ── Atmosphere ──────────────────────────────────────────────────────────────
+/**
+ * Haze along the top of the viewport, painted AFTER the world.
+ *
+ * Platforms are culled at the viewport edge, so a slab used to wink into
+ * existence at a hard line and the whole scene read as though it were
+ * glitching. Fading the top band back toward the sky colour means a platform
+ * emerges out of haze instead of appearing from nothing. Colour is sampled
+ * from the same altitude ramp `drawSky` uses so the fog never looks pasted on.
+ */
+export const drawTopFog = (
+  ctx: CanvasRenderingContext2D, w: number, h: number, altitude: number,
+) => {
+  const t = Math.max(0, Math.min(1, altitude));
+  const hue = 199 + t * 6, sat = 78 - t * 10, lig = 58 - t * 14;
+  const band = Math.max(90, h * 0.22);
+  const g = ctx.createLinearGradient(0, 0, 0, band);
+  g.addColorStop(0,    `hsl(${hue} ${sat}% ${lig}% / 0.92)`);
+  g.addColorStop(0.45, `hsl(${hue} ${sat}% ${lig}% / 0.45)`);
+  g.addColorStop(1,    `hsl(${hue} ${sat}% ${lig}% / 0)`);
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, w, band);
+};
+
 // ── Platforms ───────────────────────────────────────────────────────────────
 /**
  * A stone slab: bright top course, dark brick body, and two pillars dropping
  * out of the underside so platforms read as built structures, not floating bars.
  */
+/**
+ * How far `drawPlatform` paints beyond its `y`, at scale 1.
+ *
+ * `y` is the TOP of the slab, but the pillars hang 120px below it under an
+ * 11px top course, and a checkpoint's glow bleeds 30px above. Cull tests must
+ * use these, not the slab position alone — culling on `y` by itself made
+ * platforms vanish while their pillars were still on screen.
+ */
+export const PLATFORM_DRAW_BELOW = 11 + 120;
+export const PLATFORM_DRAW_ABOVE = 30;
+
 export const drawPlatform = (
   ctx: CanvasRenderingContext2D,
   x: number, y: number, w: number,
