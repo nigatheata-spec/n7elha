@@ -765,12 +765,17 @@
 .wrap { max-width: var(--content-max); margin-inline: auto; width: 100%; }
 
 /* Route transition. Navigation previously swapped the tree with no scroll reset
-   and no motion, so a page change read as a hard cut mid-scroll. */
+   and no motion, so a page change read as a hard cut mid-scroll.
+
+   Opacity only, deliberately: a transform on this wrapper makes it the containing
+   block for every `position: fixed` descendant, which collapsed the full-screen
+   `fixed inset-0` player and monitor screens into a zero-height box and rendered
+   them invisible. Do not add transform/filter/will-change here. */
 @keyframes page-enter {
-  from { opacity: 0; transform: translate3d(0, 10px, 0); }
-  to   { opacity: 1; transform: none; }
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
-.page-enter { animation: page-enter 0.38s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.page-enter { animation: page-enter 0.32s ease-out both; }
 @media (prefers-reduced-motion: reduce) {
   .page-enter { animation: none; }
 }

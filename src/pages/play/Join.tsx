@@ -275,7 +275,7 @@ const Join = () => {
             )}
           </div>
 
-          <p className="text-white/15 text-xs">{ar ? "الرمز مكوّن من 4 أحرف" : "The code is 4 characters"}</p>
+          <p className="text-white/15 text-xs">{ar ? "الرمز مكوّن من 4 أرقام" : "The code is 4 digits"}</p>
         </div>
       </div>
     );
