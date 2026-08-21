@@ -16,6 +16,7 @@ import {
   QrCode,
   Coins,
 } from "lucide-react";
+import triDoodle from "@/assets/doodles/triangle-trio.png";
 import { SiteNav } from "@/components/site/SiteNav";
 import { SiteFooter } from "@/components/site/SiteFooter";
 
@@ -113,7 +114,8 @@ const Services = () => {
       <SiteNav />
 
       {/* ---------------- HERO ---------------- */}
-      <section className="px-5 sm:px-8 md:px-14 pt-10 sm:pt-16 pb-14 sm:pb-20">
+      <section className="relative overflow-hidden px-5 sm:px-8 md:px-14 pt-10 sm:pt-16 pb-14 sm:pb-20">
+        <img src={triDoodle} alt="" aria-hidden className="pointer-events-none absolute end-[6%] top-10 w-24 opacity-25 rotate-6 hidden md:block" />
         <span className={`text-[12px] font-semibold text-[#3F5A63] ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`}>{t.kicker}</span>
         <h1
           className="mt-3 max-w-2xl leading-[1.1] tracking-tight text-[32px] sm:text-[46px]"

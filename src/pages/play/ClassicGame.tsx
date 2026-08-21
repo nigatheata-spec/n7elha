@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
-import { Trophy, Check, X } from "lucide-react";
+import { Trophy, Check, X, Star } from "lucide-react";
 import { playSelect, playCorrect, playWrong, playGameOver, primeAudio } from "@/lib/sound";
 import beanPair from "@/assets/doodles/bean-pair.png";
 import commaPair from "@/assets/doodles/comma-pair.png";
@@ -259,7 +259,8 @@ const ClassicGame = ({ sessionId, studentId }: Props) => {
           <span className="font-bold text-sm truncate" style={{ color: "#3F5A63" }}>{me?.name ?? "—"}</span>
         </div>
         <span className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-full font-black text-sm tabular-nums bg-white", NB, "shadow-[3px_3px_0_0_hsl(var(--nb-border))]")} style={{ color: "#3F5A63" }}>
-          ⭐ {fmt(me?.crypto ?? 0)}
+          <Star className="h-3.5 w-3.5 fill-[#FF8254] text-[#FF8254]" />
+          {fmt(me?.crypto ?? 0)}
         </span>
       </header>
 
@@ -305,7 +306,7 @@ const ClassicGame = ({ sessionId, studentId }: Props) => {
               {currentQ.image_url && (
                 <img src={currentQ.image_url} alt="" className={cn("mb-3 max-h-[22vh] w-auto object-contain rounded-xl mx-auto", NB)} />
               )}
-              <p className="text-lg font-bold text-center leading-snug" style={{ color: "#3F5A63" }}>
+              <p dir="auto" className="text-lg font-bold text-center leading-snug" style={{ color: "#3F5A63" }}>
                 {currentQ.text}
               </p>
             </div>
@@ -344,7 +345,7 @@ const ClassicGame = ({ sessionId, studentId }: Props) => {
                   >
                     {showResult && isCorrect && <Check className="h-4 w-4 shrink-0 absolute left-2 top-2" strokeWidth={3} />}
                     {showResult && isPicked && !isCorrect && <X className="h-4 w-4 shrink-0 absolute left-2 top-2" strokeWidth={3} />}
-                    {opt}
+                    <span dir="auto">{opt}</span>
                     {showResult && isPicked && lastGain !== null && (
                       <span className="absolute -top-2.5 -right-2 px-2 py-0.5 rounded-full text-[11px] font-black bg-white text-[#3F5A63] border-2 border-[hsl(var(--nb-border))]">
                         +{lastGain}

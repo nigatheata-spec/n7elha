@@ -15,6 +15,7 @@ import {
 import { useSmoothScroll } from "@/lib/smoothScroll";
 import { SiteNav } from "@/components/site/SiteNav";
 import { SiteFooter } from "@/components/site/SiteFooter";
+import { ProductPreview } from "@/components/site/ProductPreview";
 import heroAstro from "@/assets/astro-hero.png";
 
 const Landing = () => {
@@ -217,6 +218,8 @@ const Landing = () => {
             </div>
           </div>
         </div>
+
+        <ProductPreview />
 
         {/* ---------------- FEATURES ---------------- */}
         <section id="features" className="px-5 sm:px-8 md:px-14 py-16 sm:py-24 border-t border-black/5">

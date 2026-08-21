@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Plus, Trash2, Sparkles, Upload, Save, Check, ChevronDown, Image as ImageIcon, X, Wand2 } from "lucide-react";
+import { Plus, Trash2, Sparkles, Upload, Save, Check, ChevronDown, Image as ImageIcon, X, Wand2, FileText } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
 
 type Q = { id?: string; text: string; options: string[]; correct_index: number; difficulty: "easy"|"medium"|"hard"; image_url?: string | null };
@@ -243,7 +243,7 @@ const QuizEditor = () => {
             />
 
             {docText && (
-              <div className="text-xs text-muted-foreground px-1">📄 {docText.length} حرف</div>
+              <div className="text-xs text-muted-foreground px-1 flex items-center gap-1.5"><FileText className="h-3.5 w-3.5" />{docText.length} حرف</div>
             )}
             {docImages.length > 0 && (
               <div className="flex flex-wrap gap-2 px-1">

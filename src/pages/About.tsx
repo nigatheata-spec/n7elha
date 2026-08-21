@@ -1,6 +1,9 @@
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Globe, MousePointerClick, LayoutGrid, ArrowUpRight, Compass } from "lucide-react";
+import saudiMap from "@/assets/saudi-map.svg";
+import zigzag from "@/assets/doodles/zigzag-trio.png";
+import beans from "@/assets/doodles/bean-pair.png";
 import { SiteNav } from "@/components/site/SiteNav";
 import { SiteFooter } from "@/components/site/SiteFooter";
 
@@ -29,6 +32,7 @@ const About = () => {
         missionKicker: "إلى أين نتجه",
         missionTitle: "طموحنا يبدأ من الخليج",
         m1: "هدفنا أن يصبح التعلّم التفاعلي هو الأصل في فصول الخليج، لا الاستثناء الذي يحدث مرة في الفصل الدراسي.",
+        mapCaption: "من هنا نبدأ",
         m2: "نبني نفلها لتعمل في الفصل الواقعي كما هو: الفصل الذي لا يملك جهازًا لكل طالب، والفصل الذي يملك. لهذا السبب تحديدًا بنينا نمط الألعاب الفعلية بلوح مطبوع ورموز QR، حتى لا تكون التقنية شرطًا لدخول التجربة.",
 
         valuesKicker: "ما الذي يوجّهنا",
@@ -60,6 +64,7 @@ const About = () => {
         missionKicker: "WHERE WE ARE HEADED",
         missionTitle: "Our ambition starts with the Gulf",
         m1: "We want interactive learning to become the default in GCC classrooms, not the exception that happens once a semester.",
+        mapCaption: "This is where we start",
         m2: "We build nfelha for the classroom as it actually is: the one without a device for every student, and the one with. That is exactly why we built Physical Games, a printed board and QR codes, so that technology is never the price of admission.",
 
         valuesKicker: "WHAT GUIDES US",
@@ -121,8 +126,9 @@ const About = () => {
 
           {/* The quote bar carries the origin story: a full left border would be the
               banned side-stripe, so the emphasis comes from scale and the pulled-in rule above. */}
-          <div className="max-w-xl">
+          <div className="max-w-xl relative">
             <div className="h-1 w-16 bg-[#FF8254] rounded-full" />
+            <img src={beans} alt="" aria-hidden className="absolute -end-6 top-24 w-14 opacity-30 rotate-12 hidden lg:block" />
             <p className="mt-6 text-[17px] sm:text-[19px] leading-relaxed text-[#3F5A63] font-medium">{t.p1}</p>
             <p className="mt-5 text-[15px] leading-relaxed text-black/65">{t.p2}</p>
             <p className="mt-5 text-[15px] leading-relaxed text-black/65">{t.p3}</p>
@@ -152,20 +158,38 @@ const About = () => {
       </section>
 
       {/* ---------------- MISSION ---------------- */}
-      <section className="px-5 sm:px-8 md:px-14 py-16 sm:py-24 border-t border-black/5">
-        <div className="max-w-3xl">
-          <div className="inline-flex items-center gap-2 rounded-full border-2 border-[hsl(var(--nb-border))] bg-white px-4 py-1.5 shadow-[3px_3px_0_0_hsl(var(--nb-border))]">
-            <Compass className="h-4 w-4 text-[#FF8254]" />
-            <span className={`text-[11px] font-semibold text-[#3F5A63] ${isAr ? "tracking-normal" : "tracking-[0.2em]"}`}>{t.missionKicker}</span>
+      <section className="relative overflow-hidden px-5 sm:px-8 md:px-14 py-16 sm:py-24 border-t border-black/5">
+        {/* Oversized wordmark as a graphic element. Arabic script is the one visual
+            move the English-first competitors structurally cannot copy. */}
+        <span
+          aria-hidden
+          className="pointer-events-none select-none absolute -top-6 end-[-2%] text-[150px] sm:text-[230px] leading-none text-[#3F5A63] opacity-[0.05]"
+          style={{ fontFamily: "'ArslanWessam', 'Almarai', sans-serif" }}
+        >
+          نفلها
+        </span>
+
+        <div className="relative grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)] gap-10 lg:gap-16 items-center">
+          <div className="max-w-2xl">
+            <div className="inline-flex items-center gap-2 rounded-full border-2 border-[hsl(var(--nb-border))] bg-white px-4 py-1.5 shadow-[3px_3px_0_0_hsl(var(--nb-border))]">
+              <Compass className="h-4 w-4 text-[#FF8254]" />
+              <span className={`text-[11px] font-semibold text-[#3F5A63] ${isAr ? "tracking-normal" : "tracking-[0.2em]"}`}>{t.missionKicker}</span>
+            </div>
+            <h2
+              className="mt-6 text-[28px] sm:text-[40px] tracking-tight leading-[1.1]"
+              style={{ color: "#3F5A63", fontFamily: "'ArslanWessam', 'Almarai', sans-serif" }}
+            >
+              {t.missionTitle}
+            </h2>
+            <p className="mt-6 text-[16px] sm:text-[17px] leading-relaxed text-black/70">{t.m1}</p>
+            <p className="mt-4 text-[15px] leading-relaxed text-black/65">{t.m2}</p>
           </div>
-          <h2
-            className="mt-6 text-[28px] sm:text-[40px] tracking-tight leading-[1.1]"
-            style={{ color: "#3F5A63", fontFamily: "'ArslanWessam', 'Almarai', sans-serif" }}
-          >
-            {t.missionTitle}
-          </h2>
-          <p className="mt-6 text-[16px] sm:text-[17px] leading-relaxed text-black/70">{t.m1}</p>
-          <p className="mt-4 text-[15px] leading-relaxed text-black/65">{t.m2}</p>
+
+          <div className="relative">
+            <img src={zigzag} alt="" aria-hidden className="absolute -top-8 start-0 w-16 opacity-40 -rotate-12" />
+            <img src={saudiMap} alt={isAr ? "المملكة العربية السعودية" : "Saudi Arabia"} className="w-full max-w-md mx-auto" />
+            <p className="mt-5 text-center text-[13px] font-semibold text-[#3F5A63]">{t.mapCaption}</p>
+          </div>
         </div>
       </section>
 
