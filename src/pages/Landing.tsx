@@ -24,7 +24,6 @@ const Landing = () => {
         line3b: "في دقائق",
         sub: "نفلها يرافقك من فكرة الاختبار حتى تشغيله المباشر، ومن توليد الأسئلة بالذكاء الاصطناعي حتى تحليل أداء طلابك.",
         cta: "ابدأ معنا",
-        customers: "أنماط لعب",
         joinGame: "ادخل اللعبة",
 
         mapCaption: "من هنا نبدأ",
@@ -58,7 +57,6 @@ const Landing = () => {
         line3b: "in minutes.",
         sub: "nfelha walks with you from idea to live session — from AI-generated questions to real-time student insights.",
         cta: "Get started",
-        customers: "game modes",
         joinGame: "JOIN GAME",
 
         mapCaption: "This is where we start",
@@ -130,18 +128,14 @@ const Landing = () => {
 
               <Link
                 to="/play"
-                className="group inline-flex items-center gap-3 rounded-full border-2 border-[hsl(var(--nb-border))] bg-white text-[#3F5A63] pl-6 pr-2 py-2 text-[15px] font-medium shadow-[4px_4px_0_0_hsl(var(--nb-border))] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_0_hsl(var(--nb-border))] transition-all"
+                className="group inline-flex items-center gap-3 rounded-full border-2 border-[hsl(var(--nb-border))] bg-[#FF8254] text-white pl-6 pr-2 py-2 text-[15px] font-medium shadow-[4px_4px_0_0_hsl(var(--nb-border))] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_0_hsl(var(--nb-border))] transition-all"
               >
                 {t.joinGame}
-                <span className="h-9 w-9 rounded-full bg-[#3F5A63] text-white flex items-center justify-center">
-                  <Play className="h-4 w-4 fill-white" />
+                <span className="h-9 w-9 rounded-full bg-white text-[#FF8254] flex items-center justify-center">
+                  <Play className="h-4 w-4 fill-[#FF8254]" />
                 </span>
               </Link>
 
-              <div className="h-[58px] px-5 rounded-full border-2 border-[hsl(var(--nb-border))] flex flex-col items-center justify-center leading-tight shadow-[3px_3px_0_0_hsl(var(--nb-border))]">
-                <span className="text-[15px] font-semibold text-black">9</span>
-                <span className="text-[10px] text-black/55">{t.customers}</span>
-              </div>
             </div>
           </div>
 

@@ -84,7 +84,7 @@ const Join = () => {
 
   // Pre-fill from URL ?code=XXXX
   useEffect(() => {
-    const urlCode = (params.get("code") || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 4);
+    const urlCode = (params.get("code") || "").replace(/\D/g, "").slice(0, 4);
     if (urlCode) setCells(urlCode.split("").concat(["", "", "", ""]).slice(0, 4));
   }, []);
 
@@ -119,7 +119,7 @@ const Join = () => {
 
   // Cell input handlers
   const handleCell = (i: number, e: React.ChangeEvent<HTMLInputElement>) => {
-    const v = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(-1);
+    const v = e.target.value.replace(/\D/g, "").slice(-1);
     const next = [...cells]; next[i] = v; setCells(next);
     if (v && i < 3) cellRefs[i + 1].current?.focus();
   };
@@ -130,7 +130,7 @@ const Join = () => {
     }
   };
   const handlePaste = (e: React.ClipboardEvent) => {
-    const text = e.clipboardData.getData("text").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 4);
+    const text = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 4);
     if (!text) return;
     e.preventDefault();
     const next = ["", "", "", ""] as string[];

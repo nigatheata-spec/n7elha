@@ -13,8 +13,8 @@ export const ProductPreview = () => {
 
   const t = isAr
     ? {
-        kicker: "شكل التجربة",
-        title: "هكذا تبدو الحصة على جهاز طالبك",
+        kicker: "من جهة الطالب",
+        title: "رمز واحد، ولا شيء يُحمَّل",
         sub: "لا تطبيق يُحمَّل، ولا حساب يُنشأ. يفتح الطالب المتصفح، يكتب رمز الجلسة، ويبدأ اللعب خلال ثوانٍ.",
         q: "أي كوكب يُعرف بالكوكب الأحمر؟",
         a: ["المريخ", "الزهرة", "زحل", "المشتري"],
@@ -24,8 +24,8 @@ export const ProductPreview = () => {
         joined: "طالبًا انضموا",
       }
     : {
-        kicker: "WHAT IT LOOKS LIKE",
-        title: "This is the lesson on your student's phone",
+        kicker: "STUDENT SIDE",
+        title: "One code. Nothing to install.",
         sub: "No app to install, no account to create. A student opens the browser, types the session code, and is playing within seconds.",
         q: "Which planet is known as the Red Planet?",
         a: ["Mars", "Venus", "Saturn", "Jupiter"],
@@ -37,7 +37,7 @@ export const ProductPreview = () => {
 
   return (
     <section className="relative overflow-hidden px-5 sm:px-8 md:px-14 py-16 sm:py-24 border-t border-black/5">
-      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem)] gap-12 lg:gap-16 items-center">
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)] gap-12 lg:gap-20 items-center">
         <div className="max-w-xl">
           <span className={`text-[12px] font-semibold text-[#FF8254] ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`}>{t.kicker}</span>
           <h2
@@ -53,7 +53,7 @@ export const ProductPreview = () => {
             <div>
               <div className={`text-[10px] font-semibold text-black/40 ${isAr ? "" : "tracking-[0.2em]"}`}>{t.code}</div>
               <div className="mt-1 text-[30px] font-black tabular-nums leading-none tracking-[0.15em] text-[#3F5A63]">
-                7K2M
+                4821
               </div>
             </div>
             <div className="h-10 w-px bg-black/10" />
@@ -73,10 +73,10 @@ export const ProductPreview = () => {
         </div>
 
         {/* ---- phone ---- */}
-        <div className="relative mx-auto w-full max-w-[300px]">
-          <div className="relative rounded-[2.75rem] border-[3px] border-[hsl(var(--nb-border))] bg-[#22333A] p-2.5 shadow-[8px_8px_0_0_hsl(var(--nb-border))]">
+        <div className="relative mx-auto w-full max-w-[380px]">
+          <div className="relative rounded-[3rem] border-4 border-[hsl(var(--nb-border))] bg-[#22333A] p-3 shadow-[10px_10px_0_0_hsl(var(--nb-border))]">
             <div
-              className="relative overflow-hidden rounded-[2.1rem] px-4 pb-5 pt-3"
+              className="relative overflow-hidden rounded-[2.35rem] px-5 pb-6 pt-4"
               style={{ background: "hsl(var(--cream-panel))" }}
             >
               {/* notch */}
@@ -84,8 +84,8 @@ export const ProductPreview = () => {
 
               {/* score strip, matching the real header */}
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-[#3F5A63]">{t.you}</span>
-                <span className="inline-flex items-center gap-1.5 rounded-full border-2 border-[hsl(var(--nb-border))] bg-white px-2.5 py-1 text-[11px] font-black tabular-nums text-[#3F5A63] shadow-[2px_2px_0_0_hsl(var(--nb-border))]">
+                <span className="text-[12.5px] font-bold text-[#3F5A63]">{t.you}</span>
+                <span className="inline-flex items-center gap-1.5 rounded-full border-2 border-[hsl(var(--nb-border))] bg-white px-2.5 py-1 text-[12.5px] font-black tabular-nums text-[#3F5A63] shadow-[2px_2px_0_0_hsl(var(--nb-border))]">
                   <Star className="h-3 w-3 fill-[#FF8254] text-[#FF8254]" />
                   2,750
                 </span>
@@ -93,7 +93,7 @@ export const ProductPreview = () => {
 
               {/* question card */}
               <div className="mt-3 rounded-xl border-2 border-[hsl(var(--nb-border))] bg-white p-3 shadow-[3px_3px_0_0_hsl(var(--nb-border))]">
-                <p dir="auto" className="text-center text-[12.5px] font-bold leading-snug text-[#3F5A63]">{t.q}</p>
+                <p dir="auto" className="text-center text-[14px] font-bold leading-snug text-[#3F5A63]">{t.q}</p>
               </div>
 
               {/* answers */}
@@ -102,7 +102,7 @@ export const ProductPreview = () => {
                   <div
                     key={opt}
                     dir="auto"
-                    className="flex min-h-[52px] items-center justify-center rounded-xl border-2 border-[hsl(var(--nb-border))] px-2 text-center text-[11.5px] font-bold text-white shadow-[3px_3px_0_0_hsl(var(--nb-border))]"
+                    className="flex min-h-[64px] items-center justify-center rounded-xl border-2 border-[hsl(var(--nb-border))] px-2 text-center text-[13px] font-bold text-white shadow-[3px_3px_0_0_hsl(var(--nb-border))]"
                     style={{ background: ANSWER_COLORS[i] }}
                   >
                     {opt}
