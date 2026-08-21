@@ -189,6 +189,10 @@ const ClassicGame = ({ sessionId, studentId }: Props) => {
     startedAtRef.current = Date.now();
   }, [phase, qSeed, questions]);
 
+  // Timer is opt-in per session (HostGame). Absent/null => no countdown at all.
+  // `duration` stays a nominal 20s when it's off purely so speed scoring below
+  // keeps its curve — nothing auto-expires unless timerEnabled.
+  const timerEnabled = typeof session?.settings?.timePerQ === "number" && session.settings.timePerQ > 0;
   const duration = session?.settings?.timePerQ ?? 20;
 
   const submit = async (idx: number) => {
@@ -218,15 +222,15 @@ const ClassicGame = ({ sessionId, studentId }: Props) => {
   };
   submitRef.current = submit;
 
-  // countdown -> auto-submit on timeout
+  // countdown -> auto-submit on timeout (only when the teacher enabled a timer)
   useEffect(() => {
-    if (phase !== "question" || !currentQ) return;
+    if (!timerEnabled || phase !== "question" || !currentQ) return;
     const t = setInterval(() => {
       const elapsed = (Date.now() - startedAtRef.current) / 1000;
       if (elapsed >= duration) { submitRef.current(-1); clearInterval(t); }
     }, 200);
     return () => clearInterval(t);
-  }, [phase, currentQ, duration]);
+  }, [timerEnabled, phase, currentQ, duration]);
 
   // auto-advance after reveal
   useEffect(() => {

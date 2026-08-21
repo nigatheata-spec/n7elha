@@ -209,9 +209,12 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
   }, [phase, qSeed, questions.length]);
 
   // ── Question countdown ────────────────────────────────────────────────────
+  // Opt-in per session (HostGame): absent/null timePerQ means no countdown runs
+  // and a question never expires on its own.
+  const timerEnabled = typeof session?.settings?.timePerQ === "number" && session.settings.timePerQ > 0;
   const duration = session?.settings?.timePerQ ?? 20;
   useEffect(() => {
-    if (phase !== "question" || !currentQ) return;
+    if (!timerEnabled || phase !== "question" || !currentQ) return;
     const t = setInterval(() => {
       const elapsed = (Date.now() - qStartRef.current) / 1000;
       const left = Math.max(0, Math.ceil(duration - elapsed));
@@ -219,7 +222,7 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
       if (left <= 0 && pickedRef.current === null) { clearInterval(t); handleAnswer(-1); }
     }, 200);
     return () => clearInterval(t);
-  }, [phase, currentQ, duration]);
+  }, [timerEnabled, phase, currentQ, duration]);
 
   // ── Auto-advance after "answered" ─────────────────────────────────────────
   useEffect(() => {
@@ -555,7 +558,7 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
                   />
                 )}
                 <p className="text-lg md:text-2xl text-primary font-bold leading-relaxed">{currentQ.text}</p>
-                <div className="mt-2 text-xs text-muted-foreground tabular-nums">{timeLeft}s</div>
+                {timerEnabled && <div className="mt-2 text-xs text-muted-foreground tabular-nums">{timeLeft}s</div>}
               </div>
             </AsteroidCard>
 

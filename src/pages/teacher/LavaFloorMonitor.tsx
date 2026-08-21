@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { toast } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -9,11 +8,33 @@ import { Square, Maximize } from "lucide-react";
 import { PixelShield, PixelFlame, PixelHouse, PixelPlank, PixelBrick, PixelStaircase } from "@/components/PixelIcons";
 import { PixelLavaCrest, PixelLavaBody } from "@/components/PixelLava";
 import { PixelRockCeiling } from "@/components/PixelRockCeiling";
-import { BLOCK_BY_KEY, type BlockKey } from "@/lib/lavaFloorBlocks";
+import { BLOCK_SPRITES, spriteRuns, type BlockKey } from "@/lib/lavaFloorBlocks";
 
 type Build = { id: string; student_id: string; student_name: string; block_type: BlockKey; height_added: number; cost: number; created_at: string };
 const BLOCK_ICON: Record<BlockKey, typeof PixelPlank> = {
   plank: PixelPlank, brick: PixelBrick, staircase: PixelStaircase, house: PixelHouse,
+};
+
+// ── Tower ───────────────────────────────────────────────────────────────────
+// Every purchased block is drawn as a real pixel-art platform stacked on the
+// ones before it, so the projector shows the class's actual structure rising
+// away from the lava instead of a number.
+const TOWER_MAX  = 40;   // oldest blocks fall off the render, the top is the story
+const TOWER_BUDGET_PX = 380; // vertical room the stack may occupy before it shrinks
+
+const TowerBlock = ({ type, px, landing }: { type: BlockKey; px: number; landing: boolean }) => {
+  const s = BLOCK_SPRITES[type];
+  return (
+    <div
+      className={cn("relative shrink-0", landing && "animate-lf-block-land")}
+      style={{ width: s.cols * px, height: s.rows * px }}
+      aria-hidden>
+      {spriteRuns(type).map((r, i) => (
+        <div key={i} className="absolute"
+          style={{ left: r.x * px, top: r.y * px, width: r.w * px, height: px, background: r.color }} />
+      ))}
+    </div>
+  );
 };
 
 const fmt = (n: number) => n.toLocaleString();
@@ -50,6 +71,11 @@ const LavaFloorMonitor = ({ session, sessionId }: Props) => {
   const [spiking, setSpiking]       = useState(false);
   const [towerHeight, setTowerHeight] = useState(0);
   const [recentBuilds, setRecentBuilds] = useState<Build[]>([]);
+  // Stack is stored bottom-of-tower first; `landingId` is whichever block is
+  // mid drop-and-squash right now (one at a time — buys are rate-limited).
+  const [towerStack, setTowerStack] = useState<{ id: string; type: BlockKey }[]>([]);
+  const [buildCount, setBuildCount] = useState(0);
+  const [landingId, setLandingId]   = useState<string | null>(null);
 
   const lavaRef        = useRef(0);
   const dbWriteRef     = useRef(0);
@@ -91,6 +117,10 @@ const LavaFloorMonitor = ({ session, sessionId }: Props) => {
       const rows = (data ?? []) as Build[];
       setTowerHeight(rows.reduce((a, r) => a + r.height_added, 0));
       setRecentBuilds(rows.slice(0, 8));
+      setBuildCount(rows.length);
+      // rows arrive newest-first; the stack renders bottom-up, so reverse the
+      // most recent slice to put the oldest of them at the base.
+      setTowerStack(rows.slice(0, TOWER_MAX).reverse().map(r => ({ id: r.id, type: r.block_type })));
     };
     loadBuilds();
 
@@ -102,9 +132,12 @@ const LavaFloorMonitor = ({ session, sessionId }: Props) => {
           const b = p.new as Build;
           setTowerHeight(h => h + b.height_added);
           setRecentBuilds(list => [b, ...list].slice(0, 8));
-          toast.success(ar
-            ? `${b.student_name} بنى ${BLOCK_BY_KEY[b.block_type].labelAr}! +${b.height_added}`
-            : `${b.student_name} built a ${BLOCK_BY_KEY[b.block_type].labelEn}! +${b.height_added}`);
+          setBuildCount(n => n + 1);
+          setTowerStack(list => [...list, { id: b.id, type: b.block_type }].slice(-TOWER_MAX));
+          // No toast: the block itself lands on the tower and the feed names
+          // the builder — a popup would only restate what is already on screen.
+          setLandingId(b.id);
+          setTimeout(() => setLandingId(cur => (cur === b.id ? null : cur)), 500);
         })
       .subscribe();
     const tick = setInterval(() => setNow(Date.now()), 500);
@@ -211,6 +244,11 @@ const LavaFloorMonitor = ({ session, sessionId }: Props) => {
   const danger      = lavaDisplay >= 80;
   const critical    = lavaDisplay >= 92;
   const totalBricks = students.reduce((a, s) => a + (s.crypto ?? 0), 0);
+  // Shrink the pixel scale as the tower grows so a long stack still fits the
+  // projector without scrolling — never below 2px or the blocks stop reading.
+  const towerRows   = towerStack.reduce((a, b) => a + BLOCK_SPRITES[b.type].rows, 0);
+  const towerPx     = Math.max(2, Math.min(6, Math.floor(TOWER_BUDGET_PX / Math.max(1, towerRows))));
+  const hiddenBlocks = Math.max(0, buildCount - towerStack.length);
 
   return (
     <div className="theme-lavafloor fixed inset-0 text-foreground overflow-hidden font-mono"
@@ -261,7 +299,7 @@ const LavaFloorMonitor = ({ session, sessionId }: Props) => {
         </div>
       </div>
 
-      <div className="h-full grid grid-cols-1 lg:grid-cols-[auto_1fr] gap-4 p-4 pt-14">
+      <div className="h-full grid grid-cols-1 lg:grid-cols-[auto_auto_1fr] gap-4 p-4 pt-14">
 
         {/* LAVA COLUMN — the main drama */}
         <div className="flex flex-col items-center gap-3 w-full lg:w-28">
@@ -300,6 +338,45 @@ const LavaFloorMonitor = ({ session, sessionId }: Props) => {
             <PixelFlame className="h-3 w-3 me-1" color="currentColor" />+10%
           </Button>
           <div className="text-[9px] text-muted-foreground/50 text-center leading-tight">{ar ? <>تفجير<br/>الحمم</> : <>spike<br/>lava</>}</div>
+        </div>
+
+        {/* TOWER COLUMN — the platform the class actually built.
+            The stack is anchored to the same percentage the full-screen lava
+            layer uses, so its base rides the molten line: the gap between the
+            lava and the top block IS the class's clearance, no number needed. */}
+        <div className="relative w-full lg:w-52 min-h-[12rem] flex flex-col items-center">
+          <div className="text-xs text-muted-foreground tracking-widest uppercase">{ar ? "البرج" : "Tower"}</div>
+
+          <div className="absolute inset-x-0 bottom-0 top-6 pointer-events-none">
+            <div className="absolute inset-x-0 flex flex-col-reverse items-center"
+              style={{ bottom: `${lavaDisplay}%`, transition: "bottom 0.6s cubic-bezier(0.25,0.46,0.45,0.94)" }}>
+
+              {towerStack.length === 0 ? (
+                <div className="text-[10px] text-muted-foreground/60 text-center leading-tight px-2">
+                  {ar ? "اشتروا الكتل لبناء منصة" : "BUY BLOCKS TO BUILD A PLATFORM"}
+                </div>
+              ) : (
+                <>
+                  {/* Base marker for blocks that scrolled out of the render window */}
+                  {hiddenBlocks > 0 && (
+                    <div className="text-[9px] font-black tabular-nums pt-0.5" style={{ color: "hsl(200 40% 55%)" }}>
+                      +{hiddenBlocks} {ar ? "أسفل" : "below"}
+                    </div>
+                  )}
+                  {towerStack.map(b => (
+                    <TowerBlock key={b.id} type={b.type} px={towerPx} landing={b.id === landingId} />
+                  ))}
+                  {/* Height readout sits on top of the stack, growing with it */}
+                  <div className="flex items-center gap-1 pb-1">
+                    <PixelHouse className="h-3.5 w-3.5" color="currentColor" style={{ color: "hsl(200 60% 55%)" }} />
+                    <span className="text-sm font-pixel font-black tabular-nums" style={{ color: "hsl(200 60% 70%)" }}>
+                      {fmt(towerHeight)}
+                    </span>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* RIGHT: leaderboard + stats */}

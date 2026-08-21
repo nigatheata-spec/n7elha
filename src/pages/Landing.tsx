@@ -1,15 +1,9 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import { useTranslation } from "react-i18next";
-import { LangToggle } from "@/components/LangToggle";
-import { triggerLangTransition } from "@/lib/langTransitionBus";
 import {
   ArrowUpRight,
   Play,
-  User,
-  Menu,
-  X,
-  Languages,
   Sparkles,
   FileText,
   Radio,
@@ -17,53 +11,34 @@ import {
   Upload,
   Users,
   Trophy,
-  Mail,
-  Github,
-  Twitter,
-  Instagram,
 } from "lucide-react";
-import { useEffect, useState } from "react";
 import { useSmoothScroll } from "@/lib/smoothScroll";
-import heroPerson from "@/assets/hero-person.png";
-import logoMark from "@/assets/logo-mark.png";
+import { SiteNav } from "@/components/site/SiteNav";
+import { SiteFooter } from "@/components/site/SiteFooter";
+import heroAstro from "@/assets/astro-hero.png";
 
 const Landing = () => {
   const { user } = useAuth();
   const { i18n } = useTranslation();
   const isAr = i18n.language === "ar";
-  const [menuOpen, setMenuOpen] = useState(false);
   useSmoothScroll();
-
-  useEffect(() => {
-    document.body.style.overflow = menuOpen ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
-  }, [menuOpen]);
-
-  useEffect(() => {
-    if (!menuOpen) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setMenuOpen(false); };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [menuOpen]);
 
   const t = isAr
     ? {
-        about: "من نحن",
-        services: "الخدمات",
-        partners: "الشركاء",
-        login: "دخول",
-        signup: "تسجيل",
-        dashboard: "لوحتي",
-        joinGame: "ادخل اللعبة",
-        line1: "كل ما تحتاجه",
-        line2a: "اختباراً",
-        line2b: "لتصنع",
+        line1: "صمّم اختبارك",
+        line2a: "وشغّله",
+        line2b: "",
         line3a: "",
-        line3b: "النجاح",
+        line3b: "في دقائق",
         sub: "نحلها يرافقك من فكرة الاختبار حتى تشغيله المباشر، ومن توليد الأسئلة بالذكاء الاصطناعي حتى تحليل أداء طلابك.",
         cta: "ابدأ معنا",
         customers: "معلم",
-        playVideo: "شاهد الفيديو",
+        joinGame: "ادخل اللعبة",
+
+        panel1Title: "نساعد المعلم في التخطيط، التحضير، والبث المباشر.",
+        panel1Link: "الميزات",
+        panel2Title: "تجربة اختبار متكاملة من الفكرة حتى النتيجة.",
+        panel2Desc: "نمنح فصلك حضورًا تفاعليًا يعكس أسلوبك في التدريس.",
 
         featuresKicker: "لماذا نحلها؟",
         featuresTitle: "أدواتٌ صُممت ليعشقها المعلم والطالب",
@@ -76,6 +51,7 @@ const Landing = () => {
         f3Desc: "ادعُ طلابك برمز قصير، وشاهدهم ينضمون لحظة بلحظة على شاشة العرض في صفك.",
         f4Title: "تحليلات مفصلة",
         f4Desc: "اعرف من أتقن الدرس ومن يحتاج إلى مراجعة، عبر تقارير واضحة بعد كل جلسة.",
+        seeAllServices: "كل الخدمات",
 
         howKicker: "كيف تعمل؟",
         howTitle: "ثلاث خطوات تفصلك عن أول جلسة",
@@ -86,42 +62,28 @@ const Landing = () => {
         s3: "اعرض النتائج",
         s3d: "ترتيب لحظي، وتقرير كامل بعد انتهاء الاختبار.",
 
-        ctaTitle: "جاهز تجرّب نحلها مع فصلك؟",
-        ctaSub: "إنشاء الحساب مجاني، وأول اختبار يحتاج دقائق فقط.",
-        ctaBtn: "أنشئ حسابك الآن",
-        ctaJoin: "ادخل كطالب",
-
-        footerTagline: "منصة الاختبارات التفاعلية للمعلمين باللغة العربية.",
-        footerProduct: "المنتج",
-        footerCompany: "الشركة",
-        footerLegal: "قانوني",
-        footerFeatures: "المميزات",
-        footerHow: "كيف يعمل",
-        footerPricing: "الأسعار",
-        footerAbout: "من نحن",
-        footerContact: "تواصل",
-        footerCareers: "الوظائف",
-        footerPrivacy: "الخصوصية",
-        footerTerms: "الشروط",
-        footerRights: "© 2026 نحلها. جميع الحقوق محفوظة.",
+        forWhoKicker: "لمن هذه المنصة؟",
+        forWhoTitle: "صُممت للمعلم العربي أولاً",
+        forWho1: "سواء كنت معلمًا في مدرسة حكومية تبحث عن طريقة تجعل مراجعة الدرس أكثر حيوية، أو مدرّسًا خاصًا يريد تتبع مستوى كل طالب بدقة — نحلها صُممت لك.",
+        forWho2: "لا يشترط أن تكون خبيرًا في التكنولوجيا. المنصة تعمل من المتصفح مباشرة، ولا تحتاج الطلاب إلى تحميل أي تطبيق. رمز قصير، وينضم الجميع في ثوانٍ.",
+        forWho3: "الأسئلة باللغة العربية، التقارير باللغة العربية، وتجربة الطالب مصممة للشاشات الصغيرة التي يحملها طلابك في جيوبهم.",
+        readMore: "اقرأ المزيد عنّا",
       }
     : {
-        about: "ABOUT",
-        services: "FEATURES",
-        partners: "CONTACT",
-        login: "LOG IN",
-        signup: "SIGN UP",
-        dashboard: "DASHBOARD",
-        joinGame: "JOIN GAME",
-        line1: "Everything you need",
-        line2a: "to craft",
-        line2b: "a quiz",
-        line3a: "that touches",
-        line3b: "success",
+        line1: "Build your quiz.",
+        line2a: "Launch it",
+        line2b: "",
+        line3a: "",
+        line3b: "in minutes.",
         sub: "n7elha walks with you from idea to live session — from AI-generated questions to real-time student insights.",
         cta: "Get started",
         customers: "teachers",
-        playVideo: "Play video",
+        joinGame: "JOIN GAME",
+
+        panel1Title: "We help teachers with planning, prep, and live broadcast.",
+        panel1Link: "Features",
+        panel2Title: "An end-to-end quiz experience.",
+        panel2Desc: "We give your classroom a presence that matches how you teach.",
 
         featuresKicker: "WHY N7ELHA?",
         featuresTitle: "Tools teachers and students actually love",
@@ -134,6 +96,7 @@ const Landing = () => {
         f3Desc: "Invite your students with a short code and watch them join in real time on your projector.",
         f4Title: "Deep analytics",
         f4Desc: "Know who mastered the lesson and who needs a review, through clear reports after every session.",
+        seeAllServices: "See all services",
 
         howKicker: "HOW IT WORKS",
         howTitle: "Three steps to your first live session",
@@ -144,24 +107,12 @@ const Landing = () => {
         s3: "See results",
         s3d: "Live leaderboard plus a full report once the quiz ends.",
 
-        ctaTitle: "Ready to try n7elha with your class?",
-        ctaSub: "Creating an account is free, and your first quiz takes just minutes.",
-        ctaBtn: "Create your account",
-        ctaJoin: "Join as student",
-
-        footerTagline: "The interactive quiz platform built for Arabic-speaking classrooms.",
-        footerProduct: "Product",
-        footerCompany: "Company",
-        footerLegal: "Legal",
-        footerFeatures: "Features",
-        footerHow: "How it works",
-        footerPricing: "Pricing",
-        footerAbout: "About",
-        footerContact: "Contact",
-        footerCareers: "Careers",
-        footerPrivacy: "Privacy",
-        footerTerms: "Terms",
-        footerRights: "© 2026 n7elha. All rights reserved.",
+        forWhoKicker: "WHO IS IT FOR",
+        forWhoTitle: "Built around the Arabic-speaking teacher",
+        forWho1: "Whether you're a school teacher looking to make lesson reviews more engaging, or a private tutor who wants to track each student's level with precision — n7elha was built for you.",
+        forWho2: "You don't need to be tech-savvy. The platform runs entirely in the browser — students don't download anything. One short code and everyone's in within seconds.",
+        forWho3: "Questions in Arabic, reports in Arabic, and a student experience designed for the small screens they carry in their pockets.",
+        readMore: "Read more about us",
       };
 
   return (
@@ -172,124 +123,14 @@ const Landing = () => {
     >
       <div className="relative w-full">
 
-        {/* ---------------- NAV ---------------- */}
-        <nav className="px-5 sm:px-8 md:px-10 pt-5 sm:pt-6">
-          <div className="flex items-center justify-between gap-3 bg-white/80 backdrop-blur-md rounded-2xl px-4 py-3 shadow-sm border border-black/[0.06]">
-
-          <Link to="/" className="flex items-center gap-2 shrink-0">
-            <img src={logoMark} alt="n7elha" className="h-8 w-8 object-contain" />
-            <span className="text-[17px] font-medium tracking-tight text-black">n7elha</span>
-          </Link>
-
-          <ul className={`hidden lg:flex items-center gap-10 text-[13px] font-medium text-black/80 ${isAr ? "tracking-normal" : "tracking-[0.18em]"}`}>
-            <li><a href="#features" className="hover:text-black">{t.services}</a></li>
-            <li><a href="#how" className="hover:text-black">{t.about}</a></li>
-            <li><a href="#footer" className="hover:text-black">{t.partners}</a></li>
-          </ul>
-
-          <div className="hidden md:flex items-center gap-2">
-            <LangToggle variant="pill" />
-            <Link
-              to="/play"
-              className={`px-4 py-2 rounded-full border-2 border-[hsl(var(--nb-border))] bg-white text-[#3F5A63] text-[13px] font-medium shadow-[3px_3px_0_0_hsl(var(--nb-border))] hover:bg-[#3F5A63] hover:text-white hover:translate-x-px hover:translate-y-px hover:shadow-[2px_2px_0_0_hsl(var(--nb-border))] transition-all ${isAr ? "" : "tracking-wider"}`}
-            >
-              {t.joinGame}
-            </Link>
-            {user ? (
-              <Link to="/app" className={`px-5 py-2 rounded-full border-2 border-[hsl(var(--nb-border))] bg-[#3F5A63] text-white text-[13px] font-medium shadow-[3px_3px_0_0_hsl(var(--nb-border))] hover:translate-x-px hover:translate-y-px hover:shadow-[2px_2px_0_0_hsl(var(--nb-border))] transition-all ${isAr ? "" : "tracking-wider"}`}>
-                {t.dashboard}
-              </Link>
-            ) : (
-              <>
-                <Link
-                  to="/auth"
-                  className={`px-5 py-2 rounded-full border-2 border-[hsl(var(--nb-border))] bg-[#FF8254] text-white text-[13px] font-medium shadow-[3px_3px_0_0_hsl(var(--nb-border))] hover:translate-x-px hover:translate-y-px hover:shadow-[2px_2px_0_0_hsl(var(--nb-border))] transition-all ${isAr ? "" : "tracking-wider"}`}
-                >
-                  {t.login}
-                </Link>
-                <Link
-                  to="/auth?mode=signup"
-                  className={`px-5 py-2 rounded-full border-2 border-[hsl(var(--nb-border))] bg-[#3F5A63] text-white text-[13px] font-medium shadow-[3px_3px_0_0_hsl(var(--nb-border))] hover:translate-x-px hover:translate-y-px hover:shadow-[2px_2px_0_0_hsl(var(--nb-border))] transition-all ${isAr ? "" : "tracking-wider"}`}
-                >
-                  {t.signup}
-                </Link>
-              </>
-            )}
-          </div>
-
-          {/* Mobile menu button */}
-          <button
-            onClick={() => setMenuOpen(true)}
-            className="md:hidden h-10 w-10 rounded-full border border-black/15 flex items-center justify-center text-black"
-            aria-label="Menu"
-          >
-            <Menu className="h-5 w-5" />
-          </button>
-          </div>
-        </nav>
-
-        {/* mobile menu backdrop */}
-        <div
-          onClick={() => setMenuOpen(false)}
-          className={`md:hidden fixed inset-0 z-40 bg-black/40 transition-opacity duration-300 ${menuOpen ? "opacity-100" : "opacity-0 pointer-events-none"}`}
-          aria-hidden="true"
-        />
-
-        {/* mobile menu drawer */}
-        <div
-          className={`md:hidden fixed inset-y-0 right-0 z-50 w-[82%] max-w-[320px] bg-white shadow-[-8px_0_40px_-12px_rgba(0,0,0,0.35)] transition-transform duration-300 ease-out flex flex-col ${menuOpen ? "translate-x-0" : "translate-x-full"}`}
-          role="dialog"
-          aria-modal="true"
-          aria-hidden={!menuOpen}
-        >
-          <div className="flex items-center justify-between px-5 pt-6 pb-4 border-b border-black/[0.06]">
-            <Link to="/" className="flex items-center gap-2 shrink-0" onClick={() => setMenuOpen(false)}>
-              <img src={logoMark} alt="n7elha" className="h-7 w-7 object-contain" />
-              <span className="text-[16px] font-medium tracking-tight text-black">n7elha</span>
-            </Link>
-            <button
-              onClick={() => setMenuOpen(false)}
-              className="h-9 w-9 rounded-full border border-black/15 flex items-center justify-center text-black"
-              aria-label="Close menu"
-            >
-              <X className="h-4.5 w-4.5" />
-            </button>
-          </div>
-
-          <div className="px-5 py-6 flex flex-col gap-3 overflow-y-auto">
-            <button
-              onClick={() => { triggerLangTransition(); i18n.changeLanguage(isAr ? "en" : "ar"); }}
-              className="w-full inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full border-2 border-[hsl(var(--nb-border))] bg-white text-[#3F5A63] text-[13px] tracking-wider font-medium shadow-[3px_3px_0_0_hsl(var(--nb-border))]"
-            >
-              <Languages className="h-4 w-4" />
-              {isAr ? "English" : "العربية"}
-            </button>
-            <Link to="/play" onClick={() => setMenuOpen(false)} className="w-full px-4 py-2.5 rounded-full border-2 border-[hsl(var(--nb-border))] bg-white text-[#3F5A63] text-[13px] tracking-wider font-medium text-center shadow-[3px_3px_0_0_hsl(var(--nb-border))]">
-              {t.joinGame}
-            </Link>
-            {user ? (
-              <Link to="/app" onClick={() => setMenuOpen(false)} className="w-full px-5 py-2.5 rounded-full border-2 border-[hsl(var(--nb-border))] bg-white text-[#3F5A63] text-[13px] tracking-wider font-medium text-center shadow-[3px_3px_0_0_hsl(var(--nb-border))]">
-                {t.dashboard}
-              </Link>
-            ) : (
-              <>
-                <Link to="/auth" onClick={() => setMenuOpen(false)} className="w-full px-5 py-2.5 rounded-full border-2 border-[hsl(var(--nb-border))] bg-white text-[#3F5A63] text-[13px] tracking-wider font-medium text-center shadow-[3px_3px_0_0_hsl(var(--nb-border))]">
-                  {t.login}
-                </Link>
-                <Link to="/auth?mode=signup" onClick={() => setMenuOpen(false)} className="w-full px-5 py-2.5 rounded-full border-2 border-[hsl(var(--nb-border))] bg-white text-[#3F5A63] text-[13px] tracking-wider font-medium text-center shadow-[3px_3px_0_0_hsl(var(--nb-border))]">
-                  {t.signup}
-                </Link>
-              </>
-            )}
-          </div>
-        </div>
+        <SiteNav />
 
         {/* ---------------- HERO ---------------- */}
-        <div className="relative grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-8 px-5 sm:px-8 md:px-14 pt-10 sm:pt-16 pb-12">
+        <div className="relative grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-8 px-5 sm:px-8 md:px-14 pt-10 sm:pt-16 pb-0">
           <div className="relative z-10">
             <h1
               className="leading-[1.1] tracking-tight text-[34px] sm:text-[44px] md:text-[60px]"
-              style={{ fontFamily: "'ArslanWessam', 'Almarai', sans-serif", color: "#FF8254" }}
+              style={{ fontFamily: "'ArslanWessam', 'Almarai', sans-serif", color: "#3F5A63" }}
             >
               <span className="block">{t.line1}</span>
               <span className="block mt-2">
@@ -319,11 +160,11 @@ const Landing = () => {
 
               <Link
                 to="/play"
-                className="group inline-flex items-center gap-3 rounded-full border-2 border-[hsl(var(--nb-border))] bg-[#FF8254] text-white pl-6 pr-2 py-2 text-[15px] font-medium shadow-[4px_4px_0_0_hsl(var(--nb-border))] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_0_hsl(var(--nb-border))] transition-all"
+                className="group inline-flex items-center gap-3 rounded-full border-2 border-[hsl(var(--nb-border))] bg-white text-[#3F5A63] pl-6 pr-2 py-2 text-[15px] font-medium shadow-[4px_4px_0_0_hsl(var(--nb-border))] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_0_hsl(var(--nb-border))] transition-all"
               >
                 {t.joinGame}
-                <span className="h-9 w-9 rounded-full bg-white text-[#FF8254] flex items-center justify-center">
-                  <Play className="h-4 w-4 fill-[#FF8254]" />
+                <span className="h-9 w-9 rounded-full bg-[#3F5A63] text-white flex items-center justify-center">
+                  <Play className="h-4 w-4 fill-white" />
                 </span>
               </Link>
 
@@ -335,29 +176,58 @@ const Landing = () => {
           </div>
 
           {/* RIGHT */}
-          <div className="relative min-h-[420px] sm:min-h-[560px]">
-            <CrossPattern />
-
-            {/* teal card — background only, no overflow-hidden so image floats free */}
-            <div className="absolute top-2 right-2 sm:right-4 w-[88%] sm:w-[78%] aspect-square rounded-[24px] sm:rounded-[28px] bg-[#3F5A63] border-2 border-[hsl(var(--nb-border))] shadow-[6px_6px_0_0_hsl(var(--nb-border))]" />
-
-            {/* teacher — floats in front of the card with depth */}
+          <div className="relative flex items-end justify-center">
             <img
-              src={heroPerson}
-              alt="معلم نحلها"
-              className="absolute bottom-0 right-2 sm:right-4 w-[88%] sm:w-[78%] h-full object-contain object-bottom select-none pointer-events-none drop-shadow-2xl z-20"
+              src={heroAstro}
+              alt="روّاد نحلها"
+              className="relative z-10 w-[88%] sm:w-[78%] max-w-[500px] select-none pointer-events-none drop-shadow-md"
+              style={{ filter: "hue-rotate(-135deg)" }}
             />
+          </div>
+        </div>
+
+        {/* ---------------- SPLIT PANEL ---------------- */}
+        <div className="relative -mt-2 px-5 sm:px-8 md:px-14 pb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 rounded-[24px] overflow-hidden border-2 border-[hsl(var(--nb-border))] shadow-[6px_6px_0_0_hsl(var(--nb-border))]">
+            <Link
+              to="/services"
+              className="group relative p-8 sm:p-10 min-h-[180px] flex flex-col justify-between bg-[#FF8254]"
+            >
+              <p className="text-[19px] sm:text-[23px] leading-snug font-medium text-white max-w-[280px]">
+                {t.panel1Title}
+              </p>
+              <span className="inline-flex items-center gap-1.5 text-white text-[13px] font-semibold">
+                {t.panel1Link}
+                <ArrowUpRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+              </span>
+            </Link>
+            <div className="relative p-8 sm:p-10 min-h-[180px] flex flex-col justify-between bg-[#2B3F45] border-t-2 sm:border-t-0 sm:border-s-2 border-[hsl(var(--nb-border))]">
+              <div className="flex items-start justify-between gap-4">
+                <p className="text-[19px] sm:text-[23px] leading-snug font-medium text-white max-w-[260px]">
+                  {t.panel2Title}
+                </p>
+                <span className="relative h-7 w-11 shrink-0 mt-1" aria-hidden>
+                  <span className="absolute left-0 top-0 h-7 w-7 rounded-full bg-white/25" />
+                  <span className="absolute right-0 top-0 h-7 w-7 rounded-full bg-[#FF8254]" />
+                </span>
+              </div>
+              <p className="text-[13.5px] leading-relaxed text-white/55 max-w-xs">
+                {t.panel2Desc}
+              </p>
+            </div>
           </div>
         </div>
 
         {/* ---------------- FEATURES ---------------- */}
         <section id="features" className="px-5 sm:px-8 md:px-14 py-16 sm:py-24 border-t border-black/5">
-          <div className="max-w-2xl">
-            <span className={`text-[12px] font-semibold text-[#FF8254] ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`}>{t.featuresKicker}</span>
-            <h2 className="mt-3 text-[28px] sm:text-[40px] tracking-tight leading-[1.1]" style={{ color: "#3F5A63", fontFamily: "'ArslanWessam', 'Almarai', sans-serif" }}>
-              {t.featuresTitle}
-            </h2>
-            <p className="mt-4 text-[15px] text-black/65 leading-relaxed">{t.featuresSub}</p>
+          <div className="max-w-2xl flex items-end justify-between gap-6 flex-wrap">
+            <div>
+              <span className={`text-[12px] font-semibold text-[#3F5A63] ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`}>{t.featuresKicker}</span>
+              <h2 className="mt-3 text-[28px] sm:text-[40px] tracking-tight leading-[1.1]" style={{ color: "#3F5A63", fontFamily: "'ArslanWessam', 'Almarai', sans-serif" }}>
+                {t.featuresTitle}
+              </h2>
+              <p className="mt-4 text-[15px] text-black/65 leading-relaxed">{t.featuresSub}</p>
+            </div>
           </div>
 
           <div className="mt-10 sm:mt-14 grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -366,12 +236,17 @@ const Landing = () => {
             <Feature icon={<Radio className="h-5 w-5" />} title={t.f3Title} desc={t.f3Desc} tilt="-rotate-[0.8deg]" />
             <FeatureLarge icon={<BarChart3 className="h-6 w-6" />} title={t.f4Title} desc={t.f4Desc} tilt="rotate-[0.5deg]" />
           </div>
+
+          <Link to="/services" className="mt-8 inline-flex items-center gap-1.5 text-[14px] font-semibold" style={{ color: "#3F5A63" }}>
+            {t.seeAllServices}
+            <ArrowUpRight className="h-4 w-4" />
+          </Link>
         </section>
 
         {/* ---------------- HOW IT WORKS ---------------- */}
         <section id="how" className="px-5 sm:px-8 md:px-14 py-16 sm:py-24 border-t border-black/5">
           <div className="max-w-2xl">
-            <span className={`text-[12px] font-semibold text-[#FF8254] ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`}>{t.howKicker}</span>
+            <span className={`text-[12px] font-semibold text-[#3F5A63] ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`}>{t.howKicker}</span>
             <h2 className="mt-3 text-[28px] sm:text-[40px] tracking-tight leading-[1.1]" style={{ color: "#3F5A63", fontFamily: "'ArslanWessam', 'Almarai', sans-serif" }}>
               {t.howTitle}
             </h2>
@@ -388,111 +263,26 @@ const Landing = () => {
         <section className="px-5 sm:px-8 md:px-14 py-16 sm:py-24 border-t border-black/5">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-20">
             <div>
-              <span className={`text-[12px] font-semibold text-[#FF8254] ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`}>
-                {isAr ? "لمن هذه المنصة؟" : "WHO IS IT FOR"}
+              <span className={`text-[12px] font-semibold text-[#3F5A63] ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`}>
+                {t.forWhoKicker}
               </span>
               <h2 className="mt-4 text-[26px] sm:text-[36px] tracking-tight leading-[1.15]" style={{ color: "#3F5A63", fontFamily: "'ArslanWessam', 'Almarai', sans-serif" }}>
-                {isAr ? "صُممت للمعلم العربي أولاً" : "Built around the Arabic-speaking teacher"}
+                {t.forWhoTitle}
               </h2>
             </div>
             <div className="space-y-6 text-[15px] leading-relaxed text-black/65">
-              <p>
-                {isAr
-                  ? "سواء كنت معلمًا في مدرسة حكومية تبحث عن طريقة تجعل مراجعة الدرس أكثر حيوية، أو مدرّسًا خاصًا يريد تتبع مستوى كل طالب بدقة — نحلها صُممت لك."
-                  : "Whether you're a school teacher looking to make lesson reviews more engaging, or a private tutor who wants to track each student's level with precision — n7elha was built for you."}
-              </p>
-              <p>
-                {isAr
-                  ? "لا يشترط أن تكون خبيرًا في التكنولوجيا. المنصة تعمل من المتصفح مباشرة، ولا تحتاج الطلاب إلى تحميل أي تطبيق. رمز قصير، وينضم الجميع في ثوانٍ."
-                  : "You don't need to be tech-savvy. The platform runs entirely in the browser — students don't download anything. One short code and everyone's in within seconds."}
-              </p>
-              <p>
-                {isAr
-                  ? "الأسئلة باللغة العربية، التقارير باللغة العربية، وتجربة الطالب مصممة للشاشات الصغيرة التي يحملها طلابك في جيوبهم."
-                  : "Questions in Arabic, reports in Arabic, and a student experience designed for the small screens they carry in their pockets."}
-              </p>
+              <p>{t.forWho1}</p>
+              <p>{t.forWho2}</p>
+              <p>{t.forWho3}</p>
+              <Link to="/about" className="inline-flex items-center gap-1.5 text-[14px] font-semibold" style={{ color: "#3F5A63" }}>
+                {t.readMore}
+                <ArrowUpRight className="h-4 w-4" />
+              </Link>
             </div>
           </div>
         </section>
 
-        {/* ---------------- FOOTER + CTA ---------------- */}
-        <footer id="footer" className="relative bg-[#2B3F45] text-white">
-
-          {/* CTA card — pops up from the footer top */}
-          <div className="px-5 sm:px-8 md:px-14">
-            <div className="relative -top-10 rounded-[24px] bg-white border-2 border-[hsl(var(--nb-border))] shadow-[6px_6px_0_0_hsl(var(--nb-border))] p-8 sm:p-12 md:p-14 flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
-              <div className="max-w-xl">
-                <h3 className="text-[24px] sm:text-[32px] font-semibold tracking-tight leading-[1.15] text-[#2B3F45]">
-                  {t.ctaTitle}
-                </h3>
-                <p className="mt-3 text-black/55 text-[15px]">{t.ctaSub}</p>
-              </div>
-              <div className="flex flex-wrap gap-3 shrink-0">
-                <Link
-                  to={user ? "/app" : "/auth?mode=signup"}
-                  className="inline-flex items-center gap-2 rounded-full border-2 border-[hsl(var(--nb-border))] bg-[#2B3F45] text-white px-6 py-3 text-[14px] font-semibold shadow-[4px_4px_0_0_hsl(var(--nb-border))] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_0_hsl(var(--nb-border))] transition-all"
-                >
-                  {t.ctaBtn}
-                  <ArrowUpRight className="h-4 w-4" />
-                </Link>
-                <Link
-                  to="/play"
-                  className="inline-flex items-center gap-2 rounded-full border-2 border-[hsl(var(--nb-border))] bg-[#FF8254] text-white px-6 py-3 text-[14px] font-semibold shadow-[4px_4px_0_0_hsl(var(--nb-border))] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_0_hsl(var(--nb-border))] transition-all"
-                >
-                  {t.ctaJoin}
-                  <Play className="h-4 w-4 fill-white" />
-                </Link>
-              </div>
-            </div>
-          </div>
-
-          {/* Footer content */}
-          <div className="px-5 sm:px-8 md:px-14 pb-10">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-              <div className="col-span-2 md:col-span-1">
-                <Link to="/" className="flex items-center gap-2">
-                  <img src={logoMark} alt="n7elha" className="h-8 w-8 object-contain brightness-0 invert" />
-                  <span className="text-[17px] font-medium tracking-tight text-white">n7elha</span>
-                </Link>
-                <p className="mt-4 text-[13px] text-white/50 leading-relaxed max-w-xs">{t.footerTagline}</p>
-                <div className="mt-5 flex gap-3">
-                  <a href="#" className="h-9 w-9 rounded-full border border-white/20 flex items-center justify-center text-white/60 hover:bg-white hover:text-[#2B3F45] transition">
-                    <Twitter className="h-4 w-4" />
-                  </a>
-                  <a href="#" className="h-9 w-9 rounded-full border border-white/20 flex items-center justify-center text-white/60 hover:bg-white hover:text-[#2B3F45] transition">
-                    <Instagram className="h-4 w-4" />
-                  </a>
-                  <a href="#" className="h-9 w-9 rounded-full border border-white/20 flex items-center justify-center text-white/60 hover:bg-white hover:text-[#2B3F45] transition">
-                    <Github className="h-4 w-4" />
-                  </a>
-                  <a href="mailto:hello@n7elha.com" className="h-9 w-9 rounded-full border border-white/20 flex items-center justify-center text-white/60 hover:bg-white hover:text-[#2B3F45] transition">
-                    <Mail className="h-4 w-4" />
-                  </a>
-                </div>
-              </div>
-
-              <FooterCol dark title={t.footerProduct} items={[
-                { label: t.footerFeatures, href: "#features" },
-                { label: t.footerHow, href: "#how" },
-                { label: t.footerPricing, href: "#" },
-              ]} />
-              <FooterCol dark title={t.footerCompany} items={[
-                { label: t.footerAbout, href: "#" },
-                { label: t.footerContact, href: "mailto:hello@n7elha.com" },
-                { label: t.footerCareers, href: "#" },
-              ]} />
-              <FooterCol dark title={t.footerLegal} items={[
-                { label: t.footerPrivacy, href: "#" },
-                { label: t.footerTerms, href: "#" },
-              ]} />
-            </div>
-
-            <div className="mt-12 pt-6 border-t border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-[12px] text-white/35">
-              <span>{t.footerRights}</span>
-              <span className="tracking-wider">Built for teachers.</span>
-            </div>
-          </div>
-        </footer>
+        <SiteFooter />
       </div>
     </div>
   );
@@ -533,74 +323,12 @@ const Step = ({ n, icon, title, desc, tilt = "-rotate-[0.7deg]" }: { n: string; 
   <div className="relative rounded-2xl bg-white border-2 border-[hsl(var(--nb-border))] p-6 shadow-[5px_5px_0_0_hsl(var(--nb-border))] group-hover:shadow-[8px_8px_0_0_hsl(var(--nb-border))] group-hover:-translate-x-1 group-hover:-translate-y-1 transition-all">
     <div className="flex items-center justify-between">
       <span className="text-[12px] font-mono tracking-widest text-black/40">{n}</span>
-      <div className="h-9 w-9 rounded-full bg-background text-[#FF8254] flex items-center justify-center">{icon}</div>
+      <div className="h-9 w-9 rounded-full bg-background text-[#3F5A63] flex items-center justify-center">{icon}</div>
     </div>
     <h3 className="mt-6 text-[18px] font-semibold text-black">{title}</h3>
     <p className="mt-2 text-[13.5px] leading-relaxed text-black/65">{desc}</p>
   </div>
   </div>
-);
-
-const FooterCol = ({ title, items, dark }: { title: string; items: { label: string; href: string }[]; dark?: boolean }) => (
-  <div>
-    <h4 className={`text-[12px] tracking-[0.2em] font-semibold ${dark ? "text-white/50" : "text-black/80"}`}>{title}</h4>
-    <ul className="mt-3 space-y-1.5">
-      {items.map((it) => (
-        <li key={it.label}>
-          <a href={it.href} className={`text-[13px] transition ${dark ? "text-white/60 hover:text-white" : "text-black/65 hover:text-black"}`}>
-            {it.label}
-          </a>
-        </li>
-      ))}
-    </ul>
-  </div>
-);
-
-const CrossPattern = () => (
-  <svg
-    className="absolute inset-0 w-full h-full pointer-events-none select-none"
-    viewBox="0 0 500 500"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-    aria-hidden
-  >
-    {/* Dot grid */}
-    {Array.from({ length: 7 }, (_, row) =>
-      Array.from({ length: 5 }, (_, col) => (
-        <circle
-          key={`dot-${row}-${col}`}
-          cx={40 + col * 105}
-          cy={45 + row * 72}
-          r="2.2"
-          fill="#3F5A63"
-          opacity="0.32"
-        />
-      ))
-    )}
-
-    {/* Filled accent circles */}
-    <circle cx="55"  cy="80"  r="5"   fill="#3F5A63" opacity="0.45" />
-    <circle cx="370" cy="120" r="6"   fill="#FF8254" opacity="0.40" />
-    <circle cx="110" cy="310" r="4.5" fill="#FF8254" opacity="0.38" />
-    <circle cx="200" cy="455" r="5"   fill="#3F5A63" opacity="0.35" />
-    <circle cx="430" cy="340" r="4"   fill="#3F5A63" opacity="0.38" />
-    <circle cx="75"  cy="430" r="3.5" fill="#FF8254" opacity="0.35" />
-    <circle cx="310" cy="70"  r="3"   fill="#FF8254" opacity="0.32" />
-
-    {/* Stroke-only circles */}
-    <circle cx="110" cy="180" r="7"   stroke="#FF8254" strokeWidth="1.8" opacity="0.40" />
-    <circle cx="420" cy="460" r="6"   stroke="#3F5A63" strokeWidth="1.8" opacity="0.38" />
-    <circle cx="60"  cy="355" r="5"   stroke="#3F5A63" strokeWidth="1.5" opacity="0.35" />
-    <circle cx="340" cy="260" r="4.5" stroke="#FF8254" strokeWidth="1.5" opacity="0.32" />
-
-    {/* Rotated squares */}
-    <rect x="90"  y="352" width="10" height="10" rx="1.5" transform="rotate(20 95 357)"  fill="#3F5A63" opacity="0.38" />
-    <rect x="338" y="387" width="9"  height="9"  rx="1.5" transform="rotate(35 343 392)" fill="#FF8254" opacity="0.40" />
-    <rect x="58"  y="255" width="8"  height="8"  rx="1"   transform="rotate(-15 62 259)" fill="#3F5A63" opacity="0.35" />
-    <rect x="420" cy="200" width="7"  height="7"  rx="1"   transform="rotate(45 423 203)" fill="#FF8254" opacity="0.32" />
-    <rect x="170" y="130" width="7"  height="7"  rx="1"   transform="rotate(28 173 133)" fill="#3F5A63" opacity="0.30" />
-    <rect x="300" y="440" width="9"  height="9"  rx="1.5" transform="rotate(-20 304 444)" fill="#FF8254" opacity="0.35" />
-  </svg>
 );
 
 export default Landing;

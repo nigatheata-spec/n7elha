@@ -21,6 +21,10 @@ import { playSelect, playCorrect, playWrong, playHackAlert, playGameOver, primeA
 
 type Q = { id: string; text: string; options: string[]; correct_index: number; position: number };
 
+// One printed line of the terminal. The waiting screen is an append-only log:
+// lines are pushed once and never removed, re-ordered or re-derived from state.
+type LogLine = { id: number; text: string; tone: "dim" | "green" | "white" };
+
 const fmt = (n: number) => n.toLocaleString();
 
 // DEV-ONLY PREVIEW HARNESS — view any phase at /play/preview?preview=1&phase=waiting|question|done
@@ -67,6 +71,18 @@ const Game = () => {
   // Keep a ref to students so hack_events callback can read current names
   // without causing the realtime channel to tear down on every score update.
   const studentsRef = useRef<any[]>([]);
+  // Terminal log state. `students` is REPLACED wholesale (and re-sorted by crypto)
+  // on every realtime event, so rendering the peer list straight off it made every
+  // already-printed row re-mount/re-animate the moment a new player entered a name.
+  // The log accumulates instead: one line per event, keyed by a monotonic id so
+  // React never re-keys an existing line and each line animates in exactly once.
+  const [log, setLog] = useState<LogLine[]>([]);
+  const logIdRef = useRef(0);
+  const announcedRef = useRef<Set<string>>(new Set()); // player ids already printed
+  const bootedRef = useRef(false);                     // boot banner printed once
+  const logBoxRef = useRef<HTMLDivElement | null>(null);
+  const pushLines = (lines: { text: string; tone?: LogLine["tone"] }[]) =>
+    setLog(prev => [...prev, ...lines.map(l => ({ id: ++logIdRef.current, text: l.text, tone: l.tone ?? "green" }))]);
 
   // paint root black while in game so cream body never bleeds through
   useEffect(() => {
@@ -157,6 +173,42 @@ const Game = () => {
     }
   }, [session?.status]);
 
+  // boot banner — printed once, the instant we know the session code
+  useEffect(() => {
+    if (!session || bootedRef.current) return;
+    bootedRef.current = true; // ref, not state: survives StrictMode's double effect run
+    const arNow = session.settings?.lang === "ar";
+    pushLines([
+      { text: arNow ? "تهيئة الطرفية..." : "booting terminal...", tone: "dim" },
+      { text: arNow ? "تم رصد لاعب جديد!" : "New player detected!" },
+      { text: `${arNow ? "جلسة #" : "session #"}${session.code}` },
+      { text: arNow ? "بانتظار بدء المضيف" : "waiting for host to start", tone: "dim" },
+    ]);
+  }, [session]);
+
+  // append one line per newly-seen player — never re-print, never remove.
+  // A player who drops off the list keeps their line: the log is history, not state.
+  useEffect(() => {
+    if (!session || students.length === 0) return;
+    const fresh = students.filter(s => !announcedRef.current.has(s.id));
+    if (fresh.length === 0) return;
+    fresh.forEach(s => announcedRef.current.add(s.id));
+    const arNow = session.settings?.lang === "ar";
+    pushLines(fresh.map(s => ({
+      text: s.id === studentId
+        ? `${s.name} ${arNow ? "متصل [أنت]" : "connected [you]"}`
+        : `${s.name} ${arNow ? "متصل" : "connected"}`,
+      tone: s.id === studentId ? ("white" as const) : ("green" as const),
+    })));
+  }, [students, session, studentId]);
+
+  // Pin the terminal to its newest line. scrollTop on the log box only — never
+  // scrollIntoView, which would scroll the document and shift the whole CRT frame.
+  useEffect(() => {
+    const el = logBoxRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [log.length, phase]);
+
   // Play game-over fanfare once when teacher ends the session
   useEffect(() => {
     if (phase === "done") playGameOver();
@@ -173,11 +225,14 @@ const Game = () => {
     startedAtRef.current = Date.now();
   }, [phase, qSeed, questions]);
 
-  const duration = session?.settings?.timePerQ ?? 25;
+  // Timer is OFF unless the teacher explicitly set a positive timePerQ.
+  // null/undefined (the new default) means: no countdown, questions never expire.
+  const timerEnabled = typeof session?.settings?.timePerQ === "number" && session.settings.timePerQ > 0;
+  const duration = session?.settings?.timePerQ ?? 0;
 
-  // per-question countdown
+  // per-question countdown — only runs (and only auto-advances) when enabled
   useEffect(() => {
-    if (phase !== "question" || !currentQ) return;
+    if (phase !== "question" || !currentQ || !timerEnabled) return;
     const t = setInterval(() => {
       const elapsed = (Date.now() - startedAtRef.current) / 1000;
       const left = Math.max(0, Math.ceil(duration - elapsed));
@@ -185,7 +240,7 @@ const Game = () => {
       if (left <= 0) { setPicked(p => p ?? -1); setPhase("answered"); clearInterval(t); }
     }, 200);
     return () => clearInterval(t);
-  }, [phase, currentQ, duration]);
+  }, [phase, currentQ, duration, timerEnabled]);
 
   // auto-advance after wrong/timeout
   useEffect(() => {
@@ -284,46 +339,40 @@ const Game = () => {
 
         {/* WAITING — boot sequence + peer list ─────────────────────────────── */}
         {phase === "waiting" && (
-          <div className="flex-1 flex flex-col max-w-md mx-auto w-full px-5 py-4 overflow-y-auto">
+          <div className="flex-1 flex flex-col min-h-0 max-w-md mx-auto w-full px-5 py-4">
             <h1
-              className="font-pixel text-center leading-[1.7] mb-4"
+              className="shrink-0 font-pixel text-center leading-[1.7] mb-4"
               style={{ fontSize: "clamp(13px, 4vw, 18px)" }}
             >
               <span style={{ color: "hsl(120 90% 55%)" }}>WELCOME </span>
               <span style={{ color: "hsl(0 0% 96%)" }}>HACKER</span>
             </h1>
 
-            <div className="space-y-1 text-xs leading-relaxed mb-5" style={{ color: "hsl(120 80% 60%)" }}>
-              <div>{">"} {ar ? "تم رصد لاعب جديد!" : "New player detected!"}</div>
-              <div>{">"} {ar ? "جلسة #" : "session #"}{session.code}</div>
-              <div>{">"} {ar ? "بانتظار بدء المضيف" : "waiting for host to start"}<span className="animate-pulse">_</span></div>
+            {/* the terminal itself — scrolls down as lines are appended, like a real tty */}
+            <div ref={logBoxRef} className="flex-1 min-h-0 overflow-y-auto text-sm leading-relaxed space-y-0.5">
+              {log.map(l => (
+                <div
+                  key={l.id}
+                  className="flex items-start gap-2"
+                  style={{
+                    color: l.tone === "white" ? "hsl(0 0% 96%)" : l.tone === "dim" ? "hsl(120 50% 44%)" : "hsl(120 80% 60%)",
+                    // No index-derived delay: a stable per-line animation string means the
+                    // browser runs it once on mount and never restarts it on later renders.
+                    animation: "fade-up 0.22s cubic-bezier(0.16,1,0.3,1) both",
+                  }}
+                >
+                  <span className="shrink-0" style={{ color: "hsl(120 50% 38%)" }}>{">"}</span>
+                  <span className="min-w-0 break-words">{l.text}</span>
+                </div>
+              ))}
+              {/* live prompt line — the only non-log row, always last */}
+              <div className="flex items-start gap-2" style={{ color: "hsl(120 50% 44%)" }}>
+                <span className="shrink-0" style={{ color: "hsl(120 50% 38%)" }}>{">"}</span>
+                <span className="animate-pulse">_</span>
+              </div>
             </div>
 
-            <div className="flex-1 space-y-px">
-              {students.map((s, i) => {
-                const isMe = s.id === studentId;
-                return (
-                  <div
-                    key={s.id}
-                    className="flex items-center gap-3 px-1 py-1.5 text-sm"
-                    style={{
-                      color: isMe ? "hsl(0 0% 96%)" : "hsl(120 70% 55%)",
-                      animation: `fade-up 0.25s cubic-bezier(0.16,1,0.3,1) ${Math.min(i * 45, 450)}ms both`,
-                    }}
-                  >
-                    <span style={{ color: "hsl(120 50% 38%)" }}>{">"}</span>
-                    <span className="flex-1 truncate font-bold">{s.name}</span>
-                    {isMe && (
-                      <span className="text-[10px] tracking-widest" style={{ color: "hsl(120 50% 38%)" }}>
-                        {ar ? "[أنت]" : "[you]"}
-                      </span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="mt-5 text-[11px] text-center" style={{ color: "hsl(120 50% 38%)" }}>
+            <div className="shrink-0 mt-4 text-[11px] text-center" style={{ color: "hsl(120 50% 38%)" }}>
               {ar ? `[ ${students.length} متصل ]` : `[ ${students.length} connected ]`}
             </div>
           </div>

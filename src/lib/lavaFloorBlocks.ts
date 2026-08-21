@@ -16,6 +16,121 @@ export const BLOCK_TYPES: {
 export const BLOCK_BY_KEY: Record<BlockKey, (typeof BLOCK_TYPES)[number]> =
   Object.fromEntries(BLOCK_TYPES.map(b => [b.key, b])) as any;
 
+// ── Block sprites — the real platforms that stack above the lava ────────────
+// Purchased blocks are drawn, not described: every buy adds one of these
+// pixel-art platforms to the tower on both the projector and the phone.
+// Every sprite is 16 cells wide so the stack lines up into one column; only
+// the row count differs per type.
+//
+// Row counts are NOT linear in `height` — that value spans 1 → 1400, so a
+// literal mapping would make a plank invisible and a house taller than any
+// screen. They follow the same rank order on a rough log scale instead:
+// thin plank → chunky brick → stepped staircase → tall house.
+export type BlockSprite = {
+  cols: number;
+  rows: number;
+  pattern: string[];            // top row first; "." is transparent
+  palette: Record<string, string>;
+};
+
+// b = body, d = shadow, l = highlight, m = mortar, r = roof, k = eave,
+// w = window, n = door
+export const BLOCK_SPRITES: Record<BlockKey, BlockSprite> = {
+  plank: {
+    cols: 16, rows: 3,
+    pattern: [
+      "llllllllllllllll",
+      "bbdbbbbbbdbbbbbb",
+      "dddddddddddddddd",
+    ],
+    palette: { b: "#a9743c", d: "#7a4f24", l: "#c99a5f" },
+  },
+  brick: {
+    cols: 16, rows: 6,
+    pattern: [
+      "llllllllllllllll",
+      "bbbbbmbbbbbmbbbb",
+      "bbbbbmbbbbbmbbbb",
+      "mmmmmmmmmmmmmmmm",
+      "bbmbbbbbmbbbbbmb",
+      "ddmdddddmdddddmd",
+    ],
+    palette: { b: "#b0483a", d: "#7e2f26", l: "#d3705d", m: "#cbbba6" },
+  },
+  staircase: {
+    cols: 16, rows: 10,
+    pattern: [
+      "................",
+      "................",
+      "............llll",
+      "............bbbb",
+      "........llllbbbb",
+      "........bbbbbbbb",
+      "....llllbbbbbbbb",
+      "....bbbbbbbbbbbb",
+      "llllbbbbbbbbbbbb",
+      "dddddddddddddddd",
+    ],
+    palette: { b: "#8b8f9a", d: "#5f636e", l: "#b3b8c4" },
+  },
+  house: {
+    cols: 16, rows: 18,
+    pattern: [
+      ".......rr.......",
+      "......rrrr......",
+      ".....rrrrrr.....",
+      "....rrrrrrrr....",
+      "...rrrrrrrrrr...",
+      "..rrrrrrrrrrrr..",
+      ".rrrrrrrrrrrrrr.",
+      "rrrrrrrrrrrrrrrr",
+      "kkkkkkkkkkkkkkkk",
+      "lbbbbbbbbbbbbbbd",
+      "lbbwwbbbbbbwwbbd",
+      "lbbwwbbbbbbwwbbd",
+      "lbbbbbbbbbbbbbbd",
+      "lbbbbbnnnbbbbbbd",
+      "lbbbbbnnnbbbbbbd",
+      "lbbbbbnnnbbbbbbd",
+      "lbbbbbnnnbbbbbbd",
+      "dddddddddddddddd",
+    ],
+    palette: {
+      b: "#c2a06a", d: "#8a6c3f", l: "#dcc191",
+      r: "#9c3b34", k: "#5f2a25", w: "#6fc2d8", n: "#5b3a20",
+    },
+  },
+};
+
+export type SpriteRun = { x: number; y: number; w: number; color: string };
+
+const RUN_CACHE = new Map<BlockKey, SpriteRun[]>();
+
+/**
+ * Flatten a sprite's grid into horizontal runs of same-colored cells.
+ * One <div> per cell would be ~250 nodes for a house and the tower holds
+ * dozens of blocks; merging runs cuts that by roughly an order of magnitude.
+ * Cached because the patterns are static.
+ */
+export const spriteRuns = (key: BlockKey): SpriteRun[] => {
+  const cached = RUN_CACHE.get(key);
+  if (cached) return cached;
+  const s = BLOCK_SPRITES[key];
+  const runs: SpriteRun[] = [];
+  s.pattern.forEach((row, y) => {
+    let x = 0;
+    while (x < row.length) {
+      const ch = row[x];
+      let w = 1;
+      while (x + w < row.length && row[x + w] === ch) w++;
+      if (ch !== ".") runs.push({ x, y, w, color: s.palette[ch] });
+      x += w;
+    }
+  });
+  RUN_CACHE.set(key, runs);
+  return runs;
+};
+
 export const cheapestBlock = BLOCK_TYPES[0];
 
 export const INCOME_TIERS: {

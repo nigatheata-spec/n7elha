@@ -9,6 +9,9 @@ import { LangTransitionOverlay } from "@/components/LangTransitionOverlay";
 import { RequireAuth } from "@/components/RequireAuth";
 import { TeacherLayout } from "@/components/TeacherLayout";
 import Landing from "./pages/Landing";
+import Services from "./pages/Services";
+import About from "./pages/About";
+import Partners from "./pages/Partners";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/teacher/Dashboard";
 import Quizzes from "./pages/teacher/Quizzes";
@@ -53,6 +56,9 @@ const AppContent = () => {
         <AuthProvider>
           <Routes>
             <Route path="/" element={<Landing />} />
+            <Route path="/services" element={<Services />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/partners" element={<Partners />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/play" element={<Join />} />
             <Route path="/play/:sessionId" element={<Game />} />

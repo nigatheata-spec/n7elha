@@ -110,6 +110,61 @@ const MODES: { id: GameMode; icon: React.ReactNode; label: string; labelAr: stri
 
 const MINUTE_PRESETS = [5, 10, 15, 20, 30];
 
+/* Per-question countdown — off by default. Teachers who want the pressure opt in
+   and pick the seconds; everyone else gets questions that simply wait for an
+   answer, which is what most classrooms actually want. */
+const SECOND_PRESETS = [10, 15, 20, 30, 45, 60];
+
+const QuestionTimerControl = ({ ar, value, onChange }: { ar: boolean; value: number | null; onChange: (v: number | null) => void }) => {
+  const on = value !== null;
+  return (
+    <div>
+      <div className="flex items-center justify-between gap-3 mb-3">
+        <p className="text-xs font-semibold tracking-widest uppercase text-black/40">
+          {ar ? "مؤقت لكل سؤال" : "Timer Per Question"}
+        </p>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={on}
+          onClick={() => onChange(on ? null : 20)}
+          className="relative h-7 w-12 shrink-0 rounded-full border-2 border-[hsl(var(--nb-border))] transition-colors"
+          style={{ background: on ? "#3F5A63" : "white" }}
+        >
+          <span
+            className="absolute top-[2px] h-4 w-4 rounded-full transition-all"
+            style={{ background: on ? "white" : "#3F5A63", left: on ? "22px" : "4px" }}
+          />
+        </button>
+      </div>
+
+      {on ? (
+        <div className="flex gap-2 flex-wrap">
+          {SECOND_PRESETS.map(s => (
+            <button
+              key={s}
+              onClick={() => onChange(s)}
+              className="px-3 py-1.5 rounded-lg text-xs font-bold border-2 border-[hsl(var(--nb-border))] transition-all hover:translate-x-px hover:translate-y-px"
+              style={value === s
+                ? { background: "#3F5A63", color: "white", boxShadow: "2px 2px 0 0 hsl(var(--nb-border))" }
+                : { background: "white", color: "#3F5A63", boxShadow: "2px 2px 0 0 hsl(var(--nb-border))" }
+              }
+            >
+              {s}s
+            </button>
+          ))}
+        </div>
+      ) : (
+        <p className="text-sm text-black/45 leading-relaxed">
+          {ar
+            ? "لا مؤقت — يبقى السؤال معروضًا حتى يجيب الطلاب."
+            : "No timer — each question stays up until students answer."}
+        </p>
+      )}
+    </div>
+  );
+};
+
 const MinuteStepper = ({ value, onChange }: { value: number; onChange: (v: number) => void }) => {
   const step = (delta: number) => onChange(Math.min(30, Math.max(2, value + delta)));
   return (
@@ -170,6 +225,10 @@ const HostGame = () => {
   const [students, setStudents] = useState<any[]>([]);
   const [copied, setCopied] = useState(false);
   const [minutes, setMinutes] = useState(7);
+  // null = no per-question countdown at all (the default). A number means the
+  // teacher explicitly opted in to that many seconds per question. Every mode
+  // reads settings.timePerQ with this same contract: absent/null => no timer.
+  const [secsPerQ, setSecsPerQ] = useState<number | null>(null);
   const maxStudents = 40;
 
   useEffect(() => {
@@ -199,6 +258,7 @@ const HostGame = () => {
       setCode(data.code);
       setSessionId(data.id);
       if (data.settings?.minutes) setMinutes(data.settings.minutes);
+      setSecsPerQ(typeof data.settings?.timePerQ === "number" ? data.settings.timePerQ : null);
     })();
   }, [user, quizId]);
 
@@ -226,8 +286,10 @@ const HostGame = () => {
         settings.timerWinnerId = null;
       } else {
         settings.minutes = minutes;
-        settings.timePerQ = 20;
       }
+      // Off unless the teacher turned it on — null, not a default number, so the
+      // game views can tell "disabled" apart from "set to some duration".
+      settings.timePerQ = secsPerQ;
       settings.lang = i18n.language;
       let tryCode = code;
       let data, error;
@@ -526,6 +588,10 @@ const HostGame = () => {
                 </p>
                 <MinuteStepper value={minutes} onChange={setMinutes} />
               </div>
+            )}
+
+            {mode !== "physical" && (
+              <QuestionTimerControl ar={ar} value={secsPerQ} onChange={setSecsPerQ} />
             )}
           </div>
 

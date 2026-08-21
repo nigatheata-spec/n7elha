@@ -171,9 +171,13 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
   }, [phase, qSeed, questions.length]);
 
   // ── Question countdown ────────────────────────────────────────────────────
+  // Opt-in per session (HostGame): absent/null timePerQ means no countdown runs
+  // and a question never expires on its own. The bomb fuse is a separate clock
+  // and keeps running either way — that's the mode's own pressure, not this one.
+  const timerEnabled = typeof settings.timePerQ === "number" && settings.timePerQ > 0;
   const duration = settings.timePerQ ?? 20;
   useEffect(() => {
-    if (phase !== "question" || !currentQ) return;
+    if (!timerEnabled || phase !== "question" || !currentQ) return;
     const t = setInterval(() => {
       const elapsed = (Date.now() - qStartRef.current) / 1000;
       const left = Math.max(0, Math.ceil(duration - elapsed));
@@ -181,7 +185,7 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
       if (left <= 0 && pickedRef.current === null) { clearInterval(t); if (sessionStatusRef.current !== "finished") handleAnswer(-1); }
     }, 200);
     return () => clearInterval(t);
-  }, [phase, currentQ, duration]);
+  }, [timerEnabled, phase, currentQ, duration]);
 
   // ── Auto-advance after answered ───────────────────────────────────────────
   useEffect(() => {
@@ -563,17 +567,19 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
                 </div>
               )}
 
-              {/* Arc timer */}
-              <div className="flex justify-center mb-2">
-                <svg width="60" height="60" viewBox="0 0 60 60">
-                  <circle cx="30" cy="30" r="26" fill="none" stroke="hsl(210 18% 20%)" strokeWidth="3.5" />
-                  <circle cx="30" cy="30" r="26" fill="none" stroke="hsl(210 10% 60%)" strokeWidth="3.5"
-                    strokeDasharray="163.36" strokeDashoffset={163.36 * (1 - timeLeft / duration)}
-                    strokeLinecap="round" transform="rotate(-90 30 30)"
-                    style={{ transition: "stroke-dashoffset 0.18s linear" }} />
-                  <text x="30" y="35" textAnchor="middle" fill="hsl(210 10% 75%)" fontSize="15" fontWeight="bold" fontFamily="monospace">{timeLeft}</text>
-                </svg>
-              </div>
+              {/* Arc timer — only when the teacher enabled a per-question timer */}
+              {timerEnabled && (
+                <div className="flex justify-center mb-2">
+                  <svg width="60" height="60" viewBox="0 0 60 60">
+                    <circle cx="30" cy="30" r="26" fill="none" stroke="hsl(210 18% 20%)" strokeWidth="3.5" />
+                    <circle cx="30" cy="30" r="26" fill="none" stroke="hsl(210 10% 60%)" strokeWidth="3.5"
+                      strokeDasharray="163.36" strokeDashoffset={163.36 * (1 - timeLeft / duration)}
+                      strokeLinecap="round" transform="rotate(-90 30 30)"
+                      style={{ transition: "stroke-dashoffset 0.18s linear" }} />
+                    <text x="30" y="35" textAnchor="middle" fill="hsl(210 10% 75%)" fontSize="15" fontWeight="bold" fontFamily="monospace">{timeLeft}</text>
+                  </svg>
+                </div>
+              )}
 
               {/* Question card — full metal panel */}
               <div className="relative mb-3 rounded-xl px-4 py-4 text-center shrink-0" style={metalPanel}>

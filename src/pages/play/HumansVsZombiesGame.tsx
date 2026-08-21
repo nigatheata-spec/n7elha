@@ -269,9 +269,12 @@ const HumansVsZombiesGame = ({ sessionId, studentId }: Props) => {
   }, [phase, qSeed, questions.length]);
 
   // ── Countdown ─────────────────────────────────────────────────────────────
+  // Opt-in per session (HostGame): absent/null timePerQ means no countdown runs
+  // and a question never expires on its own.
+  const timerEnabled = typeof settings.timePerQ === "number" && settings.timePerQ > 0;
   const duration = settings.timePerQ ?? 20;
   useEffect(() => {
-    if (phase !== "question" || !currentQ) return;
+    if (!timerEnabled || phase !== "question" || !currentQ) return;
     const t = setInterval(() => {
       const elapsed = (Date.now() - qStartRef.current) / 1000;
       const left = Math.max(0, Math.ceil(duration - elapsed));
@@ -279,7 +282,7 @@ const HumansVsZombiesGame = ({ sessionId, studentId }: Props) => {
       if (left <= 0 && pickedRef.current === null) { clearInterval(t); handleAnswer(-1); }
     }, 200);
     return () => clearInterval(t);
-  }, [phase, currentQ, duration]);
+  }, [timerEnabled, phase, currentQ, duration]);
 
   // ── Auto-advance after answered ───────────────────────────────────────────
   useEffect(() => {
@@ -730,10 +733,14 @@ const HumansVsZombiesGame = ({ sessionId, studentId }: Props) => {
                   <img src={currentQ.image_url} alt="" className="mx-auto max-h-[24vh] w-auto object-contain mb-3 border-2 border-white/20" />
                 )}
                 <p className="text-base md:text-lg font-bold leading-snug text-center" style={{ color: "hsl(90 10% 88%)" }}>{currentQ.text}</p>
-                <div className="pixel-progress mt-3 h-2" style={{ background: "hsl(0 0% 10%)", borderColor: timerColor }}>
-                  <div className="pixel-progress-fill" style={{ width: `${timerFrac * 100}%`, background: timerColor, transition: "width 0.2s linear, background 0.5s" }} />
-                </div>
-                <div className="mt-1.5 text-right text-[10px] font-black tabular-nums" style={{ color: timerColor }}>{timeLeft}s</div>
+                {timerEnabled && (
+                  <>
+                    <div className="pixel-progress mt-3 h-2" style={{ background: "hsl(0 0% 10%)", borderColor: timerColor }}>
+                      <div className="pixel-progress-fill" style={{ width: `${timerFrac * 100}%`, background: timerColor, transition: "width 0.2s linear, background 0.5s" }} />
+                    </div>
+                    <div className="mt-1.5 text-right text-[10px] font-black tabular-nums" style={{ color: timerColor }}>{timeLeft}s</div>
+                  </>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-2 flex-1 min-h-0">

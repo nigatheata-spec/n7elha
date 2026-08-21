@@ -11,7 +11,11 @@ import { PixelLavaCrest, PixelLavaBody } from "@/components/PixelLava";
 import { PixelRockCeiling } from "@/components/PixelRockCeiling";
 import logoLight from "@/assets/logo-light.png";
 import { playSelect, playCorrect, playWrong, playBrick, playGameOver, primeAudio } from "@/lib/sound";
-import { BLOCK_TYPES, BLOCK_BY_KEY, INCOME_TIERS, STREAK_TIERS, streakMultiplier, type BlockKey } from "@/lib/lavaFloorBlocks";
+import { useFloatingRewards } from "@/components/game/GameFeedback";
+import {
+  BLOCK_TYPES, BLOCK_BY_KEY, BLOCK_SPRITES, spriteRuns,
+  INCOME_TIERS, STREAK_TIERS, streakMultiplier, type BlockKey,
+} from "@/lib/lavaFloorBlocks";
 
 type Q = { id: string; text: string; options: string[]; correct_index: number; image_url?: string };
 type Phase = "waiting" | "question" | "answered" | "done";
@@ -35,6 +39,31 @@ const Avatar = ({ name, size = "md" }: { name: string; size?: "sm" | "md" | "xl"
     <div style={{ background: bg, borderColor: bg }}
       className={cn("pixel-avatar flex items-center justify-center font-black text-white select-none shrink-0", cls)}>
       {letter}
+    </div>
+  );
+};
+
+// ── Tower ───────────────────────────────────────────────────────────────────
+// Same drawn platforms as the projector, at phone scale: a buy puts a real
+// block on the stack rather than printing a line of text about it.
+// Streak lengths worth a toast — the rungs where the multiplier ladder steps
+// up. Everything between them is covered by the flame chip in the header.
+const STREAK_MILESTONES = [5, 8, 15, 25];
+
+const TOWER_MAX = 18;      // a phone only has room for the top of the stack
+const TOWER_PX  = 2;         // fixed small scale — the strip is only ~40px wide
+
+const TowerBlock = ({ type, landing }: { type: BlockKey; landing: boolean }) => {
+  const s = BLOCK_SPRITES[type];
+  return (
+    <div
+      className={cn("relative shrink-0", landing && "animate-lf-block-land")}
+      style={{ width: s.cols * TOWER_PX, height: s.rows * TOWER_PX }}
+      aria-hidden>
+      {spriteRuns(type).map((r, i) => (
+        <div key={i} className="absolute"
+          style={{ left: r.x * TOWER_PX, top: r.y * TOWER_PX, width: r.w * TOWER_PX, height: TOWER_PX, background: r.color }} />
+      ))}
     </div>
   );
 };
@@ -70,6 +99,15 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
   const [towerHeight, setTowerHeight] = useState(0);
   const [recentBuilds, setRecentBuilds] = useState<Build[]>([]);
   const [buyFlash, setBuyFlash]       = useState<BlockKey | null>(null);
+  // Stack is stored bottom-of-tower first; `landingId` is the block currently
+  // playing its drop-and-squash landing.
+  const [towerStack, setTowerStack]   = useState<{ id: string; type: BlockKey }[]>([]);
+  const [landingId, setLandingId]     = useState<string | null>(null);
+
+  // Routine income is shown as a number floating off the brick counter, not a
+  // toast — the counter right above it already moved, so a popup per correct
+  // answer is pure noise (and buries the screen when the class is on a roll).
+  const reward = useFloatingRewards();
 
   const qStartRef  = useRef(Date.now());
   const askedRef   = useRef(0);
@@ -126,10 +164,11 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
           const b = p.new as Build;
           setTowerHeight(h => h + b.height_added);
           setRecentBuilds(list => [b, ...list].slice(0, 12));
-          const label = ar ? BLOCK_BY_KEY[b.block_type].labelAr : BLOCK_BY_KEY[b.block_type].labelEn;
-          toast.success(ar
-            ? `${b.student_name} بنى ${label}! +${b.height_added}`
-            : `${b.student_name} built a ${label}! +${b.height_added}`);
+          setTowerStack(list => [...list, { id: b.id, type: b.block_type }].slice(-TOWER_MAX));
+          // No toast: the block lands on the tower strip and the feed names the
+          // builder — one build by one classmate does not deserve a popup.
+          setLandingId(b.id);
+          setTimeout(() => setLandingId(cur => (cur === b.id ? null : cur)), 500);
         })
       .subscribe();
     return () => { supabase.removeChannel(ch); };
@@ -143,6 +182,9 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
       const rows = (data ?? []) as Build[];
       setTowerHeight(rows.reduce((a, r) => a + r.height_added, 0));
       setRecentBuilds(rows.slice(0, 12));
+      // rows are newest-first; the strip stacks bottom-up, so reverse the most
+      // recent slice to put the oldest of them at the base.
+      setTowerStack(rows.slice(0, TOWER_MAX).reverse().map(r => ({ id: r.id, type: r.block_type })));
     })();
   }, [sessionId]);
 
@@ -191,8 +233,13 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
   }, [phase, qSeed, questions.length]);
 
   // ── Countdown ─────────────────────────────────────────────────────────────
-  const duration = settings.timePerQ ?? 20;
+  // The per-question timer is off unless the teacher enabled it: `timePerQ` is
+  // null/undefined when off, a positive seconds count when on. When off there
+  // is no countdown UI and a question never expires on its own.
+  const timerEnabled = typeof settings.timePerQ === "number" && settings.timePerQ > 0;
+  const duration = timerEnabled ? settings.timePerQ : 0;
   useEffect(() => {
+    if (!timerEnabled) return;
     if (phase !== "question" || !currentQ) return;
     const t = setInterval(() => {
       const elapsed = (Date.now() - qStartRef.current) / 1000;
@@ -201,7 +248,7 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
       if (left <= 0 && pickedRef.current === null) { clearInterval(t); handleAnswer(-1); }
     }, 200);
     return () => clearInterval(t);
-  }, [phase, currentQ, duration]);
+  }, [phase, currentQ, duration, timerEnabled]);
 
   // ── Auto-advance after answered ───────────────────────────────────────────
   useEffect(() => {
@@ -237,20 +284,29 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
     localWriteAtRef.current = Date.now();
     setMe((prev: any) => ({ ...prev, ...updates }));
     if (correct) {
-      toast.success(
-        newMult > 1
-          ? `+$${payout}  ($${tier.payout} ×${newMult} ${ar ? "سلسلة" : "streak"} ${newStreak})`
-          : `+$${payout}`
-      );
-    } else if ((me.streak ?? 0) >= 2) {
-      toast.error(ar ? `انقطعت السلسلة!` : `Streak broken!`);
+      // Small number floating off the brick counter it just changed. A toast
+      // per answer was both too frequent and too tall for a routine +$1.
+      reward.fire(`+$${payout}`, newMult > 1 ? "hsl(14 78% 66%)" : "hsl(33 78% 64%)");
+      // A toast is reserved for the rare, genuinely notable moment: hitting a
+      // streak rung the HUD cannot announce on its own.
+      if (STREAK_MILESTONES.includes(newStreak)) {
+        toast.success(ar
+          ? `سلسلة ${newStreak}! ×${newMult} لكل إجابة`
+          : `${newStreak} streak! ×${newMult} per answer`);
+      }
+    } else if ((me.streak ?? 0) >= 5) {
+      // Only a long streak's loss is worth interrupting for — the flame chip
+      // in the header already shows short streaks resetting to zero.
+      toast.error(ar ? "انقطعت السلسلة!" : "Streak broken!");
     }
     supabase.from("game_students").update(updates).eq("id", me.id).then(undefined, () => {});
     supabase.from("question_responses").insert({
       session_id: sessionId, student_id: me.id, question_id: currentQ.id,
       question_index: askedRef.current, answer_index: idx, is_correct: correct,
     }).then(undefined, () => {});
-  }, [currentQ, me, sessionId]);
+    // `ar` is intentionally not a dependency — it is declared further down the
+    // component body, so listing it here would evaluate it inside its TDZ.
+  }, [currentQ, me, sessionId, reward.fire]);
 
   const submit = (idx: number) => { if (pickedRef.current !== null) return; handleAnswer(idx); };
 
@@ -301,7 +357,7 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
   };
 
   // Derived visual values
-  const timerFrac    = timeLeft / duration;
+  const timerFrac    = timerEnabled ? timeLeft / duration : 0;
   const timerColor   = timerFrac > 0.5 ? "#e67e22" : timerFrac > 0.25 ? "#e74c3c" : "#ff3322";
   const glowStrength = Math.min(1, lavaPct / 55); // 0→1 as lava rises
   const ar = (session?.settings?.lang ?? i18n.language) === "ar";
@@ -550,6 +606,25 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
           }} />
       ))}
 
+      {/* ── TOWER STRIP — the class's real platform, riding the lava line ──
+          Anchored at the same percentage as the lava layer so its base always
+          sits on the molten surface. Lives in the left gutter the main column
+          reserves with ps-[52px], so the question card never covers it. */}
+      {(phase === "question" || phase === "answered") && towerStack.length > 0 && (
+        <div className="absolute left-2 z-[1] flex flex-col-reverse items-center pointer-events-none"
+          style={{ bottom: `${lavaPct}%`, transition: "bottom 0.55s cubic-bezier(0.25,0.46,0.45,0.94)" }}>
+          {towerStack.map(b => (
+            <TowerBlock key={b.id} type={b.type} landing={b.id === landingId} />
+          ))}
+          <div className="flex items-center gap-0.5 pb-1">
+            <PixelHouse className="h-2.5 w-2.5" color="hsl(200 60% 55%)" />
+            <span className="text-[9px] font-black tabular-nums" style={{ color: "hsl(200 60% 70%)" }}>
+              {towerHeight}
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* ── LAVA HEAT GLOW — floods upward into content ───────────────── */}
       <div className="absolute inset-x-0 pointer-events-none transition-all duration-500"
         style={{
@@ -608,9 +683,16 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
               <PixelHouse className="h-3.5 w-3.5" color="currentColor" />
               <span className="font-black tabular-nums text-sm">{towerHeight}</span>
             </div>
-            <div className="flex items-center gap-1.5">
+            {/* relative wrapper: floating +$ rewards rise out of this counter */}
+            <div className="relative flex items-center gap-1.5">
               <PixelShield className="h-3.5 w-3.5" color="hsl(33 78% 58%)" />
               <span className="font-black tabular-nums text-sm" style={{ color: "hsl(33 78% 64%)" }}>{bricks}</span>
+              {/* Zero-height anchor a little below the counter: the number
+                  starts under the header line and rises through the counter
+                  instead of flying off the top edge of the screen. */}
+              <div className="absolute inset-x-0 top-7 h-0">
+                <reward.Layer />
+              </div>
             </div>
           </div>
         </header>
@@ -866,8 +948,9 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
 
           {/* QUESTION */}
           {(phase === "question" || phase === "answered") && currentQ && (
-            /* pe-[72px] on mobile gives clearance for the fixed spend button on the right */
-            <div className="flex-1 flex flex-col gap-2.5 max-w-2xl mx-auto w-full min-h-0 pe-[72px] lg:pe-0">
+            /* pe-[72px] clears the fixed shop button on the right; ps-[52px]
+               keeps the tower strip on the left visible behind nothing */
+            <div className="flex-1 flex flex-col gap-2.5 max-w-2xl mx-auto w-full min-h-0 pe-[72px] ps-[52px] lg:pe-0 lg:ps-0">
 
               {/* Question card */}
               <div className="pixel-panel shrink-0 px-4 py-4 relative"
@@ -888,19 +971,23 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
                   {currentQ.text}
                 </p>
 
-                {/* Timer bar — stepped segments */}
-                <div className="pixel-progress mt-3 h-2" style={{ background: "hsl(0 0% 10%)", borderColor: timerColor }}>
-                  <div className="pixel-progress-fill"
-                    style={{
-                      width: `${timerFrac * 100}%`,
-                      background: timerColor,
-                      transition: "width 0.2s linear, background 0.5s",
-                    }} />
-                </div>
-                <div className="mt-1.5 text-right text-[10px] font-pixel font-black tabular-nums"
-                  style={{ color: timerColor, transition: "color 0.5s" }}>
-                  {timeLeft}s
-                </div>
+                {/* Timer bar — only when the teacher turned the timer on */}
+                {timerEnabled && (
+                  <>
+                    <div className="pixel-progress mt-3 h-2" style={{ background: "hsl(0 0% 10%)", borderColor: timerColor }}>
+                      <div className="pixel-progress-fill"
+                        style={{
+                          width: `${timerFrac * 100}%`,
+                          background: timerColor,
+                          transition: "width 0.2s linear, background 0.5s",
+                        }} />
+                    </div>
+                    <div className="mt-1.5 text-right text-[10px] font-pixel font-black tabular-nums"
+                      style={{ color: timerColor, transition: "color 0.5s" }}>
+                      {timeLeft}s
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* Answer buttons — obsidian stone platforms */}
