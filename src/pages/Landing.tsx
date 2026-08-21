@@ -222,35 +222,36 @@ const Landing = () => {
         <ProductPreview />
 
         {/* ---------------- FEATURES ---------------- */}
-        <section id="features" className="wrap px-5 sm:px-8 md:px-14 py-16 sm:py-24 border-t border-black/5">
-          <div className="max-w-2xl flex items-end justify-between gap-6 flex-wrap">
+        <section id="features" className="bg-[#14212A] text-white px-5 sm:px-8 md:px-14 py-20 sm:py-28">
+          <div className="wrap"><div className="max-w-2xl flex items-end justify-between gap-6 flex-wrap">
             <div>
-              <span className={`text-[12px] font-semibold text-[#3F5A63] ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`}>{t.featuresKicker}</span>
-              <h2 className="mt-3 text-[28px] sm:text-[40px] tracking-tight leading-[1.1]" style={{ color: "#3F5A63", fontFamily: "'ArslanWessam', 'Almarai', sans-serif" }}>
+              <span className={`text-[12px] font-semibold text-[#FF8254] ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`}>{t.featuresKicker}</span>
+              <h2 className="mt-3 text-[28px] sm:text-[40px] tracking-tight leading-[1.1]" style={{ color: "#FFFFFF", fontFamily: "'ArslanWessam', 'Almarai', sans-serif" }}>
                 {t.featuresTitle}
               </h2>
-              <p className="mt-4 text-[15px] text-black/65 leading-relaxed">{t.featuresSub}</p>
+              <p className="mt-4 text-[15px] text-white/65 leading-relaxed">{t.featuresSub}</p>
             </div>
           </div>
 
           <div className="mt-10 sm:mt-14 grid grid-cols-1 md:grid-cols-3 gap-4">
-            <FeatureLarge icon={<Sparkles className="h-6 w-6" />} title={t.f1Title} desc={t.f1Desc} tilt="-rotate-[0.5deg]" />
-            <Feature icon={<FileText className="h-5 w-5" />} title={t.f2Title} desc={t.f2Desc} tilt="rotate-[0.9deg]" />
-            <Feature icon={<Radio className="h-5 w-5" />} title={t.f3Title} desc={t.f3Desc} tilt="-rotate-[0.8deg]" />
-            <FeatureLarge icon={<BarChart3 className="h-6 w-6" />} title={t.f4Title} desc={t.f4Desc} tilt="rotate-[0.5deg]" />
+            <FeatureLarge dark icon={<Sparkles className="h-6 w-6" />} title={t.f1Title} desc={t.f1Desc} tilt="-rotate-[0.5deg]" />
+            <Feature dark icon={<FileText className="h-5 w-5" />} title={t.f2Title} desc={t.f2Desc} tilt="rotate-[0.9deg]" />
+            <Feature dark icon={<Radio className="h-5 w-5" />} title={t.f3Title} desc={t.f3Desc} tilt="-rotate-[0.8deg]" />
+            <FeatureLarge dark icon={<BarChart3 className="h-6 w-6" />} title={t.f4Title} desc={t.f4Desc} tilt="rotate-[0.5deg]" />
           </div>
 
-          <Link to="/services" className="mt-8 inline-flex items-center gap-1.5 text-[14px] font-semibold" style={{ color: "#3F5A63" }}>
+          <Link to="/services" className="mt-8 inline-flex items-center gap-1.5 text-[14px] font-semibold text-white underline decoration-[#FF8254] decoration-2 underline-offset-4">
             {t.seeAllServices}
             <ArrowUpRight className="h-4 w-4" />
           </Link>
+          </div>
         </section>
 
         {/* ---------------- HOW IT WORKS ---------------- */}
-        <section id="how" className="wrap px-5 sm:px-8 md:px-14 py-16 sm:py-24 border-t border-black/5">
-          <div className="max-w-2xl">
-            <span className={`text-[12px] font-semibold text-[#3F5A63] ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`}>{t.howKicker}</span>
-            <h2 className="mt-3 text-[28px] sm:text-[40px] tracking-tight leading-[1.1]" style={{ color: "#3F5A63", fontFamily: "'ArslanWessam', 'Almarai', sans-serif" }}>
+        <section id="how" className="bg-[#3F5A63] text-white px-5 sm:px-8 md:px-14 py-20 sm:py-28">
+          <div className="wrap"><div className="max-w-2xl">
+            <span className={`text-[12px] font-semibold text-[#FF8254] ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`}>{t.howKicker}</span>
+            <h2 className="mt-3 text-[28px] sm:text-[40px] tracking-tight leading-[1.1]" style={{ color: "#FFFFFF", fontFamily: "'ArslanWessam', 'Almarai', sans-serif" }}>
               {t.howTitle}
             </h2>
           </div>
@@ -259,6 +260,7 @@ const Landing = () => {
             <Step n="01" icon={<Upload className="h-5 w-5" />} title={t.s1} desc={t.s1d} tilt="-rotate-[0.6deg]" />
             <Step n="02" icon={<Users className="h-5 w-5" />} title={t.s2} desc={t.s2d} tilt="rotate-[0.8deg]" />
             <Step n="03" icon={<Trophy className="h-5 w-5" />} title={t.s3} desc={t.s3d} tilt="-rotate-[0.9deg]" />
+          </div>
           </div>
         </section>
 
@@ -293,30 +295,30 @@ const Landing = () => {
 
 /* ---------- helpers ---------- */
 
-const FeatureLarge = ({ icon, title, desc, tilt = "-rotate-[0.6deg]" }: { icon: React.ReactNode; title: string; desc: string; tilt?: string }) => (
+const FeatureLarge = ({ icon, title, desc, tilt = "-rotate-[0.6deg]", dark = false }: { icon: React.ReactNode; title: string; desc: string; tilt?: string; dark?: boolean }) => (
   <div className={`md:col-span-2 group ${tilt} hover:rotate-0 transition-transform duration-300`}>
-    <div className="relative rounded-2xl border-2 border-[hsl(var(--nb-border))] bg-white p-7 shadow-[5px_5px_0_0_hsl(var(--nb-border))] group-hover:shadow-[8px_8px_0_0_hsl(var(--nb-border))] group-hover:-translate-x-1 group-hover:-translate-y-1 transition-all">
+    <div className={`relative rounded-2xl border-2 p-7 transition-all group-hover:-translate-x-1 group-hover:-translate-y-1 ${dark ? "border-[#0B1418] bg-[#3F5A63] shadow-[5px_5px_0_0_#0B1418] group-hover:shadow-[8px_8px_0_0_#0B1418]" : "border-[hsl(var(--nb-border))] bg-white shadow-[5px_5px_0_0_hsl(var(--nb-border))] group-hover:shadow-[8px_8px_0_0_hsl(var(--nb-border))]"}`}>
       <div className="flex items-start gap-5">
-        <div className="h-12 w-12 rounded-2xl border-2 border-[hsl(var(--nb-border))] bg-[#3F5A63] text-white flex items-center justify-center shrink-0">
+        <div className={`h-12 w-12 rounded-2xl border-2 flex items-center justify-center shrink-0 text-white ${dark ? "border-[#0B1418] bg-[#FF8254]" : "border-[hsl(var(--nb-border))] bg-[#3F5A63]"}`}>
           {icon}
         </div>
         <div>
-          <h3 className="text-[18px] font-semibold leading-tight" style={{ color: "#3F5A63" }}>{title}</h3>
-          <p className="mt-2 text-[14px] leading-relaxed text-black/65 max-w-lg">{desc}</p>
+          <h3 className="text-[18px] font-semibold leading-tight" style={{ color: dark ? "#FFFFFF" : "#3F5A63" }}>{title}</h3>
+          <p className={`mt-2 text-[14px] leading-relaxed max-w-lg ${dark ? "text-white/65" : "text-black/65"}`}>{desc}</p>
         </div>
       </div>
     </div>
   </div>
 );
 
-const Feature = ({ icon, title, desc, tilt = "rotate-[0.8deg]" }: { icon: React.ReactNode; title: string; desc: string; tilt?: string }) => (
+const Feature = ({ icon, title, desc, tilt = "rotate-[0.8deg]", dark = false }: { icon: React.ReactNode; title: string; desc: string; tilt?: string; dark?: boolean }) => (
   <div className={`group ${tilt} hover:rotate-0 transition-transform duration-300`}>
-    <div className="relative rounded-2xl border-2 border-[hsl(var(--nb-border))] bg-white p-6 shadow-[5px_5px_0_0_hsl(var(--nb-border))] group-hover:shadow-[8px_8px_0_0_hsl(var(--nb-border))] group-hover:-translate-x-1 group-hover:-translate-y-1 transition-all">
-      <div className="h-10 w-10 rounded-2xl border-2 border-[hsl(var(--nb-border))] bg-[#3F5A63]/10 text-[#3F5A63] flex items-center justify-center group-hover:bg-[#3F5A63] group-hover:text-white transition-colors">
+    <div className={`relative h-full rounded-2xl border-2 p-6 transition-all group-hover:-translate-x-1 group-hover:-translate-y-1 ${dark ? "border-[#0B1418] bg-[#3F5A63] shadow-[5px_5px_0_0_#0B1418] group-hover:shadow-[8px_8px_0_0_#0B1418]" : "border-[hsl(var(--nb-border))] bg-white shadow-[5px_5px_0_0_hsl(var(--nb-border))] group-hover:shadow-[8px_8px_0_0_hsl(var(--nb-border))]"}`}>
+      <div className={`h-10 w-10 rounded-2xl border-2 flex items-center justify-center transition-colors ${dark ? "border-[#0B1418] bg-[#FF8254] text-white" : "border-[hsl(var(--nb-border))] bg-[#3F5A63]/10 text-[#3F5A63] group-hover:bg-[#3F5A63] group-hover:text-white"}`}>
         {icon}
       </div>
-      <h3 className="mt-5 text-[17px] font-semibold leading-tight" style={{ color: "#3F5A63" }}>{title}</h3>
-      <p className="mt-2 text-[13.5px] leading-relaxed text-black/65">{desc}</p>
+      <h3 className="mt-5 text-[17px] font-semibold leading-tight" style={{ color: dark ? "#FFFFFF" : "#3F5A63" }}>{title}</h3>
+      <p className={`mt-2 text-[13.5px] leading-relaxed ${dark ? "text-white/65" : "text-black/65"}`}>{desc}</p>
     </div>
   </div>
 );
