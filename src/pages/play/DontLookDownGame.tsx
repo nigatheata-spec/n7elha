@@ -606,54 +606,49 @@ const DontLookDownGame = ({ sessionId, studentId }: Props) => {
         </div>
       )}
 
-      {/* Secondary actions sit above the control bar, out of thumb-strike range. */}
-      <div className="absolute z-10 flex flex-col items-start gap-2"
-        style={{ insetInlineStart: "1rem", bottom: "calc(env(safe-area-inset-bottom) + 7.5rem)" }}>
-        <button onClick={() => { setQSeed(s => s + 1); setShowQuiz(true); }}
-          className={cn("px-4 py-2.5 rounded-xl text-sm font-extrabold text-white shadow-lg active:scale-95 transition-transform",
-            frozen && "animate-pulse")}
-          style={{ background: frozen ? "#dc2626" : "#4f46e5" }}>
-          {ar ? "أجب على الأسئلة" : "Answer Questions"}
-        </button>
-        <button onClick={() => setShowShop(true)}
-          className="h-11 w-11 rounded-xl flex flex-col items-center justify-center gap-0.5 shadow-md active:scale-95 transition-transform"
-          style={{ background: "rgba(255,255,255,0.92)", color: "#1e293b" }}>
-          <Store className="h-5 w-5" strokeWidth={2.4} />
-        </button>
-      </div>
+      {/* ── Answer Questions (matches the reference's bottom-left CTA) ── */}
+      <button onClick={() => { setQSeed(s => s + 1); setShowQuiz(true); }}
+        className={cn("absolute left-4 z-10 px-4 py-2.5 rounded-xl text-sm font-extrabold text-white shadow-lg active:scale-95 transition-transform",
+          frozen && "animate-pulse")}
+        style={{ background: frozen ? "#dc2626" : "#4f46e5", bottom: "calc(env(safe-area-inset-bottom) + 6.5rem)" }}>
+        {ar ? "أجب على الأسئلة" : "Answer Questions"}
+      </button>
 
-      {/* ── Touch controls ──────────────────────────────────────────────────
-          One full-width bar pinned to the bottom: the two direction keys go to
-          the far edges where thumbs actually rest on a phone, and jump takes
-          the wide middle. The old layout stacked left+right together on one
-          side and jump on the other, which meant one thumb had to cover both
-          directions. `flex-1` on jump keeps the hit target large on every
-          screen width, and `touch-none` stops a held press turning into a
-          browser scroll or text selection. */}
-      <div className="absolute inset-x-0 bottom-0 flex items-stretch gap-2 px-3 pt-2 touch-none"
-        style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}>
-        {([["arrowleft", ArrowLeft], [" ", ArrowUp], ["arrowright", ArrowRight]] as const).map(([key, Icon]) => {
-          const isJump = key === " ";
-          return (
+      {/* ── Touch controls ── */}
+      <div className="absolute inset-x-0 bottom-0 p-4 flex items-end justify-between gap-3"
+        style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}>
+        <div className="flex gap-2.5">
+          {([["arrowleft", ArrowLeft], ["arrowright", ArrowRight]] as const).map(([key, Icon]) => (
             <button key={key}
-              aria-label={isJump ? (ar ? "قفز" : "Jump") : key === "arrowleft" ? (ar ? "يسار" : "Left") : (ar ? "يمين" : "Right")}
-              onPointerDown={e => { e.preventDefault(); e.currentTarget.setPointerCapture(e.pointerId); holdKey(key, true); }}
+              onPointerDown={e => { e.preventDefault(); holdKey(key, true); }}
               onPointerUp={() => holdKey(key, false)}
               onPointerLeave={() => holdKey(key, false)}
               onPointerCancel={() => holdKey(key, false)}
-              onContextMenu={e => e.preventDefault()}
-              className={cn(
-                "h-16 rounded-2xl flex items-center justify-center gap-1 shadow-lg active:scale-95 transition-transform",
-                isJump ? "flex-1" : "w-[22%] max-w-[92px]",
-              )}
-              style={isJump
-                ? { background: "#4f46e5", color: "white" }
-                : { background: "rgba(255,255,255,0.92)", color: "#1e293b" }}>
-              <Icon className={isJump ? "h-8 w-8" : "h-7 w-7"} strokeWidth={2.7} />
-              {isJump && hasDoubleJump && <span className="text-[9px] font-extrabold tracking-wider">×2</span>}
+              className="h-16 w-16 rounded-2xl flex items-center justify-center shadow-md active:scale-95 transition-transform"
+              style={{ background: "rgba(255,255,255,0.92)", color: "#1e293b" }}>
+              <Icon className="h-7 w-7" strokeWidth={2.6} />
             </button>
-          );
-        })}
+          ))}
+        </div>
+
+        <div className="flex items-center gap-2.5">
+          <button onClick={() => setShowShop(true)}
+            className="h-14 w-14 rounded-2xl flex flex-col items-center justify-center gap-0.5 shadow-md active:scale-95 transition-transform"
+            style={{ background: "rgba(255,255,255,0.92)", color: "#1e293b" }}>
+            <Store className="h-5 w-5" strokeWidth={2.4} />
+            <span className="text-[8px] font-extrabold">{ar ? "متجر" : "SHOP"}</span>
+          </button>
+          <button
+            onPointerDown={e => { e.preventDefault(); holdKey(" ", true); }}
+            onPointerUp={() => holdKey(" ", false)}
+            onPointerLeave={() => holdKey(" ", false)}
+            onPointerCancel={() => holdKey(" ", false)}
+            className="h-20 w-20 rounded-2xl flex flex-col items-center justify-center shadow-lg active:scale-95 transition-transform"
+            style={{ background: "#4f46e5", color: "white" }}>
+            <ArrowUp className="h-8 w-8" strokeWidth={2.8} />
+            {hasDoubleJump && <span className="text-[8px] font-extrabold tracking-wider">×2</span>}
+          </button>
+        </div>
       </div>
 
       {/* ── Quiz overlay ── */}
