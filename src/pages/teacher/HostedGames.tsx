@@ -19,7 +19,7 @@ const HostedGames = () => {
     if (!user) return;
     supabase
       .from("game_sessions")
-      .select("*, game_students(id, name)")
+      .select("*, quizzes(title), game_students(id, name)")
       .eq("teacher_id", user.id)
       .order("created_at", { ascending: false })
       .then(({ data }) => setGames(data ?? []));
@@ -78,7 +78,7 @@ const HostedGames = () => {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-2.5">
             {visible.map(g => {
               const path = actionPath(g.id, g.status);
               const count = (g.game_students || []).length;
@@ -96,13 +96,11 @@ const HostedGames = () => {
                     !path && "cursor-default",
                   )}
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="font-bold text-primary text-sm leading-snug truncate min-w-0 flex-1">
-                      {g.quizzes?.title}
-                    </div>
-                    <span className={cn("text-[10px] font-bold shrink-0", statusColor(g.status))}>
-                      {statusLabel(g.status)}
-                    </span>
+                  <span className={cn("block text-[10px] font-bold", statusColor(g.status))}>
+                    {statusLabel(g.status)}
+                  </span>
+                  <div className="mt-0.5 font-bold text-primary text-sm leading-snug truncate">
+                    {g.quizzes?.title}
                   </div>
                   <div className="mt-2 flex items-center justify-between text-xs text-primary/55">
                     <span className="flex items-center gap-1">

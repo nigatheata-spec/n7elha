@@ -8,6 +8,7 @@ import {
   Sidebar, SidebarContent, SidebarProvider,
   SidebarHeader, SidebarFooter,
 } from "@/components/ui/sidebar";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { LayoutDashboard, FileQuestion, History, BarChart3, Settings, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -32,15 +33,15 @@ const AppSidebar = () => {
   return (
     <Sidebar collapsible="none" className="border-2 border-[hsl(var(--nb-border))] rounded-l-2xl overflow-hidden mb-2" style={{ height: "calc(100vh - 0.5rem)", boxShadow: "-4px 0px 0px 0px hsl(var(--nb-border))" }}>
       {/* Logo */}
-      <SidebarHeader className="h-16 flex items-center justify-center border-b border-sidebar-border px-2">
+      <SidebarHeader className="h-12 md:h-16 flex items-center justify-center border-b border-sidebar-border px-2">
         <Link to="/app" className="flex items-center justify-center">
-          <img src={logoLight} alt="nfelha" className="h-10 w-10 object-contain" />
+          <img src={logoLight} alt="nfelha" className="h-7 w-7 md:h-10 md:w-10 object-contain" />
         </Link>
       </SidebarHeader>
 
       {/* Nav items */}
-      <SidebarContent className="py-3">
-        <nav className="flex flex-col gap-1 px-2">
+      <SidebarContent className="py-2 md:py-3">
+        <nav className="flex flex-col gap-1 px-1 md:px-2">
           {links.map((l) => (
             <NavLink
               key={l.to}
@@ -48,15 +49,15 @@ const AppSidebar = () => {
               end={l.end}
               className={({ isActive }) =>
                 cn(
-                  "flex flex-col items-center gap-1.5 rounded-xl py-3 px-1 transition-all text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground",
+                  "flex flex-col items-center gap-1 md:gap-1.5 rounded-xl py-2 md:py-3 px-0.5 md:px-1 transition-all text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground",
                   isActive && "bg-sidebar-accent text-sidebar-foreground"
                 )
               }
             >
               {({ isActive }) => (
                 <>
-                  <l.icon className={cn("h-6 w-6 shrink-0", isActive && "text-accent")} />
-                  <span className="text-[10px] font-medium text-center leading-tight max-w-[3.5rem] truncate">
+                  <l.icon className={cn("h-5 w-5 md:h-6 md:w-6 shrink-0", isActive && "text-accent")} />
+                  <span className="text-[8px] md:text-[10px] font-medium text-center leading-tight max-w-[3rem] md:max-w-[3.5rem] truncate">
                     {t(l.key)}
                   </span>
                 </>
@@ -67,13 +68,13 @@ const AppSidebar = () => {
       </SidebarContent>
 
       {/* Logout */}
-      <SidebarFooter className="border-t border-sidebar-border p-2">
+      <SidebarFooter className="border-t border-sidebar-border p-1.5 md:p-2">
         <button
           onClick={handleLogout}
-          className="w-full flex flex-col items-center gap-1.5 py-3 px-1 rounded-xl text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-all"
+          className="w-full flex flex-col items-center gap-1 md:gap-1.5 py-2 md:py-3 px-0.5 md:px-1 rounded-xl text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-all"
         >
-          <LogOut className="h-5 w-5 shrink-0" />
-          <span className="text-[10px] font-medium">{t("logout")}</span>
+          <LogOut className="h-4 w-4 md:h-5 md:w-5 shrink-0" />
+          <span className="text-[8px] md:text-[10px] font-medium">{t("logout")}</span>
         </button>
       </SidebarFooter>
     </Sidebar>
@@ -81,8 +82,14 @@ const AppSidebar = () => {
 };
 
 export const TeacherLayout = () => {
+  const isMobile = useIsMobile();
+  // SidebarProvider applies --sidebar-width as an inline style, which always
+  // wins over a responsive Tailwind class on the same property — so the
+  // breakpoint has to be resolved in JS rather than in CSS here.
+  const sidebarWidth = isMobile ? "3.75rem" : "5.5rem";
+
   return (
-    <SidebarProvider style={{ "--sidebar-width": "5.5rem" } as CSSProperties}>
+    <SidebarProvider style={{ "--sidebar-width": sidebarWidth } as CSSProperties}>
       <div className="min-h-screen bg-background flex w-full items-start">
         <div className="sticky top-2 self-start shrink-0">
           <AppSidebar />

@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Plus, Sparkles, Play, Trash2, FileQuestion } from "lucide-react";
+import { Plus, Sparkles, Trash2, FileQuestion } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
 
 type Quiz = {
@@ -64,19 +64,29 @@ const Quizzes = () => {
           <Button asChild className="bg-accent text-white hover:bg-accent/90"><Link to="/app/quizzes/new"><Plus className="h-4 w-4 me-2" />{t("create_quiz")}</Link></Button>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-4">
           {quizzes.map((q) => (
-            <Card key={q.id} className="p-5 hover:shadow-soft transition-shadow group">
-              <div className="flex items-start justify-between gap-2 mb-2">
-                <h3 className="font-bold text-lg leading-tight">{q.title}</h3>
-                {q.source === "ai" && <span className="shrink-0 text-[10px] px-2 py-0.5 rounded-full bg-accent/15 text-accent border border-accent/30 font-bold">AI</span>}
-              </div>
-              <div className="text-sm text-muted-foreground mb-1">{q.subject} {q.grade_level && `· ${q.grade_level}`}</div>
-              <div className="text-xs text-muted-foreground mb-4">{counts[q.id] ?? 0} {t("questions")}</div>
-              <div className="flex gap-2">
-                <Button asChild size="sm" className="flex-1 bg-accent text-white hover:bg-accent/90"><Link to={`/app/host/${q.id}`}><Play className="h-3.5 w-3.5 me-1.5" />{t("host_game")}</Link></Button>
-                <Button asChild size="sm" variant="outline"><Link to={`/app/quizzes/${q.id}/edit`}>{t("edit")}</Link></Button>
-                <Button size="sm" variant="ghost" onClick={() => remove(q.id)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
+            <Card key={q.id} className="p-3 sm:p-5 hover:shadow-soft transition-shadow group relative">
+              {/* Delete is tucked in the corner, out of the main action row —
+                  edit and host are the two things a teacher actually reaches
+                  for here, delete is occasional and doesn't need equal billing. */}
+              <button
+                onClick={() => remove(q.id)}
+                className="absolute top-2.5 end-2.5 sm:top-4 sm:end-4 text-muted-foreground/50 hover:text-destructive transition-colors"
+                aria-label={ar ? "حذف الاختبار" : "Delete quiz"}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+
+              <h3 className="font-bold text-sm sm:text-lg leading-tight mb-1.5 sm:mb-2 line-clamp-2 pe-5">{q.title}</h3>
+              <div className="text-xs sm:text-sm text-muted-foreground mb-1 truncate">{q.subject} {q.grade_level && `· ${q.grade_level}`}</div>
+              <div className="text-[10px] sm:text-xs text-muted-foreground mb-3 sm:mb-4">{counts[q.id] ?? 0} {t("questions")}</div>
+
+              <div className="flex gap-1.5 sm:gap-2">
+                <Button asChild size="sm" variant="outline" className="flex-1 text-xs sm:text-sm px-2"><Link to={`/app/quizzes/${q.id}/edit`}>{t("edit")}</Link></Button>
+                <Button asChild size="sm" className="flex-1 bg-[#3F5A63] text-white hover:bg-[#3F5A63]/90 text-xs sm:text-sm px-2">
+                  <Link to={`/app/host/${q.id}`}>{ar ? "استضافة" : "Host"}</Link>
+                </Button>
               </div>
             </Card>
           ))}
