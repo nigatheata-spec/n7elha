@@ -4,12 +4,16 @@ import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
+import { ChevronDown, Users } from "lucide-react";
+
+const PAGE_SIZE = 9;
 
 const HostedGames = () => {
   const { t, i18n } = useTranslation();
   const ar = i18n.language === "ar";
   const { user } = useAuth();
   const [games, setGames] = useState<any[]>([]);
+  const [shown, setShown] = useState(PAGE_SIZE);
 
   useEffect(() => {
     if (!user) return;
@@ -48,6 +52,8 @@ const HostedGames = () => {
     return null;
   };
 
+  const visible = games.slice(0, shown);
+
   return (
     <div className="space-y-5">
       <h1 className="font-display text-3xl font-bold">{t("hosted_games")}</h1>
@@ -64,59 +70,62 @@ const HostedGames = () => {
         </div>
       </div>
 
-      {/* Games list */}
+      {/* Games grid — wraps across columns instead of stacking one-per-row,
+          which is what made a long history read as an endless scroll. */}
       {games.length === 0 ? (
         <div className="px-4 py-8 rounded-lg border-2 border-[hsl(var(--nb-border))] bg-white text-center text-muted-foreground shadow-[2px_2px_0_0_hsl(var(--nb-border))]">
           {ar ? "لا توجد ألعاب بعد" : "No games yet"}
         </div>
       ) : (
-        <div className="space-y-2">
-          {games.map(g => {
-            const path = actionPath(g.id, g.status);
-            const studentNames = (g.game_students || []).map((s: any) => s.name).slice(0, 3);
-            const extraCount = Math.max(0, (g.game_students || []).length - 3);
-            const date = new Date(g.created_at).toLocaleString(ar ? "ar-SA" : "en-US", {
-              month: "short",
-              day: "2-digit",
-              hour: "2-digit",
-              minute: "2-digit",
-            });
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+            {visible.map(g => {
+              const path = actionPath(g.id, g.status);
+              const count = (g.game_students || []).length;
+              const date = new Date(g.created_at).toLocaleString(ar ? "ar-SA" : "en-US", {
+                month: "short",
+                day: "2-digit",
+              });
 
-            return (
-              <Link
-                key={g.id}
-                to={path || "#"}
-                className={cn(
-                  "block px-4 py-3 rounded-lg border-2 border-[hsl(var(--nb-border))] bg-white hover:bg-gray-50 transition-colors shadow-[2px_2px_0_0_hsl(var(--nb-border))]",
-                  !path && "cursor-default",
-                )}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <div className="font-bold text-primary">{g.quizzes?.title}</div>
-                    <div className="mt-1 flex items-center gap-2">
-                      <span className="text-xs font-bold text-primary/70">
-                        {(g.game_students || []).length} {ar ? "طالب" : "students"}
-                      </span>
-                      {studentNames.length > 0 && (
-                        <span className="text-xs text-primary/60">
-                          {studentNames.join(", ")}
-                          {extraCount > 0 && ` +${extraCount}`}
-                        </span>
-                      )}
+              return (
+                <Link
+                  key={g.id}
+                  to={path || "#"}
+                  className={cn(
+                    "block px-3.5 py-3 rounded-lg border-2 border-[hsl(var(--nb-border))] bg-white hover:bg-gray-50 transition-colors shadow-[2px_2px_0_0_hsl(var(--nb-border))]",
+                    !path && "cursor-default",
+                  )}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="font-bold text-primary text-sm leading-snug truncate min-w-0 flex-1">
+                      {g.quizzes?.title}
                     </div>
-                  </div>
-                  <div className="text-right flex-shrink-0">
-                    <div className={cn("text-sm font-bold", statusColor(g.status))}>
+                    <span className={cn("text-[10px] font-bold shrink-0", statusColor(g.status))}>
                       {statusLabel(g.status)}
-                    </div>
-                    <div className="text-xs text-primary/50 mt-1">{date}</div>
+                    </span>
                   </div>
-                </div>
-              </Link>
-            );
-          })}
-        </div>
+                  <div className="mt-2 flex items-center justify-between text-xs text-primary/55">
+                    <span className="flex items-center gap-1">
+                      <Users className="h-3 w-3" />
+                      {count}
+                    </span>
+                    <span>{date}</span>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+
+          {shown < games.length && (
+            <button
+              onClick={() => setShown(s => s + PAGE_SIZE)}
+              className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-lg border-2 border-[hsl(var(--nb-border))] bg-white text-sm font-bold text-primary/70 hover:bg-gray-50 transition-colors shadow-[2px_2px_0_0_hsl(var(--nb-border))]"
+            >
+              {ar ? "عرض المزيد" : "Show more"}
+              <ChevronDown className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </>
       )}
     </div>
   );
