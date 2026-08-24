@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Check, Square } from "lucide-react";
 import { findActiveSessionForKit, dispensePhysicalQuestion, SQUARE_TYPES, type DispenseResult } from "@/lib/physicalGames";
+import { Seo } from "@/components/Seo";
 
 // Public, unauthenticated page opened directly by any phone's camera app when
 // it scans a printed square QR — the page load itself IS the scan. Each
@@ -35,6 +36,14 @@ const ScanSquare = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4" style={{ background: "hsl(40 38% 92%)" }} dir={ar ? "rtl" : "ltr"}>
+      <Seo
+        path={`/scan/${kitId}/${typeCode}`}
+        titleAr="مسح رمز اللعبة"
+        titleEn="Game QR Scan"
+        descriptionAr="مسح رمز الاستجابة السريعة للعبة نفلها الفعلية."
+        descriptionEn="QR scan for an nfelha physical game board."
+        index={false}
+      />
       <div className="w-full max-w-md">
         {state === "loading" && (
           <div className="text-center text-[#3F5A63] font-semibold">

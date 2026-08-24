@@ -6,6 +6,7 @@ import zigzag from "@/assets/doodles/zigzag-trio.png";
 import beans from "@/assets/doodles/bean-pair.png";
 import { SiteNav } from "@/components/site/SiteNav";
 import { SiteFooter } from "@/components/site/SiteFooter";
+import { Seo } from "@/components/Seo";
 
 const About = () => {
   const { i18n } = useTranslation();
@@ -97,6 +98,13 @@ const About = () => {
       className="min-h-screen w-full"
       style={{ background: "hsl(var(--cream-panel))", fontFamily: "'Outfit', 'Almarai', system-ui, sans-serif" }}
     >
+      <Seo
+        path="/about"
+        titleAr="من نحن — قصة نفلها، شركة ناشئة سعودية"
+        titleEn="About Us — The Story Behind nfelha, a Saudi Startup"
+        descriptionAr="نفلها شركة ناشئة سعودية أسسها طلاب سابقون أرادوا منصة تعلّم تفاعلية مصممة للفصل العربي من الأساس، لا مترجمة عنه. تعرّف على قصتنا وقيمنا."
+        descriptionEn="nfelha is a Saudi startup founded by former students who wanted an interactive learning platform built for the Arabic classroom from the ground up, not translated into it. Meet our story and values."
+      />
       <SiteNav />
 
       {/* ---------------- HERO ---------------- */}

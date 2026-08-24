@@ -3,6 +3,7 @@ import { Mail, Twitter, Instagram, Github, School, UserRound } from "lucide-reac
 import commas from "@/assets/doodles/comma-pair.png";
 import { SiteNav } from "@/components/site/SiteNav";
 import { SiteFooter } from "@/components/site/SiteFooter";
+import { Seo } from "@/components/Seo";
 
 const Partners = () => {
   const { i18n } = useTranslation();
@@ -51,6 +52,13 @@ const Partners = () => {
       className="min-h-screen w-full"
       style={{ background: "hsl(var(--cream-panel))", fontFamily: "'Outfit', 'Almarai', system-ui, sans-serif" }}
     >
+      <Seo
+        path="/partners"
+        titleAr="تواصل معنا — لمدارس ومعلمي السعودية"
+        titleEn="Contact Us — For Schools and Teachers in Saudi Arabia"
+        descriptionAr="سواء كنت تدير مدرسة كاملة في السعودية أو معلمًا يجرّب نفلها لأول مرة، فريقنا يسمعك. تواصل معنا للشراكات أو الدعم الفني."
+        descriptionEn="Whether you run a whole school in Saudi Arabia or you're one teacher trying nfelha for the first time, our team is listening. Reach out for partnerships or support."
+      />
       <SiteNav />
 
       {/* ---------------- HERO ---------------- */}

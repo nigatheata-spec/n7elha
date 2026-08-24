@@ -8,6 +8,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "@/components/ui/sonner";
 import { z } from "zod";
 import { Loader2 } from "lucide-react";
+import { Seo } from "@/components/Seo";
 
 const loginSchema = z.object({
   email: z.string().trim().email().max(255),
@@ -83,6 +84,14 @@ const Auth = () => {
 
   return (
     <div className="min-h-[100dvh] grid lg:grid-cols-2" style={{ fontFamily: "'Outfit', 'Tajawal', system-ui, sans-serif" }}>
+      <Seo
+        path="/auth"
+        titleAr="تسجيل الدخول"
+        titleEn="Log In"
+        descriptionAr="سجّل الدخول إلى حسابك في نفلها."
+        descriptionEn="Log in to your nfelha account."
+        index={false}
+      />
 
       {/* ── Left brand panel ── */}
       <div className="hidden lg:flex flex-col bg-[#3F5A63] p-12 relative overflow-hidden">

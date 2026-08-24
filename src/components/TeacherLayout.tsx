@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
+import { Link, NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/lib/auth";
 import { Logo } from "@/components/Logo";
@@ -11,6 +11,7 @@ import {
 import { useIsMobile } from "@/hooks/use-mobile";
 import { LayoutDashboard, FileQuestion, History, BarChart3, Settings, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Seo } from "@/components/Seo";
 
 const links = [
   { to: "/app", icon: LayoutDashboard, key: "dashboard", end: true },
@@ -83,6 +84,7 @@ const AppSidebar = () => {
 
 export const TeacherLayout = () => {
   const isMobile = useIsMobile();
+  const location = useLocation();
   // SidebarProvider applies --sidebar-width as an inline style, which always
   // wins over a responsive Tailwind class on the same property — so the
   // breakpoint has to be resolved in JS rather than in CSS here.
@@ -90,6 +92,17 @@ export const TeacherLayout = () => {
 
   return (
     <SidebarProvider style={{ "--sidebar-width": sidebarWidth } as CSSProperties}>
+      {/* Everything under /app is behind auth — a teacher's own dashboard,
+          quiz editor, live game controls. None of it is content the public
+          should land on from search, so the whole layout is noindex. */}
+      <Seo
+        path={location.pathname}
+        titleAr="لوحة المعلم"
+        titleEn="Teacher Dashboard"
+        descriptionAr="لوحة تحكم المعلم في نفلها."
+        descriptionEn="Teacher dashboard on nfelha."
+        index={false}
+      />
       <div className="min-h-screen bg-background flex w-full items-start">
         <div className="sticky top-2 self-start shrink-0">
           <AppSidebar />

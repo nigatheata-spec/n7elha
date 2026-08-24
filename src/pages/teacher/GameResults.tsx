@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Download, Trophy, Check, Clock, Users, Target } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Seo } from "@/components/Seo";
 import { computeCoverage, type CoverageRow, type Stroke } from "@/lib/paintFight";
 
 const fmt = (n: number) => n.toLocaleString();
@@ -247,6 +248,14 @@ const GameResults = () => {
   // ── Full results ─────────────────────────────────────────────────────────
   return (
     <div className="min-h-[100dvh] text-foreground font-sans" style={{ background: "#14212A" }}>
+      <Seo
+        path={`/app/games/${sessionId}/results`}
+        titleAr="نتائج الجلسة"
+        titleEn="Session Results"
+        descriptionAr="نتائج جلسة اللعب المباشرة."
+        descriptionEn="Results for a live game session."
+        index={false}
+      />
       <div className="pointer-events-none fixed inset-0 bg-grid opacity-[0.06]" />
 
       <div className="relative max-w-7xl mx-auto px-4 py-8 space-y-6"

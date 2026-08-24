@@ -27,9 +27,12 @@
     <meta name="msapplication-TileImage" content="/ms-icon-144x144.png" />
     <meta name="msapplication-TileColor" content="#EBDFC7" />
     <meta name="msapplication-config" content="/browserconfig.xml" />
+    <!-- title, description, canonical, and og tags are set per-route by
+         src/components/Seo.tsx once React mounts. This static <title> is only
+         what a non-JS-executing crawler sees before then — no canonical here
+         on purpose, since a hardcoded one would be wrong on every route but "/". -->
     <title>نفلها — التعلم التفاعلي للفصل العربي | nfelha</title>
     <meta name="description" content="نفلها شركة ناشئة سعودية تبني تجربة تعلّم تفاعلية للفصل العربي. أنشئ اختبارات بالذكاء الاصطناعي، واستضف تسعة أنماط لعب مباشرة — بلا تطبيقات على الطلاب." />
-    <link rel="canonical" href="/" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&display=swap" rel="stylesheet" />

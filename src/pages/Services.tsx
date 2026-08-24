@@ -19,6 +19,7 @@ import {
 import triDoodle from "@/assets/doodles/triangle-trio.png";
 import { SiteNav } from "@/components/site/SiteNav";
 import { SiteFooter } from "@/components/site/SiteFooter";
+import { Seo } from "@/components/Seo";
 
 const Services = () => {
   const { i18n } = useTranslation();
@@ -111,6 +112,13 @@ const Services = () => {
       className="min-h-screen w-full"
       style={{ background: "hsl(var(--cream-panel))", fontFamily: "'Outfit', 'Almarai', system-ui, sans-serif" }}
     >
+      <Seo
+        path="/services"
+        titleAr="أنماط الألعاب الصفية والميزات — تسعة أنماط لعب تفاعلية"
+        titleEn="Classroom Game Modes & Features — Nine Interactive Play Styles"
+        descriptionAr="توليد أسئلة بالذكاء الاصطناعي، بث مباشر برمز واحد، وتسعة أنماط لعب صفية من كلاسيك إلى حرب الزومبي — كل ما يحتاجه معلم الفصل العربي في مكان واحد."
+        descriptionEn="AI question generation, one-code live sessions, and nine classroom game modes from Classic to Humans vs Zombies — everything an Arabic-classroom teacher needs, in one place."
+      />
       <SiteNav />
 
       {/* ---------------- HERO ---------------- */}

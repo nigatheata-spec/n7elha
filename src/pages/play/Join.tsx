@@ -6,6 +6,7 @@ import { toast } from "@/components/ui/sonner";
 import { cn } from "@/lib/utils";
 import logoLight from "@/assets/logo-light.png";
 import { hueForJoinIndex } from "@/lib/paintFight";
+import { Seo } from "@/components/Seo";
 
 // ─── Password pools (Crypto Rush only) ─────────────────────────────────────
 // English pool: trendy internet-slang flavored, keeps the "hacker handle" feel
@@ -231,6 +232,16 @@ const Join = () => {
         className="fixed inset-0 flex flex-col items-center justify-center p-6 safe-top safe-bottom overflow-hidden"
         style={{ background: "radial-gradient(ellipse at 50% 35%, #141928 0%, #080a10 70%)" }}
       >
+        {/* A bare room-code entry form has no content worth ranking for —
+            noindex avoids it reading as a thin/doorway page. */}
+        <Seo
+          path="/play"
+          titleAr="انضم إلى لعبة"
+          titleEn="Join a Game"
+          descriptionAr="أدخل رمز الغرفة للانضمام إلى جلسة نفلها."
+          descriptionEn="Enter your room code to join a live nfelha session."
+          index={false}
+        />
         <div
           className="absolute inset-0 opacity-[0.04] pointer-events-none"
           style={{

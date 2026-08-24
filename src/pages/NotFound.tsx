@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Home, SearchX } from "lucide-react";
 import logoMark from "@/assets/logo-mark.png";
+import { Seo } from "@/components/Seo";
 
 const NotFound = () => {
   const location = useLocation();
@@ -33,6 +34,14 @@ const NotFound = () => {
       className="min-h-screen w-full p-3 sm:p-6 lg:p-12 flex flex-col items-center justify-center"
       style={{ background: "#EBDFC7", fontFamily: "'Outfit', 'Almarai', system-ui, sans-serif" }}
     >
+      <Seo
+        path={location.pathname}
+        titleAr="الصفحة غير موجودة"
+        titleEn="Page Not Found"
+        descriptionAr="يبدو أن هذا الرابط انتقل أو لم يعد موجوداً."
+        descriptionEn="This link may have moved or no longer exists."
+        index={false}
+      />
       <div
         className="relative w-full max-w-[560px] rounded-[20px] sm:rounded-[28px] overflow-hidden shadow-[0_24px_70px_-38px_rgba(63,90,99,0.35)] bg-white p-8 sm:p-12 text-center"
       >

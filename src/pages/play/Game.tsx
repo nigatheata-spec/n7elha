@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
 import logoLight from "@/assets/logo-light.png";
+import { Seo } from "@/components/Seo";
 import { HackingFlow } from "@/components/game/HackingFlow";
 import { BreachModal } from "@/components/game/BreachModal";
 import { OutputCards, OutputResult } from "@/components/game/OutputCards";
@@ -324,6 +325,16 @@ const Game = () => {
   return (
     <div className="theme-game terminal-screen crt-flicker min-h-[100dvh] font-mono flex flex-col overflow-hidden"
       style={{ color: "hsl(120 90% 62%)" }}>
+      {/* Live-session view keyed to a one-off room code — nothing links to it
+          and it's not in the sitemap, but noindex anyway as defense in depth. */}
+      <Seo
+        path={`/play/${sessionId}`}
+        titleAr="جلسة لعب مباشرة"
+        titleEn="Live Game Session"
+        descriptionAr="جلسة لعب مباشرة على نفلها."
+        descriptionEn="A live game session on nfelha."
+        index={false}
+      />
       <div className="pointer-events-none fixed inset-0 terminal-scanlines z-20" />
       <div className="pointer-events-none fixed inset-0 terminal-vignette z-20" />
 

@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { Bitcoin, Square, Maximize, ArrowRight, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Seo } from "@/components/Seo";
 import DodgeballMonitor from "./DodgeballMonitor";
 import HotPotatoMonitor from "./HotPotatoMonitor";
 import LavaFloorMonitor from "./LavaFloorMonitor";
@@ -137,6 +138,14 @@ const GameMonitor = () => {
       className="fixed inset-0 overflow-hidden font-mono flex flex-col"
       style={{ background: "#050505", color: GREEN }}
     >
+      <Seo
+        path={`/app/games/${sessionId}/monitor`}
+        titleAr="مراقبة الجلسة"
+        titleEn="Session Monitor"
+        descriptionAr="شاشة عرض المعلم للجلسة المباشرة."
+        descriptionEn="Teacher's live-session projector view."
+        index={false}
+      />
       {/* dim pixel-art hacker bg */}
       <div
         className="pointer-events-none fixed inset-0"

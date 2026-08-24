@@ -6,6 +6,7 @@ import { useSmoothScroll } from "@/lib/smoothScroll";
 import { SiteNav } from "@/components/site/SiteNav";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { ProductPreview } from "@/components/site/ProductPreview";
+import { Seo } from "@/components/Seo";
 import heroPerson from "@/assets/hero-person.png";
 import saudiMap from "@/assets/saudi-map.svg";
 
@@ -89,6 +90,24 @@ const Landing = () => {
       className="min-h-screen w-full"
       style={{ background: "hsl(var(--cream-panel))", fontFamily: "'Outfit', 'Almarai', system-ui, sans-serif", willChange: "transform" }}
     >
+      <Seo
+        path="/"
+        titleAr="منصة اختبارات تفاعلية للمعلمين في السعودية"
+        titleEn="Interactive Quiz Platform for Arabic Classrooms in Saudi Arabia"
+        descriptionAr="نفلها شركة ناشئة سعودية تبني تجربة تعلّم تفاعلية للفصل العربي. أنشئ اختبارات بالذكاء الاصطناعي، وشغّل تسعة أنماط لعب صفية مباشرة — بلا تطبيقات على الطلاب."
+        descriptionEn="nfelha is a Saudi startup building an interactive learning experience for the Arabic classroom. Create AI-generated quizzes and run nine live classroom game modes — no apps for students."
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@type": "EducationalOrganization",
+          name: "نفلها",
+          alternateName: "nfelha",
+          url: "https://www.nefelha.com/",
+          description: "نفلها شركة ناشئة سعودية تبني منصة اختبارات وألعاب تفاعلية للفصل العربي، بتوليد أسئلة بالذكاء الاصطناعي وتسعة أنماط لعب صفية مباشرة.",
+          areaServed: { "@type": "Country", name: "Saudi Arabia" },
+          address: { "@type": "PostalAddress", addressCountry: "SA" },
+          inLanguage: ["ar", "en"],
+        }}
+      />
       <div className="relative w-full">
 
         <SiteNav />
