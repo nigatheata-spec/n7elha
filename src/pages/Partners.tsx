@@ -16,7 +16,7 @@ const Partners = () => {
         sub: "سواء كنت تدير مدرسة كاملة أو معلمًا واحدًا يجرّب المنصة لأول مرة، فريقنا يسمعك.",
 
         schoolsTitle: "للمدارس والإدارات التعليمية",
-        schoolsDesc: "نعمل مع المدارس التي تريد تفعيل نفلها على مستوى عدة صفوف أو معلمين، بما في ذلك دعم أنماط الألعاب الفعلية للفصول التي لا تملك أجهزة كافية لكل طالب.",
+        schoolsDesc: "نعمل مع مدارس السعودية التي تريد تفعيل نفلها على مستوى عدة صفوف أو معلمين، بما في ذلك دعم أنماط الألعاب الفعلية للفصول التي لا تملك أجهزة كافية لكل طالب.",
         schoolsCta: "راسلنا لمناقشة مدرستك",
 
         teachersTitle: "لمعلم فردي",
@@ -34,7 +34,7 @@ const Partners = () => {
         sub: "Whether you run a whole school or you're one teacher trying the platform for the first time, our team is listening.",
 
         schoolsTitle: "For schools and districts",
-        schoolsDesc: "We work with schools that want to roll out nfelha across multiple classes or teachers, including support for Physical Games mode in classrooms without a device per student.",
+        schoolsDesc: "We work with schools in Saudi Arabia that want to roll out nfelha across multiple classes or teachers, including support for Physical Games mode in classrooms without a device per student.",
         schoolsCta: "Email us about your school",
 
         teachersTitle: "For an individual teacher",

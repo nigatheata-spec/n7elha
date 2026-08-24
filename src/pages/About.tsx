@@ -16,7 +16,7 @@ const About = () => {
     ? {
         kicker: "من نحن",
         title: "بدأت الفكرة من المقاعد الخلفية",
-        sub: "نفلها شركة ناشئة سعودية تبني تجربة تعلّم تفاعلية للفصل العربي. لم نبدأ من دراسة سوق، بدأنا من تجربتنا نحن كطلاب.",
+        sub: "نفلها شركة ناشئة سعودية في تقنية التعليم (EdTech) تبني منصة تعليمية تفاعلية للفصل العربي. لم نبدأ من دراسة سوق، بدأنا من تجربتنا نحن كطلاب.",
 
         storyKicker: "قصتنا",
         storyTitle: "كنّا الطلاب الذين لا يرفعون أيديهم",
@@ -48,7 +48,7 @@ const About = () => {
     : {
         kicker: "ABOUT US",
         title: "It started in the back row",
-        sub: "nfelha is a Saudi startup building an interactive learning experience for the Arabic classroom. We did not begin with market research. We began with our own time as students.",
+        sub: "nfelha is a Saudi EdTech startup building an interactive learning platform for the Arabic classroom. We did not begin with market research. We began with our own time as students.",
 
         storyKicker: "OUR STORY",
         storyTitle: "We were the students who never raised their hands",
@@ -100,10 +100,10 @@ const About = () => {
     >
       <Seo
         path="/about"
-        titleAr="من نحن — قصة نفلها، شركة ناشئة سعودية"
-        titleEn="About Us — The Story Behind nfelha, a Saudi Startup"
-        descriptionAr="نفلها شركة ناشئة سعودية أسسها طلاب سابقون أرادوا منصة تعلّم تفاعلية مصممة للفصل العربي من الأساس، لا مترجمة عنه. تعرّف على قصتنا وقيمنا."
-        descriptionEn="nfelha is a Saudi startup founded by former students who wanted an interactive learning platform built for the Arabic classroom from the ground up, not translated into it. Meet our story and values."
+        titleAr="من نحن — نفلها، شركة تقنية تعليم سعودية"
+        titleEn="About Us — nfelha, an EdTech Startup in Saudi Arabia"
+        descriptionAr="نفلها شركة ناشئة سعودية في تقنية التعليم أسسها طلاب سابقون أرادوا منصة تعليمية تفاعلية مصممة للفصل العربي من الأساس، لا مترجمة عنه. تعرّف على قصتنا وقيمنا."
+        descriptionEn="nfelha is a Saudi EdTech startup founded by former students who wanted an interactive learning platform built for the Arabic classroom from the ground up, not translated into it. Meet our story and values."
       />
       <SiteNav />
 

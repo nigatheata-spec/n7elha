@@ -29,7 +29,7 @@ const Services = () => {
     ? {
         kicker: "الخدمات",
         title: "كل ما يحتاجه فصلك في مكان واحد",
-        sub: "من تحضير السؤال إلى تحليل النتيجة، نفلها تغطي رحلة الاختبار الكاملة — مصممة لتعمل من أول ثانية بلا تعقيد.",
+        sub: "من تحضير السؤال إلى تحليل النتيجة، نفلها أدوات تفاعل صفية تجمع التعلم باللعب والذكاء الاصطناعي — مصممة لتعمل من أول ثانية بلا تعقيد.",
 
         f1Title: "توليد الأسئلة بالذكاء الاصطناعي",
         f1Desc: "ارفع ملف الدرس (PDF أو Word أو PowerPoint) واترك المنصة تستخرج لك أسئلة دقيقة بمستويات صعوبة مختلفة، جاهزة للمراجعة والتعديل قبل النشر.",
@@ -63,7 +63,7 @@ const Services = () => {
     : {
         kicker: "SERVICES",
         title: "Everything your classroom needs, in one place",
-        sub: "From writing the first question to reading the final report, nfelha covers the whole quiz journey — built to work from the first second, no setup friction.",
+        sub: "From writing the first question to reading the final report, nfelha is a set of classroom engagement tools that blend gamified learning with AI — built to work from the first second, no setup friction.",
 
         f1Title: "AI question generation",
         f1Desc: "Upload your lesson (PDF, Word or PowerPoint) and let the platform extract precise questions across difficulty levels, ready to review and edit before you publish.",
@@ -114,10 +114,10 @@ const Services = () => {
     >
       <Seo
         path="/services"
-        titleAr="أنماط الألعاب الصفية والميزات — تسعة أنماط لعب تفاعلية"
-        titleEn="Classroom Game Modes & Features — Nine Interactive Play Styles"
-        descriptionAr="توليد أسئلة بالذكاء الاصطناعي، بث مباشر برمز واحد، وتسعة أنماط لعب صفية من كلاسيك إلى حرب الزومبي — كل ما يحتاجه معلم الفصل العربي في مكان واحد."
-        descriptionEn="AI question generation, one-code live sessions, and nine classroom game modes from Classic to Humans vs Zombies — everything an Arabic-classroom teacher needs, in one place."
+        titleAr="أدوات تفاعل الطلاب وألعاب تعليمية — تسعة أنماط لعب صفية"
+        titleEn="Classroom Engagement Tools & Educational Games — Nine Play Modes"
+        descriptionAr="أدوات تفاعل صفية حقيقية: توليد أسئلة بالذكاء الاصطناعي، بث مباشر برمز واحد، وتسعة ألعاب تعليمية من سباق كلاسيكي إلى حرب الزومبي — كل ما يحتاجه معلم الفصل العربي في مكان واحد."
+        descriptionEn="Real classroom engagement tools: AI question generation, one-code live sessions, and nine educational games from Classic to Humans vs Zombies — everything an Arabic-classroom teacher needs, in one place."
       />
       <SiteNav />
 

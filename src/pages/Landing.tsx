@@ -23,7 +23,7 @@ const Landing = () => {
         line2b: "",
         line3a: "",
         line3b: "في دقائق",
-        sub: "نفلها يرافقك من فكرة الاختبار حتى تشغيله المباشر، ومن توليد الأسئلة بالذكاء الاصطناعي حتى تحليل أداء طلابك.",
+        sub: "نفلها منصة اختبارات صفية تفاعلية بالذكاء الاصطناعي، ترافقك من فكرة الاختبار حتى تشغيله المباشر، ومن توليد الأسئلة حتى تحليل أداء طلابك.",
         cta: "ابدأ معنا",
         joinGame: "ادخل اللعبة",
 
@@ -56,7 +56,7 @@ const Landing = () => {
         line2b: "",
         line3a: "",
         line3b: "in minutes.",
-        sub: "nfelha walks with you from idea to live session — from AI-generated questions to real-time student insights.",
+        sub: "nfelha is an interactive, AI-powered classroom quiz platform that walks with you from idea to live session — from AI-generated questions to real-time student insights.",
         cta: "Get started",
         joinGame: "JOIN GAME",
 
@@ -92,10 +92,10 @@ const Landing = () => {
     >
       <Seo
         path="/"
-        titleAr="منصة اختبارات تفاعلية للمعلمين في السعودية"
-        titleEn="Interactive Quiz Platform for Arabic Classrooms in Saudi Arabia"
-        descriptionAr="نفلها شركة ناشئة سعودية تبني تجربة تعلّم تفاعلية للفصل العربي. أنشئ اختبارات بالذكاء الاصطناعي، وشغّل تسعة أنماط لعب صفية مباشرة — بلا تطبيقات على الطلاب."
-        descriptionEn="nfelha is a Saudi startup building an interactive learning experience for the Arabic classroom. Create AI-generated quizzes and run nine live classroom game modes — no apps for students."
+        titleAr="منصة اختبارات صفية تفاعلية بالذكاء الاصطناعي"
+        titleEn="AI-Powered Classroom Quiz Platform for Saudi Arabia"
+        descriptionAr="نفلها منصة اختبارات صفية تفاعلية بالذكاء الاصطناعي تزيد تفاعل الطلاب في الفصل العربي. أنشئ اختبارات بالذكاء الاصطناعي، وشغّل تسعة أنماط لعب مباشرة — بلا تطبيقات على الطلاب."
+        descriptionEn="nfelha is an AI-powered classroom quiz platform that boosts student engagement in the Arabic classroom. Generate AI quizzes and run nine live game modes — no apps for students."
         jsonLd={{
           "@context": "https://schema.org",
           "@type": "EducationalOrganization",
