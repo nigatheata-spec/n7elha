@@ -27,8 +27,8 @@ export const SiteNav = () => {
   }, [menuOpen]);
 
   const t = isAr
-    ? { home: "الرئيسية", about: "من نحن", services: "الخدمات", partners: "الشركاء", login: "دخول", signup: "تسجيل", dashboard: "لوحتي", joinGame: "ادخل اللعبة" }
-    : { home: "HOME", about: "ABOUT", services: "FEATURES", partners: "CONTACT", login: "LOG IN", signup: "SIGN UP", dashboard: "DASHBOARD", joinGame: "JOIN GAME" };
+    ? { home: "الرئيسية", about: "من نحن", services: "الخدمات", schools: "المدارس", blog: "المدونة", partners: "الشركاء", login: "دخول", signup: "تسجيل", dashboard: "لوحتي", joinGame: "ادخل اللعبة" }
+    : { home: "HOME", about: "ABOUT", services: "FEATURES", schools: "SCHOOLS", blog: "BLOG", partners: "CONTACT", login: "LOG IN", signup: "SIGN UP", dashboard: "DASHBOARD", joinGame: "JOIN GAME" };
 
 
   return (
@@ -37,14 +37,16 @@ export const SiteNav = () => {
         <div className="flex items-center justify-between gap-3 bg-white/90 backdrop-blur-md rounded-2xl px-4 py-3 border-2 border-[hsl(var(--nb-border))] shadow-[4px_4px_0_0_hsl(var(--nb-border))]">
 
           <Link to="/" className="flex items-center gap-2 shrink-0">
-            <img src={logoMark} alt="nfelha" className="h-8 w-8 object-contain" />
-            <span className="text-[17px] font-medium tracking-tight text-black">nfelha</span>
+            <img src={logoMark} alt="nefelha" className="h-8 w-8 object-contain" />
+            <span className="text-[17px] font-medium tracking-tight text-black">{isAr ? "نفلها" : "nefelha"}</span>
           </Link>
 
-          <ul className={`hidden lg:flex items-center gap-10 text-[13px] font-medium text-black/80 ${isAr ? "tracking-normal" : "tracking-[0.18em]"}`}>
+          <ul className={`hidden lg:flex items-center gap-7 text-[13px] font-medium text-black/80 ${isAr ? "tracking-normal" : "tracking-[0.18em]"}`}>
             {[
               { to: "/", label: t.home },
               { to: "/services", label: t.services },
+              { to: "/schools", label: t.schools },
+              { to: "/blog", label: t.blog },
               { to: "/about", label: t.about },
               { to: "/partners", label: t.partners },
             ].map(item => {
@@ -124,8 +126,8 @@ export const SiteNav = () => {
       >
         <div className="flex items-center justify-between px-5 pt-6 pb-4 border-b border-black/[0.06]">
           <Link to="/" className="flex items-center gap-2 shrink-0" onClick={() => setMenuOpen(false)}>
-            <img src={logoMark} alt="nfelha" className="h-7 w-7 object-contain" />
-            <span className="text-[16px] font-medium tracking-tight text-black">nfelha</span>
+            <img src={logoMark} alt="nefelha" className="h-7 w-7 object-contain" />
+            <span className="text-[16px] font-medium tracking-tight text-black">{isAr ? "نفلها" : "nefelha"}</span>
           </Link>
           <button
             onClick={() => setMenuOpen(false)}
@@ -149,6 +151,12 @@ export const SiteNav = () => {
           </Link>
           <Link to="/services" onClick={() => setMenuOpen(false)} aria-current={pathname === "/services" ? "page" : undefined} className={`w-full px-4 py-2.5 rounded-full border-2 border-[hsl(var(--nb-border))] text-[13px] tracking-wider font-medium text-center shadow-[3px_3px_0_0_hsl(var(--nb-border))] ${pathname === "/services" ? "bg-[#3F5A63] text-white" : "bg-white text-[#3F5A63]"}`}>
             {t.services}
+          </Link>
+          <Link to="/schools" onClick={() => setMenuOpen(false)} aria-current={pathname === "/schools" ? "page" : undefined} className={`w-full px-4 py-2.5 rounded-full border-2 border-[hsl(var(--nb-border))] text-[13px] tracking-wider font-medium text-center shadow-[3px_3px_0_0_hsl(var(--nb-border))] ${pathname === "/schools" ? "bg-[#3F5A63] text-white" : "bg-white text-[#3F5A63]"}`}>
+            {t.schools}
+          </Link>
+          <Link to="/blog" onClick={() => setMenuOpen(false)} aria-current={pathname === "/blog" ? "page" : undefined} className={`w-full px-4 py-2.5 rounded-full border-2 border-[hsl(var(--nb-border))] text-[13px] tracking-wider font-medium text-center shadow-[3px_3px_0_0_hsl(var(--nb-border))] ${pathname === "/blog" ? "bg-[#3F5A63] text-white" : "bg-white text-[#3F5A63]"}`}>
+            {t.blog}
           </Link>
           <Link to="/about" onClick={() => setMenuOpen(false)} aria-current={pathname === "/about" ? "page" : undefined} className={`w-full px-4 py-2.5 rounded-full border-2 border-[hsl(var(--nb-border))] text-[13px] tracking-wider font-medium text-center shadow-[3px_3px_0_0_hsl(var(--nb-border))] ${pathname === "/about" ? "bg-[#3F5A63] text-white" : "bg-white text-[#3F5A63]"}`}>
             {t.about}

@@ -37,7 +37,7 @@ export const LangTransitionOverlay = () => {
     >
       <img
         src={logoMark}
-        alt="nfelha"
+        alt="nefelha"
         className="h-16 w-16 object-contain"
         style={{ animation: "lang-logo-in 0.45s cubic-bezier(0.16, 1, 0.3, 1) both" }}
       />
@@ -49,7 +49,7 @@ export const LangTransitionOverlay = () => {
           animation: "lang-logo-in 0.45s 60ms cubic-bezier(0.16, 1, 0.3, 1) both",
         }}
       >
-        nfelha
+        nefelha
       </span>
       <div
         className="mt-5 flex gap-2"

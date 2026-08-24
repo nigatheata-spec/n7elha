@@ -3,10 +3,10 @@ import { useTranslation } from "react-i18next";
 
 const SITE_URL = "https://www.nefelha.com";
 const SITE_NAME_AR = "نفلها";
-const SITE_NAME_EN = "nfelha";
+const SITE_NAME_EN = "nefelha";
 
 type SeoProps = {
-  /** Page-specific title, without the site name — Seo appends " | نفلها" / " | nfelha". */
+  /** Page-specific title, without the site name — Seo appends " | نفلها" / " | nefelha". */
   titleAr: string;
   titleEn: string;
   descriptionAr: string;
@@ -17,7 +17,7 @@ type SeoProps = {
   index?: boolean;
   /** Raw JSON-LD object(s), homepage-only in practice — gives AI Overviews,
    *  ChatGPT, and Perplexity a structured entity to cite instead of having to
-   *  infer who nfelha is from prose. */
+   *  infer who nefelha is from prose. */
   jsonLd?: object | object[];
 };
 

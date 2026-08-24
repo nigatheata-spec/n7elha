@@ -334,7 +334,7 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
       <header className="relative flex items-center justify-between px-4 py-3 safe-top border-b border-primary/30 sticky top-0 z-10"
         style={{ background: "hsl(255 40% 6% / 0.85)", backdropFilter: "blur(8px)" }}>
         <div className="flex items-center gap-2 min-w-0 max-w-[50%]">
-          <img src={logoLight} alt="nfelha" className="h-6 w-6 object-contain shrink-0" />
+          <img src={logoLight} alt="nefelha" className="h-6 w-6 object-contain shrink-0" />
           <div className="text-sm font-bold truncate text-primary">{me?.name ?? "—"}</div>
         </div>
         <div className="flex items-center gap-1">

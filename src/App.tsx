@@ -13,6 +13,9 @@ import Landing from "./pages/Landing";
 import Services from "./pages/Services";
 import About from "./pages/About";
 import Partners from "./pages/Partners";
+import Schools from "./pages/Schools";
+import Blog from "./pages/Blog";
+import BlogPost from "./pages/BlogPost";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/teacher/Dashboard";
 import Quizzes from "./pages/teacher/Quizzes";
@@ -65,6 +68,9 @@ const AppContent = () => {
             <Route path="/services" element={<Services />} />
             <Route path="/about" element={<About />} />
             <Route path="/partners" element={<Partners />} />
+            <Route path="/schools" element={<Schools />} />
+            <Route path="/blog" element={<Blog />} />
+            <Route path="/blog/:slug" element={<BlogPost />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/play" element={<Join />} />
             <Route path="/play/:sessionId" element={<Game />} />

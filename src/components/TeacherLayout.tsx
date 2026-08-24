@@ -36,7 +36,7 @@ const AppSidebar = () => {
       {/* Logo */}
       <SidebarHeader className="h-12 md:h-16 flex items-center justify-center border-b border-sidebar-border px-2">
         <Link to="/app" className="flex items-center justify-center">
-          <img src={logoLight} alt="nfelha" className="h-7 w-7 md:h-10 md:w-10 object-contain" />
+          <img src={logoLight} alt="nefelha" className="h-7 w-7 md:h-10 md:w-10 object-contain" />
         </Link>
       </SidebarHeader>
 
@@ -100,7 +100,7 @@ export const TeacherLayout = () => {
         titleAr="لوحة المعلم"
         titleEn="Teacher Dashboard"
         descriptionAr="لوحة تحكم المعلم في نفلها."
-        descriptionEn="Teacher dashboard on nfelha."
+        descriptionEn="Teacher dashboard on nefelha."
         index={false}
       />
       <div className="min-h-screen bg-background flex w-full items-start">

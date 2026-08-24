@@ -55,7 +55,7 @@ const Services = () => {
         m9: "الألعاب الفعلية", m9d: "لوح مطبوع ورموز QR — بلا حاجة لجهاز لكل طالب، جهاز واحد فقط يمسح الرموز.",
 
         howKicker: "كيف تعمل؟",
-        howTitle: "ثلاث خطوات تفصلك عن أول جلسة",
+        howTitle: "ثلاث خطوات بس",
         s1: "ارفع المحتوى", s1d: "ملف الدرس أو ملاحظاتك. تتكفّل المنصة بالباقي.",
         s2: "ادعُ طلابك", s2d: "شارك رمز اللعبة، وسينضم الجميع من أي جهاز.",
         s3: "اعرض النتائج", s3d: "ترتيب لحظي، وتقرير كامل بعد انتهاء الاختبار.",
@@ -63,7 +63,7 @@ const Services = () => {
     : {
         kicker: "SERVICES",
         title: "Everything your classroom needs, in one place",
-        sub: "From writing the first question to reading the final report, nfelha is a set of classroom engagement tools that blend gamified learning with AI — built to work from the first second, no setup friction.",
+        sub: "From writing the first question to reading the final report, nefelha is a set of classroom engagement tools that blend gamified learning with AI — built to work from the first second, no setup friction.",
 
         f1Title: "AI question generation",
         f1Desc: "Upload your lesson (PDF, Word or PowerPoint) and let the platform extract precise questions across difficulty levels, ready to review and edit before you publish.",

@@ -41,7 +41,7 @@ const ScanSquare = () => {
         titleAr="مسح رمز اللعبة"
         titleEn="Game QR Scan"
         descriptionAr="مسح رمز الاستجابة السريعة للعبة نفلها الفعلية."
-        descriptionEn="QR scan for an nfelha physical game board."
+        descriptionEn="QR scan for an nefelha physical game board."
         index={false}
       />
       <div className="w-full max-w-md">

@@ -35,7 +35,7 @@ export const SQUARE_TYPES: Record<number, SquareType> = {
   6: { code: 6, kind: "wildcard", color: "#8e44ad", label_en: "? — Wildcard", label_ar: "؟ — عشوائي" },
 };
 
-/** Accepts either the full URL (nfelha.app/kit/K4471) or a bare kit code. */
+/** Accepts either the full URL (nefelha.app/kit/K4471) or a bare kit code. */
 export const parseKitQR = (raw: string): string | null => {
   const s = raw.trim();
   const m = s.match(/\/kit\/([A-Za-z0-9_-]+)\/?(?:[?#].*)?$/);
@@ -44,7 +44,7 @@ export const parseKitQR = (raw: string): string | null => {
   return null;
 };
 
-/** Accepts either the full URL (nfelha.app/scan/K4471/3) or a bare "kitId/typeCode". */
+/** Accepts either the full URL (nefelha.app/scan/K4471/3) or a bare "kitId/typeCode". */
 export const parseSquareQR = (raw: string): { kitId: string; typeCode: number } | null => {
   const s = raw.trim();
   const m = s.match(/\/scan\/([A-Za-z0-9_-]+)\/([1-6])\/?(?:[?#].*)?$/);

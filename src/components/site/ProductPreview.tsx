@@ -112,7 +112,7 @@ export const ProductPreview = () => {
 
               <div className="mt-3 flex items-center justify-center gap-1.5 text-[10px] font-semibold text-black/35">
                 <Radio className="h-3 w-3" />
-                nfelha
+                nefelha
               </div>
             </div>
           </div>

@@ -652,7 +652,7 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
             transition: "border-color 0.4s",
           }}>
           <div className="flex items-center gap-2 min-w-0">
-            <img src={logoLight} alt="nfelha" className="h-6 w-6 object-contain shrink-0" />
+            <img src={logoLight} alt="nefelha" className="h-6 w-6 object-contain shrink-0" />
             <Avatar name={me?.name ?? "?"} size="sm" />
             <span className="text-sm font-bold truncate" style={{ color: "hsl(30 18% 82%)" }}>
               {me?.name ?? "—"}

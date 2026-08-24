@@ -27,7 +27,8 @@ const Auth = () => {
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
 
   useEffect(() => {
     setMode(params.get("mode") === "signup" ? "signup" : "login");
@@ -89,7 +90,7 @@ const Auth = () => {
         titleAr="تسجيل الدخول"
         titleEn="Log In"
         descriptionAr="سجّل الدخول إلى حسابك في نفلها."
-        descriptionEn="Log in to your nfelha account."
+        descriptionEn="Log in to your nefelha account."
         index={false}
       />
 
@@ -105,8 +106,8 @@ const Auth = () => {
         </svg>
 
         <Link to="/" className="relative z-10 flex items-center gap-2 shrink-0">
-          <img src={logoLight} alt="nfelha" className="h-9 w-9 object-contain" />
-          <span className="text-[17px] font-medium tracking-tight text-white">nfelha</span>
+          <img src={logoLight} alt="nefelha" className="h-9 w-9 object-contain" />
+          <span className="text-[17px] font-medium tracking-tight text-white">{isAr ? "نفلها" : "nefelha"}</span>
         </Link>
 
         <div className="relative z-10 flex-1 flex flex-col justify-center">
@@ -123,7 +124,7 @@ const Auth = () => {
           </blockquote>
         </div>
 
-        <p className="relative z-10 text-white/30 text-[12px] tracking-wider">nfelha © 2026</p>
+        <p className="relative z-10 text-white/30 text-[12px] tracking-wider">{isAr ? "نفلها © ٢٠٢٦" : "nefelha © 2026"}</p>
       </div>
 
       {/* ── Right form panel ── */}

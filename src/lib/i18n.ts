@@ -69,7 +69,7 @@ const resources = {
   },
   en: {
     translation: {
-      brand: "nfelha",
+      brand: "nefelha",
       tagline: "Smart quiz platform for teachers",
       hero_title: "Interactive quizzes. Smart play. Unforgettable learning.",
       hero_sub: "Build quizzes manually or with AI from your documents, host live games, and watch your classroom in real time.",

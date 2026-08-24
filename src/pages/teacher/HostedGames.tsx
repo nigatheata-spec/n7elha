@@ -82,9 +82,10 @@ const HostedGames = () => {
             {visible.map(g => {
               const path = actionPath(g.id, g.status);
               const count = (g.game_students || []).length;
-              const date = new Date(g.created_at).toLocaleString(ar ? "ar-SA" : "en-US", {
+              const date = new Date(g.created_at).toLocaleString(ar ? "ar" : "en-US", {
                 month: "short",
                 day: "2-digit",
+                calendar: "gregory",
               });
 
               return (

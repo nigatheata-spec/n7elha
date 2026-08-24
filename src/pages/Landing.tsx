@@ -35,7 +35,7 @@ const Landing = () => {
         sp3: "فقررنا أن نبني ما كنا نتمنى وجوده ونحن على تلك المقاعد: منصة تجعل المراجعة شيئًا ينتظره الطالب، لا شيئًا يتهرب منه. هكذا وُلدت نفلها.",
 
         howKicker: "كيف تعمل؟",
-        howTitle: "ثلاث خطوات تفصلك عن أول جلسة",
+        howTitle: "ثلاث خطوات بس",
         s1: "ارفع المحتوى",
         s1d: "ملف الدرس أو ملاحظاتك. تتكفّل المنصة بالباقي.",
         s2: "ادعُ طلابك",
@@ -56,7 +56,7 @@ const Landing = () => {
         line2b: "",
         line3a: "",
         line3b: "in minutes.",
-        sub: "nfelha is an interactive, AI-powered classroom quiz platform that walks with you from idea to live session — from AI-generated questions to real-time student insights.",
+        sub: "nefelha is an interactive, AI-powered classroom quiz platform that walks with you from idea to live session — from AI-generated questions to real-time student insights.",
         cta: "Get started",
         joinGame: "JOIN GAME",
 
@@ -65,7 +65,7 @@ const Landing = () => {
         storyTitle: "We were the students who never raised their hands",
         sp1: "We know exactly what a review lesson looks like. The teacher asks, and the room goes quiet. Not because nobody understood, but because nobody wants to be the first one to answer and get it wrong in front of everyone.",
         sp2: "We tried the platforms that already existed. They were designed in another language and another mindset, with Arabic added afterwards as a translation. Questions break, direction flips, and the whole thing feels foreign to our classrooms.",
-        sp3: "So we built what we wished we had while we were still sitting in those seats: a platform that makes review something students look forward to instead of something they avoid. That is how nfelha started.",
+        sp3: "So we built what we wished we had while we were still sitting in those seats: a platform that makes review something students look forward to instead of something they avoid. That is how nefelha started.",
 
         howKicker: "HOW IT WORKS",
         howTitle: "Three steps to your first live session",
@@ -78,7 +78,7 @@ const Landing = () => {
 
         forWhoKicker: "WHO IS IT FOR",
         forWhoTitle: "Built around the Arabic-speaking teacher",
-        forWho1: "Whether you're a school teacher looking to make lesson reviews more engaging, or a private tutor who wants to track each student's level with precision — nfelha was built for you.",
+        forWho1: "Whether you're a school teacher looking to make lesson reviews more engaging, or a private tutor who wants to track each student's level with precision — nefelha was built for you.",
         forWho2: "You don't need to be tech-savvy. The platform runs entirely in the browser — students don't download anything. One short code and everyone's in within seconds.",
         forWho3: "Questions in Arabic, reports in Arabic, and a student experience designed for the small screens they carry in their pockets.",
         readMore: "Read more about us",
@@ -95,12 +95,12 @@ const Landing = () => {
         titleAr="منصة اختبارات صفية تفاعلية بالذكاء الاصطناعي"
         titleEn="AI-Powered Classroom Quiz Platform for Saudi Arabia"
         descriptionAr="نفلها منصة اختبارات صفية تفاعلية بالذكاء الاصطناعي تزيد تفاعل الطلاب في الفصل العربي. أنشئ اختبارات بالذكاء الاصطناعي، وشغّل تسعة أنماط لعب مباشرة — بلا تطبيقات على الطلاب."
-        descriptionEn="nfelha is an AI-powered classroom quiz platform that boosts student engagement in the Arabic classroom. Generate AI quizzes and run nine live game modes — no apps for students."
+        descriptionEn="nefelha is an AI-powered classroom quiz platform that boosts student engagement in the Arabic classroom. Generate AI quizzes and run nine live game modes — no apps for students."
         jsonLd={{
           "@context": "https://schema.org",
           "@type": "EducationalOrganization",
           name: "نفلها",
-          alternateName: "nfelha",
+          alternateName: "nefelha",
           url: "https://www.nefelha.com/",
           description: "نفلها شركة ناشئة سعودية تبني منصة اختبارات وألعاب تفاعلية للفصل العربي، بتوليد أسئلة بالذكاء الاصطناعي وتسعة أنماط لعب صفية مباشرة.",
           areaServed: { "@type": "Country", name: "Saudi Arabia" },

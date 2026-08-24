@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { AlertTriangle, Check, Info, X } from "lucide-react";
 
-// ── nfelha notifications ────────────────────────────────────────────────────
+// ── nefelha notifications ────────────────────────────────────────────────────
 // Purpose-built rather than a restyled toast library, because every library
 // default fought the thing that actually matters here: these messages are
 // SHORT ("تم الحفظ", "Copied", "Invalid code"). A fixed-width card wrapped

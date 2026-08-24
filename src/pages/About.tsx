@@ -48,13 +48,13 @@ const About = () => {
     : {
         kicker: "ABOUT US",
         title: "It started in the back row",
-        sub: "nfelha is a Saudi EdTech startup building an interactive learning platform for the Arabic classroom. We did not begin with market research. We began with our own time as students.",
+        sub: "nefelha is a Saudi EdTech startup building an interactive learning platform for the Arabic classroom. We did not begin with market research. We began with our own time as students.",
 
         storyKicker: "OUR STORY",
         storyTitle: "We were the students who never raised their hands",
         p1: "We know exactly what a review lesson looks like. The teacher asks, and the room goes quiet. Not because nobody understood, but because nobody wants to be the first one to answer and get it wrong in front of everyone.",
         p2: "We tried the platforms that already existed. They were designed in another language and another mindset, with Arabic added afterwards as a translation. Questions break, direction flips, and the whole thing feels foreign to our classrooms.",
-        p3: "So we built what we wished we had while we were still sitting in those seats: a platform that makes review something students look forward to instead of something they avoid. That is how nfelha started.",
+        p3: "So we built what we wished we had while we were still sitting in those seats: a platform that makes review something students look forward to instead of something they avoid. That is how nefelha started.",
 
         factsKicker: "WHAT WE HAVE BUILT SO FAR",
         f1n: "9", f1l: "distinct game modes, from a fast race to a printed board",
@@ -66,7 +66,7 @@ const About = () => {
         missionTitle: "Our ambition starts with the Gulf",
         m1: "We want interactive learning to become the default in GCC classrooms, not the exception that happens once a semester.",
         mapCaption: "This is where we start",
-        m2: "We build nfelha for the classroom as it actually is: the one without a device for every student, and the one with. That is exactly why we built Physical Games, a printed board and QR codes, so that technology is never the price of admission.",
+        m2: "We build nefelha for the classroom as it actually is: the one without a device for every student, and the one with. That is exactly why we built Physical Games, a printed board and QR codes, so that technology is never the price of admission.",
 
         valuesKicker: "WHAT GUIDES US",
         valuesTitle: "Three principles we don't compromise on",
@@ -74,7 +74,7 @@ const About = () => {
         v2t: "Zero friction", v2d: "No app downloads, no student accounts. A short code, one tap, and you're in the session.",
         v3t: "Flexible review, not one format", v3d: "The same questions, nine different modes, because a classroom that plays remembers more than one that's only tested.",
 
-        ctaLine: "Try nfelha with your class and see the difference from the first session.",
+        ctaLine: "Try nefelha with your class and see the difference from the first session.",
         ctaLink: "Explore services",
       };
 
@@ -101,9 +101,9 @@ const About = () => {
       <Seo
         path="/about"
         titleAr="من نحن — نفلها، شركة تقنية تعليم سعودية"
-        titleEn="About Us — nfelha, an EdTech Startup in Saudi Arabia"
+        titleEn="About Us — nefelha, an EdTech Startup in Saudi Arabia"
         descriptionAr="نفلها شركة ناشئة سعودية في تقنية التعليم أسسها طلاب سابقون أرادوا منصة تعليمية تفاعلية مصممة للفصل العربي من الأساس، لا مترجمة عنه. تعرّف على قصتنا وقيمنا."
-        descriptionEn="nfelha is a Saudi EdTech startup founded by former students who wanted an interactive learning platform built for the Arabic classroom from the ground up, not translated into it. Meet our story and values."
+        descriptionEn="nefelha is a Saudi EdTech startup founded by former students who wanted an interactive learning platform built for the Arabic classroom from the ground up, not translated into it. Meet our story and values."
       />
       <SiteNav />
 
