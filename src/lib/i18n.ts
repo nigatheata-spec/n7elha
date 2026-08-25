@@ -138,7 +138,7 @@ i18n.use(LanguageDetector).use(initReactI18next).init({
   fallbackLng: "ar",
   supportedLngs: ["ar", "en"],
   interpolation: { escapeValue: false },
-  detection: { order: ["localStorage", "navigator"], caches: ["localStorage"], lookupLocalStorage: "hash_lang" },
+  detection: { order: ["localStorage"], caches: ["localStorage"], lookupLocalStorage: "hash_lang" },
 });
 
 // Set text direction: RTL for Arabic, LTR for English
