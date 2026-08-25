@@ -121,7 +121,7 @@ const Landing = () => {
             >
               <span className="block">{t.line1}</span>
               <span className="block">
-                <span className="italic" style={{ color: "#FF8254" }}>{t.line2a}</span>
+                <span className="italic" style={{ color: "#8FC44A" }}>{t.line2a}</span>
                 {" "}<span>{t.line2b}</span>
               </span>
               <span className="block">
@@ -147,11 +147,11 @@ const Landing = () => {
 
               <Link
                 to="/play"
-                className="group inline-flex items-center gap-3 rounded-full border-2 border-[hsl(var(--nb-border))] bg-[#FF8254] text-white pl-6 pr-2 py-2 text-[15px] font-medium shadow-[4px_4px_0_0_hsl(var(--nb-border))] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_0_hsl(var(--nb-border))] transition-all"
+                className="group inline-flex items-center gap-3 rounded-full border-2 border-[hsl(var(--nb-border))] bg-[#8FC44A] text-[#3F5A63] pl-6 pr-2 py-2 text-[15px] font-medium shadow-[4px_4px_0_0_hsl(var(--nb-border))] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_0_hsl(var(--nb-border))] transition-all"
               >
                 {t.joinGame}
-                <span className="h-9 w-9 rounded-full bg-white text-[#FF8254] flex items-center justify-center">
-                  <Play className="h-4 w-4 fill-[#FF8254]" />
+                <span className="h-9 w-9 rounded-full bg-white text-[#8FC44A] flex items-center justify-center">
+                  <Play className="h-4 w-4 fill-[#8FC44A]" strokeLinejoin="round" strokeWidth={4} />
                 </span>
               </Link>
 
@@ -164,7 +164,7 @@ const Landing = () => {
             <img
               src={heroPerson}
               alt="معلم نفلها"
-              className="absolute bottom-0 end-2 sm:end-4 w-[88%] sm:w-[78%] h-full object-contain object-bottom select-none pointer-events-none drop-shadow-2xl z-20"
+              className="absolute bottom-0 end-2 sm:end-4 w-[97%] sm:w-[86%] h-full object-contain object-bottom select-none pointer-events-none drop-shadow-2xl z-20"
             />
           </div>
         </div>
@@ -175,7 +175,7 @@ const Landing = () => {
         <section className="bg-[#14212A] text-white px-5 sm:px-8 md:px-14 py-20 sm:py-28">
           <div className="wrap grid grid-cols-1 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] gap-8 lg:gap-16">
             <div>
-              <span className={`text-[12px] font-semibold text-[#FF8254] ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`}>{t.storyKicker}</span>
+              <span className={`text-[12px] font-semibold text-[#8FC44A] ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`}>{t.storyKicker}</span>
               <h2
                 className="mt-3 text-[26px] sm:text-[34px] tracking-tight leading-[1.15]"
                 style={{ color: "#FFFFFF", fontFamily: "'ArslanWessam', 'Almarai', sans-serif" }}
@@ -184,7 +184,7 @@ const Landing = () => {
               </h2>
             </div>
             <div className="max-w-xl relative">
-              <div className="h-1 w-16 bg-[#FF8254] rounded-full" />
+              <div className="h-1 w-16 bg-[#8FC44A] rounded-full" />
               <p className="mt-6 text-[17px] sm:text-[19px] leading-relaxed text-white font-medium">{t.sp1}</p>
               <p className="mt-5 text-[15px] leading-relaxed text-white/60">{t.sp2}</p>
               <p className="mt-5 text-[15px] leading-relaxed text-white/60">{t.sp3}</p>
@@ -195,7 +195,7 @@ const Landing = () => {
         {/* ---------------- HOW IT WORKS ---------------- */}
         <section id="how" className="bg-[#3F5A63] text-white px-5 sm:px-8 md:px-14 py-20 sm:py-28">
           <div className="wrap"><div className="max-w-2xl">
-            <span className={`text-[12px] font-semibold text-[#FF8254] ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`}>{t.howKicker}</span>
+            <span className={`text-[12px] font-semibold text-[#8FC44A] ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`}>{t.howKicker}</span>
             <h2 className="mt-3 text-[28px] sm:text-[40px] tracking-tight leading-[1.1]" style={{ color: "#FFFFFF", fontFamily: "'ArslanWessam', 'Almarai', sans-serif" }}>
               {t.howTitle}
             </h2>

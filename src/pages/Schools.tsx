@@ -83,10 +83,10 @@ const Schools = () => {
       {/* ---------------- CTA ---------------- */}
       <section className="bg-[#14212A] text-white px-5 sm:px-8 md:px-14 py-20 sm:py-28">
         <div className="wrap max-w-2xl">
-          <div className="h-12 w-12 rounded-2xl border-2 border-[#0B1418] bg-[#FF8254] text-white flex items-center justify-center">
+          <div className="h-12 w-12 rounded-2xl border-2 border-[#0B1418] bg-[#8FC44A] text-[#3F5A63] flex items-center justify-center">
             <Building2 className="h-6 w-6" />
           </div>
-          <span className={`mt-5 block text-[12px] font-semibold text-[#FF8254] ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`}>{t.ctaKicker}</span>
+          <span className={`mt-5 block text-[12px] font-semibold text-[#8FC44A] ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`}>{t.ctaKicker}</span>
           <h2 className="mt-3 text-[26px] sm:text-[36px] tracking-tight leading-[1.15] text-white" style={{ fontFamily: "'ArslanWessam', 'Almarai', sans-serif" }}>
             {t.ctaTitle}
           </h2>

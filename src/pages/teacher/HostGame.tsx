@@ -23,7 +23,7 @@ const MODES: { id: GameMode; icon: React.ReactNode; label: string; labelAr: stri
     labelAr: "كلاسيكي",
     desc: "Answer fast, earn more — the original quiz race",
     descAr: "أجب بسرعة، اكسب أكثر — سباق الأسئلة الأصلي",
-    accent: "#FF8254",
+    accent: "#8FC44A",
     num: "00",
   },
   {
@@ -370,7 +370,7 @@ const HostGame = () => {
         <div className="max-w-2xl mx-auto space-y-8">
           <div>
             {quiz && (
-              <p className="text-[12px] font-semibold text-[#FF8254] mb-3">
+              <p className="text-[12px] font-semibold text-[#8FC44A] mb-3">
                 {quiz.title}
               </p>
             )}
@@ -643,7 +643,7 @@ const HostGame = () => {
             {!sessionId ? (
               <button
                 onClick={openLobby}
-                className="w-full flex items-center justify-center gap-2 rounded-xl py-3.5 text-base font-bold border-2 border-[hsl(var(--nb-border))] bg-[#FF8254] text-white shadow-[4px_4px_0_0_hsl(var(--nb-border))] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_0_hsl(var(--nb-border))] transition-all active:scale-[0.99]"
+                className="w-full flex items-center justify-center gap-2 rounded-xl py-3.5 text-base font-bold border-2 border-[hsl(var(--nb-border))] bg-[#8FC44A] text-[#3F5A63] shadow-[4px_4px_0_0_hsl(var(--nb-border))] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_0_hsl(var(--nb-border))] transition-all active:scale-[0.99]"
               >
                 <Users className="h-5 w-5" />
                 {t("open_lobby")}
@@ -659,7 +659,7 @@ const HostGame = () => {
                         {t("students_connected")}
                       </span>
                     </span>
-                    <span className="h-2 w-2 rounded-full animate-pulse bg-[#FF8254]" />
+                    <span className="h-2 w-2 rounded-full animate-pulse bg-[#8FC44A]" />
                   </div>
 
                   {students.length === 0 ? (

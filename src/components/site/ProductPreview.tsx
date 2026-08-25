@@ -39,7 +39,7 @@ export const ProductPreview = () => {
     <section className="relative overflow-hidden px-5 sm:px-8 md:px-14 py-16 sm:py-24 border-t border-black/5">
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)] gap-12 lg:gap-20 items-center">
         <div className="max-w-xl">
-          <span className={`text-[12px] font-semibold text-[#FF8254] ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`}>{t.kicker}</span>
+          <span className={`text-[12px] font-semibold text-[#8FC44A] ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`}>{t.kicker}</span>
           <h2
             className="mt-3 text-[28px] sm:text-[40px] tracking-tight leading-[1.1]"
             style={{ color: "#3F5A63", fontFamily: "'ArslanWessam', 'Almarai', sans-serif" }}
@@ -59,8 +59,8 @@ export const ProductPreview = () => {
             <div className="h-10 w-px bg-black/10" />
             <div className="flex items-center gap-2">
               <span className="relative flex h-2.5 w-2.5">
-                <span className="absolute inline-flex h-full w-full rounded-full bg-[#FF8254] opacity-70 animate-ping" />
-                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[#FF8254]" />
+                <span className="absolute inline-flex h-full w-full rounded-full bg-[#8FC44A] opacity-70 animate-ping" />
+                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[#8FC44A]" />
               </span>
               <span className="text-[11px] font-bold text-[#3F5A63]">{t.liveLabel}</span>
             </div>
@@ -86,7 +86,7 @@ export const ProductPreview = () => {
               <div className="flex items-center justify-between">
                 <span className="text-[12.5px] font-bold text-[#3F5A63]">{t.you}</span>
                 <span className="inline-flex items-center gap-1.5 rounded-full border-2 border-[hsl(var(--nb-border))] bg-white px-2.5 py-1 text-[12.5px] font-black tabular-nums text-[#3F5A63] shadow-[2px_2px_0_0_hsl(var(--nb-border))]">
-                  <Star className="h-3 w-3 fill-[#FF8254] text-[#FF8254]" />
+                  <Star className="h-3 w-3 fill-[#8FC44A] text-[#8FC44A]" />
                   2,750
                 </span>
               </div>

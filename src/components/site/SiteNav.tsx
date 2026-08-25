@@ -61,7 +61,7 @@ export const SiteNav = () => {
                     {item.label}
                     {/* underline marks the current page, which the nav never indicated */}
                     <span
-                      className={`absolute inset-x-0 -bottom-0.5 h-[2px] rounded-full bg-[#FF8254] origin-center transition-transform duration-300 ${active ? "scale-x-100" : "scale-x-0"}`}
+                      className={`absolute inset-x-0 -bottom-0.5 h-[2px] rounded-full bg-[#8FC44A] origin-center transition-transform duration-300 ${active ? "scale-x-100" : "scale-x-0"}`}
                     />
                   </Link>
                 </li>

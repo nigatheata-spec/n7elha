@@ -21,7 +21,7 @@ type Phase = "waiting" | "question" | "answered" | "done";
 
 const fmt = (n: number) => n.toLocaleString();
 
-const AV_COLORS = ["#FF8254", "#3F5A63", "#2563eb", "#16a34a", "#b45309", "#7c3aed", "#0891b2", "#c2410c"];
+const AV_COLORS = ["#8FC44A", "#3F5A63", "#2563eb", "#16a34a", "#b45309", "#7c3aed", "#0891b2", "#c2410c"];
 const av = (name: string) => {
   let h = 0;
   for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xffffffff;
@@ -259,7 +259,7 @@ const ClassicGame = ({ sessionId, studentId }: Props) => {
           <span className="font-bold text-sm truncate" style={{ color: "#3F5A63" }}>{me?.name ?? "—"}</span>
         </div>
         <span className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-full font-black text-sm tabular-nums bg-white", NB, "shadow-[3px_3px_0_0_hsl(var(--nb-border))]")} style={{ color: "#3F5A63" }}>
-          <Star className="h-3.5 w-3.5 fill-[#FF8254] text-[#FF8254]" />
+          <Star className="h-3.5 w-3.5 fill-[#8FC44A] text-[#8FC44A]" />
           {fmt(me?.crypto ?? 0)}
         </span>
       </header>
@@ -372,7 +372,7 @@ const ClassicGame = ({ sessionId, studentId }: Props) => {
               </h1>
 
               {winner && (
-                <div className={cn("rounded-2xl bg-[#FF8254] p-5 flex flex-col items-center gap-2 text-center", NB, "shadow-[5px_5px_0_0_hsl(var(--nb-border))]")}>
+                <div className={cn("rounded-2xl bg-[#8FC44A] p-5 flex flex-col items-center gap-2 text-center", NB, "shadow-[5px_5px_0_0_hsl(var(--nb-border))]")}>
                   <Trophy className="h-6 w-6 text-white" />
                   <Avatar name={winner.name} size="xl" />
                   <div className="font-black text-lg text-white">{winner.name}</div>

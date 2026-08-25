@@ -116,7 +116,7 @@ const Auth = () => {
               {t("hero_title")}
             </p>
             <footer className="flex items-center gap-3">
-              <div className="h-8 w-8 rounded-full bg-[#FF8254]/40 flex items-center justify-center shrink-0">
+              <div className="h-8 w-8 rounded-full bg-[#8FC44A]/40 flex items-center justify-center shrink-0">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
               </div>
               <span className="text-white/55 text-sm">{t("tagline")}</span>
@@ -213,7 +213,7 @@ const Auth = () => {
               <button
                 type="button"
                 className="font-semibold hover:underline underline-offset-4 transition"
-                style={{ color: "#FF8254" }}
+                style={{ color: "#8FC44A" }}
                 onClick={() => switchMode(mode === "signup" ? "login" : "signup")}
               >
                 {mode === "signup" ? t("login") : t("signup")}

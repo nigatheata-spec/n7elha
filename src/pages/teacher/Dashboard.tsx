@@ -6,7 +6,7 @@ import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Plus, ArrowUp, FileText, X, Loader2, Gauge, Hash, Gamepad2, Eye, Check, RefreshCw, Pencil, ChevronDown, Play, Upload, Image as ImageIcon, Trash2 } from "lucide-react";
+import { Sparkles, Plus, ArrowUp, FileText, X, Loader2, Gauge, Hash, FileQuestion, Check, RefreshCw, Pencil, ChevronDown, Play, Upload, Image as ImageIcon, Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
@@ -39,7 +39,7 @@ const TypewriterHeading = ({ ar }: { ar: boolean }) => {
         const t = setTimeout(() => setDisplayed(target.slice(0, displayed.length + 1)), 72);
         return () => clearTimeout(t);
       }
-      const t = setTimeout(() => setIsTyping(false), 5000);
+      const t = setTimeout(() => setIsTyping(false), 60000);
       return () => clearTimeout(t);
     } else {
       if (displayed.length > 0) {
@@ -145,19 +145,27 @@ const Dashboard = () => {
     }
   };
 
-  const [games, setGames] = useState<any[]>([]);
+  const [recentQuizzes, setRecentQuizzes] = useState<any[]>([]);
 
-  const loadGames = async () => {
+  const loadRecentQuizzes = async () => {
     if (!user) return;
     const { data } = await supabase
-      .from("game_sessions")
-      .select("id,code,status,created_at,started_at,ended_at,quiz_id,quizzes(title)")
-      .eq("teacher_id", user.id)
+      .from("quizzes")
+      .select("id,title,subject,grade_level,created_at")
+      .eq("created_by", user.id)
       .order("created_at", { ascending: false })
       .limit(4);
-    setGames(data ?? []);
+    if (data?.length) {
+      const ids = data.map(q => q.id);
+      const { data: qs } = await supabase.from("questions").select("quiz_id").in("quiz_id", ids);
+      const counts: Record<string, number> = {};
+      qs?.forEach((r: any) => { counts[r.quiz_id] = (counts[r.quiz_id] ?? 0) + 1; });
+      setRecentQuizzes(data.map(q => ({ ...q, questionCount: counts[q.id] ?? 0 })));
+    } else {
+      setRecentQuizzes([]);
+    }
   };
-  useEffect(() => { loadGames(); /* eslint-disable-next-line */ }, [user]);
+  useEffect(() => { loadRecentQuizzes(); /* eslint-disable-next-line */ }, [user]);
 
   const handleFiles = async (list: FileList | null) => {
     if (!list) return;
@@ -421,45 +429,49 @@ const Dashboard = () => {
         </div>
       )}
 
-      {/* Past games */}
+      {/* Recent quizzes — fast host */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-xl font-bold flex items-center gap-2 text-primary"><Gamepad2 className="h-5 w-5" />{ar ? "ألعابي السابقة" : "My past games"}</h2>
-          <Link to="/app/games" className="text-sm text-primary/70 hover:text-accent">{ar ? "عرض الكل" : "View all"} →</Link>
+          <h2 className="text-xl font-bold flex items-center gap-2 text-primary"><FileQuestion className="h-5 w-5" />{ar ? "أحدث اختباراتك" : "Your recent quizzes"}</h2>
+          <Link to="/app/quizzes" className="text-sm text-primary/70 hover:text-accent">{ar ? "عرض الكل" : "View all"} →</Link>
         </div>
 
-        {games.length === 0 ? (
+        {recentQuizzes.length === 0 ? (
           <div className="py-14 flex flex-col items-center gap-3 text-center rounded-2xl border border-dashed border-border">
             <div className="h-14 w-14 rounded-2xl bg-muted/60 flex items-center justify-center">
-              <Gamepad2 className="h-6 w-6 opacity-30" />
+              <FileQuestion className="h-6 w-6 opacity-30" />
             </div>
             <p className="text-sm text-muted-foreground max-w-xs">
               {ar ? "ولّد اختباراً من الأعلى لتستضيف أول لعبة" : "Generate a quiz above to host your first game"}
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-3">
-            {games.map((g) => (
-              <Link
-                key={g.id}
-                to={g.status === "lobby" || g.status === "running" ? `/app/games/${g.id}/monitor` : `/app/games/${g.id}/results`}
-                className="group flex items-center gap-4 p-4 rounded-2xl border-2 border-[hsl(var(--nb-border))] bg-white shadow-[3px_3px_0_0_hsl(var(--nb-border))] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0_0_hsl(var(--nb-border))] transition-all"
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {recentQuizzes.map((q) => (
+              <div
+                key={q.id}
+                className="flex items-center gap-3 p-4 rounded-2xl border-2 border-[hsl(var(--nb-border))] bg-white shadow-[3px_3px_0_0_hsl(var(--nb-border))]"
               >
-                <div className="shrink-0 w-[72px]">
-                  <div className="font-mono text-[22px] font-black text-primary tracking-widest leading-none">{g.code}</div>
-                  <div className="text-[11px] text-muted-foreground mt-1 font-mono">{new Date(g.created_at).toLocaleDateString(ar ? "ar" : "en")}</div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold text-foreground truncate text-sm">{q.title}</div>
+                  <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                    {q.subject && <Badge variant="outline" className="text-[10px] h-5 px-2">{q.subject}</Badge>}
+                    <Badge variant="secondary" className="text-[10px] h-5 px-2">
+                      {q.questionCount} {ar ? "سؤال" : "Q"}
+                    </Badge>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0 border-l border-border ps-4">
-                  <div className="font-semibold text-foreground truncate text-sm">{g.quizzes?.title ?? "—"}</div>
-                  <Badge
-                    variant={g.status === "running" ? "default" : g.status === "lobby" ? "secondary" : "outline"}
-                    className="mt-1.5 text-[10px] h-5 px-2"
-                  >
-                    {g.status === "lobby" ? (ar ? "ردهة" : "lobby") : g.status === "running" ? (ar ? "مباشر" : "live") : (ar ? "منتهية" : "ended")}
-                  </Badge>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <Link to={`/app/quizzes/${q.id}/edit`} aria-label={ar ? "تعديل" : "Edit"}
+                    className="h-9 w-9 rounded-full border border-border flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors">
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Link>
+                  <Link to={`/app/host/${q.id}`} aria-label={ar ? "استضافة" : "Host"}
+                    className="h-9 w-9 rounded-full bg-[#3F5A63] text-white flex items-center justify-center hover:bg-[#3F5A63]/90 transition-colors">
+                    <Play className="h-3.5 w-3.5 fill-current" strokeLinejoin="round" strokeWidth={3.5} />
+                  </Link>
                 </div>
-                <Eye className="h-4 w-4 text-muted-foreground/40 group-hover:text-accent transition-colors shrink-0" />
-              </Link>
+              </div>
             ))}
           </div>
         )}

@@ -147,7 +147,7 @@ const Services = () => {
       {/* ---------------- GAME MODES ---------------- */}
       <section className="bg-[#14212A] text-white px-5 sm:px-8 md:px-14 py-20 sm:py-28">
         <div className="wrap"><div className="max-w-2xl">
-          <span className={`text-[12px] font-semibold text-[#FF8254] ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`}>{t.modesKicker}</span>
+          <span className={`text-[12px] font-semibold text-[#8FC44A] ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`}>{t.modesKicker}</span>
           <h2 className="mt-3 text-[26px] sm:text-[36px] tracking-tight leading-[1.15] text-white" style={{ fontFamily: "'ArslanWessam', 'Almarai', sans-serif" }}>
             {t.modesTitle}
           </h2>
@@ -158,7 +158,7 @@ const Services = () => {
           {modes.map((m, i) => (
             <div key={m.title} className={`group h-full ${i % 2 === 0 ? "-rotate-[0.4deg]" : "rotate-[0.5deg]"} hover:rotate-0 transition-transform duration-300`}>
               <div className="relative h-full rounded-2xl border-2 border-[#0B1418] bg-[#3F5A63] p-5 shadow-[4px_4px_0_0_#0B1418] group-hover:shadow-[7px_7px_0_0_#0B1418] group-hover:-translate-x-1 group-hover:-translate-y-1 transition-all">
-                <div className="h-9 w-9 rounded-xl border-2 border-[#0B1418] bg-[#FF8254] text-white flex items-center justify-center">
+                <div className="h-9 w-9 rounded-xl border-2 border-[#0B1418] bg-[#8FC44A] text-[#3F5A63] flex items-center justify-center">
                   {m.icon}
                 </div>
                 <h3 className="mt-4 text-[15px] font-semibold leading-tight text-white">{m.title}</h3>

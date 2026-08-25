@@ -99,7 +99,7 @@ const PaintJoystick = ({ vectorRef, maxRadius = 60, deadzone = 8, className }: P
             style={{
               left: maxRadius + knob.x - 22, top: maxRadius + knob.y - 22,
               width: 44, height: 44,
-              background: "#FF8254",
+              background: "#8FC44A",
               border: "2px solid hsl(var(--nb-border))",
               boxShadow: "3px 3px 0 0 hsl(var(--nb-border))",
             }}

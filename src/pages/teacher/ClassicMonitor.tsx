@@ -7,7 +7,7 @@ import { Trophy, Square, Maximize } from "lucide-react";
 
 const fmt = (n: number) => n.toLocaleString();
 
-const AV_COLORS = ["#FF8254", "#3F5A63", "#2563eb", "#16a34a", "#b45309", "#7c3aed", "#0891b2", "#c2410c"];
+const AV_COLORS = ["#8FC44A", "#3F5A63", "#2563eb", "#16a34a", "#b45309", "#7c3aed", "#0891b2", "#c2410c"];
 const av = (name: string) => {
   let h = 0;
   for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xffffffff;
@@ -123,7 +123,7 @@ const ClassicMonitor = ({ session, sessionId }: Props) => {
                 <span className="w-6 text-center font-black tabular-nums" style={{ color: "hsl(199 15% 55%)" }}>{i + 1}</span>
                 <Avatar name={s.name} />
                 <span className="flex-1 font-bold truncate">{s.name}</span>
-                {i === 0 && <Trophy className="h-4 w-4 shrink-0" style={{ color: "#FF8254" }} />}
+                {i === 0 && <Trophy className="h-4 w-4 shrink-0" style={{ color: "#8FC44A" }} />}
                 <span className="font-black tabular-nums text-lg">{fmt(s.crypto ?? 0)}</span>
               </div>
             ))

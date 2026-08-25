@@ -270,7 +270,7 @@ const GameResults = () => {
             </button>
             <div className="h-4 w-px bg-white/25" />
             <div>
-              <div className="text-[10px] tracking-[0.5em] text-[#FF8254] uppercase mb-1">{ar ? "النتائج" : "Results"}</div>
+              <div className="text-[10px] tracking-[0.5em] text-[#8FC44A] uppercase mb-1">{ar ? "النتائج" : "Results"}</div>
               <h1 className="text-2xl md:text-3xl font-black tracking-tight text-white leading-none">
                 {session?.quizzes?.title ?? (ar ? "اللعبة" : "Game")}
               </h1>

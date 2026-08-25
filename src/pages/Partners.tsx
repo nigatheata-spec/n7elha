@@ -96,7 +96,7 @@ const Partners = () => {
 
           <div className="rotate-[0.5deg] hover:rotate-0 transition-transform duration-300">
             <div className="relative rounded-2xl border-2 border-[hsl(var(--nb-border))] bg-white p-7 shadow-[5px_5px_0_0_hsl(var(--nb-border))]">
-              <div className="h-12 w-12 rounded-2xl border-2 border-[hsl(var(--nb-border))] bg-[#FF8254] text-white flex items-center justify-center">
+              <div className="h-12 w-12 rounded-2xl border-2 border-[hsl(var(--nb-border))] bg-[#8FC44A] text-[#3F5A63] flex items-center justify-center">
                 <UserRound className="h-6 w-6" />
               </div>
               <h3 className="mt-5 text-[18px] font-semibold leading-tight" style={{ color: "#3F5A63" }}>{t.teachersTitle}</h3>
@@ -115,7 +115,7 @@ const Partners = () => {
 
       {/* ---------------- CONTACT DETAILS ---------------- */}
       <section className="bg-[#14212A] text-white px-5 sm:px-8 md:px-14 py-20 sm:py-28"><div className="wrap">
-        <span className={`text-[12px] font-semibold text-[#FF8254] ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`}>{t.contactKicker}</span>
+        <span className={`text-[12px] font-semibold text-[#8FC44A] ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`}>{t.contactKicker}</span>
         <h2 className="mt-3 text-[26px] sm:text-[36px] tracking-tight leading-[1.15] text-white" style={{ fontFamily: "'ArslanWessam', 'Almarai', sans-serif" }}>
           {t.contactTitle}
         </h2>

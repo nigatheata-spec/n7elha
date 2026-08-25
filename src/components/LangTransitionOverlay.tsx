@@ -59,7 +59,7 @@ export const LangTransitionOverlay = () => {
           <span
             key={i}
             className="h-2 w-2 rounded-full"
-            style={{ background: "#FF8254", animation: `dot-pulse 1.1s ease-in-out ${delay}ms infinite` }}
+            style={{ background: "#8FC44A", animation: `dot-pulse 1.1s ease-in-out ${delay}ms infinite` }}
           />
         ))}
       </div>

@@ -216,7 +216,7 @@ const PhysicalMonitor = ({ session, sessionId }: Props) => {
             </div>
 
             {!revealed ? (
-              <button onClick={() => setRevealed(true)} className="w-full rounded-xl py-3 text-sm font-bold border-2 border-[hsl(var(--nb-border))] bg-[#FF8254] text-white">
+              <button onClick={() => setRevealed(true)} className="w-full rounded-xl py-3 text-sm font-bold border-2 border-[hsl(var(--nb-border))] bg-[#8FC44A] text-[#3F5A63]">
                 {ar ? "أظهر الإجابة" : "Reveal answer"}
               </button>
             ) : (

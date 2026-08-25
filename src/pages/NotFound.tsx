@@ -45,7 +45,7 @@ const NotFound = () => {
       <div
         className="relative w-full max-w-[560px] rounded-[20px] sm:rounded-[28px] overflow-hidden shadow-[0_24px_70px_-38px_rgba(63,90,99,0.35)] bg-white p-8 sm:p-12 text-center"
       >
-        <span className="pointer-events-none absolute -bottom-4 -right-4 h-8 w-8 rounded-full border-2 border-[#FF8254]/40 select-none" />
+        <span className="pointer-events-none absolute -bottom-4 -right-4 h-8 w-8 rounded-full border-2 border-[#8FC44A]/40 select-none" />
 
         <Link to="/" className="inline-flex items-center gap-2 mb-8">
           <img src={logoMark} alt="nefelha" className="h-8 w-8 object-contain" />

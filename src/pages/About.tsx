@@ -123,7 +123,7 @@ const About = () => {
       <section className="bg-[#14212A] text-white px-5 sm:px-8 md:px-14 py-20 sm:py-28">
         <div className="wrap grid grid-cols-1 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] gap-8 lg:gap-16">
           <div>
-            <span className={`text-[12px] font-semibold text-[#FF8254] ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`}>{t.storyKicker}</span>
+            <span className={`text-[12px] font-semibold text-[#8FC44A] ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`}>{t.storyKicker}</span>
             <h2
               className="mt-3 text-[26px] sm:text-[34px] tracking-tight leading-[1.15]"
               style={{ color: "#FFFFFF", fontFamily: "'ArslanWessam', 'Almarai', sans-serif" }}
@@ -135,7 +135,7 @@ const About = () => {
           {/* The quote bar carries the origin story: a full left border would be the
               banned side-stripe, so the emphasis comes from scale and the pulled-in rule above. */}
           <div className="max-w-xl relative">
-            <div className="h-1 w-16 bg-[#FF8254] rounded-full" />
+            <div className="h-1 w-16 bg-[#8FC44A] rounded-full" />
             <img src={beans} alt="" aria-hidden className="absolute -end-6 top-24 w-14 opacity-20 rotate-12 hidden lg:block invert" />
             <p className="mt-6 text-[17px] sm:text-[19px] leading-relaxed text-white font-medium">{t.p1}</p>
             <p className="mt-5 text-[15px] leading-relaxed text-white/60">{t.p2}</p>
@@ -180,7 +180,7 @@ const About = () => {
         <div className="wrap relative grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)] gap-10 lg:gap-16 items-center">
           <div className="max-w-2xl">
             <div className="inline-flex items-center gap-2 rounded-full border-2 border-[hsl(var(--nb-border))] bg-white px-4 py-1.5 shadow-[3px_3px_0_0_hsl(var(--nb-border))]">
-              <Compass className="h-4 w-4 text-[#FF8254]" />
+              <Compass className="h-4 w-4 text-[#8FC44A]" />
               <span className={`text-[11px] font-semibold text-[#3F5A63] ${isAr ? "tracking-normal" : "tracking-[0.2em]"}`}>{t.missionKicker}</span>
             </div>
             <h2
@@ -204,7 +204,7 @@ const About = () => {
       {/* ---------------- VALUES ---------------- */}
       <section className="wrap px-5 sm:px-8 md:px-14 py-20 sm:py-28">
         <div className="max-w-2xl">
-          <span className={`text-[12px] font-semibold text-[#FF8254] ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`}>{t.valuesKicker}</span>
+          <span className={`text-[12px] font-semibold text-[#8FC44A] ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`}>{t.valuesKicker}</span>
           <h2 className="mt-3 text-[26px] sm:text-[36px] tracking-tight leading-[1.15] text-[#14212A]" style={{ fontFamily: "'ArslanWessam', 'Almarai', sans-serif" }}>
             {t.valuesTitle}
           </h2>
@@ -214,7 +214,7 @@ const About = () => {
           {values.map((v, i) => (
             <div key={v.title} className={`group h-full ${i % 2 === 0 ? "-rotate-[0.5deg]" : "rotate-[0.6deg]"} hover:rotate-0 transition-transform duration-300`}>
               <div className="relative h-full rounded-2xl border-2 border-[#14212A] bg-[#3F5A63] p-6 shadow-[5px_5px_0_0_#14212A] group-hover:shadow-[8px_8px_0_0_#14212A] group-hover:-translate-x-1 group-hover:-translate-y-1 transition-all">
-                <div className="h-10 w-10 rounded-2xl border-2 border-[#14212A] bg-[#FF8254] text-white flex items-center justify-center">
+                <div className="h-10 w-10 rounded-2xl border-2 border-[#14212A] bg-[#8FC44A] text-[#3F5A63] flex items-center justify-center">
                   {v.icon}
                 </div>
                 <h3 className="mt-5 text-[16px] font-semibold leading-tight text-white">{v.title}</h3>
@@ -226,7 +226,7 @@ const About = () => {
 
         <p className="mt-14 text-[15px] leading-relaxed text-black/65">
           {t.ctaLine}{" "}
-          <Link to="/services" className="inline-flex items-center gap-1 font-semibold text-[#3F5A63] underline decoration-[#FF8254] decoration-2 underline-offset-4">
+          <Link to="/services" className="inline-flex items-center gap-1 font-semibold text-[#3F5A63] underline decoration-[#8FC44A] decoration-2 underline-offset-4">
             {t.ctaLink}
             <ArrowUpRight className="h-4 w-4" />
           </Link>

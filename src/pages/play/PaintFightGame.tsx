@@ -422,7 +422,7 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
     return (
       <div className="fixed inset-0 flex flex-col items-center justify-center gap-5 px-6 text-center"
         style={{ background: "#EBDFC7", color: "#3F5A63" }}>
-        <Trophy className="h-16 w-16" style={{ color: "#FF8254" }} />
+        <Trophy className="h-16 w-16" style={{ color: "#8FC44A" }} />
         <div className="text-2xl font-extrabold">{ar ? "انتهت المعركة" : "Fight Over"}</div>
         <div className="flex gap-3">
           <div className="px-5 py-3 bg-white border-2 border-[hsl(var(--nb-border))] shadow-[4px_4px_0_0_hsl(var(--nb-border))]">
@@ -436,7 +436,7 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
         </div>
         <button onClick={() => navigate("/play")}
           className="mt-3 px-7 py-3 font-extrabold text-sm text-white border-2 border-[hsl(var(--nb-border))] shadow-[4px_4px_0_0_hsl(var(--nb-border))] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[2px_2px_0_0_hsl(var(--nb-border))] transition-transform"
-          style={{ background: "#FF8254" }}>
+          style={{ background: "#8FC44A" }}>
           {ar ? "خروج" : "EXIT"}
         </button>
       </div>
@@ -484,7 +484,7 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
             "absolute left-4 z-10 px-4 py-2.5 text-sm font-extrabold text-white border-2 border-[hsl(var(--nb-border))] shadow-[4px_4px_0_0_hsl(var(--nb-border))] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[2px_2px_0_0_hsl(var(--nb-border))] transition-transform",
             frozen && "animate-pulse",
           )}
-          style={{ background: frozen ? "#dc2626" : "#FF8254", bottom: "calc(env(safe-area-inset-bottom) + 1rem)" }}>
+          style={{ background: frozen ? "#dc2626" : "#8FC44A", bottom: "calc(env(safe-area-inset-bottom) + 1rem)" }}>
           {ar ? "أجب على الأسئلة" : "Answer Questions"}
         </button>
       )}

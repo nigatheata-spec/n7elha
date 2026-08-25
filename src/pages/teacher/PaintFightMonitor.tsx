@@ -194,7 +194,7 @@ const PaintFightMonitor = ({ session, sessionId }: Props) => {
       <div className="h-full flex flex-col p-4 gap-3">
         <div className="flex items-center justify-between text-xs gap-3 shrink-0">
           <div className="text-white/60">
-            {ar ? "الرمز" : "CODE"} <span className="text-base font-black tracking-widest" style={{ color: "#FF8254" }}>{session?.code}</span>
+            {ar ? "الرمز" : "CODE"} <span className="text-base font-black tracking-widest" style={{ color: "#8FC44A" }}>{session?.code}</span>
             <span className="mx-3 opacity-30">|</span>
             <span className="font-bold">{students.length} {ar ? "طالب" : students.length === 1 ? "PAINTER" : "PAINTERS"}</span>
             <span className="mx-3 opacity-30">|</span>
@@ -224,7 +224,7 @@ const PaintFightMonitor = ({ session, sessionId }: Props) => {
 
           <div className="flex flex-col gap-2 min-h-0">
             <div className="flex items-center justify-between gap-2 shrink-0">
-              <div className="flex items-center gap-1.5 text-xs font-black tracking-widest uppercase" style={{ color: "#FF8254" }}>
+              <div className="flex items-center gap-1.5 text-xs font-black tracking-widest uppercase" style={{ color: "#8FC44A" }}>
                 <Trophy className="h-4 w-4" />{ar ? "الترتيب" : "Territory"}
               </div>
               <span className="text-[11px] font-bold tabular-nums text-white/50">
@@ -240,11 +240,11 @@ const PaintFightMonitor = ({ session, sessionId }: Props) => {
               {coverage.map((row, i) => (
                 <div key={row.studentId}
                   className="flex items-center gap-2.5 px-3 py-2 bg-white/[0.07] border-2"
-                  style={{ borderColor: i === 0 ? "#FF8254" : "rgba(255,255,255,0.14)" }}>
+                  style={{ borderColor: i === 0 ? "#8FC44A" : "rgba(255,255,255,0.14)" }}>
                   <span className="font-black text-sm w-5 tabular-nums text-center text-white/40">{i + 1}</span>
                   <div className="h-8 w-8 shrink-0 border-2 border-[hsl(var(--nb-border))]" style={{ background: hueFill(row.hue) }} />
                   <span className="flex-1 text-sm font-bold truncate">{nameFor(row.studentId)}</span>
-                  {i === 0 && <Trophy className="h-3.5 w-3.5 shrink-0" style={{ color: "#FF8254" }} />}
+                  {i === 0 && <Trophy className="h-3.5 w-3.5 shrink-0" style={{ color: "#8FC44A" }} />}
                   <div className="text-sm font-black tabular-nums" style={{ color: hueFill(row.hue) }}>{row.pct.toFixed(1)}%</div>
                 </div>
               ))}
