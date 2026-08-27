@@ -33,7 +33,7 @@ export const SiteNav = () => {
 
   return (
     <>
-      <nav className="px-5 sm:px-8 md:px-10 pt-5 sm:pt-6">
+      <nav dir="ltr" className="px-5 sm:px-8 md:px-10 pt-5 sm:pt-6">
         <div className="flex items-center justify-between gap-3 bg-white/90 backdrop-blur-md rounded-2xl px-4 py-3 border-2 border-[hsl(var(--nb-border))] shadow-[4px_4px_0_0_hsl(var(--nb-border))]">
 
           <Link to="/" className="flex items-center gap-2 shrink-0">
@@ -119,16 +119,13 @@ export const SiteNav = () => {
 
       {/* mobile menu drawer */}
       <div
-        className={`md:hidden fixed inset-y-0 right-0 z-50 w-[82%] max-w-[320px] bg-white shadow-[-8px_0_40px_-12px_rgba(0,0,0,0.35)] transition-transform duration-300 ease-out flex flex-col ${menuOpen ? "translate-x-0" : "translate-x-full"}`}
+        dir="ltr"
+        className={`md:hidden fixed inset-y-0 right-0 z-50 w-[82%] max-w-[320px] bg-white rounded-l-[28px] border-y-2 border-l-2 border-[hsl(var(--nb-border))] shadow-[-6px_6px_0_0_hsl(var(--nb-border))] transition-transform duration-300 ease-out flex flex-col ${menuOpen ? "translate-x-0" : "translate-x-full"}`}
         role="dialog"
         aria-modal="true"
         aria-hidden={!menuOpen}
       >
-        <div className="flex items-center justify-between px-5 pt-6 pb-4 border-b border-black/[0.06]">
-          <Link to="/" className="flex items-center gap-2 shrink-0" onClick={() => setMenuOpen(false)}>
-            <img src={logoMark} alt="nefelha" className="h-7 w-7 object-contain" />
-            <span className="text-[16px] font-medium tracking-tight text-black">{isAr ? "نفلها" : "nefelha"}</span>
-          </Link>
+        <div className="flex items-center justify-end px-5 pt-6 pb-4 border-b border-black/[0.06]">
           <button
             onClick={() => setMenuOpen(false)}
             className="h-9 w-9 rounded-full border border-black/15 flex items-center justify-center text-black"
@@ -138,49 +135,62 @@ export const SiteNav = () => {
           </button>
         </div>
 
-        <div className="px-5 py-6 flex flex-col gap-3 overflow-y-auto">
+        <div className="flex flex-col flex-1 overflow-y-auto">
+          {/* Nav links — plain list, no button chrome */}
+          <nav className="px-5 py-2">
+            {[
+              { to: "/", label: t.home },
+              { to: "/services", label: t.services },
+              { to: "/schools", label: t.schools },
+              { to: "/blog", label: t.blog },
+              { to: "/about", label: t.about },
+              { to: "/partners", label: t.partners },
+            ].map((item) => {
+              const active = pathname === item.to;
+              return (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  onClick={() => setMenuOpen(false)}
+                  aria-current={active ? "page" : undefined}
+                  className={`flex items-center gap-3 py-3.5 border-b border-black/[0.06] text-[15px] font-medium transition-colors ${active ? "text-[#3F5A63]" : "text-black/60 hover:text-[#3F5A63]"}`}
+                >
+                  <span className={`h-1.5 w-1.5 rounded-full shrink-0 transition-opacity ${active ? "bg-[#8FC44A] opacity-100" : "opacity-0"}`} />
+                  {item.label}
+                </Link>
+              );
+            })}
+          </nav>
+
+          {/* Language — small utility row, not a CTA */}
           <button
             onClick={() => { triggerLangTransition(); i18n.changeLanguage(isAr ? "en" : "ar"); }}
-            className="w-full inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full border-2 border-[hsl(var(--nb-border))] bg-white text-[#3F5A63] text-[13px] tracking-wider font-medium shadow-[3px_3px_0_0_hsl(var(--nb-border))]"
+            className="mx-5 mt-3 inline-flex items-center gap-2 self-start px-3 py-1.5 rounded-full text-[12px] font-medium text-black/50 hover:text-[#3F5A63] transition-colors"
           >
-            <Languages className="h-4 w-4" />
+            <Languages className="h-3.5 w-3.5" />
             {isAr ? "English" : "العربية"}
           </button>
-          <Link to="/" onClick={() => setMenuOpen(false)} aria-current={pathname === "/" ? "page" : undefined} className={`w-full px-4 py-2.5 rounded-full border-2 border-[hsl(var(--nb-border))] text-[13px] tracking-wider font-medium text-center shadow-[3px_3px_0_0_hsl(var(--nb-border))] ${pathname === "/" ? "bg-[#3F5A63] text-white" : "bg-white text-[#3F5A63]"}`}>
-            {t.home}
-          </Link>
-          <Link to="/services" onClick={() => setMenuOpen(false)} aria-current={pathname === "/services" ? "page" : undefined} className={`w-full px-4 py-2.5 rounded-full border-2 border-[hsl(var(--nb-border))] text-[13px] tracking-wider font-medium text-center shadow-[3px_3px_0_0_hsl(var(--nb-border))] ${pathname === "/services" ? "bg-[#3F5A63] text-white" : "bg-white text-[#3F5A63]"}`}>
-            {t.services}
-          </Link>
-          <Link to="/schools" onClick={() => setMenuOpen(false)} aria-current={pathname === "/schools" ? "page" : undefined} className={`w-full px-4 py-2.5 rounded-full border-2 border-[hsl(var(--nb-border))] text-[13px] tracking-wider font-medium text-center shadow-[3px_3px_0_0_hsl(var(--nb-border))] ${pathname === "/schools" ? "bg-[#3F5A63] text-white" : "bg-white text-[#3F5A63]"}`}>
-            {t.schools}
-          </Link>
-          <Link to="/blog" onClick={() => setMenuOpen(false)} aria-current={pathname === "/blog" ? "page" : undefined} className={`w-full px-4 py-2.5 rounded-full border-2 border-[hsl(var(--nb-border))] text-[13px] tracking-wider font-medium text-center shadow-[3px_3px_0_0_hsl(var(--nb-border))] ${pathname === "/blog" ? "bg-[#3F5A63] text-white" : "bg-white text-[#3F5A63]"}`}>
-            {t.blog}
-          </Link>
-          <Link to="/about" onClick={() => setMenuOpen(false)} aria-current={pathname === "/about" ? "page" : undefined} className={`w-full px-4 py-2.5 rounded-full border-2 border-[hsl(var(--nb-border))] text-[13px] tracking-wider font-medium text-center shadow-[3px_3px_0_0_hsl(var(--nb-border))] ${pathname === "/about" ? "bg-[#3F5A63] text-white" : "bg-white text-[#3F5A63]"}`}>
-            {t.about}
-          </Link>
-          <Link to="/partners" onClick={() => setMenuOpen(false)} aria-current={pathname === "/partners" ? "page" : undefined} className={`w-full px-4 py-2.5 rounded-full border-2 border-[hsl(var(--nb-border))] text-[13px] tracking-wider font-medium text-center shadow-[3px_3px_0_0_hsl(var(--nb-border))] ${pathname === "/partners" ? "bg-[#3F5A63] text-white" : "bg-white text-[#3F5A63]"}`}>
-            {t.partners}
-          </Link>
-          <Link to="/play" onClick={() => setMenuOpen(false)} className="w-full px-4 py-2.5 rounded-full border-2 border-[hsl(var(--nb-border))] bg-white text-[#3F5A63] text-[13px] tracking-wider font-medium text-center shadow-[3px_3px_0_0_hsl(var(--nb-border))]">
-            {t.joinGame}
-          </Link>
-          {user ? (
-            <Link to="/app" onClick={() => setMenuOpen(false)} className="w-full px-5 py-2.5 rounded-full border-2 border-[hsl(var(--nb-border))] bg-white text-[#3F5A63] text-[13px] tracking-wider font-medium text-center shadow-[3px_3px_0_0_hsl(var(--nb-border))]">
-              {t.dashboard}
+
+          {/* CTAs — the only pill-styled buttons */}
+          <div className="mt-auto px-5 pt-4 pb-6 border-t border-black/[0.06] flex flex-col gap-2.5">
+            <Link to="/play" onClick={() => setMenuOpen(false)} className="w-full px-4 py-2.5 rounded-full border-2 border-[hsl(var(--nb-border))] bg-white text-[#3F5A63] text-[13px] tracking-wider font-medium text-center shadow-[3px_3px_0_0_hsl(var(--nb-border))]">
+              {t.joinGame}
             </Link>
-          ) : (
-            <>
-              <Link to="/auth" onClick={() => setMenuOpen(false)} className="w-full px-5 py-2.5 rounded-full border-2 border-[hsl(var(--nb-border))] bg-white text-[#3F5A63] text-[13px] tracking-wider font-medium text-center shadow-[3px_3px_0_0_hsl(var(--nb-border))]">
-                {t.login}
+            {user ? (
+              <Link to="/app" onClick={() => setMenuOpen(false)} className="w-full px-5 py-2.5 rounded-full border-2 border-[hsl(var(--nb-border))] bg-[#3F5A63] text-white text-[13px] tracking-wider font-medium text-center shadow-[3px_3px_0_0_hsl(var(--nb-border))]">
+                {t.dashboard}
               </Link>
-              <Link to="/auth?mode=signup" onClick={() => setMenuOpen(false)} className="w-full px-5 py-2.5 rounded-full border-2 border-[hsl(var(--nb-border))] bg-white text-[#3F5A63] text-[13px] tracking-wider font-medium text-center shadow-[3px_3px_0_0_hsl(var(--nb-border))]">
-                {t.signup}
-              </Link>
-            </>
-          )}
+            ) : (
+              <>
+                <Link to="/auth" onClick={() => setMenuOpen(false)} className="w-full px-5 py-2.5 rounded-full border-2 border-[hsl(var(--nb-border))] bg-white text-[#3F5A63] text-[13px] tracking-wider font-medium text-center shadow-[3px_3px_0_0_hsl(var(--nb-border))]">
+                  {t.login}
+                </Link>
+                <Link to="/auth?mode=signup" onClick={() => setMenuOpen(false)} className="w-full px-5 py-2.5 rounded-full border-2 border-[hsl(var(--nb-border))] bg-[#3F5A63] text-white text-[13px] tracking-wider font-medium text-center shadow-[3px_3px_0_0_hsl(var(--nb-border))]">
+                  {t.signup}
+                </Link>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </>

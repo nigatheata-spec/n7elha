@@ -1,8 +1,11 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { onLangTransition } from "@/lib/langTransitionBus";
 import logoMark from "@/assets/logo-mark.png";
 
 export const LangTransitionOverlay = () => {
+  const { i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const [visible, setVisible] = useState(false);
   const [fading, setFading] = useState(false);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
@@ -49,7 +52,7 @@ export const LangTransitionOverlay = () => {
           animation: "lang-logo-in 0.45s 60ms cubic-bezier(0.16, 1, 0.3, 1) both",
         }}
       >
-        nefelha
+        {isAr ? "نفلها" : "nefelha"}
       </span>
       <div
         className="mt-5 flex gap-2"
