@@ -9,13 +9,13 @@ import {
   SidebarHeader, SidebarFooter,
 } from "@/components/ui/sidebar";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { LayoutDashboard, FileQuestion, History, BarChart3, Settings, LogOut } from "lucide-react";
+import { LayoutDashboard, ListChecks, History, BarChart3, Settings, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Seo } from "@/components/Seo";
 
 const links = [
   { to: "/app", icon: LayoutDashboard, key: "dashboard", end: true },
-  { to: "/app/quizzes", icon: FileQuestion, key: "my_quizzes" },
+  { to: "/app/quizzes", icon: ListChecks, key: "my_quizzes" },
   { to: "/app/games", icon: History, key: "hosted_games" },
   { to: "/app/analytics", icon: BarChart3, key: "analytics" },
   { to: "/app/settings", icon: Settings, key: "settings" },
