@@ -299,7 +299,9 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
       // in the header already shows short streaks resetting to zero.
       toast.error(ar ? "انقطعت السلسلة!" : "Streak broken!");
     }
-    supabase.from("game_students").update(updates).eq("id", me.id).then(undefined, () => {});
+    // Atomic server-side (see lava_floor_apply_answer migration) so this can't
+    // race a concurrent shop purchase for the same player and clobber it.
+    supabase.rpc("lava_floor_apply_answer", { p_student_id: me.id, p_correct: correct, p_payout: payout }).then(undefined, () => {});
     supabase.from("question_responses").insert({
       session_id: sessionId, student_id: me.id, question_id: currentQ.id,
       question_index: askedRef.current, answer_index: idx, is_correct: correct,
@@ -318,9 +320,9 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
     const remaining = Math.max(0, bricks - block.cost);
     localWriteAtRef.current = Date.now();
     setMe((prev: any) => ({ ...prev, crypto: remaining }));
-    supabase.from("game_students").update({
-      crypto: remaining,
-    }).eq("id", me.id).then(undefined, () => {});
+    supabase.rpc("lava_floor_spend", { p_student_id: me.id, p_cost: block.cost }).then(({ data, error }: any) => {
+      if (!error && (!data || data.length === 0)) toast.error(ar ? "لم تعد تملك ما يكفي" : "No longer affordable");
+    }, () => {});
     supabase.from("lava_floor_builds").insert({
       session_id: sessionId, student_id: me.id, student_name: me.name,
       block_type: key, height_added: block.height, cost: block.cost,
@@ -351,7 +353,13 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
     localWriteAtRef.current = Date.now();
     setMe((prev: any) => ({ ...prev, ...patch }));
     toast.success(ar ? `تمت الترقية: ${t.nameAr}` : `Upgraded: ${t.nameEn}`);
-    supabase.from("game_students").update(patch).eq("id", me.id).then(undefined, () => {});
+    supabase.rpc("lava_floor_spend", {
+      p_student_id: me.id, p_cost: t.cost,
+      p_income_tier: kind === "income" ? t.level : null,
+      p_streak_tier: kind === "streak" ? t.level : null,
+    }).then(({ data, error }: any) => {
+      if (!error && (!data || data.length === 0)) toast.error(ar ? "لم تعد تملك ما يكفي" : "No longer affordable");
+    }, () => {});
     playBrick();
     setTimeout(() => { buyingRef.current = false; }, 500);
   };

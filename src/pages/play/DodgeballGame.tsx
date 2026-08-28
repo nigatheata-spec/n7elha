@@ -256,14 +256,11 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
       question_index: askedRef.current, answer_index: idx, is_correct: correct,
     }).then(undefined, () => {});
 
-    const updates: any = { total_answers: (me.total_answers ?? 0) + 1 };
-    if (correct) {
-      updates.correct_answers = (me.correct_answers ?? 0) + 1;
-    } else {
-      updates.lives = newLives;
-      if (eliminated) { updates.eliminated = true; updates.eliminated_at = new Date().toISOString(); }
-    }
-    supabase.from("game_students").update(updates).eq("id", me.id).then(undefined, () => {});
+    // Atomic on the DB side (see dodgeball_apply_answer migration) so a wrong
+    // answer here can't race a concurrent life-gift and clobber it — the two
+    // used to both compute their new `lives` from locally-cached state and
+    // whichever write landed last silently won.
+    supabase.rpc("dodgeball_apply_answer", { p_student_id: me.id, p_correct: correct }).then(undefined, () => {});
   }, [currentQ, me, sessionId]);
 
   const submit = (idx: number) => { if (pickedRef.current !== null) return; handleAnswer(idx); };
@@ -285,7 +282,7 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
 
   const keepLife = () => {
     if (!me) return;
-    supabase.from("game_students").update({ lives: (me.lives ?? 1) + 1 }).eq("id", studentId).then(undefined, () => {});
+    supabase.rpc("dodgeball_add_life", { p_student_id: studentId }).then(undefined, () => {});
     setQSeed(s => s + 1);
     setPhase("question");
   };
@@ -293,11 +290,7 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
   const giftLife = (targetId: string) => {
     const target = students.find(s => s.id === targetId);
     if (!target) return;
-    if (target.eliminated) {
-      supabase.from("game_students").update({ eliminated: false, eliminated_at: null, lives: 1 }).eq("id", targetId).then(undefined, () => {});
-    } else {
-      supabase.from("game_students").update({ lives: (target.lives ?? 1) + 1 }).eq("id", targetId).then(undefined, () => {});
-    }
+    supabase.rpc("dodgeball_add_life", { p_student_id: targetId }).then(undefined, () => {});
     setQSeed(s => s + 1);
     setPhase("question");
   };

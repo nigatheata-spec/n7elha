@@ -28,7 +28,7 @@ export const VOID_CASH_PENALTY_PCT = 10;
 
 // ── Streak → multiplier (shared ladder across modes) ──────────────────────
 export const streakMultiplier = (streak: number): number =>
-  streak >= 8 ? 5 : streak >= 5 ? 3 : streak >= 2 ? 2 : 1;
+  streak >= 8 ? 4 : streak >= 5 ? 3 : streak >= 2 ? 2 : 1;
 
 // ── Tab 1: economy upgrades ───────────────────────────────────────────────
 export const INCOME_TIERS: { level: 1 | 2 | 3 | 4 | 5; cost: number; payout: number; nameEn: string; nameAr: string }[] = [

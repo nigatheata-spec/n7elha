@@ -179,7 +179,10 @@ const DontLookDownGame = ({ sessionId, studentId }: Props) => {
     toast.error(lost > 0
       ? (ar ? `سقطت! -$${lost}` : `You fell! -$${lost}`)
       : (ar ? "سقطت!" : "You fell!"));
-    supabase.from("game_students").update({ crypto: remaining }).eq("id", m.id).then(undefined, () => {});
+    // Atomic (dld_void_fall migration): the physics loop keeps running under
+    // the shop/quiz overlays, so a fall can land mid-purchase or mid-answer
+    // for the same player — this can't clobber that concurrent write anymore.
+    supabase.rpc("dld_void_fall", { p_student_id: m.id, p_loss_pct: pct }).then(undefined, () => {});
   }, [ar]);
 
   // ── Physics + render loop ─────────────────────────────────────────────────
@@ -425,11 +428,12 @@ const DontLookDownGame = ({ sessionId, studentId }: Props) => {
     setPicked(idx);
     const correct = idx === currentQ.correct_index;
 
-    let newStreak: number, newCash: number;
+    let newStreak: number, newCash: number, cashDelta = 0;
     if (correct) {
       newStreak = (me.streak ?? 0) + 1;
       const m = streakMultiplier(newStreak);
-      newCash = (me.crypto ?? 0) + incomeTier.payout * m;
+      cashDelta = incomeTier.payout * m;
+      newCash = (me.crypto ?? 0) + cashDelta;
       const gain = ENERGY.rewardPerCorrect * m;
       const p = pRef.current;
       p.energy = Math.min(maxEnergy, p.energy + gain);
@@ -446,7 +450,11 @@ const DontLookDownGame = ({ sessionId, studentId }: Props) => {
     if (correct) updates.correct_answers = (me.correct_answers ?? 0) + 1;
     localWriteAtRef.current = Date.now();
     setMe((prev: any) => ({ ...prev, ...updates }));
-    supabase.from("game_students").update(updates).eq("id", me.id).then(undefined, () => {});
+    // Atomic (dld_apply_answer migration) — see handleVoidFall's note above.
+    supabase.rpc("dld_apply_answer", {
+      p_student_id: me.id, p_correct: correct,
+      p_drop_by: streakIns.dropBy, p_cash_delta: cashDelta, p_loss_pct: multIns.lossPct,
+    }).then(undefined, () => {});
     supabase.from("question_responses").insert({
       session_id: sessionId, student_id: me.id, question_id: currentQ.id,
       question_index: 0, answer_index: idx, is_correct: correct,
@@ -456,6 +464,10 @@ const DontLookDownGame = ({ sessionId, studentId }: Props) => {
   };
 
   // ── Purchases ─────────────────────────────────────────────────────────────
+  // Atomic + affordability-checked server-side (dld_spend migration): the
+  // local `cash < cost` guard below can pass on a stale balance (a void fall
+  // or a wrong answer can land between render and tap), so the DB re-checks
+  // at write time and returns no rows if it's no longer affordable.
   const buy = (patch: any, cost: number, label: string) => {
     if (!me || cash < cost || buyingRef.current) return;
     buyingRef.current = true;
@@ -463,7 +475,17 @@ const DontLookDownGame = ({ sessionId, studentId }: Props) => {
     localWriteAtRef.current = Date.now();
     setMe((prev: any) => ({ ...prev, ...next }));
     toast.success(label);
-    supabase.from("game_students").update(next).eq("id", me.id).then(undefined, () => {});
+    supabase.rpc("dld_spend", {
+      p_student_id: me.id, p_cost: cost,
+      p_income_tier: patch.income_tier ?? null,
+      p_streak_drain_tier: patch.streak_drain_tier ?? null,
+      p_cash_insurance_tier: patch.cash_insurance_tier ?? null,
+      p_energy_tier: patch.energy_tier ?? null,
+      p_battery_tier: patch.battery_tier ?? null,
+      p_double_jump: patch.double_jump ?? null,
+    }).then(({ data, error }: any) => {
+      if (!error && (!data || data.length === 0)) toast.error(ar ? "لم تعد تملك ما يكفي" : "No longer affordable");
+    }, () => {});
     setTimeout(() => { buyingRef.current = false; }, 400);
   };
 
@@ -475,7 +497,9 @@ const DontLookDownGame = ({ sessionId, studentId }: Props) => {
     localWriteAtRef.current = Date.now();
     setMe((prev: any) => ({ ...prev, crypto: remaining }));
     toast.success(ar ? "سقوط الريشة مفعّل!" : "Feather Fall active!");
-    supabase.from("game_students").update({ crypto: remaining }).eq("id", me.id).then(undefined, () => {});
+    supabase.rpc("dld_spend", { p_student_id: me.id, p_cost: FEATHER_FALL_COST }).then(({ data, error }: any) => {
+      if (!error && (!data || data.length === 0)) toast.error(ar ? "لم تعد تملك ما يكفي" : "No longer affordable");
+    }, () => {});
     setShowShop(false);
     setTimeout(() => { buyingRef.current = false; }, 400);
   };

@@ -314,7 +314,82 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      dodgeball_add_life: {
+        Args: { p_student_id: string }
+        Returns: { lives: number; eliminated: boolean }[]
+      }
+      dodgeball_apply_answer: {
+        Args: { p_student_id: string; p_correct: boolean }
+        Returns: { lives: number; eliminated: boolean }[]
+      }
+      hvz_apply_answer: {
+        Args: {
+          p_student_id: string
+          p_correct: boolean
+          p_streak_protected: boolean
+          p_drop_by: number | null
+          p_cash_delta: number
+          p_loss_pct: number
+        }
+        Returns: { crypto: number; streak: number; correct_answers: number; total_answers: number }[]
+      }
+      hvz_spend_cash: {
+        Args: {
+          p_student_id: string
+          p_cost: number
+          p_income_tier?: number | null
+          p_streak_drain_tier?: number | null
+          p_cash_insurance_tier?: number | null
+        }
+        Returns: { crypto: number; income_tier: number; streak_drain_tier: number; cash_insurance_tier: number }[]
+      }
+      hvz_credit_cash: {
+        Args: { p_student_id: string; p_amount: number }
+        Returns: { crypto: number }[]
+      }
+      lava_floor_apply_answer: {
+        Args: { p_student_id: string; p_correct: boolean; p_payout: number }
+        Returns: { crypto: number; streak: number; correct_answers: number; total_answers: number; hacks_received: number }[]
+      }
+      lava_floor_spend: {
+        Args: { p_student_id: string; p_cost: number; p_income_tier?: number | null; p_streak_tier?: number | null }
+        Returns: { crypto: number; income_tier: number; streak_tier: number }[]
+      }
+      dld_apply_answer: {
+        Args: {
+          p_student_id: string
+          p_correct: boolean
+          p_drop_by: number | null
+          p_cash_delta: number
+          p_loss_pct: number
+        }
+        Returns: { crypto: number; streak: number; correct_answers: number; total_answers: number }[]
+      }
+      dld_void_fall: {
+        Args: { p_student_id: string; p_loss_pct: number }
+        Returns: { crypto: number }[]
+      }
+      dld_spend: {
+        Args: {
+          p_student_id: string
+          p_cost: number
+          p_income_tier?: number | null
+          p_streak_drain_tier?: number | null
+          p_cash_insurance_tier?: number | null
+          p_energy_tier?: number | null
+          p_battery_tier?: number | null
+          p_double_jump?: boolean | null
+        }
+        Returns: {
+          crypto: number
+          income_tier: number
+          streak_drain_tier: number
+          cash_insurance_tier: number
+          energy_tier: number
+          battery_tier: number
+          double_jump: boolean
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

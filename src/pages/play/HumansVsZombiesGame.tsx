@@ -306,9 +306,14 @@ const HumansVsZombiesGame = ({ sessionId, studentId }: Props) => {
     const drainTier   = STREAK_DRAIN_TIERS.find(t => t.level === (me.streak_drain_tier ?? 1)) ?? STREAK_DRAIN_TIERS[0];
     const insuranceTier = CASH_INSURANCE_TIERS.find(t => t.level === (me.cash_insurance_tier ?? 1)) ?? CASH_INSURANCE_TIERS[0];
 
+    // Predicted streak/cash for the toast + optimistic local UI only — the
+    // actual write is atomic server-side (see hvz_apply_answer migration) so
+    // a stale `me` here can't clobber a concurrent shop purchase or steal
+    // credit landing on the same row.
     let newStreak: number;
     let newCash: number;
     let stolen = 0;
+    let cashDelta = 0;
     if (correct) {
       newStreak = (me.streak ?? 0) + 1;
       let payout = incomeTier.payout * streakMultiplier(newStreak) * (cashMultActive ? 2 : 1);
@@ -316,6 +321,7 @@ const HumansVsZombiesGame = ({ sessionId, studentId }: Props) => {
         stolen = Math.floor(payout * activeStealOnMyTeam.pct / 100);
         payout -= stolen;
       }
+      cashDelta = payout;
       newCash = (me.crypto ?? 0) + payout;
     } else if (streakLockActive) {
       newStreak = me.streak ?? 0; // team buff — no streak loss on wrong answer
@@ -341,13 +347,12 @@ const HumansVsZombiesGame = ({ sessionId, studentId }: Props) => {
       const msg = lost > 0 ? (ar ? `-$${lost} من المحفظة` : `-$${lost} from wallet`) : (ar ? "إجابة خاطئة" : "Wrong answer");
       toast.error(streakLockActive ? `${msg} (${ar ? "السلسلة محمية" : "streak protected"})` : msg);
     }
-    supabase.from("game_students").update(updates).eq("id", me.id).then(undefined, () => {});
+    supabase.rpc("hvz_apply_answer", {
+      p_student_id: me.id, p_correct: correct, p_streak_protected: streakLockActive,
+      p_drop_by: drainTier.dropBy, p_cash_delta: cashDelta, p_loss_pct: insuranceTier.lossPct,
+    }).then(undefined, () => {});
     if (stolen > 0 && activeStealOnMyTeam) {
-      supabase.from("game_students").select("crypto").eq("id", activeStealOnMyTeam.beneficiaryId).maybeSingle()
-        .then((res: any) => {
-          const beneficiaryCash = res?.data?.crypto ?? 0;
-          supabase.from("game_students").update({ crypto: beneficiaryCash + stolen }).eq("id", activeStealOnMyTeam.beneficiaryId).then(undefined, () => {});
-        }, () => {});
+      supabase.rpc("hvz_credit_cash", { p_student_id: activeStealOnMyTeam.beneficiaryId, p_amount: stolen }).then(undefined, () => {});
     }
     supabase.from("question_responses").insert({
       session_id: sessionId, student_id: me.id, question_id: currentQ.id,
@@ -383,7 +388,18 @@ const HumansVsZombiesGame = ({ sessionId, studentId }: Props) => {
     localWriteAtRef.current = Date.now();
     setMe((prev: any) => ({ ...prev, ...patch }));
     toast.success(ar ? `تمت الترقية: ${t.nameAr}` : `Upgraded: ${t.nameEn}`);
-    supabase.from("game_students").update(patch).eq("id", me.id).then(undefined, () => {});
+    // Atomic + affordability-checked server-side (hvz_spend_cash): the local
+    // `cash < t.cost` check above can pass on a stale balance (e.g. right
+    // after being stolen from), so the DB re-checks at write time and simply
+    // returns no rows if it's no longer affordable.
+    supabase.rpc("hvz_spend_cash", {
+      p_student_id: me.id, p_cost: t.cost,
+      p_income_tier: kind === "income" ? t.level : null,
+      p_streak_drain_tier: kind === "drain" ? t.level : null,
+      p_cash_insurance_tier: kind === "insurance" ? t.level : null,
+    }).then(({ data, error }: any) => {
+      if (!error && (!data || data.length === 0)) toast.error(ar ? "لم تعد تملك ما يكفي" : "No longer affordable");
+    }, () => {});
     setTimeout(() => { buyingRef.current = false; }, 500);
   };
 
@@ -396,7 +412,9 @@ const HumansVsZombiesGame = ({ sessionId, studentId }: Props) => {
     const remaining = Math.max(0, cash - action.cost);
     localWriteAtRef.current = Date.now();
     setMe((prev: any) => ({ ...prev, crypto: remaining }));
-    supabase.from("game_students").update({ crypto: remaining }).eq("id", me.id).then(undefined, () => {});
+    supabase.rpc("hvz_spend_cash", { p_student_id: me.id, p_cost: action.cost }).then(({ data, error }: any) => {
+      if (!error && (!data || data.length === 0)) toast.error(ar ? "لم تعد تملك ما يكفي" : "No longer affordable");
+    }, () => {});
     const effect: any = {};
     if (action.damageAmount) effect.damage = { targetTeam: enemyTeam, amount: action.damageAmount };
     if (action.stealPct) effect.steal = { targetTeam: enemyTeam, pct: action.stealPct, ms: action.stealMs, beneficiaryId: me.id, beneficiaryTeam: team };

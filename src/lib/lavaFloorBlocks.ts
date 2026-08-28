@@ -158,10 +158,10 @@ export const STREAK_TIERS: {
   nameEn: string;
   nameAr: string;
 }[] = [
-  { level: 1, cost: 0,    ladder: [1, 2, 3, 5],   nameEn: "Steady Hands", nameAr: "يد ثابتة" },
-  { level: 2, cost: 50,   ladder: [1, 3, 4, 7],   nameEn: "Lucky Charm",  nameAr: "تعويذة الحظ" },
-  { level: 3, cost: 500,  ladder: [1, 4, 6, 10],  nameEn: "Fire Gloves",  nameAr: "قفازات النار" },
-  { level: 4, cost: 2500, ladder: [1, 5, 8, 15],  nameEn: "Inferno Focus", nameAr: "تركيز الجحيم" },
+  { level: 1, cost: 0,    ladder: [1, 2, 3, 4],   nameEn: "Steady Hands", nameAr: "يد ثابتة" },
+  { level: 2, cost: 50,   ladder: [1, 3, 4, 6],   nameEn: "Lucky Charm",  nameAr: "تعويذة الحظ" },
+  { level: 3, cost: 500,  ladder: [1, 4, 5, 8],   nameEn: "Fire Gloves",  nameAr: "قفازات النار" },
+  { level: 4, cost: 2500, ladder: [1, 5, 7, 10],  nameEn: "Inferno Focus", nameAr: "تركيز الجحيم" },
 ];
 
 const ladderFor = (streakTier: number): [number, number, number, number] =>

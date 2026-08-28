@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, lazy, Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { HelmetProvider } from "react-helmet-async";
 import { BrowserRouter, Route, Routes, Navigate, useLocation } from "react-router-dom";
@@ -9,26 +9,34 @@ import { AuthProvider } from "@/lib/auth";
 import { LangTransitionOverlay } from "@/components/LangTransitionOverlay";
 import { RequireAuth } from "@/components/RequireAuth";
 import { TeacherLayout } from "@/components/TeacherLayout";
-import Landing from "./pages/Landing";
-import Services from "./pages/Services";
-import About from "./pages/About";
-import Partners from "./pages/Partners";
-import Schools from "./pages/Schools";
-import Blog from "./pages/Blog";
-import BlogPost from "./pages/BlogPost";
-import Auth from "./pages/Auth";
-import Dashboard from "./pages/teacher/Dashboard";
-import Quizzes from "./pages/teacher/Quizzes";
-import QuizEditor from "./pages/teacher/QuizEditor";
-import HostGame from "./pages/teacher/HostGame";
-import HostedGames from "./pages/teacher/HostedGames";
-import GameMonitor from "./pages/teacher/GameMonitor";
-import GameResults from "./pages/teacher/GameResults";
-import { Analytics, SettingsPage } from "./pages/teacher/Stubs";
-import Join from "./pages/play/Join";
-import Game from "./pages/play/Game";
-import ScanSquare from "./pages/play/ScanSquare";
-import NotFound from "./pages/NotFound";
+import { PageLoader } from "@/components/PageLoader";
+
+// Every route is its own chunk instead of one monolith bundle: a first-time
+// visitor to the marketing site (the whole point of the SEO work — fast,
+// indexable, decent on Saudi mobile networks) used to download the quiz
+// editor, the teacher dashboard, and all nine game-mode canvases/physics
+// engines before ever seeing the landing page.
+const Landing     = lazy(() => import("./pages/Landing"));
+const Services    = lazy(() => import("./pages/Services"));
+const About       = lazy(() => import("./pages/About"));
+const Partners    = lazy(() => import("./pages/Partners"));
+const Schools     = lazy(() => import("./pages/Schools"));
+const Blog        = lazy(() => import("./pages/Blog"));
+const BlogPost    = lazy(() => import("./pages/BlogPost"));
+const Auth        = lazy(() => import("./pages/Auth"));
+const Dashboard   = lazy(() => import("./pages/teacher/Dashboard"));
+const Quizzes     = lazy(() => import("./pages/teacher/Quizzes"));
+const QuizEditor  = lazy(() => import("./pages/teacher/QuizEditor"));
+const HostGame    = lazy(() => import("./pages/teacher/HostGame"));
+const HostedGames = lazy(() => import("./pages/teacher/HostedGames"));
+const GameMonitor = lazy(() => import("./pages/teacher/GameMonitor"));
+const GameResults = lazy(() => import("./pages/teacher/GameResults"));
+const Analytics    = lazy(() => import("./pages/teacher/Stubs").then(m => ({ default: m.Analytics })));
+const SettingsPage = lazy(() => import("./pages/teacher/Stubs").then(m => ({ default: m.SettingsPage })));
+const Join        = lazy(() => import("./pages/play/Join"));
+const Game        = lazy(() => import("./pages/play/Game"));
+const ScanSquare  = lazy(() => import("./pages/play/ScanSquare"));
+const NotFound    = lazy(() => import("./pages/NotFound"));
 
 import { ScrollToTop } from "@/components/ScrollToTop";
 
@@ -63,6 +71,7 @@ const AppContent = () => {
           <ScrollToTop />
           {/* keyed on pathname so the enter animation replays per navigation */}
           <div key={location.pathname} className="page-enter">
+          <Suspense fallback={<PageLoader />}>
           <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/services" element={<Services />} />
@@ -91,6 +100,7 @@ const AppContent = () => {
             <Route path="/index" element={<Navigate to="/" replace />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </Suspense>
           </div>
         </AuthProvider>
       </div>

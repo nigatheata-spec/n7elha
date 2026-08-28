@@ -51,7 +51,7 @@ export const CASH_INSURANCE_TIERS: {
 ];
 
 export const streakMultiplier = (streak: number): number =>
-  streak >= 8 ? 5 : streak >= 5 ? 3 : streak >= 2 ? 2 : 1;
+  streak >= 8 ? 4 : streak >= 5 ? 3 : streak >= 2 ? 2 : 1;
 
 export type BattleActionKey =
   | "vaccine_dose" | "fortified_wall" | "expand_outpost" | "emp_blast" | "vaccine_surge"
