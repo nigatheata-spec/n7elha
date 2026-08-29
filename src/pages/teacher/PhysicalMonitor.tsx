@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/sonner";
 import { Check, ChevronRight, QrCode, Square } from "lucide-react";
 import { SQUARE_TYPES, parseKitQR, parseSquareQR, dispensePhysicalQuestion, type SquareType, type PhysicalQuestion } from "@/lib/physicalGames";
+import { useConfirmDialog } from "@/hooks/use-confirm-dialog";
 
 interface Props { session: any; sessionId: string; }
 
@@ -13,6 +14,7 @@ type Phase = "kit" | "ready" | "question" | "rest";
 
 const PhysicalMonitor = ({ session, sessionId }: Props) => {
   const nav = useNavigate();
+  const { confirm, ConfirmDialog } = useConfirmDialog();
   const { i18n } = useTranslation();
   const ar = (session?.settings?.lang ?? i18n.language) === "ar";
 
@@ -115,13 +117,14 @@ const PhysicalMonitor = ({ session, sessionId }: Props) => {
   const backToScan = () => { setCurrent(null); setPhase("ready"); };
 
   const endGame = async () => {
-    if (!confirm(ar ? "إنهاء اللعبة الآن؟" : "End the game now?")) return;
+    if (!(await confirm(ar ? "إنهاء اللعبة الآن؟" : "End the game now?"))) return;
     await supabase.from("game_sessions").update({ status: "finished", ended_at: new Date().toISOString() }).eq("id", sessionId);
     nav("/app");
   };
 
   return (
     <div className="min-h-full p-4 md:p-8" style={{ background: "hsl(var(--background))" }} dir={ar ? "rtl" : "ltr"}>
+      {ConfirmDialog}
       <div className="max-w-md mx-auto space-y-5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold border-2 border-[hsl(var(--nb-border))] bg-white shadow-[2px_2px_0_0_hsl(var(--nb-border))] text-[#5b4636]">

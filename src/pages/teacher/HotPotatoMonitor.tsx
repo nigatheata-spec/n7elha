@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Square, Maximize, Trophy } from "lucide-react";
 import { BombIcon } from "@/components/BombIcon";
+import { useConfirmDialog } from "@/hooks/use-confirm-dialog";
 
 const fmt = (n: number) => n.toLocaleString();
 
@@ -43,6 +44,7 @@ const randomBombMs = () => 30_000 + Math.random() * 60_000;
 
 const HotPotatoMonitor = ({ session, sessionId }: Props) => {
   const nav = useNavigate();
+  const { confirm, ConfirmDialog } = useConfirmDialog();
   const { i18n } = useTranslation();
   const ar = (session?.settings?.lang ?? i18n.language) === "ar";
   const [students, setStudents] = useState<any[]>([]);
@@ -155,7 +157,7 @@ const HotPotatoMonitor = ({ session, sessionId }: Props) => {
 
   const endNow = async () => {
     if (!session) return;
-    if (!confirm(ar ? "إنهاء اللعبة الآن؟" : "End the game now?")) return;
+    if (!(await confirm(ar ? "إنهاء اللعبة الآن؟" : "End the game now?"))) return;
     await supabase.from("game_sessions").update({ status: "finished", ended_at: new Date().toISOString() }).eq("id", session.id);
     nav(`/app/games/${session.id}/results`);
   };
@@ -222,6 +224,7 @@ const HotPotatoMonitor = ({ session, sessionId }: Props) => {
   return (
     <div className="theme-hotpotato fixed inset-0 flex flex-col text-foreground overflow-hidden"
       style={{ background: GUN_BG, fontFamily: "monospace" }}>
+      {ConfirmDialog}
 
       <div className="pcb-trace-bg pointer-events-none absolute inset-0 z-0" />
 

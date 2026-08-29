@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Bitcoin, Square, Maximize, ArrowRight, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Seo } from "@/components/Seo";
+import { useConfirmDialog } from "@/hooks/use-confirm-dialog";
 import DodgeballMonitor from "./DodgeballMonitor";
 import HotPotatoMonitor from "./HotPotatoMonitor";
 import LavaFloorMonitor from "./LavaFloorMonitor";
@@ -28,6 +29,7 @@ const GREEN_FAINT = "hsl(120 40% 22%)";
 const GameMonitor = () => {
   const { sessionId } = useParams();
   const nav = useNavigate();
+  const { confirm, ConfirmDialog } = useConfirmDialog();
   const [session, setSession] = useState<any>(null);
   const [showLoading, setShowLoading] = useState(false);
   const [students, setStudents] = useState<any[]>([]);
@@ -91,7 +93,7 @@ const GameMonitor = () => {
 
   const endNow = async () => {
     if (!session) return;
-    if (!confirm(ar ? "إنهاء اللعبة الآن؟" : "End the game now?")) return;
+    if (!(await confirm(ar ? "إنهاء اللعبة الآن؟" : "End the game now?"))) return;
     await supabase.from("game_sessions").update({ status: "finished", ended_at: new Date().toISOString() }).eq("id", session.id);
     nav(`/app/games/${session.id}/results`);
   };
@@ -138,6 +140,7 @@ const GameMonitor = () => {
       className="fixed inset-0 overflow-hidden font-mono flex flex-col"
       style={{ background: "#050505", color: GREEN }}
     >
+      {ConfirmDialog}
       <Seo
         path={`/app/games/${sessionId}/monitor`}
         titleAr="مراقبة الجلسة"

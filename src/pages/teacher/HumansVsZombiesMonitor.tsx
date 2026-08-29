@@ -10,6 +10,7 @@ import { PixelShield } from "@/components/PixelIcons";
 import { BATTLE_ACTIONS, START_HEALTH, HEALTH_DRAIN_PER_SEC, DAY_CYCLE_MS, WIN_DAYS, type Team, type BattleActionKey } from "@/lib/humansVsZombies";
 import { drawBattle, type Fighter } from "@/lib/hvzBattleRender";
 import battlefieldUrl from "@/assets/hvz/battlefield.jpg";
+import { useConfirmDialog } from "@/hooks/use-confirm-dialog";
 import knightUrl from "@/assets/hvz/knight.png";
 import zombieUrl from "@/assets/hvz/zombie.png";
 
@@ -89,6 +90,7 @@ interface Props { session: any; sessionId: string; }
 
 const HumansVsZombiesMonitor = ({ session, sessionId }: Props) => {
   const nav = useNavigate();
+  const { confirm, ConfirmDialog } = useConfirmDialog();
   const { i18n } = useTranslation();
   const ar = (session?.settings?.lang ?? i18n.language) === "ar";
   const [students, setStudents] = useState<any[]>([]);
@@ -240,7 +242,7 @@ const HumansVsZombiesMonitor = ({ session, sessionId }: Props) => {
   }, [session?.status]);
 
   const endNow = async () => {
-    if (!session || !confirm(ar ? "إنهاء اللعبة الآن؟" : "End the game now?")) return;
+    if (!session || !(await confirm(ar ? "إنهاء اللعبة الآن؟" : "End the game now?"))) return;
     const winner = health.human >= health.zombie ? "humans" : "zombies";
     await supabase.from("game_sessions").update({
       status: "finished", ended_at: new Date().toISOString(),
@@ -281,6 +283,7 @@ const HumansVsZombiesMonitor = ({ session, sessionId }: Props) => {
 
   return (
     <div className="theme-hvz fixed inset-0 text-foreground overflow-hidden font-mono" style={{ background: "#0A0F0A" }}>
+      {ConfirmDialog}
       <div className="h-full flex flex-col p-4 gap-3">
         {/* Top bar */}
         <div className="flex items-center justify-between text-xs gap-3 shrink-0">

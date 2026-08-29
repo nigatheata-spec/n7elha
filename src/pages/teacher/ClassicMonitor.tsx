@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Trophy, Square, Maximize } from "lucide-react";
+import { useConfirmDialog } from "@/hooks/use-confirm-dialog";
 
 const fmt = (n: number) => n.toLocaleString();
 
@@ -28,6 +29,7 @@ interface Props { session: any; sessionId: string; }
 
 const ClassicMonitor = ({ session, sessionId }: Props) => {
   const nav = useNavigate();
+  const { confirm, ConfirmDialog } = useConfirmDialog();
   const [students, setStudents] = useState<any[]>([]);
   const [now, setNow] = useState(Date.now());
   const [ending, setEnding] = useState(false);
@@ -70,7 +72,7 @@ const ClassicMonitor = ({ session, sessionId }: Props) => {
   }, [session?.status]);
 
   const endNow = async () => {
-    if (!confirm("End the game now?")) return;
+    if (!(await confirm("End the game now?"))) return;
     await supabase.from("game_sessions").update({ status: "finished", ended_at: new Date().toISOString() }).eq("id", sessionId);
     nav(`/app/games/${sessionId}/results`);
   };
@@ -86,6 +88,7 @@ const ClassicMonitor = ({ session, sessionId }: Props) => {
 
   return (
     <div className="fixed inset-0 overflow-hidden flex flex-col" style={{ background: "hsl(var(--background))", color: "#3F5A63" }}>
+      {ConfirmDialog}
       <header className="shrink-0 flex items-center justify-between px-6 py-4">
         <div>
           <div className="text-[11px] font-bold tracking-widest" style={{ color: "hsl(199 15% 50%)" }}>

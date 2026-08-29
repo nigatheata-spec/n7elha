@@ -9,6 +9,7 @@ import { PixelShield, PixelFlame, PixelHouse, PixelPlank, PixelBrick, PixelStair
 import { PixelLavaCrest, PixelLavaBody } from "@/components/PixelLava";
 import { PixelRockCeiling } from "@/components/PixelRockCeiling";
 import { BLOCK_SPRITES, spriteRuns, type BlockKey } from "@/lib/lavaFloorBlocks";
+import { useConfirmDialog } from "@/hooks/use-confirm-dialog";
 
 type Build = { id: string; student_id: string; student_name: string; block_type: BlockKey; height_added: number; cost: number; created_at: string };
 const BLOCK_ICON: Record<BlockKey, typeof PixelPlank> = {
@@ -63,6 +64,7 @@ interface Props { session: any; sessionId: string; }
 
 const LavaFloorMonitor = ({ session, sessionId }: Props) => {
   const nav = useNavigate();
+  const { confirm, ConfirmDialog } = useConfirmDialog();
   const { i18n } = useTranslation();
   const ar = (session?.settings?.lang ?? i18n.language) === "ar";
   const [students, setStudents]     = useState<any[]>([]);
@@ -216,7 +218,7 @@ const LavaFloorMonitor = ({ session, sessionId }: Props) => {
   }, [session?.status]);
 
   const endNow = async () => {
-    if (!session || !confirm(ar ? "إنهاء اللعبة الآن؟" : "End the game now?")) return;
+    if (!session || !(await confirm(ar ? "إنهاء اللعبة الآن؟" : "End the game now?"))) return;
     await supabase.from("game_sessions").update({
       status: "finished", ended_at: new Date().toISOString(),
       settings: { ...settingsRef.current },
@@ -253,6 +255,7 @@ const LavaFloorMonitor = ({ session, sessionId }: Props) => {
   return (
     <div className="theme-lavafloor fixed inset-0 text-foreground overflow-hidden font-mono"
       style={{ background: "#0A0610" }}>
+      {ConfirmDialog}
 
       {/* ── CAVE ROCK CEILING — static pixel-art background ──────────── */}
       <PixelRockCeiling className="absolute inset-0" />

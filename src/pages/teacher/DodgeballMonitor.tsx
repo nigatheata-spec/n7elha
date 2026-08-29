@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { Trophy, Timer, Square, Maximize, Zap } from "lucide-react";
 import { AsteroidCard } from "@/components/AsteroidCard";
 import { SpaceBackdrop } from "@/components/SpaceBackdrop";
+import { useConfirmDialog } from "@/hooks/use-confirm-dialog";
 
 // ── Letter avatar ─────────────────────────────────────────────────────────────
 const AV_COLORS = ["#2563eb","#16a34a","#b45309","#dc2626","#7c3aed","#0891b2","#c2410c","#0f766e"];
@@ -81,6 +82,7 @@ const TIMER_MAX_MS = 15_000;
 
 const DodgeballMonitor = ({ session, sessionId }: Props) => {
   const nav = useNavigate();
+  const { confirm, ConfirmDialog } = useConfirmDialog();
   const { i18n } = useTranslation();
   const ar = (session?.settings?.lang ?? i18n.language) === "ar";
   const [students, setStudents] = useState<any[]>([]);
@@ -182,7 +184,7 @@ const DodgeballMonitor = ({ session, sessionId }: Props) => {
   };
 
   const endGame = async () => {
-    if (!confirm(ar ? "إنهاء اللعبة الآن؟" : "End the game now?")) return;
+    if (!(await confirm(ar ? "إنهاء اللعبة الآن؟" : "End the game now?"))) return;
     await supabase.from("game_sessions").update({ status: "finished", ended_at: new Date().toISOString() }).eq("id", sessionId);
     nav(`/app/games/${sessionId}/results`);
   };
@@ -202,6 +204,7 @@ const DodgeballMonitor = ({ session, sessionId }: Props) => {
   return (
     <div className="theme-dodgeball fixed inset-0 text-foreground overflow-hidden"
       style={{ background: "radial-gradient(ellipse at 50% -10%, hsl(270 50% 14%) 0%, hsl(255 40% 7%) 55%, hsl(240 35% 5%) 100%)" }}>
+      {ConfirmDialog}
 
       {/* Starfield — same as student screen */}
       {STARS.map((s, i) => (

@@ -7,6 +7,7 @@ import { Square, Maximize, ChevronUp, Trophy } from "lucide-react";
 import { PixelShield } from "@/components/PixelIcons";
 import { PLATFORMS, SUMMIT_Y, WORLD, colorFor } from "@/lib/dontLookDown";
 import { drawSky, drawCloud, drawPlatform, drawCharacter, drawNameTag, drawTopFog, CLOUDS } from "@/lib/dontLookDownRender";
+import { useConfirmDialog } from "@/hooks/use-confirm-dialog";
 
 type Peer = { id: string; name: string; x: number; y: number; t: number };
 
@@ -14,6 +15,7 @@ interface Props { session: any; sessionId: string; }
 
 const DontLookDownMonitor = ({ session, sessionId }: Props) => {
   const nav = useNavigate();
+  const { confirm, ConfirmDialog } = useConfirmDialog();
   const { i18n } = useTranslation();
   const ar = (session?.settings?.lang ?? i18n.language) === "ar";
   const [students, setStudents] = useState<any[]>([]);
@@ -104,7 +106,7 @@ const DontLookDownMonitor = ({ session, sessionId }: Props) => {
   }, []);
 
   const endNow = async () => {
-    if (!session || !confirm(ar ? "إنهاء اللعبة الآن؟" : "End the game now?")) return;
+    if (!session || !(await confirm(ar ? "إنهاء اللعبة الآن؟" : "End the game now?"))) return;
     await supabase.from("game_sessions").update({
       status: "finished", ended_at: new Date().toISOString(),
     }).eq("id", sessionId);
@@ -124,6 +126,7 @@ const DontLookDownMonitor = ({ session, sessionId }: Props) => {
 
   return (
     <div className="fixed inset-0 overflow-hidden font-mono text-white" style={{ background: "#0B1020" }}>
+      {ConfirmDialog}
       <div className="h-full flex flex-col p-4 gap-3">
         <div className="flex items-center justify-between text-xs gap-3 shrink-0">
           <div style={{ color: "rgba(255,255,255,0.55)" }}>

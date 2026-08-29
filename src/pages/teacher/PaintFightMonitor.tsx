@@ -13,6 +13,7 @@ import {
   resizeCanvas, drawArenaBackground, drawPlayerRoller, drawNameTag, hueFill,
   createPaintLayer, paintCells, blitPaint, rollerIconSize,
 } from "@/lib/paintFightRender";
+import { useConfirmDialog } from "@/hooks/use-confirm-dialog";
 
 // ── Paint Fight, teacher/projector view ─────────────────────────────────────
 // Same single-source-of-truth design as the student view: the arena picture is
@@ -33,6 +34,7 @@ interface Props { session: any; sessionId: string; }
 
 const PaintFightMonitor = ({ session, sessionId }: Props) => {
   const nav = useNavigate();
+  const { confirm, ConfirmDialog } = useConfirmDialog();
   const { i18n } = useTranslation();
   const ar = (session?.settings?.lang ?? i18n.language) === "ar";
   const cols: number = session?.settings?.arenaCols ?? 40;
@@ -173,8 +175,8 @@ const PaintFightMonitor = ({ session, sessionId }: Props) => {
     if (session?.status === "finished") nav(`/app/games/${sessionId}/results`, { replace: true });
   }, [session?.status]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const confirmEnd = () => {
-    if (!confirm(ar ? "إنهاء اللعبة الآن؟" : "End the game now?")) return;
+  const confirmEnd = async () => {
+    if (!(await confirm(ar ? "إنهاء اللعبة الآن؟" : "End the game now?"))) return;
     endGame(true);
   };
 
@@ -191,6 +193,7 @@ const PaintFightMonitor = ({ session, sessionId }: Props) => {
 
   return (
     <div className="fixed inset-0 overflow-hidden font-mono" style={{ background: "#3F5A63", color: "#fff" }}>
+      {ConfirmDialog}
       <div className="h-full flex flex-col p-4 gap-3">
         <div className="flex items-center justify-between text-xs gap-3 shrink-0">
           <div className="text-white/60">
