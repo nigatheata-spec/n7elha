@@ -143,18 +143,20 @@ export const ProductPreview = () => {
                 </div>
 
                 {/* stats */}
-                <div className="mt-3 grid grid-cols-3 gap-2">
-                  <div className="rounded-lg border-2 border-[hsl(var(--nb-border))] bg-white p-2 shadow-[2px_2px_0_0_hsl(var(--nb-border))]">
-                    <p className="text-[9px] font-medium text-black/45 leading-tight">{t.stat1Label}</p>
-                    <p className="mt-1 text-[15px] font-black text-[#3a9e6e]">82%</p>
+                <div className="mt-4 flex items-start">
+                  <div className="flex-1 px-1">
+                    <p className="text-[16px] font-black text-[#3a9e6e]">82%</p>
+                    <p className="mt-0.5 text-[9px] font-medium text-black/45 leading-tight">{t.stat1Label}</p>
                   </div>
-                  <div className="rounded-lg border-2 border-[hsl(var(--nb-border))] bg-white p-2 shadow-[2px_2px_0_0_hsl(var(--nb-border))]">
-                    <p className="text-[9px] font-medium text-black/45 leading-tight">{t.stat2Label}</p>
-                    <p className="mt-1 text-[15px] font-black text-[#3F5A63]">126</p>
+                  <div className="w-px self-stretch bg-black/10" />
+                  <div className="flex-1 px-2.5">
+                    <p className="text-[16px] font-black text-[#3F5A63]">126</p>
+                    <p className="mt-0.5 text-[9px] font-medium text-black/45 leading-tight">{t.stat2Label}</p>
                   </div>
-                  <div className="rounded-lg border-2 border-[hsl(var(--nb-border))] bg-white p-2 shadow-[2px_2px_0_0_hsl(var(--nb-border))]">
-                    <p className="text-[9px] font-medium text-black/45 leading-tight">{t.stat3Label}</p>
-                    <p className="mt-1 text-[15px] font-black text-[#C8783A]">7</p>
+                  <div className="w-px self-stretch bg-black/10" />
+                  <div className="flex-1 px-2.5">
+                    <p className="text-[16px] font-black text-[#C8783A]">7</p>
+                    <p className="mt-0.5 text-[9px] font-medium text-black/45 leading-tight">{t.stat3Label}</p>
                   </div>
                 </div>
 

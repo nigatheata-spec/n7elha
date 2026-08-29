@@ -4,6 +4,7 @@ import { Building2, Users, QrCode, BarChart3, ArrowUpRight } from "lucide-react"
 import { SiteNav } from "@/components/site/SiteNav";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { Seo } from "@/components/Seo";
+import { HeroProductScene } from "@/components/site/HeroProductScene";
 
 const Schools = () => {
   const { i18n } = useTranslation();
@@ -22,6 +23,10 @@ const Schools = () => {
         f3Title: "تقارير تفصيلية لكل جلسة",
         f3Desc: "بعد كل اختبار، تقرير واضح يوضح أداء كل طالب وكل سؤال على حدة، بالعربية أولًا.",
 
+        seeKicker: "شكل الحصة",
+        seeTitle: "هكذا تبدو الحصة عند التشغيل",
+        seeSub: "شاشة المعلم على البروجكتر، وجوال الطالب في يده. رمز واحد يربطهما، ولا تطبيق يُحمَّل.",
+
         ctaKicker: "الخطوة التالية",
         ctaTitle: "لنتحدث عن مدرستك",
         ctaSub: "راسلنا بعدد الصفوف والمعلمين الذين تريد تفعيل نفلها لهم، وسنرد خلال يوم عمل.",
@@ -38,6 +43,10 @@ const Schools = () => {
         f2Desc: "Physical Games mode uses a printed board and QR codes scanned by a single shared device — built for classrooms that don't have enough devices for every student.",
         f3Title: "Detailed reporting per session",
         f3Desc: "After every quiz, a clear report shows how each student performed on each question, Arabic-first.",
+
+        seeKicker: "IN THE ROOM",
+        seeTitle: "What a live session actually looks like",
+        seeSub: "The teacher's screen on the projector, the student's phone in their hand. One code links them — nothing to install.",
 
         ctaKicker: "NEXT STEP",
         ctaTitle: "Let's talk about your school",
@@ -77,6 +86,22 @@ const Schools = () => {
           <Feature icon={<Users className="h-5 w-5" />} title={t.f1Title} desc={t.f1Desc} tilt="-rotate-[0.6deg]" />
           <Feature icon={<QrCode className="h-5 w-5" />} title={t.f2Title} desc={t.f2Desc} tilt="rotate-[0.8deg]" />
           <Feature icon={<BarChart3 className="h-5 w-5" />} title={t.f3Title} desc={t.f3Desc} tilt="-rotate-[0.9deg]" />
+        </div>
+      </section>
+
+      {/* ---------------- LIVE SESSION PREVIEW ---------------- */}
+      <section className="wrap px-5 sm:px-8 md:px-14 pb-20 sm:pb-28 border-t border-black/5 pt-16 sm:pt-24">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] items-center gap-12 lg:gap-14">
+          <div className="max-w-lg">
+            <span className={`text-[12px] font-semibold text-[#8FC44A] ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`}>{t.seeKicker}</span>
+            <h2 className="mt-3 text-[26px] sm:text-[36px] tracking-tight leading-[1.15]" style={{ color: "#3F5A63", fontFamily: "'ArslanWessam', 'Almarai', sans-serif" }}>
+              {t.seeTitle}
+            </h2>
+            <p className="mt-5 text-[15px] leading-relaxed text-black/65">{t.seeSub}</p>
+          </div>
+          <div className="relative lg:pr-6">
+            <HeroProductScene isAr={isAr} />
+          </div>
         </div>
       </section>
 

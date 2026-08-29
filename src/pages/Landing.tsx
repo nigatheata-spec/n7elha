@@ -10,6 +10,24 @@ import { Seo } from "@/components/Seo";
 import heroPerson from "@/assets/hero-person.png";
 import saudiMap from "@/assets/saudi-map.svg";
 
+/* ---------- helpers ---------- */
+
+const Step = ({ n, icon, title, desc }: { n: string; icon: React.ReactNode; title: string; desc: string }) => (
+  <div className="relative">
+    <span
+      className="absolute -top-3 start-0 text-[64px] sm:text-[72px] font-black leading-none text-white/10 select-none"
+      style={{ fontFamily: "monospace" }}
+    >
+      {n}
+    </span>
+    <div className="relative pt-8">
+      <div className="h-10 w-10 rounded-full bg-background text-[#3F5A63] flex items-center justify-center">{icon}</div>
+      <h3 className="mt-5 text-[18px] font-semibold text-white">{title}</h3>
+      <p className="mt-2 text-[13.5px] leading-relaxed text-white/60">{desc}</p>
+    </div>
+  </div>
+);
+
 const Landing = () => {
   const { user } = useAuth();
   const { i18n } = useTranslation();
@@ -34,6 +52,11 @@ const Landing = () => {
         sp2: "جرّبنا المنصات الجاهزة. كانت مصممة بلغة أخرى وذهنية أخرى، والعربية فيها مجرد ترجمة أُضيفت لاحقًا. الأسئلة تنكسر، والاتجاه يختل، والتجربة تبدو غريبة عن صفوفنا.",
         sp3: "فقررنا أن نبني ما كنا نتمنى وجوده ونحن على تلك المقاعد: منصة تجعل المراجعة شيئًا ينتظره الطالب، لا شيئًا يتهرب منه. هكذا وُلدت نفلها.",
 
+        feelKicker: "ما نؤمن به",
+        feelLine1: "التفاعل مو رقم",
+        feelLine2: "في تقرير",
+        feelBody: "هو شعور يسعى له كل طالب: لحظة يرفع فيها يده بثقة، لا خوفًا من الخطأ. لحظة يضحك فيها الصف على إجابة، ويتحمّس للسؤال التالي. هذا ما نصممه، سؤالًا سؤالًا.",
+
         howKicker: "كيف تعمل؟",
         howTitle: "ثلاث خطوات بس",
         s1: "ارفع المحتوى",
@@ -49,6 +72,9 @@ const Landing = () => {
         forWho2: "لا يشترط أن تكون خبيرًا في التكنولوجيا. المنصة تعمل من المتصفح مباشرة، ولا تحتاج الطلاب إلى تحميل أي تطبيق. رمز قصير، وينضم الجميع في ثوانٍ.",
         forWho3: "الأسئلة باللغة العربية، التقارير باللغة العربية، وتجربة الطالب مصممة للشاشات الصغيرة التي يحملها طلابك في جيوبهم.",
         readMore: "اقرأ المزيد عنّا",
+
+        closingTitle: "معلمك القادم مافيه شي يمنعه من البداية",
+        closingSub: "مجاني تبدأ فيه، ودقائق تشغّله. جرّب أول اختبار لك الحين.",
       }
     : {
         line1: "Build your quiz.",
@@ -67,6 +93,11 @@ const Landing = () => {
         sp2: "We tried the platforms that already existed. They were designed in another language and another mindset, with Arabic added afterwards as a translation. Questions break, direction flips, and the whole thing feels foreign to our classrooms.",
         sp3: "So we built what we wished we had while we were still sitting in those seats: a platform that makes review something students look forward to instead of something they avoid. That is how nefelha started.",
 
+        feelKicker: "WHAT WE BELIEVE",
+        feelLine1: "Engagement isn't a number",
+        feelLine2: "on a report",
+        feelBody: "It's a feeling every student strives for: the moment they raise their hand with confidence, not fear of getting it wrong. The moment the room laughs at an answer and leans into the next question. That's what we design, one question at a time.",
+
         howKicker: "HOW IT WORKS",
         howTitle: "Three steps to your first live session",
         s1: "Upload content",
@@ -82,6 +113,9 @@ const Landing = () => {
         forWho2: "You don't need to be tech-savvy. The platform runs entirely in the browser — students don't download anything. One short code and everyone's in within seconds.",
         forWho3: "Questions in Arabic, reports in Arabic, and a student experience designed for the small screens they carry in their pockets.",
         readMore: "Read more about us",
+
+        closingTitle: "Nothing's stopping your first quiz but a click.",
+        closingSub: "Free to start, minutes to launch. Try your first quiz now.",
       };
 
   return (
@@ -192,6 +226,25 @@ const Landing = () => {
           </div>
         </section>
 
+        {/* ---------------- WHAT WE BELIEVE ---------------- */}
+        <section className="px-5 sm:px-8 md:px-14 py-24 sm:py-32">
+          <div className="wrap max-w-3xl mx-auto text-center">
+            <span className={`text-[12px] font-semibold text-[#8FC44A] ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`}>
+              {t.feelKicker}
+            </span>
+            <h2
+              className="mt-4 text-[32px] sm:text-[48px] md:text-[58px] tracking-tight leading-[1.12]"
+              style={{ fontFamily: "'ArslanWessam', 'Almarai', sans-serif", color: "#3F5A63" }}
+            >
+              <span className="block">{t.feelLine1}</span>
+              <span className="block italic" style={{ color: "#8FC44A" }}>{t.feelLine2}</span>
+            </h2>
+            <p className="mt-7 mx-auto max-w-xl text-[16px] sm:text-[17px] leading-relaxed text-black/60">
+              {t.feelBody}
+            </p>
+          </div>
+        </section>
+
         {/* ---------------- HOW IT WORKS ---------------- */}
         <section id="how" className="bg-[#3F5A63] text-white px-5 sm:px-8 md:px-14 py-20 sm:py-28">
           <div className="wrap"><div className="max-w-2xl">
@@ -201,10 +254,26 @@ const Landing = () => {
             </h2>
           </div>
 
-          <div className="mt-10 sm:mt-14 grid grid-cols-1 md:grid-cols-3 gap-5">
-            <Step n="01" icon={<Upload className="h-5 w-5" />} title={t.s1} desc={t.s1d} tilt="-rotate-[0.6deg]" />
-            <Step n="02" icon={<Users className="h-5 w-5" />} title={t.s2} desc={t.s2d} tilt="rotate-[0.8deg]" />
-            <Step n="03" icon={<Trophy className="h-5 w-5" />} title={t.s3} desc={t.s3d} tilt="-rotate-[0.9deg]" />
+          <div className="relative mt-12 sm:mt-16 grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-6">
+            <svg
+              className="hidden md:block absolute left-0 top-[26px] w-full h-10 pointer-events-none"
+              viewBox="0 0 100 10"
+              preserveAspectRatio="none"
+              aria-hidden="true"
+            >
+              <path
+                d="M 16 5 Q 33 -2, 50 5 T 84 5"
+                fill="none"
+                stroke="#8FC44A"
+                strokeWidth="0.5"
+                strokeDasharray="2.4 2.4"
+                strokeLinecap="round"
+                opacity="0.55"
+              />
+            </svg>
+            <Step n="01" icon={<Upload className="h-5 w-5" />} title={t.s1} desc={t.s1d} />
+            <Step n="02" icon={<Users className="h-5 w-5" />} title={t.s2} desc={t.s2d} />
+            <Step n="03" icon={<Trophy className="h-5 w-5" />} title={t.s3} desc={t.s3d} />
           </div>
           </div>
         </section>
@@ -234,27 +303,36 @@ const Landing = () => {
           </div>
         </section>
 
+        {/* ---------------- CLOSING CTA ---------------- */}
+        <section className="bg-[#14212A] px-5 sm:px-8 md:px-14 py-20 sm:py-28 text-center">
+          <div className="wrap">
+            <h2
+              className="animate-fade-up mx-auto max-w-2xl text-[30px] sm:text-[44px] tracking-tight leading-[1.15]"
+              style={{ color: "#FFFFFF", fontFamily: "'ArslanWessam', 'Almarai', sans-serif" }}
+            >
+              {t.closingTitle}
+            </h2>
+            <p className="animate-fade-up animation-delay-100 mt-4 text-[15px] sm:text-[16px] text-white/60">
+              {t.closingSub}
+            </p>
+            <div className="animate-fade-up animation-delay-200 mt-8 flex justify-center">
+              <Link
+                to={user ? "/app" : "/auth?mode=signup"}
+                className="group inline-flex items-center gap-3 rounded-full border-2 border-[hsl(var(--nb-border))] bg-[#8FC44A] text-[#3F5A63] pl-6 pr-2 py-2 text-[15px] font-medium shadow-[4px_4px_0_0_hsl(var(--nb-border))] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_0_hsl(var(--nb-border))] transition-all"
+              >
+                {t.cta}
+                <span className="h-9 w-9 rounded-full bg-white text-[#8FC44A] flex items-center justify-center transition group-hover:rotate-12">
+                  <ArrowUpRight className="h-4 w-4" strokeWidth={2.25} />
+                </span>
+              </Link>
+            </div>
+          </div>
+        </section>
+
         <SiteFooter />
       </div>
     </div>
   );
 };
-
-/* ---------- helpers ---------- */
-
-
-
-const Step = ({ n, icon, title, desc, tilt = "-rotate-[0.7deg]" }: { n: string; icon: React.ReactNode; title: string; desc: string; tilt?: string }) => (
-  <div className={`group ${tilt} hover:rotate-0 transition-transform duration-300`}>
-  <div className="relative rounded-2xl bg-white border-2 border-[hsl(var(--nb-border))] p-6 shadow-[5px_5px_0_0_hsl(var(--nb-border))] group-hover:shadow-[8px_8px_0_0_hsl(var(--nb-border))] group-hover:-translate-x-1 group-hover:-translate-y-1 transition-all">
-    <div className="flex items-center justify-between">
-      <span className="text-[12px] font-mono tracking-widest text-black/40">{n}</span>
-      <div className="h-9 w-9 rounded-full bg-background text-[#3F5A63] flex items-center justify-center">{icon}</div>
-    </div>
-    <h3 className="mt-6 text-[18px] font-semibold text-black">{title}</h3>
-    <p className="mt-2 text-[13.5px] leading-relaxed text-black/65">{desc}</p>
-  </div>
-  </div>
-);
 
 export default Landing;

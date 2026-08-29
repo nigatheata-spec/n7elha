@@ -639,6 +639,61 @@
   .animation-delay-300 { animation-delay: 300ms; }
   .animation-delay-400 { animation-delay: 400ms; }
 
+  /* ---- Landing hero ambience ----
+     Long, offset periods so the layered shapes never visibly sync up into a
+     single pulse. Transform/opacity only — these sit behind the hero photo and
+     must not trigger layout while the page is being scrolled. */
+  @keyframes hero-float {
+    0%, 100% { transform: translateY(0)     rotate(0deg); }
+    50%      { transform: translateY(-14px) rotate(1.2deg); }
+  }
+  @keyframes hero-float-slow {
+    0%, 100% { transform: translateY(0)    translateX(0); }
+    50%      { transform: translateY(18px) translateX(-10px); }
+  }
+  @keyframes hero-drift {
+    0%, 100% { transform: translate(0, 0)      scale(1); }
+    33%      { transform: translate(14px, -12px) scale(1.05); }
+    66%      { transform: translate(-10px, 10px) scale(0.96); }
+  }
+  @keyframes hero-orbit {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+  }
+  @keyframes hero-dash {
+    to { stroke-dashoffset: -120; }
+  }
+  .animate-hero-float      { animation: hero-float      7s   ease-in-out infinite; }
+  .animate-hero-float-slow { animation: hero-float-slow 11s  ease-in-out infinite; }
+  .animate-hero-drift      { animation: hero-drift      16s  ease-in-out infinite; }
+  .animate-hero-orbit      { animation: hero-orbit      38s  linear      infinite; }
+  .animate-hero-dash       { animation: hero-dash       3.5s linear      infinite; }
+
+  /* Faint dot lattice — reads as depth behind the hero without competing with
+     the headline. Sized large so it never moirés against the photo edge. */
+  .hero-dot-grid {
+    background-image: radial-gradient(circle, hsl(199 23% 18% / 0.16) 1.1px, transparent 1.1px);
+    background-size: 26px 26px;
+  }
+
+  /* Isometric hero nodes. Bobs on translateY only — the node's own translateZ
+     lives on the parent wrapper, so animating transform here would clobber the
+     depth position. */
+  @keyframes iso-bob {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-11px); }
+  }
+  .animate-iso-bob { animation: iso-bob 8s ease-in-out infinite; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .animate-hero-float,
+    .animate-hero-float-slow,
+    .animate-hero-drift,
+    .animate-hero-orbit,
+    .animate-hero-dash,
+    .animate-iso-bob { animation: none; }
+  }
+
   /* Mobile safe area insets — notch / Dynamic Island / home bar on iOS */
   .safe-top    { padding-top:    env(safe-area-inset-top,    0px); }
   .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
@@ -778,4 +833,48 @@
 .page-enter { animation: page-enter 0.32s ease-out both; }
 @media (prefers-reduced-motion: reduce) {
   .page-enter { animation: none; }
+}
+
+@layer utilities {
+  /* ---- Logo-ribbon hero ----
+     The ن mark is one continuous folding ribbon, so the hero echoes it with
+     sweeping strokes that flow rather than blink. stroke-dashoffset only —
+     it composites on the GPU and never touches layout. */
+  @keyframes ribbon-flow  { to { stroke-dashoffset: -1400; } }
+  @keyframes ribbon-draw  { from { stroke-dashoffset: 1400; } to { stroke-dashoffset: 0; } }
+  @keyframes mark-breathe {
+    0%, 100% { transform: translateY(0)     scale(1); }
+    50%      { transform: translateY(-12px) scale(1.015); }
+  }
+  @keyframes halo-pulse {
+    0%, 100% { opacity: 0.30; transform: scale(1); }
+    50%      { opacity: 0.52; transform: scale(1.09); }
+  }
+  /* Shadow is the depth cue: it must contract and fade exactly as the mark
+     rises, or the object reads as sliding rather than lifting. */
+  @keyframes shadow-contract {
+    0%, 100% { transform: scaleX(1);    opacity: 0.30; }
+    50%      { transform: scaleX(0.84); opacity: 0.17; }
+  }
+
+  @keyframes dot-rise {
+    0%, 100% { transform: translateY(0)    scale(1); }
+    50%      { transform: translateY(-9px) scale(1.06); }
+  }
+
+  .animate-ribbon-flow  { animation: ribbon-flow 22s linear infinite; }
+  .animate-ribbon-draw  { animation: ribbon-draw 2.4s cubic-bezier(0.16,1,0.3,1) both; }
+  .animate-mark-breathe { animation: mark-breathe 9s ease-in-out infinite; }
+  .animate-halo-pulse   { animation: halo-pulse 7s ease-in-out infinite; }
+  .animate-dot-rise        { animation: dot-rise 6s ease-in-out infinite; }
+  .animate-shadow-contract { animation: shadow-contract 9s ease-in-out infinite; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .animate-ribbon-flow,
+    .animate-ribbon-draw,
+    .animate-mark-breathe,
+    .animate-halo-pulse,
+    .animate-dot-rise,
+    .animate-shadow-contract { animation: none; }
+  }
 }
