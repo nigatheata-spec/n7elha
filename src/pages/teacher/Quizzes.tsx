@@ -66,7 +66,7 @@ const Quizzes = () => {
       ) : (
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-4">
           {quizzes.map((q) => (
-            <Card key={q.id} className="p-3 sm:p-5 hover:shadow-soft transition-shadow group relative">
+            <Card key={q.id} className="p-3 sm:p-5 hover:shadow-soft transition-shadow group relative flex flex-col h-full">
               {/* Delete is tucked in the corner, out of the main action row —
                   edit and host are the two things a teacher actually reaches
                   for here, delete is occasional and doesn't need equal billing. */}
@@ -82,7 +82,7 @@ const Quizzes = () => {
               <div className="text-xs sm:text-sm text-muted-foreground mb-1 truncate">{q.subject} {q.grade_level && `· ${q.grade_level}`}</div>
               <div className="text-[10px] sm:text-xs text-muted-foreground mb-3 sm:mb-4">{counts[q.id] ?? 0} {t("questions")}</div>
 
-              <div className="flex gap-1.5 sm:gap-2">
+              <div className="flex gap-1.5 sm:gap-2 mt-auto">
                 <Button asChild size="sm" variant="outline" className="flex-1 text-xs sm:text-sm px-2"><Link to={`/app/quizzes/${q.id}/edit`}>{t("edit")}</Link></Button>
                 <Button asChild size="sm" className="flex-1 bg-[#3F5A63] text-white hover:bg-[#3F5A63]/90 text-xs sm:text-sm px-2">
                   <Link to={`/app/host/${q.id}`}>{ar ? "استضافة" : "Host"}</Link>

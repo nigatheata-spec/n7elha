@@ -29,17 +29,6 @@ type DrainBoostEvent = { team: Team; startMs: number; extraRate: number; ms: num
 const TEAM_COLOR: Record<Team, string> = { human: "hsl(210 70% 55%)", zombie: "hsl(100 55% 45%)" };
 const zero = (): Record<Team, number> => ({ human: 0, zombie: 0 });
 
-const AV_COLORS = { human: "#3b82f6", zombie: "#65a30d" };
-const av = (name: string, team: Team) => ({ bg: AV_COLORS[team], letter: (name || "?").charAt(0).toUpperCase() });
-const Avatar = ({ name, team }: { name: string; team: Team }) => {
-  const { bg, letter } = av(name, team);
-  return (
-    <div style={{ background: bg, borderColor: bg }}
-      className="pixel-avatar h-9 w-9 flex items-center justify-center font-black text-white text-sm select-none shrink-0 font-mono">
-      {letter}
-    </div>
-  );
-};
 
 
 /**
@@ -100,11 +89,15 @@ const HumansVsZombiesMonitor = ({ session, sessionId }: Props) => {
   const [healthDeltaSum, setHealthDeltaSum]       = useState<Record<Team, number>>(zero());
   const [maxHealthDeltaSum, setMaxHealthDeltaSum] = useState<Record<Team, number>>(zero());
   const [drainBoosts, setDrainBoosts]             = useState<DrainBoostEvent[]>([]);
+  // One soldier per purchase, not one per registered player — the roster is
+  // who's on the team, the army on the field is what they've actually funded.
+  const [soldierCount, setSoldierCount] = useState<Record<Team, number>>(zero());
 
   const settingsRef = useRef<any>({});
   const healthDeltaRef = useRef<Record<Team, number>>(zero());
   const maxHealthDeltaRef = useRef<Record<Team, number>>(zero());
   const drainBoostsRef = useRef<DrainBoostEvent[]>([]);
+  const soldierCountRef = useRef<Record<Team, number>>(zero());
   const dayInitRef = useRef(false);
   const settings = session?.settings ?? {};
   settingsRef.current = settings;
@@ -141,17 +134,18 @@ const HumansVsZombiesMonitor = ({ session, sessionId }: Props) => {
       const { data } = await supabase.from("hvz_actions").select("*")
         .eq("session_id", sessionId).order("created_at", { ascending: true });
       const rows = (data ?? []) as ActionRow[];
-      const hSum = zero(), mSum = zero();
+      const hSum = zero(), mSum = zero(), counts = zero();
       const boosts: DrainBoostEvent[] = [];
       for (const r of rows) {
         hSum[r.team] += r.health_delta;
         mSum[r.team] += r.max_health_delta;
+        counts[r.team] += 1;
         const eff = r.effect || {};
         if (eff.damage) hSum[eff.damage.targetTeam] -= eff.damage.amount;
         if (eff.drainBoost) boosts.push({ team: eff.drainBoost.targetTeam, startMs: new Date(r.created_at).getTime(), extraRate: eff.drainBoost.extraRate, ms: eff.drainBoost.ms });
       }
-      healthDeltaRef.current = hSum; maxHealthDeltaRef.current = mSum; drainBoostsRef.current = boosts;
-      setHealthDeltaSum(hSum); setMaxHealthDeltaSum(mSum); setDrainBoosts(boosts);
+      healthDeltaRef.current = hSum; maxHealthDeltaRef.current = mSum; drainBoostsRef.current = boosts; soldierCountRef.current = counts;
+      setHealthDeltaSum(hSum); setMaxHealthDeltaSum(mSum); setDrainBoosts(boosts); setSoldierCount(counts);
       setRecentActions(rows.slice(-8).reverse());
     };
     loadActions();
@@ -164,12 +158,14 @@ const HumansVsZombiesMonitor = ({ session, sessionId }: Props) => {
           const row = p.new as ActionRow;
           healthDeltaRef.current = { ...healthDeltaRef.current, [row.team]: healthDeltaRef.current[row.team] + row.health_delta };
           maxHealthDeltaRef.current = { ...maxHealthDeltaRef.current, [row.team]: maxHealthDeltaRef.current[row.team] + row.max_health_delta };
+          soldierCountRef.current = { ...soldierCountRef.current, [row.team]: soldierCountRef.current[row.team] + 1 };
           const eff = row.effect || {};
           if (eff.damage) healthDeltaRef.current = { ...healthDeltaRef.current, [eff.damage.targetTeam]: healthDeltaRef.current[eff.damage.targetTeam] - eff.damage.amount };
           if (eff.drainBoost) drainBoostsRef.current = [...drainBoostsRef.current, { team: eff.drainBoost.targetTeam, startMs: new Date(row.created_at).getTime(), extraRate: eff.drainBoost.extraRate, ms: eff.drainBoost.ms }];
           setHealthDeltaSum(healthDeltaRef.current);
           setMaxHealthDeltaSum(maxHealthDeltaRef.current);
           setDrainBoosts(drainBoostsRef.current);
+          setSoldierCount(soldierCountRef.current);
           setRecentActions(list => [row, ...list].slice(0, 8));
           const action = BATTLE_ACTIONS.find(a => a.key === row.action_key && a.team === row.team);
           if (action) toast(`${row.student_name}: ${action.nameEn}`);
@@ -259,6 +255,13 @@ const HumansVsZombiesMonitor = ({ session, sessionId }: Props) => {
   const humans  = students.filter(s => s.team === "human").sort((a, b) => (b.crypto ?? 0) - (a.crypto ?? 0));
   const zombies = students.filter(s => s.team === "zombie").sort((a, b) => (b.crypto ?? 0) - (a.crypto ?? 0));
 
+  // The army on the field is what a team has actually funded, not who's
+  // registered — a soldier only marches out once a purchase raises them.
+  // Ids are index-based and stable, so the render loop's once-per-id march
+  // animation only ever fires for the newly-added soldier at the end.
+  const fightersFor = (team: Team): Fighter[] =>
+    Array.from({ length: soldierCount[team] }, (_, i) => ({ id: `${team}-${i}`, name: "" }));
+
   const Roster = ({ team, list }: { team: Team; list: any[] }) => (
     <div className="flex flex-col gap-2 min-h-0">
       <div className="flex items-center gap-1.5 text-xs font-black tracking-widest uppercase shrink-0" style={{ color: TEAM_COLOR[team] }}>
@@ -269,10 +272,9 @@ const HumansVsZombiesMonitor = ({ session, sessionId }: Props) => {
         {list.map((s, i) => (
           <div key={s.id} className="pixel-panel flex items-center gap-2.5 px-3 py-2"
             style={{ borderColor: `${TEAM_COLOR[team]}55`, background: `${TEAM_COLOR[team]}0d` }}>
-            <span className="font-black text-sm w-5 tabular-nums text-center text-muted-foreground/60">{i + 1}</span>
-            <Avatar name={s.name} team={team} />
-            <span className="flex-1 text-sm font-bold truncate">{s.name}</span>
-            <div className="flex items-center gap-1 font-black tabular-nums text-sm" style={{ color: TEAM_COLOR[team] }}>
+            <span className="font-black text-sm w-5 tabular-nums text-center text-muted-foreground/60 shrink-0">{i + 1}</span>
+            <span className="flex-1 min-w-0 text-sm font-bold break-words">{s.name}</span>
+            <div className="flex items-center gap-1 font-black tabular-nums text-sm shrink-0" style={{ color: TEAM_COLOR[team] }}>
               <PixelShield className="h-3.5 w-3.5" color="currentColor" />${s.crypto ?? 0}
             </div>
           </div>
@@ -338,32 +340,38 @@ const HumansVsZombiesMonitor = ({ session, sessionId }: Props) => {
           </div>
         )}
 
-        {/* Battlefield — the main event on the projector.
-            The panel is given the plate's own 1407:768 aspect and centred, so
-            the field is shown whole instead of being cover-cropped to whatever
-            shape the projector happens to be. */}
-        <div className="flex-1 min-h-0 flex items-center justify-center">
-          <div className="pixel-panel overflow-hidden max-h-full"
-            style={{ borderColor: "hsl(150 20% 25%)", aspectRatio: "1407 / 768", width: "min(100%, calc((100vh - 22rem) * 1.832))" }}>
-            <BattleScene
-              humans={humans.map(s => ({ id: s.id, name: s.name }))}
-              zombies={zombies.map(s => ({ id: s.id, name: s.name }))}
-              humanPct={maxHealth.human ? health.human / maxHealth.human : 0}
-              zombiePct={maxHealth.zombie ? health.zombie / maxHealth.zombie : 0}
-            />
-          </div>
-        </div>
-
-        {/* Team rosters — a strip under the field, not the main view any more */}
-        <div className="shrink-0 grid grid-cols-2 gap-4" style={{ maxHeight: "22vh" }}>
+        {/* Battlefield row — rosters live in the side columns instead of a
+            strip under the field, so the letterbox space either side of the
+            plate's fixed 1407:768 aspect actually earns its keep instead of
+            sitting empty at wide projector ratios. */}
+        <div className="flex-1 min-h-0 flex items-stretch gap-3">
           {students.length === 0 ? (
-            <div className="col-span-2 flex items-center justify-center text-primary text-xl animate-pulse py-6">
+            <div className="flex-1 flex items-center justify-center text-primary text-xl animate-pulse">
               {ar ? "> في انتظار اللاعبين..." : "> WAITING FOR PLAYERS..."}
             </div>
           ) : (
             <>
-              <Roster team="human" list={humans} />
-              <Roster team="zombie" list={zombies} />
+              <div className="w-52 shrink-0 min-h-0 overflow-y-auto pixel-panel p-2.5"
+                style={{ borderColor: "hsl(150 20% 25%)" }}>
+                <Roster team="human" list={humans} />
+              </div>
+
+              <div className="flex-1 min-w-0 flex items-center justify-center">
+                <div className="pixel-panel overflow-hidden max-h-full"
+                  style={{ borderColor: "hsl(150 20% 25%)", aspectRatio: "1407 / 768", width: "min(100%, calc((100vh - 10rem) * 1.832))" }}>
+                  <BattleScene
+                    humans={fightersFor("human")}
+                    zombies={fightersFor("zombie")}
+                    humanPct={maxHealth.human ? health.human / maxHealth.human : 0}
+                    zombiePct={maxHealth.zombie ? health.zombie / maxHealth.zombie : 0}
+                  />
+                </div>
+              </div>
+
+              <div className="w-52 shrink-0 min-h-0 overflow-y-auto pixel-panel p-2.5"
+                style={{ borderColor: "hsl(150 20% 25%)" }}>
+                <Roster team="zombie" list={zombies} />
+              </div>
             </>
           )}
         </div>

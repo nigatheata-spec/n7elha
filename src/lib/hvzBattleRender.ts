@@ -1,9 +1,17 @@
 // ── Humans vs Zombies — battle scene painting ───────────────────────────────
 // A painted battlefield plate with two live armies on the road between the two
-// keeps. Two things are load-bearing rather than decorative:
+// keeps. Units are anonymous soldiers, not name-tagged players — who's playing
+// lives in the roster panels beside the field; the scene itself just needs to
+// read as an army, and a wall of floating name tags fights that. Two things
+// are load-bearing rather than decorative:
 //
-//  • every soldier is a real player, drawn with their name over their head, so
-//    a student watching the projector can find themselves in the line;
+//  • a soldier is raised the moment a player funds one, and marches out of
+//    their own team's gate to the front line rather than appearing already
+//    in formation — the gate is the spawn point, not the middle of the field;
+//  • a soldier's tour is finite — they fight for a while, then fall and fade,
+//    so a long class doesn't leave two armies of hundreds standing shoulder
+//    to shoulder. Casualties are cosmetic only: the purchase ledger the count
+//    is drawn from never shrinks, only how many of it are still on the field;
 //  • the front line sits wherever the two teams' health says it should, so the
 //    picture and the health bars always tell the same story.
 //
@@ -43,6 +51,25 @@ const CLASH_GAP = 0.062;
 
 /** One attack every this many ms, per soldier, offset so they never sync up. */
 const ATTACK_MS = 1500;
+
+/** How long a freshly-funded soldier takes to march from their gate to the line. */
+const MARCH_MS = 3800;
+
+/** How long a soldier holds the line, once arrived, before their tour ends. */
+const LIFE_MS = 24_000;
+
+/** How long the fall-and-fade takes at the end of a tour. */
+const DEATH_MS = 900;
+
+/**
+ * First-seen time per soldier, in the render loop's own `t` clock.
+ *
+ * Module-level and keyed by id so a soldier marches exactly once, on the frame
+ * their id first appears, no matter how many times the roster re-renders
+ * around them. It lives for the tab's lifetime, which is fine — ids come from
+ * DB rows and a reload naturally starts every army's march over.
+ */
+const spawnedAt = new Map<string, number>();
 
 export type Fighter = { id: string; name: string };
 
@@ -108,7 +135,7 @@ const attack = (u: number): { push: number; hit: boolean } => {
 };
 
 type Placed = {
-  x: number; y: number; scale: number; push: number; hit: boolean; name: string;
+  x: number; y: number; scale: number; push: number; hit: boolean; alpha: number;
 };
 
 /**
@@ -125,6 +152,7 @@ const placeArmy = (
   const dy = ZOMBIE_ANCHOR.y - HUMAN_ANCHOR.y;
   const len = Math.hypot(dx, dy);
   const px = -dy / len, py = dx / len; // perpendicular to the road
+  const gate = dir === -1 ? HUMAN_ANCHOR : ZOMBIE_ANCHOR;
 
   const out: Placed[] = [];
   for (let i = 0; i < fighters.length; i++) {
@@ -139,19 +167,47 @@ const placeArmy = (
     const by = HUMAN_ANCHOR.y + dy * ut;
 
     const spread = (lane + (j - 0.5) * 0.45) * LANE_GAP;
-    const x = bx + px * spread;
-    const y = by + py * spread;
+    const formX = bx + px * spread;
+    const formY = by + py * spread;
 
-    // Only the front rank is in reach; those behind press forward on the spot.
+    // March out from the gate to the formation slot, once, the first time this
+    // soldier's id is seen — funding a soldier raises them at the castle, not
+    // in the middle of the field.
+    if (!spawnedAt.has(f.id)) spawnedAt.set(f.id, t);
+    const age = t - spawnedAt.get(f.id)!;
+    const marchU = Math.max(0, Math.min(1, age / MARCH_MS));
+    // Smoothstep, not ease-out: a soldier setting off at full speed and
+    // coasting down reads as a snap into place, not a walk. This keeps a
+    // steady pace through the middle of the march with just a soft start/stop.
+    const eased = marchU * marchU * (3 - 2 * marchU);
+    const x = gate.x + (formX - gate.x) * eased;
+    const y = gate.y + (formY - gate.y) * eased;
+    const marching = marchU < 1;
+
+    // A tour has three acts: march in, hold the line, then fall. Past the end
+    // of the fall this soldier is gone — skip them entirely.
+    const deathU = Math.max(0, Math.min(1, (age - MARCH_MS - LIFE_MS) / DEATH_MS));
+    if (deathU >= 1) continue;
+    const dying = deathU > 0;
+
+    // Only the front rank is in reach, and only once it has arrived and isn't
+    // already falling; those behind (or still marching) press forward on the spot.
     const phase = j;
     const u = ((t / ATTACK_MS) + phase) % 1;
-    const a = rank === 0 ? attack(u) : { push: 0, hit: false };
-    const bob = rank === 0 ? 0 : Math.sin(t / 420 + phase * 6.283) * 1.5;
+    const a = rank === 0 && !marching && !dying ? attack(u) : { push: 0, hit: false };
+    const bob = rank !== 0 && !marching && !dying ? Math.sin(t / 420 + phase * 6.283) * 1.5 : 0;
 
-    const depth = (y - HUMAN_ANCHOR.y) / (ZOMBIE_ANCHOR.y - HUMAN_ANCHOR.y);
-    const scale = 0.88 + Math.max(0, Math.min(1, depth)) * 0.24;
+    // Depth follows the soldier's current position, so scale grows as they
+    // approach rather than popping in at full size mid-march.
+    const depth = (y - HUMAN_ANCHOR.y) / dy;
+    const scale = (0.88 + Math.max(0, Math.min(1, depth)) * 0.24) * (1 - dying * 0.25 * deathU);
 
-    out.push({ x, y: y + bob, scale, push: a.push, hit: a.hit, name: f.name });
+    // Falling reads as a sink-and-fade: settle down a half body height and
+    // vanish, rather than just blinking out mid-formation.
+    const sink = dying ? deathU * UNIT_H * 0.4 : 0;
+    const alpha = dying ? 1 - deathU : 1;
+
+    out.push({ x, y: y + bob + sink, scale, push: a.push, hit: a.hit, alpha });
   }
   // Painter's order: further back first, so near units overlap far ones.
   return out.sort((a, b) => a.y - b.y);
@@ -168,26 +224,6 @@ const drawImpact = (ctx: CanvasRenderingContext2D, cx: number, cy: number, seed:
     ctx.fillStyle = i % 2 === 0 ? "rgba(255,240,180,0.95)" : "rgba(255,190,90,0.8)";
     ctx.fillRect(Math.round(x), Math.round(y), 2.5, 2.5);
   }
-};
-
-/** Name plate over a soldier's head, so players can find themselves. */
-const drawName = (
-  ctx: CanvasRenderingContext2D, cx: number, topY: number, name: string, s: number,
-) => {
-  if (!name) return;
-  const fs = Math.max(8, 11 * s);
-  ctx.font = `700 ${fs}px ui-sans-serif, system-ui, sans-serif`;
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  const label = name.length > 9 ? name.slice(0, 8) + "…" : name;
-  const w = ctx.measureText(label).width + 8 * s;
-  const h = fs + 5 * s;
-  ctx.fillStyle = "rgba(12,18,14,0.78)";
-  ctx.beginPath();
-  ctx.roundRect(cx - w / 2, topY - h - 3 * s, w, h, h / 2);
-  ctx.fill();
-  ctx.fillStyle = "#ffffff";
-  ctx.fillText(label, cx, topY - h / 2 - 3 * s);
 };
 
 /**
@@ -235,6 +271,8 @@ export const drawBattle = (
     const footX = X(p.x) + S(p.push) * toward;
     const footY = Y(p.y);
 
+    ctx.globalAlpha = p.alpha;
+
     // contact shadow, so units sit on the ground rather than float over it
     ctx.fillStyle = "rgba(20,30,16,0.30)";
     ctx.beginPath();
@@ -242,7 +280,7 @@ export const drawBattle = (
     ctx.fill();
 
     ctx.drawImage(img, footX - wid / 2, footY - hgt, wid, hgt);
-    drawName(ctx, footX, footY - hgt, p.name, scale);
+    ctx.globalAlpha = 1;
 
     // Weapon reach is roughly half a body ahead of the sprite.
     if (p.hit) impacts.push({ x: footX + toward * wid * 0.5, y: footY - hgt * 0.45, seed: p.x });
