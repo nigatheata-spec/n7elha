@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import { useTranslation } from "react-i18next";
-import { ArrowUpRight, Play, Mail, Github, Twitter, Instagram } from "lucide-react";
+import { ArrowUpRight, Mail, Github, Twitter, Instagram } from "lucide-react";
 import logoMark from "@/assets/logo-mark.png";
 
 export const SiteFooter = () => {
@@ -11,10 +11,9 @@ export const SiteFooter = () => {
 
   const t = isAr
     ? {
-        ctaTitle: "جاهز تجرّب نفلها مع فصلك؟",
-        ctaSub: "إنشاء الحساب مجاني، وأول اختبار يحتاج دقائق فقط.",
-        ctaBtn: "أنشئ حسابك الآن",
-        ctaJoin: "ادخل كطالب",
+        ctaTitle: "معلمك القادم مافيه شي يمنعه من البداية",
+        ctaSub: "مجاني تبدأ فيه، ودقائق تشغّله. جرّب أول اختبار لك الحين.",
+        ctaBtn: "ابدأ معنا",
         footerTagline: "منصة الاختبارات التفاعلية للمعلمين باللغة العربية.",
         footerProduct: "المنتج",
         footerCompany: "الشركة",
@@ -30,10 +29,9 @@ export const SiteFooter = () => {
         footerRights: "© 2026 نفلها. جميع الحقوق محفوظة.",
       }
     : {
-        ctaTitle: "Ready to try nefelha with your class?",
-        ctaSub: "Creating an account is free, and your first quiz takes just minutes.",
-        ctaBtn: "Create your account",
-        ctaJoin: "Join as student",
+        ctaTitle: "Nothing's stopping your first quiz but a click.",
+        ctaSub: "Free to start, minutes to launch. Try your first quiz now.",
+        ctaBtn: "Get started",
         footerTagline: "The interactive quiz platform built for Arabic-speaking classrooms.",
         footerProduct: "Product",
         footerCompany: "Company",
@@ -61,20 +59,15 @@ export const SiteFooter = () => {
             </h3>
             <p className="mt-3 text-black/55 text-[15px]">{t.ctaSub}</p>
           </div>
-          <div className="flex flex-wrap gap-3 shrink-0">
+          <div className="shrink-0">
             <Link
               to={user ? "/app" : "/auth?mode=signup"}
-              className="inline-flex items-center gap-2 rounded-full border-2 border-[hsl(var(--nb-border))] bg-[#2B3F45] text-white px-6 py-3 text-[14px] font-semibold shadow-[4px_4px_0_0_hsl(var(--nb-border))] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_0_hsl(var(--nb-border))] transition-all"
+              className="group inline-flex items-center gap-3 rounded-full border-2 border-[hsl(var(--nb-border))] bg-[#8FC44A] text-[#3F5A63] pl-6 pr-2 py-2 text-[15px] font-medium shadow-[4px_4px_0_0_hsl(var(--nb-border))] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_0_hsl(var(--nb-border))] transition-all"
             >
               {t.ctaBtn}
-              <ArrowUpRight className="h-4 w-4" />
-            </Link>
-            <Link
-              to="/play"
-              className="inline-flex items-center gap-2 rounded-full border-2 border-[hsl(var(--nb-border))] bg-white text-[#2B3F45] px-6 py-3 text-[14px] font-semibold shadow-[4px_4px_0_0_hsl(var(--nb-border))] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_0_hsl(var(--nb-border))] transition-all"
-            >
-              {t.ctaJoin}
-              <Play className="h-4 w-4 fill-[#2B3F45]" />
+              <span className="h-9 w-9 rounded-full bg-white text-[#8FC44A] flex items-center justify-center transition group-hover:rotate-12">
+                <ArrowUpRight className="h-4 w-4" strokeWidth={2.25} />
+              </span>
             </Link>
           </div>
         </div>

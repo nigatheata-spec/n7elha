@@ -21,18 +21,29 @@ const BLOCK_ICON: Record<BlockKey, typeof PixelPlank> = {
 // ones before it, so the projector shows the class's actual structure rising
 // away from the lava instead of a number.
 const TOWER_MAX  = 40;   // oldest blocks fall off the render, the top is the story
-const TOWER_BUDGET_PX = 380; // vertical room the stack may occupy before it shrinks
+const TOWER_BUDGET_PX = 400; // vertical room the stack may occupy before it shrinks
 
-const TowerBlock = ({ type, px, landing }: { type: BlockKey; px: number; landing: boolean }) => {
+// Width and thickness are deliberately decoupled. Each slab always spans the
+// full column — the class is building ONE wide platform, and a platform that
+// narrows as it grows would read as a bar chart instead. Only the layer
+// thickness compresses as courses pile up, so a tall structure becomes thin
+// strata rather than overflowing the screen.
+const TowerBlock = ({ type, rowPx, landing }: { type: BlockKey; rowPx: number; landing: boolean }) => {
   const s = BLOCK_SPRITES[type];
   return (
     <div
-      className={cn("relative shrink-0", landing && "animate-lf-block-land")}
-      style={{ width: s.cols * px, height: s.rows * px }}
+      className={cn("relative w-full shrink-0", landing && "animate-lf-block-land")}
+      style={{ height: s.rows * rowPx }}
       aria-hidden>
       {spriteRuns(type).map((r, i) => (
         <div key={i} className="absolute"
-          style={{ left: r.x * px, top: r.y * px, width: r.w * px, height: px, background: r.color }} />
+          style={{
+            left: `${(r.x / s.cols) * 100}%`,
+            width: `${(r.w / s.cols) * 100}%`,
+            top: r.y * rowPx,
+            height: rowPx,
+            background: r.color,
+          }} />
       ))}
     </div>
   );
@@ -242,14 +253,12 @@ const LavaFloorMonitor = ({ session, sessionId }: Props) => {
   };
 
   const lavaDisplay = Math.min(100, lavaRef.current);
-  const lavaHeight  = `${lavaDisplay.toFixed(1)}%`;
   const danger      = lavaDisplay >= 80;
   const critical    = lavaDisplay >= 92;
-  const totalBricks = students.reduce((a, s) => a + (s.crypto ?? 0), 0);
   // Shrink the pixel scale as the tower grows so a long stack still fits the
   // projector without scrolling — never below 2px or the blocks stop reading.
   const towerRows   = towerStack.reduce((a, b) => a + BLOCK_SPRITES[b.type].rows, 0);
-  const towerPx     = Math.max(2, Math.min(6, Math.floor(TOWER_BUDGET_PX / Math.max(1, towerRows))));
+  const towerRowPx  = Math.max(2, Math.min(9, Math.floor(TOWER_BUDGET_PX / Math.max(1, towerRows))));
   const hiddenBlocks = Math.max(0, buildCount - towerStack.length);
 
   return (
@@ -276,8 +285,12 @@ const LavaFloorMonitor = ({ session, sessionId }: Props) => {
         <div className="absolute inset-0 pointer-events-none" style={{ background: "hsl(0 90% 45% / 0.05)", animation: "heat-flicker 1.1s ease-in-out infinite", zIndex: 2 }} />
       )}
 
-      {/* All existing UI sits above the lava */}
-      <div className="absolute inset-0 overflow-hidden" style={{ zIndex: 3 }}>
+      {/* The wrapper deliberately keeps `z-index: auto` so it does NOT create a
+          stacking context: its children then compete with the lava layers
+          directly. That is what lets the platform sit BEHIND the lava (so a
+          rising level visibly eats the courses it swallows) while the HUD and
+          leaderboard still sit in front of it. */}
+      <div className="absolute inset-0 overflow-hidden">
 
       {/* Top bar */}
       <div className="absolute top-3 inset-x-3 z-20 flex items-center justify-between text-xs gap-3">
@@ -302,17 +315,18 @@ const LavaFloorMonitor = ({ session, sessionId }: Props) => {
         </div>
       </div>
 
-      <div className="h-full grid grid-cols-1 lg:grid-cols-[auto_auto_1fr] gap-4 p-4 pt-14">
+      <div className="h-full grid grid-cols-1 lg:grid-cols-[auto_1fr_26rem] gap-4 p-4 pt-14">
 
         {/* LAVA COLUMN — the main drama */}
-        <div className="flex flex-col items-center gap-3 w-full lg:w-28">
+        <div className="relative z-10 flex flex-col items-center gap-3 w-full lg:w-28">
           <div className="text-xs text-muted-foreground tracking-widest uppercase">{ar ? "حمم" : "Lava"}</div>
 
-          {/* Vertical lava bar */}
-          <div className="pixel-progress flex-1 w-20 relative overflow-hidden bg-muted/20" style={{ borderColor: danger ? "hsl(14 72% 52%)" : "hsl(14 25% 30%)" }}>
-            {/* Fill from bottom */}
-            <div className="absolute bottom-0 left-0 right-0 lava-fill lava-fill-anim transition-all duration-700"
-              style={{ height: lavaHeight }} />
+          {/* Vertical lava gauge. The tube is deliberately EMPTY — no backdrop and
+              no painted fill. The real full-screen lava is already rising behind
+              it at the true level, so leaving the tube transparent turns it into a
+              window onto the actual molten line instead of a second, differently
+              shaded bar that never quite matched it. */}
+          <div className="pixel-progress flex-1 w-20 relative" style={{ borderColor: danger ? "hsl(14 72% 52%)" : "hsl(14 25% 30%)" }}>
             {critical && (
               <div className="absolute inset-0 animate-pulse" style={{ background: "hsl(14 72% 52% / 0.15)" }} />
             )}
@@ -330,29 +344,36 @@ const LavaFloorMonitor = ({ session, sessionId }: Props) => {
             disabled={spiking}
             size="sm"
             className={cn(
-              "pixel-button w-20 font-bold text-xs transition-all",
-              spiking
-                ? "bg-primary/30 text-primary animate-pulse"
-                : "bg-primary/10 text-primary hover:bg-primary/25"
+              "pixel-button w-20 font-bold text-xs transition-all text-primary",
+              spiking ? "animate-pulse" : "hover:brightness-125"
             )}
             style={{
-              borderColor: spiking ? "hsl(14 72% 52%)" : "hsl(14 30% 35%)",
+              // Solid near-black, not a translucent tint: this control sits low
+              // on the screen, which is exactly where the lava ends up, and a
+              // see-through button disappears into it right when the teacher
+              // most wants to reach for it.
+              background: spiking ? "#1B0B06" : "#0A0610",
+              borderColor: spiking ? "hsl(14 72% 52%)" : "hsl(14 45% 45%)",
             }}>
             <PixelFlame className="h-3 w-3 me-1" color="currentColor" />+10%
           </Button>
-          <div className="text-[9px] text-muted-foreground/50 text-center leading-tight">{ar ? <>تفجير<br/>الحمم</> : <>spike<br/>lava</>}</div>
+          <div className="text-[9px] text-center leading-tight px-1 rounded"
+            style={{ color: "hsl(14 30% 78%)", background: "#0A0610", textShadow: "0 1px 2px #0A0610" }}>
+            {ar ? <>تفجير<br/>الحمم</> : <>spike<br/>lava</>}
+          </div>
         </div>
 
         {/* TOWER COLUMN — the platform the class actually built.
-            The stack is anchored to the same percentage the full-screen lava
-            layer uses, so its base rides the molten line: the gap between the
-            lava and the top block IS the class's clearance, no number needed. */}
-        <div className="relative w-full lg:w-52 min-h-[12rem] flex flex-col items-center">
-          <div className="text-xs text-muted-foreground tracking-widest uppercase">{ar ? "البرج" : "Tower"}</div>
+            The stack is anchored to the cave FLOOR, not to the lava line, so the
+            rising lava swallows the courses the class laid first. That drowning
+            base is the whole point of the mode: the platform is an escape from a
+            floor that is disappearing, and the clearance between the molten line
+            and the top course is the class's remaining margin. */}
+        <div className="relative z-0 w-full min-w-0 min-h-[12rem] flex flex-col items-center">
+          <div className="relative z-10 text-xs text-muted-foreground tracking-widest uppercase">{ar ? "المنصة" : "Platform"}</div>
 
           <div className="absolute inset-x-0 bottom-0 top-6 pointer-events-none">
-            <div className="absolute inset-x-0 flex flex-col-reverse items-center"
-              style={{ bottom: `${lavaDisplay}%`, transition: "bottom 0.6s cubic-bezier(0.25,0.46,0.45,0.94)" }}>
+            <div className="absolute inset-x-0 bottom-0 flex flex-col-reverse items-stretch px-2">
 
               {towerStack.length === 0 ? (
                 <div className="text-[10px] text-muted-foreground/60 text-center leading-tight px-2">
@@ -362,12 +383,12 @@ const LavaFloorMonitor = ({ session, sessionId }: Props) => {
                 <>
                   {/* Base marker for blocks that scrolled out of the render window */}
                   {hiddenBlocks > 0 && (
-                    <div className="text-[9px] font-black tabular-nums pt-0.5" style={{ color: "hsl(200 40% 55%)" }}>
+                    <div className="text-[9px] font-black tabular-nums pt-0.5 text-center" style={{ color: "hsl(200 40% 55%)" }}>
                       +{hiddenBlocks} {ar ? "أسفل" : "below"}
                     </div>
                   )}
                   {towerStack.map(b => (
-                    <TowerBlock key={b.id} type={b.type} px={towerPx} landing={b.id === landingId} />
+                    <TowerBlock key={b.id} type={b.type} rowPx={towerRowPx} landing={b.id === landingId} />
                   ))}
                   {/* Height readout sits on top of the stack, growing with it */}
                   <div className="flex items-center gap-1 pb-1">
@@ -383,7 +404,7 @@ const LavaFloorMonitor = ({ session, sessionId }: Props) => {
         </div>
 
         {/* RIGHT: leaderboard + stats */}
-        <div className="grid grid-rows-[1fr_auto_auto] gap-4 overflow-hidden min-h-0">
+        <div className="relative z-10 grid grid-rows-[1fr_auto_auto] gap-4 overflow-hidden min-h-0">
 
           {/* Leaderboard */}
           <div className="space-y-2 overflow-y-auto">
@@ -440,17 +461,10 @@ const LavaFloorMonitor = ({ session, sessionId }: Props) => {
           )}
 
           {/* Class stats bar */}
-          <div className="pixel-panel border-2 border-primary/30 bg-primary/5 p-4 grid grid-cols-4 gap-4">
+          <div className="pixel-panel border-2 border-primary/30 bg-primary/5 p-4 grid grid-cols-2 gap-4">
             <div className="text-center">
               <div className="text-2xl font-pixel font-black text-success">{students.reduce((a, s) => a + (s.correct_answers ?? 0), 0)}</div>
               <div className="text-[10px] text-muted-foreground uppercase tracking-widest">{ar ? "صحيح" : "correct"}</div>
-            </div>
-            <div className="text-center">
-              <div className="flex items-center justify-center gap-1">
-                <PixelShield className="h-5 w-5" color="currentColor" style={{ color: "hsl(142 65% 42%)" }} />
-                <span className="text-2xl font-pixel font-black text-success">{fmt(totalBricks)}</span>
-              </div>
-              <div className="text-[10px] text-muted-foreground uppercase tracking-widest">{ar ? "طوب متبقٍّ" : "bricks left"}</div>
             </div>
             <div className="text-center">
               <div className="flex items-center justify-center gap-1">
@@ -458,14 +472,6 @@ const LavaFloorMonitor = ({ session, sessionId }: Props) => {
                 <span className="text-2xl font-pixel font-black" style={{ color: "hsl(200 60% 65%)" }}>{fmt(towerHeight)}</span>
               </div>
               <div className="text-[10px] text-muted-foreground uppercase tracking-widest">{ar ? "ارتفاع البرج" : "tower height"}</div>
-            </div>
-            <div className="text-center">
-              {danger ? (
-                <div className="text-2xl font-pixel font-black text-primary animate-pulse">{ar ? "خطر" : "DANGER"}</div>
-              ) : (
-                <div className="text-2xl font-pixel font-black text-success">{ar ? "آمن" : "SAFE"}</div>
-              )}
-              <div className="text-[10px] text-muted-foreground uppercase tracking-widest">{ar ? "الحالة" : "status"}</div>
             </div>
           </div>
         </div>

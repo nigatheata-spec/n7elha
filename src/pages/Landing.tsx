@@ -5,9 +5,8 @@ import { ArrowUpRight, Play, Upload, Users, Trophy } from "lucide-react";
 import { useSmoothScroll } from "@/lib/smoothScroll";
 import { SiteNav } from "@/components/site/SiteNav";
 import { SiteFooter } from "@/components/site/SiteFooter";
-import { ProductPreview } from "@/components/site/ProductPreview";
 import { Seo } from "@/components/Seo";
-import heroPerson from "@/assets/hero-person.png";
+import productMockup from "@/assets/product-mockup.png";
 import saudiMap from "@/assets/saudi-map.svg";
 
 /* ---------- helpers ---------- */
@@ -47,10 +46,10 @@ const Landing = () => {
 
         mapCaption: "من هنا نبدأ",
         storyKicker: "قصتنا",
-        storyTitle: "كنّا الطلاب الذين لا يرفعون أيديهم",
-        sp1: "نعرف تمامًا كيف تبدو حصة المراجعة. المعلم يسأل، والصف يصمت. ليس لأن أحدًا لم يفهم الدرس، بل لأن لا أحد يريد أن يكون أول من يجيب ويخطئ أمام الجميع.",
-        sp2: "جرّبنا المنصات الجاهزة. كانت مصممة بلغة أخرى وذهنية أخرى، والعربية فيها مجرد ترجمة أُضيفت لاحقًا. الأسئلة تنكسر، والاتجاه يختل، والتجربة تبدو غريبة عن صفوفنا.",
-        sp3: "فقررنا أن نبني ما كنا نتمنى وجوده ونحن على تلك المقاعد: منصة تجعل المراجعة شيئًا ينتظره الطالب، لا شيئًا يتهرب منه. هكذا وُلدت نفلها.",
+        storyTitle: "إحنا كنّا الطلاب اللي ما يرفعون إيدهم",
+        sp1: "نعرف زين وش يصير في حصة المراجعة: المعلم يسأل، والفصل ساكت. مو لأن حد ما فهم الدرس، بس محد يبي يكون أول واحد يجاوب ويغلط قدّام الكل.",
+        sp2: "جرّبنا المنصات الجاهزة، بس كل وحدة مبنية بعقلية ثانية، والعربي فيها زي إنه مضاف بعدين كترجمة بس. الأسئلة تتكسر، الاتجاه يتقلب، والتجربة كلها تحس فيها غريبة عن فصولنا.",
+        sp3: "قلنا نسوي اللي كنا نتمنى نلقاه وإحنا قاعدين على نفس الكراسي: منصة تخلي المراجعة شي الطالب يستناه، مو شي يتهرب منه. من هني طلعت نفلها.",
 
         feelKicker: "ما نؤمن به",
         feelLine1: "التفاعل مو رقم",
@@ -73,8 +72,6 @@ const Landing = () => {
         forWho3: "الأسئلة باللغة العربية، التقارير باللغة العربية، وتجربة الطالب مصممة للشاشات الصغيرة التي يحملها طلابك في جيوبهم.",
         readMore: "اقرأ المزيد عنّا",
 
-        closingTitle: "معلمك القادم مافيه شي يمنعه من البداية",
-        closingSub: "مجاني تبدأ فيه، ودقائق تشغّله. جرّب أول اختبار لك الحين.",
       }
     : {
         line1: "Build your quiz.",
@@ -114,8 +111,6 @@ const Landing = () => {
         forWho3: "Questions in Arabic, reports in Arabic, and a student experience designed for the small screens they carry in their pockets.",
         readMore: "Read more about us",
 
-        closingTitle: "Nothing's stopping your first quiz but a click.",
-        closingSub: "Free to start, minutes to launch. Try your first quiz now.",
       };
 
   return (
@@ -147,7 +142,7 @@ const Landing = () => {
         <SiteNav />
 
         {/* ---------------- HERO ---------------- */}
-        <div className="wrap relative grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] items-center gap-8 lg:gap-10 px-5 sm:px-8 md:px-14 pt-8 sm:pt-12 pb-0">
+        <div className="wrap relative grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] items-center gap-8 lg:gap-14 px-5 sm:px-8 md:px-14 pt-10 sm:pt-16 pb-14 sm:pb-20">
           <div className="relative z-10">
             <h1
               className="leading-[1.05] tracking-tight text-[38px] sm:text-[52px] md:text-[68px]"
@@ -193,17 +188,14 @@ const Landing = () => {
           </div>
 
           {/* RIGHT */}
-          <div className="relative min-h-[440px] sm:min-h-[560px]">
-            <div className="absolute top-2 end-2 sm:end-4 w-[88%] sm:w-[78%] aspect-square rounded-[24px] sm:rounded-[28px] bg-[#3F5A63] border-2 border-[hsl(var(--nb-border))] shadow-[6px_6px_0_0_hsl(var(--nb-border))]" />
+          <div className="relative flex items-center justify-center">
             <img
-              src={heroPerson}
-              alt="معلم نفلها"
-              className="absolute bottom-0 end-2 sm:end-4 w-[97%] sm:w-[86%] h-full object-contain object-bottom select-none pointer-events-none drop-shadow-2xl z-20"
+              src={productMockup}
+              alt=""
+              className="w-full max-w-[520px] h-auto select-none"
             />
           </div>
         </div>
-
-        <ProductPreview />
 
         {/* ---------------- OUR STORY ---------------- */}
         <section className="bg-[#14212A] text-white px-5 sm:px-8 md:px-14 py-20 sm:py-28">
@@ -298,32 +290,6 @@ const Landing = () => {
               <Link to="/about" className="inline-flex items-center gap-1.5 text-[14px] font-semibold" style={{ color: "#3F5A63" }}>
                 {t.readMore}
                 <ArrowUpRight className="h-4 w-4" />
-              </Link>
-            </div>
-          </div>
-        </section>
-
-        {/* ---------------- CLOSING CTA ---------------- */}
-        <section className="bg-[#14212A] px-5 sm:px-8 md:px-14 py-20 sm:py-28 text-center">
-          <div className="wrap">
-            <h2
-              className="animate-fade-up mx-auto max-w-2xl text-[30px] sm:text-[44px] tracking-tight leading-[1.15]"
-              style={{ color: "#FFFFFF", fontFamily: "'ArslanWessam', 'Almarai', sans-serif" }}
-            >
-              {t.closingTitle}
-            </h2>
-            <p className="animate-fade-up animation-delay-100 mt-4 text-[15px] sm:text-[16px] text-white/60">
-              {t.closingSub}
-            </p>
-            <div className="animate-fade-up animation-delay-200 mt-8 flex justify-center">
-              <Link
-                to={user ? "/app" : "/auth?mode=signup"}
-                className="group inline-flex items-center gap-3 rounded-full border-2 border-[hsl(var(--nb-border))] bg-[#8FC44A] text-[#3F5A63] pl-6 pr-2 py-2 text-[15px] font-medium shadow-[4px_4px_0_0_hsl(var(--nb-border))] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_0_hsl(var(--nb-border))] transition-all"
-              >
-                {t.cta}
-                <span className="h-9 w-9 rounded-full bg-white text-[#8FC44A] flex items-center justify-center transition group-hover:rotate-12">
-                  <ArrowUpRight className="h-4 w-4" strokeWidth={2.25} />
-                </span>
               </Link>
             </div>
           </div>

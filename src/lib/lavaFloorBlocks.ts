@@ -9,7 +9,7 @@ export const BLOCK_TYPES: {
 }[] = [
   { key: "plank",     cost: 5,    height: 1,    labelEn: "Plank",     labelAr: "لوح خشبي" },
   { key: "brick",     cost: 50,   height: 12,   labelEn: "Brick",     labelAr: "طوبة" },
-  { key: "staircase", cost: 500,  height: 130,  labelEn: "Staircase", labelAr: "سلّم" },
+  { key: "staircase", cost: 500,  height: 130,  labelEn: "Scaffold",  labelAr: "سقالة" },
   { key: "house",     cost: 5000, height: 1400, labelEn: "House",     labelAr: "منزل" },
 ];
 
@@ -19,13 +19,17 @@ export const BLOCK_BY_KEY: Record<BlockKey, (typeof BLOCK_TYPES)[number]> =
 // ── Block sprites — the real platforms that stack above the lava ────────────
 // Purchased blocks are drawn, not described: every buy adds one of these
 // pixel-art platforms to the tower on both the projector and the phone.
-// Every sprite is 16 cells wide so the stack lines up into one column; only
-// the row count differs per type.
+//
+// The class is building ONE wide platform to climb out of a flooding cave, so
+// every sprite is a full-width slab (32 cells) that is deliberately THIN — a
+// stack of thin strata reads as a structure being layered up, where a stack of
+// chunky blocks just reads as a bar chart. All four share the same width so the
+// courses line up into one continuous wall; only the row count differs.
 //
 // Row counts are NOT linear in `height` — that value spans 1 → 1400, so a
 // literal mapping would make a plank invisible and a house taller than any
-// screen. They follow the same rank order on a rough log scale instead:
-// thin plank → chunky brick → stepped staircase → tall house.
+// screen. They follow the same rank order on a compressed scale instead:
+// plank board → brick course → steel scaffold deck → the house you escape into.
 export type BlockSprite = {
   cols: number;
   rows: number;
@@ -33,67 +37,56 @@ export type BlockSprite = {
   palette: Record<string, string>;
 };
 
-// b = body, d = shadow, l = highlight, m = mortar, r = roof, k = eave,
-// w = window, n = door
+// b = body, d = shadow, l = highlight, m = mortar, p = post, r = roof,
+// k = eave, w = window, n = door
 export const BLOCK_SPRITES: Record<BlockKey, BlockSprite> = {
   plank: {
-    cols: 16, rows: 3,
+    cols: 32, rows: 3,
     pattern: [
-      "llllllllllllllll",
-      "bbdbbbbbbdbbbbbb",
-      "dddddddddddddddd",
+      "llllllllllllllllllllllllllllllll",
+      "bbdbbbbbbdbbbbbbbbdbbbbbbdbbbbbb",
+      "dddddddddddddddddddddddddddddddd",
     ],
     palette: { b: "#a9743c", d: "#7a4f24", l: "#c99a5f" },
   },
   brick: {
-    cols: 16, rows: 6,
+    cols: 32, rows: 4,
     pattern: [
-      "llllllllllllllll",
-      "bbbbbmbbbbbmbbbb",
-      "bbbbbmbbbbbmbbbb",
-      "mmmmmmmmmmmmmmmm",
-      "bbmbbbbbmbbbbbmb",
-      "ddmdddddmdddddmd",
+      "llllllllllllllllllllllllllllllll",
+      "bbbbbmbbbbbmbbbbbmbbbbbmbbbbbmbb",
+      "mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm",
+      "ddmdddddmdddddmdddddmdddddmddddd",
     ],
     palette: { b: "#b0483a", d: "#7e2f26", l: "#d3705d", m: "#cbbba6" },
   },
+  // Formerly a stepped staircase, which never read as a platform once the
+  // stack went wide — a diagonal cannot tile into a wall. It is now the steel
+  // scaffold deck the class bolts on, matching the "سقالة حديدية" income tier.
+  // The gaps between the legs let the lava glow through, which sells the height.
   staircase: {
-    cols: 16, rows: 10,
+    cols: 32, rows: 5,
     pattern: [
-      "................",
-      "................",
-      "............llll",
-      "............bbbb",
-      "........llllbbbb",
-      "........bbbbbbbb",
-      "....llllbbbbbbbb",
-      "....bbbbbbbbbbbb",
-      "llllbbbbbbbbbbbb",
-      "dddddddddddddddd",
+      "llllllllllllllllllllllllllllllll",
+      "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "dddddddddddddddddddddddddddddddd",
+      "pp......pp......pp......pp......",
+      "pp......pp......pp......pp......",
     ],
-    palette: { b: "#8b8f9a", d: "#5f636e", l: "#b3b8c4" },
+    palette: { b: "#8b8f9a", d: "#5f636e", l: "#b3b8c4", p: "#6b7280" },
   },
   house: {
-    cols: 16, rows: 18,
+    cols: 32, rows: 10,
     pattern: [
-      ".......rr.......",
-      "......rrrr......",
-      ".....rrrrrr.....",
-      "....rrrrrrrr....",
-      "...rrrrrrrrrr...",
-      "..rrrrrrrrrrrr..",
-      ".rrrrrrrrrrrrrr.",
-      "rrrrrrrrrrrrrrrr",
-      "kkkkkkkkkkkkkkkk",
-      "lbbbbbbbbbbbbbbd",
-      "lbbwwbbbbbbwwbbd",
-      "lbbwwbbbbbbwwbbd",
-      "lbbbbbbbbbbbbbbd",
-      "lbbbbbnnnbbbbbbd",
-      "lbbbbbnnnbbbbbbd",
-      "lbbbbbnnnbbbbbbd",
-      "lbbbbbnnnbbbbbbd",
-      "dddddddddddddddd",
+      ".............rrrrrr.............",
+      "............rrrrrrrr............",
+      "...........rrrrrrrrrr...........",
+      "..........rrrrrrrrrrrr..........",
+      ".........kkkkkkkkkkkkkk.........",
+      ".........lbbwwbbbbwwbbd.........",
+      ".........lbbwwbbbbwwbbd.........",
+      ".........lbbbbnnnnbbbbd.........",
+      ".........lbbbbnnnnbbbbd.........",
+      "dddddddddddddddddddddddddddddddd",
     ],
     palette: {
       b: "#c2a06a", d: "#8a6c3f", l: "#dcc191",

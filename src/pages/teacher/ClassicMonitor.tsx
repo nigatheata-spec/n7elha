@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -29,6 +30,8 @@ interface Props { session: any; sessionId: string; }
 
 const ClassicMonitor = ({ session, sessionId }: Props) => {
   const nav = useNavigate();
+  const { i18n } = useTranslation();
+  const ar = (session?.settings?.lang ?? i18n.language) === "ar";
   const { confirm, ConfirmDialog } = useConfirmDialog();
   const [students, setStudents] = useState<any[]>([]);
   const [now, setNow] = useState(Date.now());
@@ -72,7 +75,7 @@ const ClassicMonitor = ({ session, sessionId }: Props) => {
   }, [session?.status]);
 
   const endNow = async () => {
-    if (!(await confirm("End the game now?"))) return;
+    if (!(await confirm(ar ? "إنهاء اللعبة الآن؟" : "End the game now?"))) return;
     await supabase.from("game_sessions").update({ status: "finished", ended_at: new Date().toISOString() }).eq("id", sessionId);
     nav(`/app/games/${sessionId}/results`);
   };
@@ -92,9 +95,9 @@ const ClassicMonitor = ({ session, sessionId }: Props) => {
       <header className="shrink-0 flex items-center justify-between px-6 py-4">
         <div>
           <div className="text-[11px] font-bold tracking-widest" style={{ color: "hsl(199 15% 50%)" }}>
-            CLASSIC · #{session.code}
+            {ar ? "كلاسيكي" : "CLASSIC"} · #{session.code}
           </div>
-          <div className="text-lg font-black truncate max-w-[40vw]">{session?.quizzes?.title ?? "Quiz"}</div>
+          <div className="text-lg font-black truncate max-w-[40vw]">{session?.quizzes?.title ?? (ar ? "اختبار" : "Quiz")}</div>
         </div>
         {mm != null && (
           <div className={cn("px-5 py-2 rounded-2xl bg-white font-black text-2xl tabular-nums", NB, "shadow-[3px_3px_0_0_hsl(var(--nb-border))]")}>
@@ -106,7 +109,7 @@ const ClassicMonitor = ({ session, sessionId }: Props) => {
             <Maximize className="h-4 w-4" />
           </Button>
           <Button size="sm" onClick={endNow} className={cn("bg-[#3F5A63] text-white hover:bg-[#2B3F45]", NB, "shadow-[2px_2px_0_0_hsl(var(--nb-border))]")}>
-            <Square className="h-3.5 w-3.5 mr-1.5" />End
+            <Square className="h-3.5 w-3.5 mr-1.5" />{ar ? "إنهاء" : "End"}
           </Button>
         </div>
       </header>
@@ -115,7 +118,7 @@ const ClassicMonitor = ({ session, sessionId }: Props) => {
         <div className="max-w-2xl mx-auto space-y-2">
           {students.length === 0 ? (
             <div className="text-center py-16 text-sm" style={{ color: "hsl(199 15% 55%)" }}>
-              waiting for players...
+              {ar ? "في انتظار اللاعبين..." : "waiting for players..."}
             </div>
           ) : (
             students.map((s, i) => (
@@ -135,8 +138,8 @@ const ClassicMonitor = ({ session, sessionId }: Props) => {
       </main>
 
       <footer className="shrink-0 px-6 py-3 flex items-center justify-between text-xs" style={{ borderTop: "2px solid hsl(var(--nb-border))", color: "hsl(199 15% 50%)" }}>
-        <span>{students.length} players</span>
-        <span>{fmt(totalPoints)} total points</span>
+        <span>{ar ? `${students.length} لاعب` : `${students.length} players`}</span>
+        <span>{ar ? `${fmt(totalPoints)} نقطة إجمالية` : `${fmt(totalPoints)} total points`}</span>
       </footer>
     </div>
   );

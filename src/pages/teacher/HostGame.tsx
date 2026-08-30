@@ -29,8 +29,8 @@ const MODES: { id: GameMode; icon: React.ReactNode; label: string; labelAr: stri
   {
     id: "crypto_rush",
     icon: <BitcoinIcon className="h-6 w-6" strokeWidth={2} />,
-    label: "Crypto Rush",
-    labelAr: "كريبتو رَش",
+    label: "Cyber War",
+    labelAr: "حرب الاختراقات",
     desc: "Answer questions, earn crypto, hack rivals",
     descAr: "أجب على الأسئلة، اكسب كريبتو، اخترق منافسيك",
     accent: "#3a9e6e",
@@ -381,38 +381,46 @@ const HostGame = () => {
           </div>
 
           <div className="grid sm:grid-cols-2 gap-4">
-            {MODES.map(m => (
-              <button
-                key={m.id}
-                onClick={() => setMode(m.id)}
-                className="group text-left rounded-2xl p-6 bg-white border-2 border-[hsl(var(--nb-border))] shadow-[4px_4px_0_0_hsl(var(--nb-border))] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_0_hsl(var(--nb-border))] transition-all duration-150"
-              >
-                <div className="flex items-center justify-between mb-6">
-                  <span className="font-mono text-[11px] tracking-widest text-black/30">{m.num}</span>
-                  <div
-                    className="h-10 w-10 rounded-xl flex items-center justify-center border-2 border-[hsl(var(--nb-border))]"
-                    style={{ background: m.accent, color: "white" }}
-                  >
-                    {m.icon}
-                  </div>
-                </div>
-
-                <div className="text-[20px] font-bold text-[#3F5A63] leading-tight mb-2">
-                  {ar ? m.labelAr : m.label}
-                </div>
-
-                <div className="text-[13px] leading-relaxed text-black/55">
-                  {ar ? m.descAr : m.desc}
-                </div>
-
-                <div
-                  className="mt-4 text-[11px] font-bold tracking-widest uppercase opacity-0 group-hover:opacity-100 transition-opacity duration-150"
-                  style={{ color: m.accent }}
+            {MODES.map(m => {
+              const isCrypto = m.id === "crypto_rush";
+              const GREEN = "hsl(120 100% 55%)";
+              return (
+                <button
+                  key={m.id}
+                  onClick={() => setMode(m.id)}
+                  className="group text-left rounded-2xl p-6 bg-white border-2 border-[hsl(var(--nb-border))] shadow-[4px_4px_0_0_hsl(var(--nb-border))] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_0_hsl(var(--nb-border))] transition-all duration-150"
                 >
-                  {ar ? "اختر" : "Select →"}
-                </div>
-              </button>
-            ))}
+                  <div className="flex items-center justify-between mb-6">
+                    <span className="font-mono text-[11px] tracking-widest text-black/30">{m.num}</span>
+                    <div
+                      className="h-10 w-10 rounded-xl flex items-center justify-center border-2 border-[hsl(var(--nb-border))]"
+                      style={
+                        isCrypto
+                          ? { background: "#0a0a0a", color: GREEN, boxShadow: `0 0 10px ${GREEN}55` }
+                          : { background: m.accent, color: "white" }
+                      }
+                    >
+                      {m.icon}
+                    </div>
+                  </div>
+
+                  <div className="text-[20px] font-bold text-[#3F5A63] leading-tight mb-2">
+                    {ar ? m.labelAr : m.label}
+                  </div>
+
+                  <div className="text-[13px] leading-relaxed text-black/55">
+                    {ar ? m.descAr : m.desc}
+                  </div>
+
+                  <div
+                    className="mt-4 text-[11px] font-bold tracking-widest uppercase opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+                    style={{ color: m.accent }}
+                  >
+                    {ar ? "اختر" : "Select →"}
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>

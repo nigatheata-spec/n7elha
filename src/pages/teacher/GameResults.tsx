@@ -19,10 +19,12 @@ const av = (name: string) => {
   return { bg: AV_COLORS[Math.abs(h) % AV_COLORS.length], letter: (name.charAt(0) || "?").toUpperCase() };
 };
 
-const Avatar = ({ name, size = "md" }: { name: string; size?: "sm" | "md" | "xl" }) => {
+const Avatar = ({ name, size = "md" }: { name: string; size?: "sm" | "md" | "lg" | "xl" }) => {
   const { bg, letter } = av(name);
   const cls = size === "xl"
     ? "h-20 w-20 text-3xl"
+    : size === "lg"
+    ? "h-16 w-16 text-2xl"
     : size === "md"
     ? "h-10 w-10 text-base"
     : "h-8 w-8 text-xs";
@@ -247,7 +249,7 @@ const GameResults = () => {
 
   // ── Full results ─────────────────────────────────────────────────────────
   return (
-    <div className="min-h-[100dvh] text-foreground font-sans" style={{ background: "#14212A" }}>
+    <div className="min-h-[100dvh] text-foreground font-sans" style={{ background: "hsl(var(--cream-panel))" }}>
       <Seo
         path={`/app/games/${sessionId}/results`}
         titleAr="نتائج الجلسة"
@@ -268,10 +270,10 @@ const GameResults = () => {
               className="flex items-center gap-1.5 px-4 py-2 rounded-lg border-2 border-[hsl(var(--nb-border))] bg-white text-primary text-[10px] tracking-[0.3em] uppercase font-bold shadow-[3px_3px_0_0_hsl(var(--nb-border))] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0_0_hsl(var(--nb-border))] transition-all">
               <ArrowLeft className="h-3 w-3" />{ar ? "لوحة التحكم" : "Dashboard"}
             </button>
-            <div className="h-4 w-px bg-white/25" />
+            <div className="h-4 w-px bg-[hsl(var(--nb-border))]/25" />
             <div>
               <div className="text-[10px] tracking-[0.5em] text-[#8FC44A] uppercase mb-1">{ar ? "النتائج" : "Results"}</div>
-              <h1 className="text-2xl md:text-3xl font-black tracking-tight text-white leading-none">
+              <h1 className="text-2xl md:text-3xl font-black tracking-tight text-primary leading-none">
                 {session?.quizzes?.title ?? (ar ? "اللعبة" : "Game")}
               </h1>
             </div>
@@ -299,27 +301,39 @@ const GameResults = () => {
             : isPointsMode       ? fmt(s.crypto)
             : null;
 
+          // A real podium: 3rd on the left, champion raised in the middle, 2nd on
+          // the right. The arrangement is spatial rather than reading order, so the
+          // row is forced LTR — it must look identical in Arabic and English.
+          const PODIUM_STEPS = [
+            { rank: 2, height: "sm:min-h-[212px]", avatar: "lg" as const, name: "text-xl md:text-2xl", score: "text-2xl md:text-3xl" },
+            { rank: 0, height: "sm:min-h-[272px]", avatar: "xl" as const, name: "text-2xl md:text-3xl", score: "text-3xl md:text-4xl" },
+            { rank: 1, height: "sm:min-h-[240px]", avatar: "lg" as const, name: "text-xl md:text-2xl", score: "text-2xl md:text-3xl" },
+          ].filter(step => step.rank < ranked.length);
+
           return (
             <div className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {ranked.slice(0, 3).map((s, i) => {
-                  const m = MEDALS[i];
+              <div dir="ltr" className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+                {PODIUM_STEPS.map((step, i) => {
+                  const s = ranked[step.rank];
+                  const m = MEDALS[step.rank];
                   const score = scoreFor(s);
                   return (
-                    <div key={s.id}
-                      className="rounded-2xl border-2 border-[hsl(var(--nb-border))] bg-white p-7 flex flex-col items-center justify-center text-center gap-4 shadow-[5px_5px_0_0_hsl(var(--nb-border))]"
+                    <div key={s.id} dir={ar ? "rtl" : "ltr"}
+                      className={cn(
+                        "rounded-2xl border-2 border-[hsl(var(--nb-border))] bg-white px-4 py-5 flex flex-col items-center justify-center text-center gap-2.5 shadow-[5px_5px_0_0_hsl(var(--nb-border))]",
+                        step.height,
+                      )}
                       style={{ animation: `fade-up 0.45s ${i * 90}ms both` }}>
-                      <div className="text-[10px] tracking-[0.5em] text-primary/70 uppercase flex items-center gap-2">
+                      <div className="text-[10px] tracking-[0.35em] text-primary/70 uppercase flex items-center gap-2">
                         <Trophy className="h-3 w-3" style={{ color: m.color }} />
                         {ar ? m.labelAr : m.labelEn}
                       </div>
-                      <Avatar name={s.name} size="xl" />
-                      <div className="text-2xl md:text-3xl font-black tracking-tight text-primary leading-none truncate max-w-full">
+                      <Avatar name={s.name} size={step.avatar} />
+                      <div className={cn("font-black tracking-tight text-primary leading-none truncate max-w-full", step.name)}>
                         {s.name}
                       </div>
                       {score !== null ? (
-                        <div className="text-3xl md:text-4xl font-black tabular-nums text-primary"
-                          style={{ textShadow: "0 0 24px hsl(16 100% 66% / 0.5)" }}>
+                        <div className={cn("font-black tabular-nums text-primary leading-none", step.score)}>
                           {score}
                         </div>
                       ) : (
@@ -372,7 +386,7 @@ const GameResults = () => {
                     "px-5 py-2 rounded-lg text-[10px] tracking-[0.35em] uppercase font-bold transition-all border-2",
                     tab === t
                       ? "bg-white text-primary border-[hsl(var(--nb-border))] shadow-[3px_3px_0_0_hsl(var(--nb-border))]"
-                      : "bg-transparent text-white/70 border-white/25 hover:bg-white/10 hover:text-white"
+                      : "bg-transparent text-primary/70 border-[hsl(var(--nb-border))]/25 hover:bg-primary/10 hover:text-primary"
                   )}>
                   {t === "rank" ? (ar ? "لوحة الصدارة" : "Leaderboard") : (ar ? "الأسئلة" : "Questions")}
                 </button>
@@ -467,7 +481,7 @@ const GameResults = () => {
           {tab === "qa" && (
             <div className="space-y-3">
               {questions.length === 0 && (
-                <div className="rounded-xl border-2 border-white/20 py-16 text-center text-white/45 text-sm">
+                <div className="rounded-xl border-2 border-[hsl(var(--nb-border))]/20 py-16 text-center text-primary/45 text-sm">
                   {ar ? "لا توجد بيانات أسئلة متاحة" : "No question data available"}
                 </div>
               )}
@@ -528,10 +542,10 @@ const GameResults = () => {
 // ── Tiny stat chip ────────────────────────────────────────────────────────────
 const Stat = ({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) => (
   <div className="text-center">
-    <div className="flex items-center justify-center gap-1 text-[9px] tracking-widest text-white/60 uppercase mb-0.5">
+    <div className="flex items-center justify-center gap-1 text-[9px] tracking-widest text-primary/60 uppercase mb-0.5">
       {icon}{label}
     </div>
-    <div className="font-black tabular-nums text-white text-sm">{value}</div>
+    <div className="font-black tabular-nums text-primary text-sm">{value}</div>
   </div>
 );
 
