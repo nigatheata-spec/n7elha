@@ -2,27 +2,34 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "@/components/ui/sonner";
-import { Store, X, ChevronUp, Zap, Battery, Feather, ArrowUp, ArrowLeft, ArrowRight, Trophy, HelpCircle } from "lucide-react";
+import { Zap, ChevronUp, ArrowUp, ArrowLeft, ArrowRight, Trophy } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
-import { PixelShield, PixelFlame } from "@/components/PixelIcons";
+import { WORLD, ENERGY, colorFor } from "@/lib/dontLookDown";
 import {
-  WORLD, ENERGY, VOID_CASH_PENALTY_PCT, streakMultiplier,
-  INCOME_TIERS, STREAK_INSURANCE_TIERS, MULTIPLIER_INSURANCE_TIERS,
-  ENERGY_TANK_TIERS, BATTERY_TIERS,
-  DOUBLE_JUMP_COST, FEATHER_FALL_COST, FEATHER_FALL_MS, FEATHER_FALL_GRAVITY_SCALE,
-  PLATFORMS, SUMMIT_Y, spawnFor, colorFor,
-} from "@/lib/dontLookDown";
-import { drawSky, drawCloud, drawPlatform, drawCharacter, drawNameTag, drawTopFog, PLATFORM_DRAW_ABOVE, PLATFORM_DRAW_BELOW, CLOUDS } from "@/lib/dontLookDownRender";
+  getGenerator, initialSpawn, platformWorldPos, laserActiveAt, distToLaser, seedFromString,
+} from "@/lib/dontLookDownLevel";
+import {
+  drawSky, drawTopFog, drawPlatform, drawGround, drawSpikes, drawLaser, drawCloud, ambientFor,
+  drawCharacter, drawNameTag, PLATFORM_DRAW_ABOVE, PLATFORM_DRAW_BELOW,
+} from "@/lib/dontLookDownRender";
 
 type Q = { id: string; text: string; options: string[]; correct_index: number; image_url?: string };
 type Phase = "waiting" | "playing" | "done";
-type ShopTab = "economy" | "parkour";
 type Peer = { id: string; name: string; x: number; y: number; face: number; t: number };
 
-// Floating white HUD chip, matching the reference's rounded pills over the sky.
 const PILL = "flex items-center gap-2 px-3 py-1.5 rounded-full shadow-md pointer-events-none";
 const PILL_STYLE: React.CSSProperties = { background: "rgba(255,255,255,0.93)", backdropFilter: "blur(4px)" };
+const BOUNCE_VELOCITY = 1350;
+const HAZARD_COOLDOWN_MS = 900;
+const CRUMBLE_GRACE_MS = 480;
+const CRUMBLE_FADE_MS = 380;
+const LAND_PULSE_MS = 160;
+// Landing on the ground floor far from the start platform would strand you —
+// the level only trends rightward, so there's nothing to climb back up
+// right there. Snap back to base instead of leaving you stuck.
+const FAR_FROM_ORIGIN = 4000;
+const BASE_SPAWN = initialSpawn(WORLD.playerW);
 
 interface Props { sessionId: string; studentId: string; }
 
@@ -35,50 +42,43 @@ const DontLookDownGame = ({ sessionId, studentId }: Props) => {
   const [me, setMe]               = useState<any>(null);
   const [phase, setPhase]         = useState<Phase>("waiting");
   const [showQuiz, setShowQuiz]   = useState(false);
-  const [showShop, setShowShop]   = useState(false);
-  const [shopTab, setShopTab]     = useState<ShopTab>("parkour");
   const [currentQ, setCurrentQ]   = useState<Q | null>(null);
   const [picked, setPicked]       = useState<number | null>(null);
   const [qSeed, setQSeed]         = useState(0);
-  const [summited, setSummited]   = useState(false);
 
-  // HUD mirrors of the physics state — updated on a throttle, not every frame,
-  // so the 60fps loop never triggers a React render.
-  const [hud, setHud] = useState({ energy: ENERGY.start, grounded: false, featherUntil: 0, height: 0 });
-  const [now, setNow] = useState(Date.now());
+  // HUD mirrors of the physics state — updated on a throttle, not every frame.
+  const [hud, setHud] = useState({ energy: ENERGY.start, height: 0 });
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const keysRef   = useRef<Set<string>>(new Set());
   const peersRef  = useRef<Record<string, Peer>>({});
   const chanRef   = useRef<any>(null);
   const pickedRef = useRef<number | null>(null);
-  const buyingRef = useRef(false);
   const localWriteAtRef = useRef(0);
   const meRef     = useRef<any>(null);
-  const summitRef = useRef(false);
+  const genRef    = useRef(getGenerator(sessionId));
+  const crumbleRef = useRef<Map<string, number>>(new Map());
+  const bounceRef  = useRef<Map<string, number>>(new Map());
+  const lastHazardAtRef = useRef(0);
+  const landedAtRef = useRef(0);
+  const blinkSeedRef = useRef(seedFromString(studentId));
+  // Debug noclip fly mode — scout the generated level with no gravity/energy/
+  // collision. Gated behind ?fly=1 so it never shows up for real students.
+  const flyEnabled = new URLSearchParams(window.location.search).get("fly") === "1";
+  const flyRef = useRef(false);
+  const [flying, setFlying] = useState(false);
 
   // All mutable per-frame physics state. Deliberately outside React.
   const pRef = useRef({
     x: 0, y: 4, vx: 0, vy: 0,
     grounded: false, usedDoubleJump: false, face: 1,
-    energy: ENERGY.start, featherUntil: 0,
-    checkpointIndex: 0, maxHeight: 0,
+    energy: ENERGY.start,
+    maxHeight: 0,
     camX: 0, camY: 0, camInit: false,
   });
 
   const settings = session?.settings ?? {};
-  const ar   = (settings.lang ?? i18n.language) === "ar";
-  const cash = me?.crypto ?? 0;
-
-  const incomeTier   = INCOME_TIERS.find(t => t.level === (me?.income_tier ?? 1)) ?? INCOME_TIERS[0];
-  const streakIns    = STREAK_INSURANCE_TIERS.find(t => t.level === (me?.streak_drain_tier ?? 1)) ?? STREAK_INSURANCE_TIERS[0];
-  const multIns      = MULTIPLIER_INSURANCE_TIERS.find(t => t.level === (me?.cash_insurance_tier ?? 1)) ?? MULTIPLIER_INSURANCE_TIERS[0];
-  const energyTank   = ENERGY_TANK_TIERS.find(t => t.level === (me?.energy_tier ?? 1)) ?? ENERGY_TANK_TIERS[0];
-  const battery      = BATTERY_TIERS.find(t => t.level === (me?.battery_tier ?? 1)) ?? BATTERY_TIERS[0];
-  const hasDoubleJump = !!me?.double_jump;
-  const maxEnergy    = energyTank.maxEnergy;
-  const streak       = me?.streak ?? 0;
-  const mult         = streakMultiplier(streak);
+  const ar = (settings.lang ?? i18n.language) === "ar";
 
   useEffect(() => { meRef.current = me; }, [me]);
 
@@ -94,10 +94,8 @@ const DontLookDownGame = ({ sessionId, studentId }: Props) => {
       const { data: m } = await supabase.from("game_students").select("*").eq("id", studentId).maybeSingle();
       if (m) {
         setMe(m);
-        const cp = (m as any).checkpoint_index ?? 0;
-        const sp = spawnFor(cp);
+        const sp = initialSpawn(WORLD.playerW);
         pRef.current.x = sp.x; pRef.current.y = sp.y;
-        pRef.current.checkpointIndex = cp;
         pRef.current.maxHeight = (m as any).height_reached ?? 0;
         pRef.current.energy = ENERGY.start;
       }
@@ -111,7 +109,6 @@ const DontLookDownGame = ({ sessionId, studentId }: Props) => {
         (p: any) => setSession((prev: any) => ({ ...prev, ...p.new })))
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "game_students", filter: `id=eq.${studentId}` },
         (p: any) => {
-          // Ignore the echo of our own optimistic write for a moment.
           if (Date.now() - localWriteAtRef.current < 2000) return;
           setMe((prev: any) => ({ ...prev, ...p.new }));
         })
@@ -140,7 +137,11 @@ const DontLookDownGame = ({ sessionId, studentId }: Props) => {
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       const k = e.key.toLowerCase();
-      if (["arrowleft", "arrowright", "arrowup", " ", "a", "d", "w"].includes(k)) e.preventDefault();
+      if (["arrowleft", "arrowright", "arrowup", "arrowdown", " ", "a", "d", "w", "s"].includes(k)) e.preventDefault();
+      if (flyEnabled && k === "f" && !e.repeat) {
+        flyRef.current = !flyRef.current;
+        setFlying(flyRef.current);
+      }
       keysRef.current.add(k);
     };
     const up = (e: KeyboardEvent) => keysRef.current.delete(e.key.toLowerCase());
@@ -155,35 +156,18 @@ const DontLookDownGame = ({ sessionId, studentId }: Props) => {
     };
   }, []);
 
-  // ── Touch controls write into the same key set the physics loop reads ────
   const holdKey = (key: string, on: boolean) => {
     if (on) keysRef.current.add(key); else keysRef.current.delete(key);
   };
 
-  // ── Void fall: respawn at checkpoint, take the cash penalty ──────────────
-  const handleVoidFall = useCallback(() => {
+  // ── Hazards knock you off, they don't teleport you — you just fall, same as missing a jump ──
+  const knockback = useCallback((message: string) => {
     const p = pRef.current;
-    const sp = spawnFor(p.checkpointIndex);
-    p.x = sp.x; p.y = sp.y; p.vx = 0; p.vy = 0; p.grounded = true; p.usedDoubleJump = false;
-
-    const m = meRef.current;
-    if (!m) return;
-    // The 10% void penalty is softened by the same insurance track that covers
-    // wrong answers, scaled off its level-1 loss so the tiers stay meaningful.
-    const insTier = MULTIPLIER_INSURANCE_TIERS.find(t => t.level === (m.cash_insurance_tier ?? 1)) ?? MULTIPLIER_INSURANCE_TIERS[0];
-    const pct = VOID_CASH_PENALTY_PCT * (insTier.lossPct / MULTIPLIER_INSURANCE_TIERS[0].lossPct);
-    const lost = Math.floor((m.crypto ?? 0) * (pct / 100));
-    const remaining = Math.max(0, (m.crypto ?? 0) - lost);
-    localWriteAtRef.current = Date.now();
-    setMe((prev: any) => ({ ...prev, crypto: remaining }));
-    toast.error(lost > 0
-      ? (ar ? `سقطت! -$${lost}` : `You fell! -$${lost}`)
-      : (ar ? "سقطت!" : "You fell!"));
-    // Atomic (dld_void_fall migration): the physics loop keeps running under
-    // the shop/quiz overlays, so a fall can land mid-purchase or mid-answer
-    // for the same player — this can't clobber that concurrent write anymore.
-    supabase.rpc("dld_void_fall", { p_student_id: m.id, p_loss_pct: pct }).then(undefined, () => {});
-  }, [ar]);
+    p.vy = Math.min(p.vy, -500);
+    p.vx *= 0.3;
+    p.grounded = false;
+    toast.error(message);
+  }, []);
 
   // ── Physics + render loop ─────────────────────────────────────────────────
   useEffect(() => {
@@ -192,6 +176,7 @@ const DontLookDownGame = ({ sessionId, studentId }: Props) => {
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
+    const gen = genRef.current;
 
     let raf = 0;
     let last = performance.now();
@@ -199,93 +184,132 @@ const DontLookDownGame = ({ sessionId, studentId }: Props) => {
     let hudAcc = 0;
     let netAcc = 0;
     let dbAcc = 0;
-    const STEP = 1 / 120; // fixed physics step
+    const STEP = 1 / 120;
 
     const physics = (dt: number) => {
       const p = pRef.current;
-      const m = meRef.current;
-      const tank = ENERGY_TANK_TIERS.find(t => t.level === (m?.energy_tier ?? 1)) ?? ENERGY_TANK_TIERS[0];
-      const batt = BATTERY_TIERS.find(t => t.level === (m?.battery_tier ?? 1)) ?? BATTERY_TIERS[0];
-      const canDouble = !!m?.double_jump;
-      const cap = tank.maxEnergy;
       const nowMs = Date.now();
+      const tSec = nowMs / 1000;
 
       const keys = keysRef.current;
       const left  = keys.has("arrowleft") || keys.has("a");
       const right = keys.has("arrowright") || keys.has("d");
       const jump  = keys.has("arrowup") || keys.has(" ") || keys.has("w");
 
-      // Out of energy → total freeze until a correct answer refuels them.
+      if (flyRef.current) {
+        const up = jump;
+        const down = keys.has("arrowdown") || keys.has("s");
+        const FLY_SPEED = 900;
+        p.vx = (right ? FLY_SPEED : 0) - (left ? FLY_SPEED : 0);
+        p.vy = (up ? FLY_SPEED : 0) - (down ? FLY_SPEED : 0);
+        if (left) p.face = -1; else if (right) p.face = 1;
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.grounded = false;
+        gen.ensureGeneratedTo(p.y);
+        if (p.y > p.maxHeight) p.maxHeight = p.y;
+        return;
+      }
+
       if (p.energy <= 0) {
         p.energy = 0;
         p.vx = 0; p.vy = 0;
         return;
       }
 
-      // Horizontal
       if (left && !right) {
         p.vx -= WORLD.moveAccel * dt; p.face = -1;
-        p.energy -= ENERGY.moveDrainPerSec * batt.drainMult * dt;
+        p.energy -= ENERGY.moveDrainPerSec * dt;
       } else if (right && !left) {
         p.vx += WORLD.moveAccel * dt; p.face = 1;
-        p.energy -= ENERGY.moveDrainPerSec * batt.drainMult * dt;
+        p.energy -= ENERGY.moveDrainPerSec * dt;
       } else {
         const d = WORLD.moveDecel * dt;
         p.vx = p.vx > 0 ? Math.max(0, p.vx - d) : Math.min(0, p.vx + d);
       }
       p.vx = Math.max(-WORLD.maxRunSpeed, Math.min(WORLD.maxRunSpeed, p.vx));
 
-      // Jump — edge-triggered via the jumpLatch flag
       if (jump && !(p as any).jumpLatch) {
         (p as any).jumpLatch = true;
-        const cost = ENERGY.jumpCost * batt.drainMult;
+        const cost = ENERGY.jumpCost;
         if (p.grounded && p.energy >= cost) {
           p.vy = WORLD.jumpVelocity; p.grounded = false; p.usedDoubleJump = false; p.energy -= cost;
-        } else if (!p.grounded && canDouble && !p.usedDoubleJump && p.energy >= cost) {
+        } else if (!p.grounded && !p.usedDoubleJump && p.energy >= cost) {
           p.vy = WORLD.doubleJumpVelocity; p.usedDoubleJump = true; p.energy -= cost;
         }
       } else if (!jump) {
         (p as any).jumpLatch = false;
       }
 
-      // Gravity (halved while Feather Fall is active)
-      const gScale = nowMs < p.featherUntil ? FEATHER_FALL_GRAVITY_SCALE : 1;
-      p.vy += WORLD.gravity * gScale * dt;
+      p.vy += WORLD.gravity * dt;
       if (p.vy < WORLD.maxFallSpeed) p.vy = WORLD.maxFallSpeed;
 
       const prevY = p.y;
       p.x += p.vx * dt;
       p.y += p.vy * dt;
       if (p.energy < 0) p.energy = 0;
-      if (p.energy > cap) p.energy = cap;
+
+      gen.ensureGeneratedTo(p.y);
 
       // One-way platform collision: only land when descending through the top.
+      const wasGrounded = p.grounded;
       p.grounded = false;
       if (p.vy <= 0) {
-        for (let i = 0; i < PLATFORMS.length; i++) {
-          const pl = PLATFORMS[i];
-          const overlapX = p.x + WORLD.playerW > pl.x && p.x < pl.x + pl.w;
+        for (const pl of gen.platforms) {
+          if (crumbleRef.current.has(pl.id) && nowMs - crumbleRef.current.get(pl.id)! > CRUMBLE_GRACE_MS + CRUMBLE_FADE_MS) continue;
+          const pos = platformWorldPos(pl, tSec);
+          const overlapX = p.x + WORLD.playerW > pos.x && p.x < pos.x + pl.w;
           if (!overlapX) continue;
-          if (prevY >= pl.y && p.y <= pl.y) {
-            p.y = pl.y; p.vy = 0; p.grounded = true; p.usedDoubleJump = false;
-            if (pl.checkpoint && p.checkpointIndex !== i) {
-              p.checkpointIndex = i;
-              toast.success(ar ? "نقطة حفظ!" : "Checkpoint!");
-              const mm = meRef.current;
-              if (mm) supabase.from("game_students").update({ checkpoint_index: i }).eq("id", mm.id).then(undefined, () => {});
+          if (prevY >= pos.y && p.y <= pos.y) {
+            p.y = pos.y; p.grounded = true; p.usedDoubleJump = false;
+            if (pl.bounce) {
+              p.vy = BOUNCE_VELOCITY; p.grounded = false;
+              bounceRef.current.set(pl.id, nowMs);
+            } else {
+              p.vy = 0;
             }
-            if (pl.y >= SUMMIT_Y && !summitRef.current) {
-              summitRef.current = true;
-              setSummited(true);
-              toast.success(ar ? "وصلت القمة!" : "You reached the summit!");
-            }
+            if (pl.crumble && !crumbleRef.current.has(pl.id)) crumbleRef.current.set(pl.id, nowMs);
+            break;
+          }
+        }
+        // The ground floor — an unconditional catch below every platform, so a
+        // missed jump just means falling further, never a teleport. The one
+        // exception: touching down far from the start platform would strand
+        // you with nothing nearby to climb, so that specific landing slides
+        // your x back to the origin — you still land ON the ground, same as
+        // any other fall, just not stranded thousands of units out.
+        if (!p.grounded && p.y <= WORLD.groundY) {
+          p.y = WORLD.groundY;
+          if (Math.abs(p.x - BASE_SPAWN.x) > FAR_FROM_ORIGIN) {
+            p.x = BASE_SPAWN.x;
+            toast.success(ar ? "عدت إلى القاعدة!" : "Back to base!");
+          }
+          p.vy = 0; p.grounded = true; p.usedDoubleJump = false;
+        }
+      }
+      if (p.grounded && !wasGrounded) landedAtRef.current = nowMs;
+
+      // Hazards knock you back into a fall — they don't respawn you either.
+      if (nowMs - lastHazardAtRef.current > HAZARD_COOLDOWN_MS) {
+        const cxp = p.x + WORLD.playerW / 2, cyp = p.y + WORLD.playerH / 2;
+        for (const hz of gen.hazards) {
+          const hzY = hz.kind === "spikes" ? hz.y : Math.min(hz.y1, hz.y2);
+          if (hzY < p.y - 400 || hzY > p.y + 900) continue;
+          let hit = false;
+          if (hz.kind === "spikes") {
+            hit = cxp > hz.x - hz.w * 0.1 && cxp < hz.x + hz.w * 1.1 && p.y < hz.y + 20 && p.y > hz.y - 30;
+          } else if (laserActiveAt(hz, tSec)) {
+            hit = distToLaser(hz, cxp, cyp) < 16;
+          }
+          if (hit) {
+            lastHazardAtRef.current = nowMs;
+            knockback(hz.kind === "spikes" ? (ar ? "أصابتك الأشواك!" : "Ouch — spikes!") : (ar ? "أصابك الليزر!" : "Zapped by the laser!"));
             break;
           }
         }
       }
 
       if (p.y > p.maxHeight) p.maxHeight = p.y;
-      if (p.y < WORLD.voidY) handleVoidFall();
     };
 
     const draw = () => {
@@ -297,7 +321,6 @@ const DontLookDownGame = ({ sessionId, studentId }: Props) => {
       }
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-      // Camera: player centred horizontally, sitting low so more sky is visible.
       const targetCamX = p.x + WORLD.playerW / 2 - cssW / 2;
       const targetCamY = p.y - cssH * 0.38;
       if (!p.camInit) { p.camX = targetCamX; p.camY = targetCamY; p.camInit = true; }
@@ -305,42 +328,56 @@ const DontLookDownGame = ({ sessionId, studentId }: Props) => {
       p.camY += (targetCamY - p.camY) * 0.12;
 
       const sx = (wx: number) => wx - p.camX;
-      const sy = (wy: number) => cssH - (wy - p.camY); // flip world-Y to screen-Y
+      const sy = (wy: number) => cssH - (wy - p.camY);
+      const tSec = Date.now() / 1000;
 
-      // Sky
-      const alt = Math.max(0, Math.min(1, p.y / SUMMIT_Y));
-      drawSky(ctx, cssW, cssH, alt);
+      const gen = genRef.current;
+      drawSky(ctx, cssW, cssH, p.y);
 
-      // Parallax clouds — nearer ones track the camera more strongly
-      for (const c of CLOUDS) {
-        const px = c.x - p.camX * c.depth;
-        const py = cssH - (c.y - p.camY * c.depth);
-        if (px < -220 || px > cssW + 220 || py < -160 || py > cssH + 160) continue;
-        ctx.globalAlpha = 0.55 + c.depth * 0.45;
-        drawCloud(ctx, px, py, c.s);
+      // Ambient clouds for every band currently in view
+      const viewTop = p.camY - 100, viewBottom = p.camY + cssH + 100;
+      for (const band of gen.bands) {
+        if (band.endY < viewTop || band.startY > viewBottom) continue;
+        for (const part of ambientFor(band)) {
+          if (part.y < viewTop || part.y > viewBottom) continue;
+          const px = part.x - p.camX * part.depth;
+          const py = cssH - (part.y - p.camY * part.depth);
+          if (px < -220 || px > cssW + 220 || py < -160 || py > cssH + 160) continue;
+          ctx.globalAlpha = 0.5 + part.depth * 0.5;
+          drawCloud(ctx, px, py, part.s);
+        }
       }
       ctx.globalAlpha = 1;
 
-      // Void haze at the bottom of the world
-      const voidTop = sy(WORLD.voidY);
-      if (voidTop < cssH) {
-        const vg = ctx.createLinearGradient(0, voidTop - 110, 0, cssH);
-        vg.addColorStop(0, "rgba(190,60,60,0)");
-        vg.addColorStop(1, "rgba(170,40,40,0.42)");
-        ctx.fillStyle = vg;
-        ctx.fillRect(0, Math.max(0, voidTop - 110), cssW, cssH);
-      }
+      // Ground floor — drawn before platforms so it sits behind them
+      const groundScreenY = sy(WORLD.groundY);
+      if (groundScreenY < cssH + 100) drawGround(ctx, groundScreenY, cssW, cssH);
 
       // Platforms
-      for (const pl of PLATFORMS) {
-        const x = sx(pl.x), y = sy(pl.y);
-        // Cull against the platform's PAINTED extent, not its slab position:
-        // the pillars hang well below `y`, so testing `y` alone popped
-        // platforms out while their legs were still visible on screen.
+      for (const pl of gen.platforms) {
+        const pos = platformWorldPos(pl, tSec);
+        const x = sx(pos.x), y = sy(pos.y);
         if (x + pl.w < -60 || x > cssW + 60) continue;
         if (y + PLATFORM_DRAW_BELOW < -40) continue;
         if (y - PLATFORM_DRAW_ABOVE > cssH + 40) continue;
-        drawPlatform(ctx, x, y, pl.w, { checkpoint: pl.checkpoint });
+        const crumbleAt = crumbleRef.current.get(pl.id);
+        const crumbleT = crumbleAt ? Math.max(0, Math.min(1, (Date.now() - crumbleAt - CRUMBLE_GRACE_MS) / CRUMBLE_FADE_MS)) : 0;
+        const bounceAt = bounceRef.current.get(pl.id);
+        const bounceT = bounceAt ? Math.max(0, 1 - (Date.now() - bounceAt) / 260) : 0;
+        drawPlatform(ctx, x, y, pl.w, { crumbleT, bounceT, t: tSec });
+      }
+
+      // Hazards
+      for (const hz of gen.hazards) {
+        if (hz.kind === "spikes") {
+          const x = sx(hz.x), y = sy(hz.y);
+          if (x < -60 || x > cssW + 60 || y < -60 || y > cssH + 60) continue;
+          drawSpikes(ctx, x, y, hz.w);
+        } else {
+          const x1 = sx(hz.x1), y1 = sy(hz.y1), x2 = sx(hz.x2), y2 = sy(hz.y2);
+          if (Math.max(x1, x2) < -60 || Math.min(x1, x2) > cssW + 60) continue;
+          drawLaser(ctx, x1, y1, x2, y2, laserActiveAt(hz, tSec), tSec);
+        }
       }
 
       // Other climbers
@@ -350,44 +387,37 @@ const DontLookDownGame = ({ sessionId, studentId }: Props) => {
         if (peer.t < cutoff) { delete peersRef.current[id]; continue; }
         const x = sx(peer.x), y = sy(peer.y);
         if (x < -80 || x > cssW + 80 || y < -80 || y > cssH + 80) continue;
-        drawCharacter(ctx, x, y, WORLD.playerW, WORLD.playerH, colorFor(id), peer.face ?? 1, { alpha: 0.7 });
+        drawCharacter(ctx, x, y, WORLD.playerW, WORLD.playerH, colorFor(id), peer.face ?? 1,
+          { t: tSec, alpha: 0.7, grounded: true, blinkSeed: seedFromString(id) });
         drawNameTag(ctx, x + WORLD.playerW / 2, y + 3, peer.name ?? "");
       }
 
       // Self
       const px = sx(p.x), py = sy(p.y);
       const frozen = p.energy <= 0;
-      if (Date.now() < p.featherUntil) {
-        // glide aura
-        ctx.fillStyle = "rgba(255,255,255,0.42)";
-        ctx.beginPath();
-        ctx.ellipse(px + WORLD.playerW / 2, py - WORLD.playerH * 0.55, WORLD.playerW * 1.05, WORLD.playerH * 0.78, 0, 0, Math.PI * 2);
-        ctx.fill();
-      }
-      drawCharacter(ctx, px, py, WORLD.playerW, WORLD.playerH, colorFor(studentId), p.face, { frozen });
+      const landPulse = Math.max(0, 1 - (Date.now() - landedAtRef.current) / LAND_PULSE_MS);
+      drawCharacter(ctx, px, py, WORLD.playerW, WORLD.playerH, colorFor(studentId), p.face, {
+        t: tSec, grounded: p.grounded, vx: p.vx, vy: p.vy, landPulse, frozen, blinkSeed: blinkSeedRef.current,
+      });
       drawNameTag(ctx, px + WORLD.playerW / 2, py + 3, meRef.current?.name ?? "");
 
-      // Last, so it hazes the platforms rather than sitting behind them.
-      drawTopFog(ctx, cssW, cssH, alt);
+      drawTopFog(ctx, cssW, cssH, p.y);
     };
 
     const frame = (t: number) => {
       let dt = (t - last) / 1000;
       last = t;
-      if (dt > 0.25) dt = 0.25; // tab was backgrounded — don't teleport
+      if (dt > 0.25) dt = 0.25;
       acc += dt; hudAcc += dt; netAcc += dt; dbAcc += dt;
 
       while (acc >= STEP) { physics(STEP); acc -= STEP; }
       draw();
 
-      // HUD at ~12Hz instead of 60 — keeps React out of the hot path
       if (hudAcc >= 0.08) {
         hudAcc = 0;
         const p = pRef.current;
-        setHud({ energy: p.energy, grounded: p.grounded, featherUntil: p.featherUntil, height: p.y });
-        setNow(Date.now());
+        setHud({ energy: p.energy, height: p.y });
       }
-      // Broadcast position at ~15Hz
       if (netAcc >= 0.066) {
         netAcc = 0;
         const p = pRef.current;
@@ -396,7 +426,6 @@ const DontLookDownGame = ({ sessionId, studentId }: Props) => {
           payload: { id: studentId, name: meRef.current?.name ?? "", x: Math.round(p.x), y: Math.round(p.y), face: p.face },
         });
       }
-      // Persist best height every 3s so the teacher leaderboard ranks the climb
       if (dbAcc >= 3) {
         dbAcc = 0;
         const p = pRef.current;
@@ -412,7 +441,7 @@ const DontLookDownGame = ({ sessionId, studentId }: Props) => {
     };
     raf = requestAnimationFrame(frame);
     return () => cancelAnimationFrame(raf);
-  }, [phase, studentId, ar, handleVoidFall]);
+  }, [phase, studentId, ar, knockback]);
 
   // ── Trivia ────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -428,33 +457,19 @@ const DontLookDownGame = ({ sessionId, studentId }: Props) => {
     setPicked(idx);
     const correct = idx === currentQ.correct_index;
 
-    let newStreak: number, newCash: number, cashDelta = 0;
     if (correct) {
-      newStreak = (me.streak ?? 0) + 1;
-      const m = streakMultiplier(newStreak);
-      cashDelta = incomeTier.payout * m;
-      newCash = (me.crypto ?? 0) + cashDelta;
-      const gain = ENERGY.rewardPerCorrect * m;
-      const p = pRef.current;
-      p.energy = Math.min(maxEnergy, p.energy + gain);
-      toast.success(`+${gain} ${ar ? "طاقة" : "energy"}  ·  +$${incomeTier.payout * m}`);
+      const gain = ENERGY.rewardPerCorrect;
+      pRef.current.energy += gain;
+      toast.success(`+${gain} ${ar ? "طاقة" : "energy"}`);
     } else {
-      const cur = me.streak ?? 0;
-      newStreak = streakIns.dropBy === null ? 0 : Math.max(0, cur - streakIns.dropBy);
-      newCash = Math.floor((me.crypto ?? 0) * (1 - multIns.lossPct / 100));
-      const lost = (me.crypto ?? 0) - newCash;
-      toast.error(lost > 0 ? (ar ? `خطأ! -$${lost}` : `Wrong! -$${lost}`) : (ar ? "إجابة خاطئة" : "Wrong answer"));
+      toast.error(ar ? "إجابة خاطئة" : "Wrong answer");
     }
 
-    const updates: any = { total_answers: (me.total_answers ?? 0) + 1, streak: newStreak, crypto: newCash };
+    const updates: any = { total_answers: (me.total_answers ?? 0) + 1 };
     if (correct) updates.correct_answers = (me.correct_answers ?? 0) + 1;
     localWriteAtRef.current = Date.now();
     setMe((prev: any) => ({ ...prev, ...updates }));
-    // Atomic (dld_apply_answer migration) — see handleVoidFall's note above.
-    supabase.rpc("dld_apply_answer", {
-      p_student_id: me.id, p_correct: correct,
-      p_drop_by: streakIns.dropBy, p_cash_delta: cashDelta, p_loss_pct: multIns.lossPct,
-    }).then(undefined, () => {});
+    supabase.rpc("dld_apply_answer", { p_student_id: me.id, p_correct: correct }).then(undefined, () => {});
     supabase.from("question_responses").insert({
       session_id: sessionId, student_id: me.id, question_id: currentQ.id,
       question_index: 0, answer_index: idx, is_correct: correct,
@@ -463,56 +478,8 @@ const DontLookDownGame = ({ sessionId, studentId }: Props) => {
     setTimeout(() => setQSeed(s => s + 1), 900);
   };
 
-  // ── Purchases ─────────────────────────────────────────────────────────────
-  // Atomic + affordability-checked server-side (dld_spend migration): the
-  // local `cash < cost` guard below can pass on a stale balance (a void fall
-  // or a wrong answer can land between render and tap), so the DB re-checks
-  // at write time and returns no rows if it's no longer affordable.
-  const buy = (patch: any, cost: number, label: string) => {
-    if (!me || cash < cost || buyingRef.current) return;
-    buyingRef.current = true;
-    const next = { ...patch, crypto: Math.max(0, cash - cost) };
-    localWriteAtRef.current = Date.now();
-    setMe((prev: any) => ({ ...prev, ...next }));
-    toast.success(label);
-    supabase.rpc("dld_spend", {
-      p_student_id: me.id, p_cost: cost,
-      p_income_tier: patch.income_tier ?? null,
-      p_streak_drain_tier: patch.streak_drain_tier ?? null,
-      p_cash_insurance_tier: patch.cash_insurance_tier ?? null,
-      p_energy_tier: patch.energy_tier ?? null,
-      p_battery_tier: patch.battery_tier ?? null,
-      p_double_jump: patch.double_jump ?? null,
-    }).then(({ data, error }: any) => {
-      if (!error && (!data || data.length === 0)) toast.error(ar ? "لم تعد تملك ما يكفي" : "No longer affordable");
-    }, () => {});
-    setTimeout(() => { buyingRef.current = false; }, 400);
-  };
-
-  const activateFeatherFall = () => {
-    if (!me || cash < FEATHER_FALL_COST || buyingRef.current) return;
-    buyingRef.current = true;
-    pRef.current.featherUntil = Date.now() + FEATHER_FALL_MS;
-    const remaining = Math.max(0, cash - FEATHER_FALL_COST);
-    localWriteAtRef.current = Date.now();
-    setMe((prev: any) => ({ ...prev, crypto: remaining }));
-    toast.success(ar ? "سقوط الريشة مفعّل!" : "Feather Fall active!");
-    supabase.rpc("dld_spend", { p_student_id: me.id, p_cost: FEATHER_FALL_COST }).then(({ data, error }: any) => {
-      if (!error && (!data || data.length === 0)) toast.error(ar ? "لم تعد تملك ما يكفي" : "No longer affordable");
-    }, () => {});
-    setShowShop(false);
-    setTimeout(() => { buyingRef.current = false; }, 400);
-  };
-
-  const nextIncome = INCOME_TIERS.find(t => t.level === incomeTier.level + 1);
-  const nextStreakIns = STREAK_INSURANCE_TIERS.find(t => t.level === streakIns.level + 1);
-  const nextMultIns = MULTIPLIER_INSURANCE_TIERS.find(t => t.level === multIns.level + 1);
-  const nextTank = ENERGY_TANK_TIERS.find(t => t.level === energyTank.level + 1);
-  const nextBattery = BATTERY_TIERS.find(t => t.level === battery.level + 1);
-
-  const energyPct = Math.max(0, Math.min(100, (hud.energy / maxEnergy) * 100));
+  const energyPct = Math.max(6, Math.min(100, (hud.energy / 200) * 100));
   const frozen = hud.energy <= 0;
-  const featherLeft = Math.max(0, Math.ceil((hud.featherUntil - now) / 1000));
 
   // ── Waiting ───────────────────────────────────────────────────────────────
   if (phase === "waiting") {
@@ -548,7 +515,6 @@ const DontLookDownGame = ({ sessionId, studentId }: Props) => {
         <div className="flex gap-3">
           {[
             { label: ar ? "الارتفاع" : "HEIGHT", value: `${Math.round(Math.max(pRef.current.maxHeight, me?.height_reached ?? 0))}m`, color: "#0284c7" },
-            { label: ar ? "النقود" : "CASH", value: `$${cash}`, color: "#b45309" },
             { label: ar ? "صحيح" : "CORRECT", value: `${me?.correct_answers ?? 0}`, color: "#15803d" },
           ].map(s => (
             <div key={s.label} className="px-4 py-3 rounded-2xl shadow-md" style={{ background: "rgba(255,255,255,0.93)" }}>
@@ -589,25 +555,13 @@ const DontLookDownGame = ({ sessionId, studentId }: Props) => {
               <span className="text-[11px] font-extrabold tabular-nums shrink-0"
                 style={{ color: frozen ? "#dc2626" : "#0f172a" }}>{Math.round(hud.energy)}</span>
             </div>
-            {featherLeft > 0 && (
-              <div className={PILL} style={{ ...PILL_STYLE, background: "rgba(14,165,233,0.94)" }}>
-                <Feather className="h-3.5 w-3.5" style={{ color: "white" }} />
-                <span className="text-xs font-extrabold tabular-nums text-white">{featherLeft}s</span>
+            {flying && (
+              <div className={PILL} style={{ ...PILL_STYLE, background: "rgba(79,70,229,0.94)" }}>
+                <span className="text-xs font-extrabold tracking-widest text-white">
+                  {ar ? "وضع الطيران" : "FLY MODE"} — F {ar ? "للإيقاف" : "to exit"}
+                </span>
               </div>
             )}
-          </div>
-
-          <div className="flex flex-col gap-2 items-end">
-            <div className={PILL} style={PILL_STYLE}>
-              <PixelShield className="h-3.5 w-3.5" />
-              <span className="text-sm font-extrabold tabular-nums" style={{ color: "#1e293b" }}>${cash}</span>
-            </div>
-            <div className={PILL} style={PILL_STYLE}>
-              <PixelFlame className="h-3.5 w-3.5" />
-              <span className="text-sm font-extrabold tabular-nums" style={{ color: streak >= 2 ? "#b45309" : "#475569" }}>
-                {streak} ×{mult}
-              </span>
-            </div>
           </div>
         </div>
       </div>
@@ -621,16 +575,7 @@ const DontLookDownGame = ({ sessionId, studentId }: Props) => {
         </div>
       )}
 
-      {summited && !frozen && (
-        <div className="absolute inset-x-0 top-28 flex justify-center pointer-events-none">
-          <div className="px-5 py-2.5 rounded-2xl text-sm font-extrabold shadow-lg"
-            style={{ background: "rgba(245,158,11,0.96)", color: "#3b2606" }}>
-            {ar ? "وصلت القمة!" : "SUMMIT REACHED!"}
-          </div>
-        </div>
-      )}
-
-      {/* ── Answer Questions (matches the reference's bottom-left CTA) ── */}
+      {/* ── Answer Questions ── */}
       <button onClick={() => { setQSeed(s => s + 1); setShowQuiz(true); }}
         className={cn("absolute left-4 z-10 px-4 py-2.5 rounded-xl text-sm font-extrabold text-white shadow-lg active:scale-95 transition-transform",
           frozen && "animate-pulse")}
@@ -655,24 +600,16 @@ const DontLookDownGame = ({ sessionId, studentId }: Props) => {
           ))}
         </div>
 
-        <div className="flex items-center gap-2.5">
-          <button onClick={() => setShowShop(true)}
-            className="h-14 w-14 rounded-2xl flex flex-col items-center justify-center gap-0.5 shadow-md active:scale-95 transition-transform"
-            style={{ background: "rgba(255,255,255,0.92)", color: "#1e293b" }}>
-            <Store className="h-5 w-5" strokeWidth={2.4} />
-            <span className="text-[8px] font-extrabold">{ar ? "متجر" : "SHOP"}</span>
-          </button>
-          <button
-            onPointerDown={e => { e.preventDefault(); holdKey(" ", true); }}
-            onPointerUp={() => holdKey(" ", false)}
-            onPointerLeave={() => holdKey(" ", false)}
-            onPointerCancel={() => holdKey(" ", false)}
-            className="h-20 w-20 rounded-2xl flex flex-col items-center justify-center shadow-lg active:scale-95 transition-transform"
-            style={{ background: "#4f46e5", color: "white" }}>
-            <ArrowUp className="h-8 w-8" strokeWidth={2.8} />
-            {hasDoubleJump && <span className="text-[8px] font-extrabold tracking-wider">×2</span>}
-          </button>
-        </div>
+        <button
+          onPointerDown={e => { e.preventDefault(); holdKey(" ", true); }}
+          onPointerUp={() => holdKey(" ", false)}
+          onPointerLeave={() => holdKey(" ", false)}
+          onPointerCancel={() => holdKey(" ", false)}
+          className="h-20 w-20 rounded-2xl flex flex-col items-center justify-center shadow-lg active:scale-95 transition-transform"
+          style={{ background: "#4f46e5", color: "white" }}>
+          <ArrowUp className="h-8 w-8" strokeWidth={2.8} />
+          <span className="text-[8px] font-extrabold tracking-wider">×2</span>
+        </button>
       </div>
 
       {/* ── Quiz overlay ── */}
@@ -683,16 +620,16 @@ const DontLookDownGame = ({ sessionId, studentId }: Props) => {
             <div className="flex items-center gap-2">
               <Zap className="h-4 w-4" style={{ color: "#38bdf8" }} />
               <span className="text-sm font-black tabular-nums" style={{ color: "#7dd3fc" }}>
-                {Math.round(hud.energy)}/{maxEnergy}
+                {Math.round(hud.energy)}
               </span>
               <span className="text-xs opacity-50" style={{ color: "white" }}>
-                +{ENERGY.rewardPerCorrect * mult} {ar ? "لكل إجابة" : "per correct"}
+                +{ENERGY.rewardPerCorrect} {ar ? "لكل إجابة" : "per correct"}
               </span>
             </div>
             <button onClick={() => setShowQuiz(false)}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black"
               style={{ background: "rgba(255,255,255,0.1)", color: "white" }}>
-              <X className="h-3.5 w-3.5" />{ar ? "تسلّق" : "CLIMB"}
+              {ar ? "تسلّق" : "CLIMB"}
             </button>
           </div>
 
@@ -730,158 +667,8 @@ const DontLookDownGame = ({ sessionId, studentId }: Props) => {
           )}
         </div>
       )}
-
-      {/* ── Shop ── */}
-      {showShop && (
-        <div className="absolute inset-0 z-40 flex items-end sm:items-center justify-center"
-          style={{ background: "rgba(0,0,0,0.7)" }} onClick={() => setShowShop(false)}>
-          <div onClick={e => e.stopPropagation()}
-            className="w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl p-4 max-h-[86vh] overflow-y-auto"
-            style={{ background: "#101728", border: "1px solid rgba(255,255,255,0.12)",
-                     paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}>
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-black tracking-widest" style={{ color: "hsl(210 30% 90%)" }}>
-                {ar ? "المتجر" : "SHOP"}
-              </span>
-              <div className="flex items-center gap-1.5">
-                <PixelShield className="h-4 w-4" />
-                <span className="font-black tabular-nums text-sm" style={{ color: "hsl(45 76% 64%)" }}>${cash}</span>
-              </div>
-            </div>
-
-            <div className="flex gap-2 mb-3">
-              {(["parkour", "economy"] as ShopTab[]).map(tab => (
-                <button key={tab} onClick={() => setShopTab(tab)}
-                  className="flex-1 py-2 rounded-lg text-xs font-black transition-all"
-                  style={{
-                    background: shopTab === tab ? "rgba(56,189,248,0.16)" : "rgba(255,255,255,0.04)",
-                    border: `2px solid ${shopTab === tab ? "#38bdf8" : "rgba(255,255,255,0.1)"}`,
-                    color: shopTab === tab ? "#7dd3fc" : "rgba(255,255,255,0.45)",
-                  }}>
-                  {tab === "parkour" ? (ar ? "المهارات" : "PARKOUR") : (ar ? "الاقتصاد" : "ECONOMY")}
-                </button>
-              ))}
-            </div>
-
-            {shopTab === "economy" && (
-              <div className="space-y-3">
-                <ShopRow ar={ar} labelEn="MONEY PER QUESTION" labelAr="النقود لكل سؤال"
-                  current={ar ? incomeTier.nameAr : incomeTier.nameEn}
-                  next={nextIncome && { name: ar ? nextIncome.nameAr : nextIncome.nameEn, cost: nextIncome.cost,
-                    detail: `$${incomeTier.payout} → $${nextIncome.payout}` }}
-                  cash={cash} onBuy={() => nextIncome && buy({ income_tier: nextIncome.level }, nextIncome.cost, ar ? nextIncome.nameAr : nextIncome.nameEn)} />
-                <ShopRow ar={ar} labelEn="STREAK INSURANCE" labelAr="تأمين السلسلة"
-                  current={ar ? streakIns.nameAr : streakIns.nameEn}
-                  next={nextStreakIns && { name: ar ? nextStreakIns.nameAr : nextStreakIns.nameEn, cost: nextStreakIns.cost,
-                    detail: ar ? `تفقد ${nextStreakIns.dropBy} فقط` : `drop only ${nextStreakIns.dropBy} on a miss` }}
-                  cash={cash} onBuy={() => nextStreakIns && buy({ streak_drain_tier: nextStreakIns.level }, nextStreakIns.cost, ar ? nextStreakIns.nameAr : nextStreakIns.nameEn)} />
-                <ShopRow ar={ar} labelEn="MULTIPLIER INSURANCE" labelAr="تأمين المضاعف"
-                  current={ar ? multIns.nameAr : multIns.nameEn}
-                  next={nextMultIns && { name: ar ? nextMultIns.nameAr : nextMultIns.nameEn, cost: nextMultIns.cost,
-                    detail: ar ? `تفقد ${nextMultIns.lossPct}% فقط` : `lose only ${nextMultIns.lossPct}%` }}
-                  cash={cash} onBuy={() => nextMultIns && buy({ cash_insurance_tier: nextMultIns.level }, nextMultIns.cost, ar ? nextMultIns.nameAr : nextMultIns.nameEn)} />
-              </div>
-            )}
-
-            {shopTab === "parkour" && (
-              <div className="space-y-3">
-                <ShopRow ar={ar} labelEn="ENERGY TANK" labelAr="خزان الطاقة" icon={<Zap className="h-4 w-4" />}
-                  current={`${energyTank.maxEnergy}`}
-                  next={nextTank && { name: ar ? nextTank.nameAr : nextTank.nameEn, cost: nextTank.cost,
-                    detail: `${energyTank.maxEnergy} → ${nextTank.maxEnergy} ${ar ? "طاقة" : "energy"}` }}
-                  cash={cash} onBuy={() => nextTank && buy({ energy_tier: nextTank.level }, nextTank.cost, ar ? nextTank.nameAr : nextTank.nameEn)} />
-
-                <ShopRow ar={ar} labelEn="EFFICIENCY BATTERIES" labelAr="بطاريات الكفاءة" icon={<Battery className="h-4 w-4" />}
-                  current={ar ? battery.nameAr : battery.nameEn}
-                  next={nextBattery && { name: ar ? nextBattery.nameAr : nextBattery.nameEn, cost: nextBattery.cost,
-                    detail: ar ? `استهلاك أقل بنسبة ${Math.round((1 - nextBattery.drainMult) * 100)}%` : `${Math.round((1 - nextBattery.drainMult) * 100)}% less energy used` }}
-                  cash={cash} onBuy={() => nextBattery && buy({ battery_tier: nextBattery.level }, nextBattery.cost, ar ? nextBattery.nameAr : nextBattery.nameEn)} />
-
-                <div>
-                  <div className="flex items-center justify-between px-1 pb-1.5 text-[10px] tracking-widest uppercase"
-                    style={{ color: "rgba(255,255,255,0.4)" }}>
-                    <span>{ar ? "القفزة المزدوجة" : "DOUBLE JUMP"}</span>
-                    {hasDoubleJump && <span style={{ color: "#4ade80" }}>{ar ? "مملوكة" : "OWNED"}</span>}
-                  </div>
-                  {hasDoubleJump ? (
-                    <div className="text-center text-xs py-2" style={{ color: "#4ade80" }}>
-                      {ar ? "اقفز مرة أخرى في الهواء" : "Jump again in mid-air"}
-                    </div>
-                  ) : (
-                    <BuyButton ar={ar} cash={cash} cost={DOUBLE_JUMP_COST}
-                      name={ar ? "القفزة المزدوجة" : "Double Jump"}
-                      detail={ar ? "قفزة إضافية في الهواء" : "one extra jump while airborne"}
-                      onBuy={() => buy({ double_jump: true }, DOUBLE_JUMP_COST, ar ? "القفزة المزدوجة!" : "Double Jump unlocked!")} />
-                  )}
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between px-1 pb-1.5 text-[10px] tracking-widest uppercase"
-                    style={{ color: "rgba(255,255,255,0.4)" }}>
-                    <span>{ar ? "سقوط الريشة" : "FEATHER FALL"}</span>
-                    {featherLeft > 0 && <span style={{ color: "#7dd3fc" }}>{featherLeft}s</span>}
-                  </div>
-                  <BuyButton ar={ar} cash={cash} cost={FEATHER_FALL_COST}
-                    name={ar ? "تفعيل" : "Activate"}
-                    detail={ar ? `نصف الجاذبية لمدة ${FEATHER_FALL_MS / 1000} ثانية` : `half gravity for ${FEATHER_FALL_MS / 1000}s`}
-                    onBuy={activateFeatherFall} />
-                </div>
-              </div>
-            )}
-
-            <button onClick={() => setShowShop(false)}
-              className="w-full mt-3 py-2.5 rounded-lg text-xs font-bold"
-              style={{ background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.6)" }}>
-              {ar ? "إغلاق" : "CLOSE"}
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
-
-// ── Shop building blocks ────────────────────────────────────────────────────
-const BuyButton = ({ ar, cash, cost, name, detail, onBuy }: {
-  ar: boolean; cash: number; cost: number; name: string; detail: string; onBuy: () => void;
-}) => {
-  const can = cash >= cost;
-  return (
-    <button disabled={!can} onClick={onBuy}
-      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-start transition-all"
-      style={{
-        background: can ? "rgba(56,189,248,0.1)" : "rgba(255,255,255,0.03)",
-        border: `2px solid ${can ? "#38bdf8" : "rgba(255,255,255,0.08)"}`,
-        color: can ? "hsl(210 30% 90%)" : "rgba(255,255,255,0.3)",
-      }}>
-      <div className="flex-1 min-w-0">
-        <div className="text-sm font-bold truncate">{name}</div>
-        <div className="text-[10px] opacity-70">{detail}</div>
-      </div>
-      <div className="flex items-center gap-1 shrink-0 font-black tabular-nums text-sm">
-        <PixelShield className="h-3.5 w-3.5" />{cost}
-      </div>
-    </button>
-  );
-};
-
-const ShopRow = ({ ar, labelEn, labelAr, current, next, cash, onBuy, icon }: {
-  ar: boolean; labelEn: string; labelAr: string; current: string;
-  next: { name: string; cost: number; detail: string } | undefined | null;
-  cash: number; onBuy: () => void; icon?: React.ReactNode;
-}) => (
-  <div>
-    <div className="flex items-center justify-between px-1 pb-1.5 text-[10px] tracking-widest uppercase"
-      style={{ color: "rgba(255,255,255,0.4)" }}>
-      <span className="flex items-center gap-1.5">{icon}{ar ? labelAr : labelEn}</span>
-      <span style={{ color: "#7dd3fc" }}>{current}</span>
-    </div>
-    {next ? (
-      <BuyButton ar={ar} cash={cash} cost={next.cost} name={next.name} detail={next.detail} onBuy={onBuy} />
-    ) : (
-      <div className="text-center text-xs py-2" style={{ color: "hsl(45 76% 60%)" }}>{ar ? "أقصى مستوى" : "MAX LEVEL"}</div>
-    )}
-  </div>
-);
 
 export default DontLookDownGame;

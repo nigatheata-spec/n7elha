@@ -1,226 +1,334 @@
 // ── Don't Look Down — shared canvas painting ────────────────────────────────
-// Bright daytime sky, pixel clouds, stone-brick platforms on pillars.
-// Both the student view and the teacher tower view draw from here so the
-// two never drift apart visually.
+// Plain sky, stone-brick platforms, simple hazards — placeholder art until
+// real assets are dropped in for the platforms/biomes (they're still
+// objects, not animated sprites, so a static image per material/biome is
+// low-risk to swap in later). The character is the one piece that stays
+// fully custom-drawn. Both the student view and the teacher spotlight draw
+// from here so the two never drift apart visually. See dontLookDownLevel.ts
+// for the level generator that produces the Platform/Hazard/Biome data.
 
-import { SUMMIT_Y } from "./dontLookDown";
+import { mulberry32 } from "./dontLookDownLevel";
 
-export const PALETTE = {
-  skyTop:    "#5fc5ef",
-  skyMid:    "#8bd9f7",
-  skyLow:    "#b6e8fb",
-  cloud:     "#ffffff",
-  cloudShade: "#dcf1fb",
-  stoneLight: "#aeb7c4",   // top course
-  stoneLip:   "#d3dae2",   // highlight line on the very top
-  stoneBody:  "#39424f",   // main slab
-  stoneMortar:"#4b5666",   // brick seams
-  stoneDark:  "#2b323d",   // pillars
-  cpLight:    "#7fe0a2",   // checkpoint variants
-  cpBody:     "#2c6b47",
-  tagBg:      "rgba(24,30,42,0.88)",
+const TAG_BG = "rgba(24,30,42,0.88)";
+
+const PALETTE = {
+  skyTop: 199, skySat: 80,
+  stoneLight: "#aeb7c4", stoneLip: "#d3dae2", stoneBody: "#39424f", stoneDark: "#2b323d",
 };
 
-// ── Cloud field ─────────────────────────────────────────────────────────────
-type Cloud = { x: number; y: number; s: number; depth: number };
-export const CLOUDS: Cloud[] = (() => {
-  let seed = 20260807;
-  const rnd = () => (seed = (seed * 1664525 + 1013904223) % 4294967296) / 4294967296;
-  const out: Cloud[] = [];
-  for (let i = 0; i < 110; i++) {
-    out.push({
-      x: rnd() * 4200 - 1100,
-      y: rnd() * (SUMMIT_Y + 900) - 300,
-      s: 0.5 + rnd() * 1.1,
-      depth: 0.25 + rnd() * 0.5,   // 0 = painted on the sky, 1 = moves with the world
-    });
-  }
-  return out;
-})();
+// ── Sky ───────────────────────────────────────────────────────────────────
+export const drawSky = (ctx: CanvasRenderingContext2D, w: number, h: number, y: number) => {
+  const shade = 1 - 1 / (1 + Math.max(0, y) / 5000);
+  const g = ctx.createLinearGradient(0, 0, 0, h);
+  g.addColorStop(0, `hsl(${PALETTE.skyTop} ${PALETTE.skySat}% ${58 - shade * 16}%)`);
+  g.addColorStop(0.55, `hsl(${PALETTE.skyTop + 3} ${PALETTE.skySat - 4}% ${68 - shade * 14}%)`);
+  g.addColorStop(1, `hsl(${PALETTE.skyTop - 2} ${PALETTE.skySat + 2}% ${80 - shade * 10}%)`);
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, w, h);
+  ctx.fillStyle = "rgba(255,255,255,0.045)";
+  for (let yy = 0; yy < h; yy += 6) ctx.fillRect(0, yy, w, 3);
+};
 
-/** One fluffy cloud built from overlapping blobs, drawn in screen space. */
+export const drawTopFog = (ctx: CanvasRenderingContext2D, w: number, h: number, y: number) => {
+  const shade = 1 - 1 / (1 + Math.max(0, y) / 5000);
+  const lig = 58 - shade * 16;
+  const band = Math.max(90, h * 0.22);
+  const g = ctx.createLinearGradient(0, 0, 0, band);
+  g.addColorStop(0, `hsl(${PALETTE.skyTop} ${PALETTE.skySat}% ${lig}% / 0.92)`);
+  g.addColorStop(0.45, `hsl(${PALETTE.skyTop} ${PALETTE.skySat}% ${lig}% / 0.45)`);
+  g.addColorStop(1, `hsl(${PALETTE.skyTop} ${PALETTE.skySat}% ${lig}% / 0)`);
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, w, band);
+};
+
+// ── Clouds ────────────────────────────────────────────────────────────────
 export const drawCloud = (ctx: CanvasRenderingContext2D, cx: number, cy: number, s: number) => {
   const puff = (dx: number, dy: number, r: number) => {
     ctx.beginPath();
     ctx.arc(cx + dx * s, cy + dy * s, r * s, 0, Math.PI * 2);
     ctx.fill();
   };
-  // soft underside first, then the bright body on top
-  ctx.fillStyle = PALETTE.cloudShade;
+  ctx.fillStyle = "#dcf1fb";
   puff(-30, 8, 24); puff(0, 12, 30); puff(32, 8, 22); puff(14, 2, 26);
-  ctx.fillStyle = PALETTE.cloud;
+  ctx.fillStyle = "#ffffff";
   puff(-30, 2, 23); puff(-8, -8, 29); puff(18, -4, 25); puff(38, 3, 19);
 };
 
-export const drawSky = (ctx: CanvasRenderingContext2D, w: number, h: number, altitude: number) => {
-  // Slightly deeper blue the higher the camera is, but never night.
-  const t = Math.max(0, Math.min(1, altitude));
-  const g = ctx.createLinearGradient(0, 0, 0, h);
-  g.addColorStop(0, `hsl(${199 + t * 6} ${78 - t * 10}% ${58 - t * 14}%)`);
-  g.addColorStop(0.55, `hsl(${197 + t * 4} ${82 - t * 8}% ${70 - t * 12}%)`);
-  g.addColorStop(1, `hsl(196 ${86 - t * 6}% ${82 - t * 12}%)`);
-  ctx.fillStyle = g;
-  ctx.fillRect(0, 0, w, h);
-
-  // faint horizontal banding, like the reference's pixel sky
-  ctx.fillStyle = "rgba(255,255,255,0.045)";
-  for (let y = 0; y < h; y += 6) ctx.fillRect(0, y, w, 3);
+type AmbientParticle = { x: number; y: number; s: number; depth: number };
+const ambientCache = new Map<number, AmbientParticle[]>();
+/** Deterministic per-band cloud field — generated on demand, cached forever, no unbounded global array. */
+export const ambientFor = (band: { startY: number; endY: number }): AmbientParticle[] => {
+  let arr = ambientCache.get(band.startY);
+  if (arr) return arr;
+  const rng = mulberry32(Math.floor(band.startY) * 7919 + 13);
+  arr = [];
+  for (let i = 0; i < 14; i++) {
+    arr.push({
+      x: rng() * 1500 - 380,
+      y: band.startY + rng() * (band.endY - band.startY),
+      s: 0.5 + rng() * 1.0,
+      depth: 0.22 + rng() * 0.55,
+    });
+  }
+  ambientCache.set(band.startY, arr);
+  return arr;
 };
 
-// ── Atmosphere ──────────────────────────────────────────────────────────────
-/**
- * Haze along the top of the viewport, painted AFTER the world.
- *
- * Platforms are culled at the viewport edge, so a slab used to wink into
- * existence at a hard line and the whole scene read as though it were
- * glitching. Fading the top band back toward the sky colour means a platform
- * emerges out of haze instead of appearing from nothing. Colour is sampled
- * from the same altitude ramp `drawSky` uses so the fog never looks pasted on.
- */
-export const drawTopFog = (
-  ctx: CanvasRenderingContext2D, w: number, h: number, altitude: number,
-) => {
-  const t = Math.max(0, Math.min(1, altitude));
-  const hue = 199 + t * 6, sat = 78 - t * 10, lig = 58 - t * 14;
-  const band = Math.max(90, h * 0.22);
-  const g = ctx.createLinearGradient(0, 0, 0, band);
-  g.addColorStop(0,    `hsl(${hue} ${sat}% ${lig}% / 0.92)`);
-  g.addColorStop(0.45, `hsl(${hue} ${sat}% ${lig}% / 0.45)`);
-  g.addColorStop(1,    `hsl(${hue} ${sat}% ${lig}% / 0)`);
-  ctx.fillStyle = g;
-  ctx.fillRect(0, 0, w, band);
+// ── Ground floor ──────────────────────────────────────────────────────────
+/** The solid floor at the base of the climb — spans the full screen width so it always reaches, unlike a normal platform. `y` is its screen-space top edge. */
+export const drawGround = (ctx: CanvasRenderingContext2D, y: number, screenW: number, screenH: number) => {
+  const topH = 14;
+  const bodyH = Math.max(0, screenH - y);
+  const grad = ctx.createLinearGradient(0, y, 0, y + bodyH);
+  grad.addColorStop(0, PALETTE.stoneBody);
+  grad.addColorStop(1, "#1c2128");
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, y, screenW, bodyH);
+  ctx.fillStyle = "rgba(0,0,0,0.18)";
+  for (let x = 0; x < screenW; x += 48) ctx.fillRect(x, y + topH, 1.5, bodyH - topH);
+  ctx.fillStyle = PALETTE.stoneLight;
+  ctx.fillRect(0, y, screenW, topH);
+  ctx.fillStyle = PALETTE.stoneLip;
+  ctx.fillRect(0, y, screenW, 3);
+  ctx.fillStyle = "rgba(0,0,0,0.14)";
+  for (let x = 0; x < screenW; x += 24) ctx.fillRect(x, y, 1.5, topH);
 };
 
 // ── Platforms ───────────────────────────────────────────────────────────────
-/**
- * A stone slab: bright top course, dark brick body, and two pillars dropping
- * out of the underside so platforms read as built structures, not floating bars.
- */
-/**
- * How far `drawPlatform` paints beyond its `y`, at scale 1.
- *
- * `y` is the TOP of the slab, but the pillars hang 120px below it under an
- * 11px top course, and a checkpoint's glow bleeds 30px above. Cull tests must
- * use these, not the slab position alone — culling on `y` by itself made
- * platforms vanish while their pillars were still on screen.
- */
-export const PLATFORM_DRAW_BELOW = 11 + 120;
 export const PLATFORM_DRAW_ABOVE = 30;
+export const PLATFORM_DRAW_BELOW = 11 + 120;
 
 export const drawPlatform = (
   ctx: CanvasRenderingContext2D,
   x: number, y: number, w: number,
-  opts: { checkpoint?: boolean; scale?: number; pillars?: boolean } = {},
+  opts: { scale?: number; pillars?: boolean; crumbleT?: number; bounceT?: number; t?: number } = {},
 ) => {
   const s = opts.scale ?? 1;
-  const cp = !!opts.checkpoint;
-  const topH = 11 * s;
-  const bodyH = 15 * s;
-  const block = 24 * s;
+  const topH = 11 * s, bodyH = 15 * s, block = 24 * s;
+  const crumbleT = opts.crumbleT ?? 0;
+  const t = opts.t ?? 0;
+  const shakeX = crumbleT > 0 ? Math.sin(t * 60) * crumbleT * 3 : 0;
 
-  // Pillars — drawn first so the slab overlaps their tops
+  ctx.save();
+  ctx.globalAlpha *= (1 - crumbleT);
+  ctx.translate(shakeX, 0);
+
   if (opts.pillars !== false) {
-    const pw = Math.min(26 * s, w * 0.22);
-    const ph = 120 * s;
-    ctx.fillStyle = PALETTE.stoneDark;
+    const pw = Math.min(26 * s, w * 0.22), ph = 120 * s;
     for (const px of [x + 5 * s, x + w - pw - 5 * s]) {
-      if (w < 60 * s && px !== x + 5 * s) continue; // narrow ledges get one leg
+      if (w < 60 * s && px !== x + 5 * s) continue;
+      ctx.fillStyle = PALETTE.stoneDark;
       ctx.fillRect(px, y + topH, pw, ph);
       ctx.fillStyle = "rgba(255,255,255,0.07)";
       ctx.fillRect(px, y + topH, 3 * s, ph);
-      ctx.fillStyle = PALETTE.stoneDark;
-      // brick seams down the pillar
       ctx.fillStyle = "rgba(0,0,0,0.18)";
-      for (let yy = y + topH; yy < y + topH + ph; yy += block * 0.7) {
-        ctx.fillRect(px, yy, pw, Math.max(1, 1.5 * s));
-      }
-      ctx.fillStyle = PALETTE.stoneDark;
+      for (let yy = y + topH; yy < y + topH + ph; yy += block * 0.7) ctx.fillRect(px, yy, pw, Math.max(1, 1.5 * s));
     }
   }
 
-  // Dark body with a running-bond brick pattern
-  ctx.fillStyle = cp ? PALETTE.cpBody : PALETTE.stoneBody;
+  ctx.fillStyle = PALETTE.stoneBody;
   ctx.fillRect(x, y + topH, w, bodyH);
   ctx.fillStyle = "rgba(0,0,0,0.2)";
   ctx.fillRect(x, y + topH + bodyH * 0.55, w, Math.max(1, 1.5 * s));
+  ctx.fillStyle = "rgba(0,0,0,0.16)";
   for (let i = 0, bx = x; bx < x + w; i++, bx += block) {
     const off = i % 2 === 0 ? 0 : block / 2;
     const sx = bx + off;
     if (sx > x && sx < x + w) ctx.fillRect(sx, y + topH, Math.max(1, 1.5 * s), bodyH);
   }
 
-  // Bright top course
-  ctx.fillStyle = cp ? PALETTE.cpLight : PALETTE.stoneLight;
+  ctx.fillStyle = PALETTE.stoneLight;
   ctx.fillRect(x, y, w, topH);
-  ctx.fillStyle = cp ? "#b6f5cd" : PALETTE.stoneLip;
+  ctx.fillStyle = PALETTE.stoneLip;
   ctx.fillRect(x, y, w, Math.max(1.5, 3 * s));
-  // vertical seams in the top course
   ctx.fillStyle = "rgba(0,0,0,0.14)";
-  for (let bx = x + block; bx < x + w; bx += block) {
-    ctx.fillRect(bx, y, Math.max(1, 1.5 * s), topH);
+  for (let bx = x + block; bx < x + w; bx += block) ctx.fillRect(bx, y, Math.max(1, 1.5 * s), topH);
+
+  if (crumbleT > 0.01) {
+    ctx.strokeStyle = "rgba(255,255,255,0.5)";
+    ctx.lineWidth = Math.max(1, 1.4 * s);
+    ctx.beginPath();
+    ctx.moveTo(x + w * 0.3, y); ctx.lineTo(x + w * 0.42, y + topH + bodyH * 0.5);
+    ctx.moveTo(x + w * 0.65, y); ctx.lineTo(x + w * 0.55, y + topH + bodyH * 0.6);
+    ctx.stroke();
   }
 
-  if (cp) {
-    // soft green glow so checkpoints are readable at a glance
-    ctx.fillStyle = "rgba(74,222,128,0.20)";
-    ctx.fillRect(x, y - 30 * s, w, 30 * s);
+  if (opts.bounceT && opts.bounceT > 0) {
+    ctx.fillStyle = "rgba(255,255,255,0.35)";
+    ctx.beginPath();
+    ctx.ellipse(x + w / 2, y - 4 * s, w * 0.32 * (1 + opts.bounceT * 0.4), 6 * s * (1 - opts.bounceT), 0, 0, Math.PI * 2);
+    ctx.fill();
   }
+
+  ctx.restore();
 };
 
-// ── Character ───────────────────────────────────────────────────────────────
-/**
- * Big-headed blob with oversized eyes, matching the reference's silhouette.
- * `x`,`y` is the bottom-left of the character's footprint.
- */
-export const drawCharacter = (
-  ctx: CanvasRenderingContext2D,
-  x: number, y: number, w: number, h: number,
-  color: string, face: number, opts: { frozen?: boolean; alpha?: number } = {},
-) => {
-  const a = opts.alpha ?? 1;
-  ctx.save();
-  ctx.globalAlpha = a;
-
-  const body = opts.frozen ? "#94a3b8" : color;
-  const cx = x + w / 2;
-  const headR = w * 0.56;
-  const headCy = y - h + headR * 0.92;
-
-  // little feet/body stub under the head
-  ctx.fillStyle = body;
-  ctx.beginPath();
-  ctx.roundRect(cx - w * 0.30, headCy + headR * 0.45, w * 0.60, h - (headCy + headR * 0.45 - (y - h)) - 2, 4);
-  ctx.fill();
-
-  // head
-  ctx.beginPath();
-  ctx.ellipse(cx, headCy, headR, headR * 1.06, 0, 0, Math.PI * 2);
-  ctx.fill();
-  // darker rim for that sticker-like outline
-  ctx.strokeStyle = "rgba(0,0,0,0.28)";
-  ctx.lineWidth = Math.max(1.5, w * 0.07);
-  ctx.stroke();
-
-  // eyes — large, angled slightly, following the facing direction
-  const eyeDX = w * 0.20 * (face >= 0 ? 1 : -1);
-  const eyeW = w * 0.20, eyeH = w * 0.28;
-  ctx.fillStyle = "#14181f";
-  for (const s of [-1, 1]) {
+// ── Hazards ───────────────────────────────────────────────────────────────
+export const drawSpikes = (ctx: CanvasRenderingContext2D, x: number, y: number, w: number) => {
+  const n = Math.max(3, Math.round(w / 16));
+  const spikeW = w / n;
+  ctx.fillStyle = "#dc2626";
+  for (let i = 0; i < n; i++) {
+    const sx = x + i * spikeW;
     ctx.beginPath();
-    ctx.ellipse(cx + eyeDX * 0.55 + s * w * 0.21, headCy - headR * 0.05, eyeW, eyeH, 0, 0, Math.PI * 2);
+    ctx.moveTo(sx, y);
+    ctx.lineTo(sx + spikeW / 2, y - 18);
+    ctx.lineTo(sx + spikeW, y);
+    ctx.closePath();
     ctx.fill();
   }
-  // glints
-  ctx.fillStyle = "rgba(255,255,255,0.92)";
-  for (const s of [-1, 1]) {
-    ctx.beginPath();
-    ctx.ellipse(cx + eyeDX * 0.55 + s * w * 0.21 - eyeW * 0.28, headCy - headR * 0.28, eyeW * 0.30, eyeH * 0.26, 0, 0, Math.PI * 2);
-    ctx.fill();
+  ctx.fillStyle = "rgba(0,0,0,0.25)";
+  ctx.fillRect(x, y, w, 4);
+};
+
+export const drawLaser = (
+  ctx: CanvasRenderingContext2D, x1: number, y1: number, x2: number, y2: number, active: boolean, t: number,
+) => {
+  const pulse = 0.7 + Math.sin(t * 10) * 0.3;
+  ctx.save();
+  ctx.fillStyle = active ? "#ef4444" : "#7f1d1d";
+  ctx.beginPath(); ctx.arc(x1, y1, 6, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(x2, y2, 6, 0, Math.PI * 2); ctx.fill();
+  if (active) {
+    ctx.strokeStyle = `rgba(239,68,68,${0.85 * pulse})`;
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+    ctx.strokeStyle = `rgba(254,202,202,${0.5 * pulse})`;
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+  } else {
+    ctx.strokeStyle = "rgba(127,29,29,0.35)";
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([4, 5]);
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+    ctx.setLineDash([]);
   }
   ctx.restore();
 };
 
-/** Rounded dark pill with the player's name, as seen under the reference character. */
+// ── Character ───────────────────────────────────────────────────────────────
+const strokeCheerBrow = (ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number) => {
+  ctx.beginPath();
+  ctx.arc(cx, cy + r * 0.4, r, Math.PI * 1.15, Math.PI * 1.85);
+  ctx.stroke();
+};
+const strokeSquint = (ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number, dir: number) => {
+  ctx.beginPath();
+  ctx.moveTo(cx - r * dir, cy - r * 0.55);
+  ctx.lineTo(cx + r * dir, cy);
+  ctx.lineTo(cx - r * dir, cy + r * 0.55);
+  ctx.stroke();
+};
+
+export type CharAnim = {
+  grounded?: boolean; vx?: number; vy?: number; t?: number; landPulse?: number;
+  blinkSeed?: number; frozen?: boolean; alpha?: number;
+};
+
+/**
+ * The capsule-bot: a tall rounded body with two leaf nubs and two leg stubs,
+ * tinted per-player. Fully procedural, and genuinely animated — idle blink,
+ * a leg run-cycle while grounded and moving, legs splayed mid-air, and a
+ * one-shot landing squash triggered by the caller on grounded flipping true.
+ */
+export const drawCharacter = (
+  ctx: CanvasRenderingContext2D,
+  x: number, y: number, w: number, h: number,
+  color: string, face: number, anim: CharAnim = {},
+) => {
+  const a = anim.alpha ?? 1;
+  const t = anim.t ?? 0;
+  const grounded = anim.grounded ?? true;
+  const vx = anim.vx ?? 0;
+  const vy = anim.vy ?? 0;
+  const landPulse = Math.max(0, Math.min(1, anim.landPulse ?? 0));
+  const moving = grounded && Math.abs(vx) > 40;
+  const seed = anim.blinkSeed ?? 0;
+
+  ctx.save();
+  ctx.globalAlpha = a;
+
+  const body = anim.frozen ? "#94a3b8" : color;
+  const cx = x + w / 2;
+  const legH = h * 0.24;
+  const squashY = 1 - landPulse * 0.24, squashX = 1 + landPulse * 0.18;
+  const capW = w * 0.88 * squashX;
+  const capH = (h - legH) * squashY;
+  const capTop = y - legH - capH;
+  const capCx = cx;
+
+  // ── Legs ──
+  const legW = w * 0.24;
+  const airborne = !grounded;
+  const splayAmt = airborne ? w * (vy > 0 ? 0.10 : 0.18) : 0;
+  const runPhase = t * 11;
+  ctx.fillStyle = body;
+  for (const side of [-1, 1] as const) {
+    const stepPhase = side < 0 ? runPhase : runPhase + Math.PI;
+    const runWiggle = moving ? Math.sin(stepPhase) * w * 0.05 : 0;
+    const legLift = moving ? Math.max(0, Math.sin(stepPhase)) * legH * 0.35 : 0;
+    const lx = capCx + side * (w * 0.17 + splayAmt) + runWiggle;
+    const legTopY = y - legH + legLift;
+    ctx.beginPath();
+    ctx.roundRect(lx - legW / 2, legTopY, legW, Math.max(4, y - legTopY), legW * 0.4);
+    ctx.fill();
+  }
+
+  // ── Body capsule ──
+  ctx.fillStyle = body;
+  ctx.beginPath();
+  ctx.roundRect(capCx - capW / 2, capTop, capW, capH, capW * 0.46);
+  ctx.fill();
+  ctx.strokeStyle = "rgba(0,0,0,0.26)";
+  ctx.lineWidth = Math.max(1.5, w * 0.06);
+  ctx.stroke();
+  // soft top highlight so the capsule reads as glossy, not flat
+  const sheen = ctx.createLinearGradient(0, capTop, 0, capTop + capH * 0.55);
+  sheen.addColorStop(0, "rgba(255,255,255,0.30)");
+  sheen.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.fillStyle = sheen;
+  ctx.beginPath();
+  ctx.roundRect(capCx - capW / 2, capTop, capW, capH * 0.55, capW * 0.46);
+  ctx.fill();
+
+  // ── Leaf nubs ──
+  ctx.save();
+  ctx.translate(capCx - capW * 0.18, capTop + capH * 0.02);
+  ctx.rotate(Math.sin(t * 1.6 + seed) * 0.06 - 0.15);
+  ctx.fillStyle = body;
+  ctx.beginPath(); ctx.ellipse(0, -6, 5, 10, -0.3, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(7, -2, 4.5, 8.5, 0.35, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+
+  // ── Face ──
+  const eyeDX = w * 0.14 * (face >= 0 ? 1 : -1);
+  const eyeY = capTop + capH * 0.46;
+  const eyeGap = w * 0.19;
+  const eyeR = Math.max(2.4, w * 0.10);
+  const blinkCycle = ((t * 1000 + seed * 971) % 3400 + 3400) % 3400;
+  const blinking = blinkCycle < 130 && landPulse < 0.5;
+  const squinting = landPulse >= 0.5;
+
+  ctx.strokeStyle = "#14181f";
+  ctx.lineWidth = Math.max(1.7, w * 0.075);
+  ctx.lineCap = "round";
+  for (const side of [-1, 1]) {
+    const ex = capCx + eyeDX * 0.5 + side * eyeGap;
+    if (squinting) {
+      strokeSquint(ctx, ex, eyeY, eyeR * 0.85, side);
+    } else if (blinking) {
+      ctx.beginPath();
+      ctx.moveTo(ex - eyeR * 0.7, eyeY); ctx.lineTo(ex + eyeR * 0.7, eyeY);
+      ctx.stroke();
+    } else {
+      strokeCheerBrow(ctx, ex, eyeY - eyeR * 0.3, eyeR * 0.85);
+    }
+  }
+
+  ctx.restore();
+};
+
+/** Rounded dark pill with the player's name, floating under the character. */
 export const drawNameTag = (
   ctx: CanvasRenderingContext2D,
   cx: number, y: number, name: string, scale = 1,
@@ -232,7 +340,7 @@ export const drawNameTag = (
   ctx.textBaseline = "middle";
   const padX = 7 * scale, h = fs + 8 * scale;
   const w = ctx.measureText(name).width + padX * 2;
-  ctx.fillStyle = PALETTE.tagBg;
+  ctx.fillStyle = TAG_BG;
   ctx.beginPath();
   ctx.roundRect(cx - w / 2, y, w, h, h / 2);
   ctx.fill();
