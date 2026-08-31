@@ -36,6 +36,8 @@ const SettingsPage = lazy(() => import("./pages/teacher/Stubs").then(m => ({ def
 const Join        = lazy(() => import("./pages/play/Join"));
 const Game        = lazy(() => import("./pages/play/Game"));
 const ScanSquare  = lazy(() => import("./pages/play/ScanSquare"));
+// Dev-only art preview for Don't Look Down (see the file header).
+const DldPreview  = lazy(() => import("./pages/play/DldPreview"));
 const NotFound    = lazy(() => import("./pages/NotFound"));
 
 import { ScrollToTop } from "@/components/ScrollToTop";
@@ -82,6 +84,7 @@ const AppContent = () => {
             <Route path="/blog/:slug" element={<BlogPost />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/play" element={<Join />} />
+            {import.meta.env.DEV && <Route path="/play/dld-preview" element={<DldPreview />} />}
             <Route path="/play/:sessionId" element={<Game />} />
             <Route path="/scan/:kitId/:typeCode" element={<ScanSquare />} />
             <Route path="/app" element={<RequireAuth><TeacherLayout /></RequireAuth>}>

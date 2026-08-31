@@ -85,7 +85,7 @@ const GameResults = () => {
   const ar = (session?.settings?.lang ?? i18n.language) === "ar";
   const mode = session?.settings?.mode ?? "crypto_rush";
   // classic and humansvszombies also score by accumulated points stored in the `crypto` column
-  const isPointsMode = mode === "crypto_rush" || mode === "classic" || mode === "humansvszombies";
+  const isPointsMode = mode === "crypto_rush" || mode === "classic" || mode === "humansvszombies" || mode === "dontlookdown";
   const hvzWinner = session?.settings?.winner as ("humans" | "zombies" | undefined);
 
   const ranked = useMemo(() => {
@@ -406,7 +406,6 @@ const GameResults = () => {
                   <tr className="border-b border-primary/25 bg-primary/10">
                     {[ar ? "#" : "#", ar ? "اللاعب" : "Player",
                       mode === "paintfight" ? (ar ? "المساحة" : "Territory")
-                        : mode === "dontlookdown" ? ""
                         : isPointsMode ? (ar ? "النقاط" : "Points") : (ar ? "الحالة" : "Status"),
                       ar ? "صحيح" : "Correct", ar ? "الدقة" : "Accuracy",
                       ...(mode === "crypto_rush" ? [ar ? "الاختراقات" : "Hacks"] : []),
@@ -437,8 +436,6 @@ const GameResults = () => {
                         </td>
                         {mode === "paintfight"
                           ? <td className="px-4 py-3 text-center font-black tabular-nums text-primary">{pct(paintPctFor(s.id))}</td>
-                          : mode === "dontlookdown"
-                          ? <td className="px-4 py-3" />
                           : isPointsMode
                           ? <td className="px-4 py-3 text-center font-black tabular-nums text-primary">{fmt(s.crypto)}</td>
                           : <td className="px-4 py-3 text-center">

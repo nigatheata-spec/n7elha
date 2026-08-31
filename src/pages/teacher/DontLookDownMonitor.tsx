@@ -3,16 +3,17 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Square, Maximize, ChevronUp, Trophy, Crosshair } from "lucide-react";
-import { WORLD, colorFor } from "@/lib/dontLookDown";
-import { getGenerator, platformWorldPos, laserActiveAt, seedFromString } from "@/lib/dontLookDownLevel";
+import { Square, Maximize, ChevronUp, Trophy } from "lucide-react";
+import { PixelShield } from "@/components/PixelIcons";
+import { SUMMIT_Y, WORLD, colorFor } from "@/lib/dontLookDown";
 import {
-  drawSky, drawTopFog, drawPlatform, drawGround, drawSpikes, drawLaser, drawCloud, ambientFor,
-  drawCharacter, drawNameTag, PLATFORM_DRAW_ABOVE, PLATFORM_DRAW_BELOW,
+  setupPixelCanvas, drawSky, drawStars, drawCloud, drawBlock,
+  drawCharacter, drawNameTag, drawTopFog, drawGround, CLOUDS,
 } from "@/lib/dontLookDownRender";
+import { SKINNED, PX, themeBlendAt, themeIndexAt, GROUND_Y } from "@/lib/dldLevel";
 import { useConfirmDialog } from "@/hooks/use-confirm-dialog";
 
-type Peer = { id: string; name: string; x: number; y: number; face: number; t: number; vx: number };
+type Peer = { id: string; name: string; x: number; y: number; t: number };
 
 interface Props { session: any; sessionId: string; }
 
@@ -22,12 +23,8 @@ const DontLookDownMonitor = ({ session, sessionId }: Props) => {
   const { i18n } = useTranslation();
   const ar = (session?.settings?.lang ?? i18n.language) === "ar";
   const [students, setStudents] = useState<any[]>([]);
-  const [pinnedId, setPinnedId] = useState<string | null>(null);
-  const [followName, setFollowName] = useState<string>("");
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const peersRef  = useRef<Record<string, Peer>>({});
-  const genRef    = useRef(getGenerator(sessionId));
-  const camRef    = useRef({ x: 0, y: 0, init: false });
 
   // ── Data + live position feed ─────────────────────────────────────────────
   useEffect(() => {
@@ -44,91 +41,70 @@ const DontLookDownMonitor = ({ session, sessionId }: Props) => {
       .on("postgres_changes", { event: "*", schema: "public", table: "game_students", filter: `session_id=eq.${sessionId}` }, refresh)
       .on("broadcast", { event: "pos" }, ({ payload }: any) => {
         if (!payload?.id) return;
-        const prev = peersRef.current[payload.id];
-        const now = Date.now();
-        const dt = prev ? (now - prev.t) / 1000 : 0;
-        const vx = prev && dt > 0.01 ? (payload.x - prev.x) / dt : 0;
-        peersRef.current[payload.id] = { ...payload, t: now, vx };
+        peersRef.current[payload.id] = { ...payload, t: Date.now() };
       })
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [sessionId]);
 
-  // ── Spotlight camera: follow the pinned student, or whoever's leading ────
+  // ── Render the whole tower, scaled to fit, with every climber on it ──────
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    const gen = genRef.current;
 
     let raf = 0;
     const draw = () => {
-      const dpr = window.devicePixelRatio || 1;
-      const cssW = canvas.clientWidth, cssH = canvas.clientHeight;
-      if (canvas.width !== cssW * dpr || canvas.height !== cssH * dpr) {
-        canvas.width = cssW * dpr; canvas.height = cssH * dpr;
-      }
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      ctx.clearRect(0, 0, cssW, cssH);
+      // Same pixel buffer as the student view, so the tower the teacher sees is
+      // built from the exact same grid and art.
+      const { ctx: bctx, bw, bh } = setupPixelCanvas(canvas);
+      if (!bctx) return;
 
-      const ranked = [...students].sort((a, b) => (b.height_reached ?? 0) - (a.height_reached ?? 0));
-      const leaderId = pinnedId ?? ranked[0]?.id ?? null;
-      const peer = leaderId ? peersRef.current[leaderId] : undefined;
-      const student = students.find(s => s.id === leaderId);
-      setFollowName(student?.name ?? "");
+      // Frame the whole climb: fit its full width and height into the buffer.
+      const minX = Math.min(...SKINNED.map(p => p.x)) - 60;
+      const maxX = Math.max(...SKINNED.map(p => p.x + p.w)) + 60;
+      const worldW = maxX - minX, worldH = SUMMIT_Y + 320;
+      const scale = Math.min(bw / worldW, bh / worldH);
+      const offX = Math.round((bw - worldW * scale) / 2);
 
-      const focusY = peer?.y ?? student?.height_reached ?? 0;
-      const focusX = peer?.x ?? 0;
-      const cam = camRef.current;
-      const targetX = focusX + WORLD.playerW / 2 - cssW / 2;
-      const targetY = focusY - cssH * 0.42;
-      if (!cam.init) { cam.x = targetX; cam.y = targetY; cam.init = true; }
-      cam.x += (targetX - cam.x) * 0.10;
-      cam.y += (targetY - cam.y) * 0.10;
-
-      const sx = (wx: number) => wx - cam.x;
-      const sy = (wy: number) => cssH - (wy - cam.y);
+      const sx = (wx: number) => Math.round(offX + (wx - minX) * scale);
+      const sy = (wy: number) => Math.round(bh - (wy + 160) * scale);
       const tSec = Date.now() / 1000;
 
-      gen.ensureGeneratedTo(Math.max(0, focusY));
-      drawSky(ctx, cssW, cssH, Math.max(0, focusY));
+      // Sky/star tint follows whoever is highest, so the board reads the mood
+      // of the lead climber's altitude.
+      const lead = Math.max(0, ...students.map(s => s.height_reached ?? 0));
+      const blend = themeBlendAt(lead);
+      drawSky(bctx, bw, bh, blend);
+      const ti = themeIndexAt(lead);
+      drawStars(bctx, bw, bh, 0, 0, ti >= 3 ? 1 : ti === 2 ? 0.4 : 0);
 
-      const viewTop = cam.y - 100, viewBottom = cam.y + cssH + 100;
-      for (const band of gen.bands) {
-        if (band.endY < viewTop || band.startY > viewBottom) continue;
-        for (const part of ambientFor(band)) {
-          if (part.y < viewTop || part.y > viewBottom) continue;
-          const px = part.x - cam.x * part.depth;
-          const py = cssH - (part.y - cam.y * part.depth);
-          if (px < -220 || px > cssW + 220 || py < -160 || py > cssH + 160) continue;
-          ctx.globalAlpha = 0.5 + part.depth * 0.5;
-          drawCloud(ctx, px, py, part.s);
-        }
+      for (const c of CLOUDS) {
+        if (c.depth < 0.5) continue;
+        const px = sx(c.x), py = sy(c.y);
+        if (px < -40 || px > bw + 40 || py < -30 || py > bh + 30) continue;
+        bctx.globalAlpha = 0.7;
+        drawCloud(bctx, px, py, 1);
       }
-      ctx.globalAlpha = 1;
+      bctx.globalAlpha = 1;
 
-      const groundScreenY = sy(WORLD.groundY);
-      if (groundScreenY < cssH + 100) drawGround(ctx, groundScreenY, cssW, cssH);
+      const groundTop = sy(GROUND_Y);
+      if (groundTop < bh) drawGround(bctx, groundTop, bw, bh);
 
-      for (const pl of gen.platforms) {
-        const pos = platformWorldPos(pl, tSec);
-        const x = sx(pos.x), y = sy(pos.y);
-        if (x + pl.w < -60 || x > cssW + 60) continue;
-        if (y + PLATFORM_DRAW_BELOW < -40) continue;
-        if (y - PLATFORM_DRAW_ABOVE > cssH + 40) continue;
-        drawPlatform(ctx, x, y, pl.w, { t: tSec });
-      }
-
-      for (const hz of gen.hazards) {
-        if (hz.kind === "spikes") {
-          const x = sx(hz.x), y = sy(hz.y);
-          if (x < -60 || x > cssW + 60 || y < -60 || y > cssH + 60) continue;
-          drawSpikes(ctx, x, y, hz.w);
+      // The tower is zoomed way out here, so blocks are drawn as their own art
+      // where there is room for it and as a solid chip when there is not —
+      // scaling the art down would smear it off the pixel grid.
+      for (const pl of SKINNED) {
+        const x = sx(pl.x), y = sy(pl.y);
+        const wpx = Math.round(pl.w * scale), hpx = Math.max(2, Math.round(pl.h * scale));
+        if (wpx >= Math.round(pl.w * PX) * 0.9) {
+          drawBlock(bctx, x, y, pl.block);
         } else {
-          const x1 = sx(hz.x1), y1 = sy(hz.y1), x2 = sx(hz.x2), y2 = sy(hz.y2);
-          if (Math.max(x1, x2) < -60 || Math.min(x1, x2) > cssW + 60) continue;
-          drawLaser(ctx, x1, y1, x2, y2, laserActiveAt(hz, tSec), tSec);
+          bctx.fillStyle = "#2f3646";
+          bctx.fillRect(x, y, Math.max(2, wpx), hpx);
+          bctx.fillStyle = pl.checkpoint ? "#7fe0a2" : "#98a3b5";
+          bctx.fillRect(x, y, Math.max(2, wpx), 1);
         }
       }
 
@@ -137,20 +113,18 @@ const DontLookDownMonitor = ({ session, sessionId }: Props) => {
         const p = peersRef.current[id];
         if (p.t < cutoff) { delete peersRef.current[id]; continue; }
         const x = sx(p.x), y = sy(p.y);
-        if (x < -80 || x > cssW + 80 || y < -80 || y > cssH + 80) continue;
-        const isLeader = id === leaderId;
-        drawCharacter(ctx, x, y, WORLD.playerW, WORLD.playerH, colorFor(id), p.face ?? 1, {
-          t: tSec, grounded: true, vx: p.vx, alpha: isLeader ? 1 : 0.6, blinkSeed: seedFromString(id),
-        });
-        drawNameTag(ctx, x + WORLD.playerW / 2, y + 3, p.name ?? "");
+        if (x < -30 || x > bw + 30 || y < -30 || y > bh + 30) continue;
+        drawCharacter(bctx, x, y, WORLD.playerW * scale, WORLD.playerH * scale, colorFor(id), 1, { t: tSec });
+        drawNameTag(bctx, x + (WORLD.playerW * scale) / 2, y - 22, p.name ?? "");
       }
 
-      drawTopFog(ctx, cssW, cssH, Math.max(0, focusY));
+      drawTopFog(bctx, bw, bh, blend);
+
       raf = requestAnimationFrame(draw);
     };
     raf = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(raf);
-  }, [students, pinnedId]);
+  }, [students]);
 
   const endNow = async () => {
     if (!session || !(await confirm(ar ? "إنهاء اللعبة الآن؟" : "End the game now?"))) return;
@@ -180,14 +154,8 @@ const DontLookDownMonitor = ({ session, sessionId }: Props) => {
             {ar ? "الرمز" : "CODE"} <span className="text-base font-black tracking-widest" style={{ color: "#7dd3fc" }}>{session?.code}</span>
             <span className="mx-3 opacity-30">|</span>
             <span className="font-bold">{students.length} {ar ? "متسلق" : students.length === 1 ? "CLIMBER" : "CLIMBERS"}</span>
-            {followName && (
-              <>
-                <span className="mx-3 opacity-30">|</span>
-                <span className="inline-flex items-center gap-1.5" style={{ color: "#facc15" }}>
-                  <Crosshair className="h-3 w-3" />{ar ? "متابعة" : "Spectating"}: <span className="font-bold">{followName}</span>
-                </span>
-              </>
-            )}
+            <span className="mx-3 opacity-30">|</span>
+            {ar ? "القمة" : "SUMMIT"} <span className="font-bold">{SUMMIT_Y}m</span>
           </div>
           <div className="flex gap-2">
             <Button size="sm" variant="ghost" onClick={goFullscreen} className="text-sky-300 hover:text-sky-300 hover:bg-sky-400/10">
@@ -201,7 +169,7 @@ const DontLookDownMonitor = ({ session, sessionId }: Props) => {
 
         <div className="flex-1 grid grid-cols-[1fr_320px] gap-4 min-h-0">
           <div className="rounded-xl overflow-hidden min-h-0" style={{ border: "1px solid rgba(255,255,255,0.1)" }}>
-            <canvas ref={canvasRef} className="h-full w-full" />
+            <canvas ref={canvasRef} className="h-full w-full" style={{ imageRendering: "pixelated" }} />
           </div>
 
           <div className="flex flex-col gap-2 min-h-0">
@@ -215,32 +183,25 @@ const DontLookDownMonitor = ({ session, sessionId }: Props) => {
                   {ar ? "> بانتظار المتسلقين..." : "> WAITING FOR CLIMBERS..."}
                 </div>
               )}
-              {ranked.map((s, i) => {
-                const pinned = pinnedId === s.id || (!pinnedId && i === 0);
-                return (
-                  <button key={s.id} onClick={() => setPinnedId(pinnedId === s.id ? null : s.id)}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-start transition-colors"
-                    style={{
-                      background: pinned ? "rgba(250,204,21,0.10)" : "rgba(255,255,255,0.05)",
-                      border: `1px solid ${pinned ? "rgba(250,204,21,0.4)" : "rgba(255,255,255,0.08)"}`,
-                    }}>
-                    <span className="font-black text-sm w-5 tabular-nums text-center" style={{ color: "rgba(255,255,255,0.4)" }}>{i + 1}</span>
-                    <div className="h-8 w-8 rounded flex items-center justify-center font-black text-sm shrink-0"
-                      style={{ background: colorFor(s.id), color: "#0B1020" }}>
-                      {(s.name ?? "?").charAt(0).toUpperCase()}
+              {ranked.map((s, i) => (
+                <div key={s.id} className="flex items-center gap-2.5 px-3 py-2 rounded-lg"
+                  style={{ background: "rgba(255,255,255,0.05)", border: `1px solid ${i === 0 ? "rgba(250,204,21,0.4)" : "rgba(255,255,255,0.08)"}` }}>
+                  <span className="font-black text-sm w-5 tabular-nums text-center" style={{ color: "rgba(255,255,255,0.4)" }}>{i + 1}</span>
+                  <div className="h-8 w-8 rounded flex items-center justify-center font-black text-sm shrink-0"
+                    style={{ background: colorFor(s.id), color: "#0B1020" }}>
+                    {(s.name ?? "?").charAt(0).toUpperCase()}
+                  </div>
+                  <span className="flex-1 text-sm font-bold truncate">{s.name}</span>
+                  {i === 0 && <Trophy className="h-3.5 w-3.5 shrink-0" style={{ color: "#facc15" }} />}
+                  <div className="text-right shrink-0">
+                    <div className="text-sm font-black tabular-nums" style={{ color: "#7dd3fc" }}>{s.height_reached ?? 0}m</div>
+                    <div className="flex items-center gap-1 justify-end text-[10px] font-bold tabular-nums"
+                      style={{ color: "hsl(45 76% 64%)" }}>
+                      <PixelShield className="h-2.5 w-2.5" />${s.crypto ?? 0}
                     </div>
-                    <span className="flex-1 text-sm font-bold truncate">{s.name}</span>
-                    {i === 0 && <Trophy className="h-3.5 w-3.5 shrink-0" style={{ color: "#facc15" }} />}
-                    {pinned && <Crosshair className="h-3.5 w-3.5 shrink-0" style={{ color: "#facc15" }} />}
-                    <div className="text-right shrink-0">
-                      <div className="text-sm font-black tabular-nums" style={{ color: "#7dd3fc" }}>{s.height_reached ?? 0}m</div>
-                      <div className="text-[10px] font-bold tabular-nums" style={{ color: "rgba(255,255,255,0.35)" }}>
-                        {s.correct_answers ?? 0}/{s.total_answers ?? 0}
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>

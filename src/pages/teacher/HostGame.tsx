@@ -552,8 +552,8 @@ const HostGame = () => {
                 <>
                   <p className="text-black/65 leading-relaxed">
                     {ar
-                      ? "تسلّق إلى ما لا نهاية عبر بيئات متغيرة، بقفزة مزدوجة للجميع منذ البداية. كل حركة وقفزة تستهلك طاقة، والطريقة الوحيدة لاستعادتها هي الإجابة الصحيحة. تجنّب الأشواك وأشعة الليزر والمنصات المنهارة. لا نقاط حفظ — تنهض من آخر منصة وقفت عليها. الفائز من يصل لأعلى ارتفاع."
-                      : "An endless climb through shifting biomes, with a double jump for everyone from the start. Running and jumping burn energy, and the only way to refill it is answering correctly. Dodge spikes, lasers, and crumbling platforms. No checkpoints — fall and you're back on the last platform you stood on. Highest climber wins."}
+                      ? "لعبة منصات جانبية. كل حركة وقفزة تستهلك طاقة، والطريقة الوحيدة لاستعادتها هي الإجابة الصحيحة. النقود تشتري خزانات طاقة أكبر وقفزة مزدوجة وسقوط الريشة. الفائز هو من يصل لأعلى ارتفاع."
+                      : "A side-scrolling climb. Running and jumping burn energy, and the only way to refill it is answering correctly. Cash buys bigger tanks, a double jump, and Feather Fall. Highest climber wins."}
                   </p>
                   <div className="flex items-center gap-2 text-black/45">
                     <ChevronUp className="h-4 w-4 shrink-0" style={{ color: selectedAccent }} />
