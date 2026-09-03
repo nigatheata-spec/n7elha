@@ -71,13 +71,13 @@ const ClassicMonitor = ({ session, sessionId }: Props) => {
   }, [left, ending, minutes]);
 
   useEffect(() => {
-    if (session?.status === "finished") nav(`/app/games/${session.id}/results`, { replace: true });
+    if (session?.status === "finished") nav(`/app/games/${session.id}/results`, { replace: true, state: { justEnded: true } });
   }, [session?.status]);
 
   const endNow = async () => {
     if (!(await confirm(ar ? "إنهاء اللعبة الآن؟" : "End the game now?"))) return;
     await supabase.from("game_sessions").update({ status: "finished", ended_at: new Date().toISOString() }).eq("id", sessionId);
-    nav(`/app/games/${sessionId}/results`);
+    nav(`/app/games/${sessionId}/results`, { state: { justEnded: true } });
   };
 
   const goFullscreen = () => {

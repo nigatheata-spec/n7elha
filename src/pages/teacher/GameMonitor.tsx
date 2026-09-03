@@ -14,7 +14,6 @@ import HumansVsZombiesMonitor from "./HumansVsZombiesMonitor";
 import DontLookDownMonitor from "./DontLookDownMonitor";
 import PaintFightMonitor from "./PaintFightMonitor";
 import PhysicalMonitor from "./PhysicalMonitor";
-import HomeworkMonitor from "./HomeworkMonitor";
 
 const fmt = (n: number) => n.toLocaleString();
 
@@ -76,10 +75,7 @@ const GameMonitor = () => {
     const sess = sessionRef.current;
     if (!sess || sess.status !== "running") return;
     const mode = sess.settings?.mode;
-    // Homework is excluded alongside the modes that run their own clock: it has
-    // no duration at all, and closing it must leave the teacher on the roster
-    // rather than bouncing them to a live-game results screen.
-    if (mode === "hotpotato" || mode === "dodgeball" || mode === "lavafloor" || mode === "classic" || mode === "humansvszombies" || mode === "homework") return;
+    if (mode === "hotpotato" || mode === "dodgeball" || mode === "lavafloor" || mode === "classic" || mode === "humansvszombies") return;
     const timeUp = minutes != null && left === 0;
     if (timeUp || reachedCap) {
       if (ending) return;
@@ -91,18 +87,15 @@ const GameMonitor = () => {
   useEffect(() => {
     if (!session) return;
     const mode = session.settings?.mode;
-    // Homework is excluded alongside the modes that run their own clock: it has
-    // no duration at all, and closing it must leave the teacher on the roster
-    // rather than bouncing them to a live-game results screen.
-    if (mode === "hotpotato" || mode === "dodgeball" || mode === "lavafloor" || mode === "classic" || mode === "humansvszombies" || mode === "homework") return;
-    if (session.status === "finished") nav(`/app/games/${session.id}/results`, { replace: true });
+    if (mode === "hotpotato" || mode === "dodgeball" || mode === "lavafloor" || mode === "classic" || mode === "humansvszombies") return;
+    if (session.status === "finished") nav(`/app/games/${session.id}/results`, { replace: true, state: { justEnded: true } });
   }, [session?.status]);
 
   const endNow = async () => {
     if (!session) return;
     if (!(await confirm(ar ? "إنهاء اللعبة الآن؟" : "End the game now?"))) return;
     await supabase.from("game_sessions").update({ status: "finished", ended_at: new Date().toISOString() }).eq("id", session.id);
-    nav(`/app/games/${session.id}/results`);
+    nav(`/app/games/${session.id}/results`, { state: { justEnded: true } });
   };
 
   const goFullscreen = () => {
@@ -138,7 +131,6 @@ const GameMonitor = () => {
   if (session.settings?.mode === "dontlookdown") return <DontLookDownMonitor session={session} sessionId={sessionId!} />;
   if (session.settings?.mode === "paintfight") return <PaintFightMonitor session={session} sessionId={sessionId!} />;
   if (session.settings?.mode === "physical") return <PhysicalMonitor session={session} sessionId={sessionId!} />;
-  if (session.settings?.mode === "homework") return <HomeworkMonitor session={session} sessionId={sessionId!} />;
 
   const mm = left != null ? String(Math.floor(left / 60)).padStart(2, "0") : null;
   const ss_str = left != null ? String(left % 60).padStart(2, "0") : null;

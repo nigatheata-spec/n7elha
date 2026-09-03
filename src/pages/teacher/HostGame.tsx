@@ -380,7 +380,7 @@ const HostGame = () => {
         tryCode = genCode();
       }
       if (error) throw error;
-      navigate(`/app/games/${data.id}/monitor`);
+      navigate(`/app/games/${data.id}/homework`);
     } catch (e: any) { toast.error(e.message); }
   };
 

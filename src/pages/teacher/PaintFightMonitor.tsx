@@ -154,7 +154,7 @@ const PaintFightMonitor = ({ session, sessionId }: Props) => {
     if (endedRef.current) return;
     endedRef.current = true;
     await supabase.from("game_sessions").update({ status: "finished", ended_at: new Date().toISOString() }).eq("id", sessionId);
-    if (redirect) nav(`/app/games/${sessionId}/results`);
+    if (redirect) nav(`/app/games/${sessionId}/results`, { state: { justEnded: true } });
   };
 
   useEffect(() => {
@@ -172,7 +172,7 @@ const PaintFightMonitor = ({ session, sessionId }: Props) => {
   }, [session?.started_at, session?.settings?.minutes, session?.status]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (session?.status === "finished") nav(`/app/games/${sessionId}/results`, { replace: true });
+    if (session?.status === "finished") nav(`/app/games/${sessionId}/results`, { replace: true, state: { justEnded: true } });
   }, [session?.status]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const confirmEnd = async () => {

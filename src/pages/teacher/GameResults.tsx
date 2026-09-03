@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -47,6 +47,12 @@ const GameResults = () => {
   const [tab, setTab]             = useState<"rank" | "qa">("rank");
   const [paintCoverage, setPaintCoverage] = useState<CoverageRow[]>([]);
   const nav = useNavigate();
+  const location = useLocation();
+  // Every monitor's own "game just ended" navigation passes this flag, so the
+  // podium crash-in only plays for a teacher who was actually there when it
+  // happened. Arriving any other way — reopening from history, a bookmark, a
+  // page refresh — drops straight into the static results screen.
+  const justEnded = (location.state as { justEnded?: boolean } | null)?.justEnded === true;
   const { i18n } = useTranslation();
 
   useEffect(() => {
@@ -71,9 +77,9 @@ const GameResults = () => {
         const totalCells = (s.settings.arenaCols ?? 0) * (s.settings.arenaRows ?? 0);
         setPaintCoverage(computeCoverage((strokes ?? []) as Stroke[], totalCells));
       }
-      setPhase("cinematic");
+      setPhase(justEnded ? "cinematic" : "results");
     })();
-  }, [sessionId]);
+  }, [sessionId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-advance reveal after 4.8 s
   useEffect(() => {
@@ -249,7 +255,7 @@ const GameResults = () => {
 
   // ── Full results ─────────────────────────────────────────────────────────
   return (
-    <div className="min-h-[100dvh] text-foreground font-sans" style={{ background: "hsl(var(--cream-panel))" }}>
+    <div className="text-foreground font-sans">
       <Seo
         path={`/app/games/${sessionId}/results`}
         titleAr="نتائج الجلسة"
@@ -260,29 +266,26 @@ const GameResults = () => {
       />
       <div className="pointer-events-none fixed inset-0 bg-grid opacity-[0.06]" />
 
-      <div className="relative max-w-7xl mx-auto px-4 py-8 space-y-6"
+      <div className="relative max-w-7xl mx-auto space-y-6"
         style={{ animation: "fade-up 0.45s both" }}>
 
         {/* ── Header ── */}
-        <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="rounded-2xl border-2 border-[hsl(var(--nb-border))] bg-white shadow-[4px_4px_0_0_hsl(var(--nb-border))] px-5 py-4 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <button onClick={() => nav("/app")}
+            <button onClick={() => nav("/app/games")}
               className="flex items-center gap-1.5 px-4 py-2 rounded-lg border-2 border-[hsl(var(--nb-border))] bg-white text-primary text-[10px] tracking-[0.3em] uppercase font-bold shadow-[3px_3px_0_0_hsl(var(--nb-border))] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0_0_hsl(var(--nb-border))] transition-all">
-              <ArrowLeft className="h-3 w-3" />{ar ? "لوحة التحكم" : "Dashboard"}
+              <ArrowLeft className="h-3 w-3" />{ar ? "رجوع" : "Back"}
             </button>
             <div className="h-4 w-px bg-[hsl(var(--nb-border))]/25" />
-            <div>
-              <div className="text-[10px] tracking-[0.5em] text-[#8FC44A] uppercase mb-1">{ar ? "النتائج" : "Results"}</div>
-              <h1 className="text-2xl md:text-3xl font-black tracking-tight text-primary leading-none">
-                {session?.quizzes?.title ?? (ar ? "اللعبة" : "Game")}
-              </h1>
-            </div>
+            <h1 className="text-2xl md:text-3xl font-black tracking-tight text-primary leading-none">
+              {session?.quizzes?.title ?? (ar ? "اللعبة" : "Game")}
+            </h1>
           </div>
-          <div className="flex items-center gap-5 shrink-0">
+          <div className="flex items-center gap-5 shrink-0 divide-x divide-[hsl(var(--nb-border))]/20 rtl:divide-x-reverse">
             <Stat icon={<Clock className="h-3 w-3" />} label={ar ? "المدة" : "Duration"}
               value={`${stats.mm}:${String(stats.ss).padStart(2, "0")}`} />
-            <Stat icon={<Users className="h-3 w-3" />} label={ar ? "اللاعبون" : "Players"} value={String(ranked.length)} />
-            <Stat icon={<Target className="h-3 w-3" />} label={ar ? "الدقة" : "Accuracy"} value={pct(stats.avgAcc)} />
+            <Stat icon={<Users className="h-3 w-3" />} label={ar ? "اللاعبون" : "Players"} value={String(ranked.length)} className="ps-5" />
+            <Stat icon={<Target className="h-3 w-3" />} label={ar ? "الدقة" : "Accuracy"} value={pct(stats.avgAcc)} className="ps-5" />
           </div>
         </div>
 
@@ -540,8 +543,8 @@ const GameResults = () => {
 };
 
 // ── Tiny stat chip ────────────────────────────────────────────────────────────
-const Stat = ({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) => (
-  <div className="text-center">
+const Stat = ({ icon, label, value, className }: { icon: React.ReactNode; label: string; value: string; className?: string }) => (
+  <div className={cn("text-center", className)}>
     <div className="flex items-center justify-center gap-1 text-[9px] tracking-widest text-primary/60 uppercase mb-0.5">
       {icon}{label}
     </div>

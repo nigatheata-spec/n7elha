@@ -213,10 +213,10 @@ const LavaFloorMonitor = ({ session, sessionId }: Props) => {
         settings: { ...settingsRef.current },
       }).eq("id", sessionId).then(() => {
         // Navigate immediately to avoid blank screen on DB lag or failure
-        nav(`/app/games/${sessionId}/results`, { replace: true });
+        nav(`/app/games/${sessionId}/results`, { replace: true, state: { justEnded: true } });
       }).catch(() => {
         // If DB fails, still navigate locally
-        nav(`/app/games/${sessionId}/results`, { replace: true });
+        nav(`/app/games/${sessionId}/results`, { replace: true, state: { justEnded: true } });
       });
     }
   }, [left, session, ending, sessionId, nav]);
@@ -224,7 +224,7 @@ const LavaFloorMonitor = ({ session, sessionId }: Props) => {
   // ── Navigate to results ───────────────────────────────────────────────────
   useEffect(() => {
     if (session?.status === "finished") {
-      nav(`/app/games/${session.id}/results`, { replace: true });
+      nav(`/app/games/${session.id}/results`, { replace: true, state: { justEnded: true } });
     }
   }, [session?.status]);
 
@@ -234,7 +234,7 @@ const LavaFloorMonitor = ({ session, sessionId }: Props) => {
       status: "finished", ended_at: new Date().toISOString(),
       settings: { ...settingsRef.current },
     }).eq("id", sessionId);
-    nav(`/app/games/${session.id}/results`);
+    nav(`/app/games/${session.id}/results`, { state: { justEnded: true } });
   };
 
   const spikeLava = async () => {

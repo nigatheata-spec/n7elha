@@ -318,11 +318,7 @@ const QuizEditor = () => {
       )}
 
       <Card className="p-6 space-y-4">
-        <div className="grid md:grid-cols-3 gap-4">
-          <div className="md:col-span-3"><Label className="mb-1.5 block">{t("title")}</Label><Input value={title} onChange={e => setTitle(e.target.value)} maxLength={200} /></div>
-          <div><Label className="mb-1.5 block">{t("subject")}</Label><Input value={subject} onChange={e => setSubject(e.target.value)} maxLength={100} /></div>
-          <div><Label className="mb-1.5 block">{t("grade_level")}</Label><Input value={grade} onChange={e => setGrade(e.target.value)} maxLength={50} /></div>
-        </div>
+        <div><Label className="mb-1.5 block">{t("title")}</Label><Input value={title} onChange={e => setTitle(e.target.value)} maxLength={200} /></div>
       </Card>
 
       <div className="space-y-3">

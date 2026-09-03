@@ -27,7 +27,7 @@ export const SiteNav = () => {
   }, [menuOpen]);
 
   const t = isAr
-    ? { home: "الرئيسية", about: "من نحن", services: "الخدمات", schools: "المدارس", blog: "المدونة", partners: "الشركاء", login: "دخول", signup: "تسجيل", dashboard: "لوحتي", joinGame: "ادخل اللعبة" }
+    ? { home: "الرئيسية", about: "من نحن", services: "الخدمات", schools: "المدارس", blog: "المدونة", partners: "تواصل معنا", login: "دخول", signup: "تسجيل", dashboard: "لوحتي", joinGame: "ادخل اللعبة" }
     : { home: "HOME", about: "ABOUT", services: "FEATURES", schools: "SCHOOLS", blog: "BLOG", partners: "CONTACT", login: "LOG IN", signup: "SIGN UP", dashboard: "DASHBOARD", joinGame: "JOIN GAME" };
 
 

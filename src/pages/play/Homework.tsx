@@ -17,7 +17,7 @@
 // Identity is the same localStorage handle the live modes use, so a student
 // can only be one person per session on one device.
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
@@ -50,7 +50,6 @@ const Homework = () => {
   const [idx, setIdx] = useState(0);
   const [picked, setPicked] = useState<number | null>(null);
   const [score, setScore] = useState(0);
-  const answeredRef = useRef(0);
 
   const ar = (session?.settings?.lang ?? i18n.language) === "ar";
   const dueAt: string | null = session?.settings?.dueAt ?? null;
@@ -92,15 +91,16 @@ const Homework = () => {
         return;
       }
       setMe(student);
-      setScore(student.correct_answers ?? 0);
-      answeredRef.current = student.total_answers ?? 0;
 
       // Resume by question id rather than by a stored counter: the counter can
       // drift if a write fails, but a response row is proof the question was
-      // actually answered.
+      // actually answered. The score is recomputed from those rows too, since
+      // game_students.correct_answers is only ever written once, at the very
+      // end — see the finish-time write in `next()` below.
       const { data: responses } = await supabase
-        .from("question_responses").select("question_id").eq("student_id", student.id);
+        .from("question_responses").select("question_id, is_correct").eq("student_id", student.id);
       const done = new Set((responses ?? []).map((r: any) => r.question_id));
+      setScore((responses ?? []).filter((r: any) => r.is_correct).length);
       const next = list.findIndex(q => !done.has(q.id));
 
       if (next === -1 || list.length === 0) setStage("done");
@@ -136,31 +136,31 @@ const Homework = () => {
     setPicked(choice);
     const correct = choice === q.correct_index;
     if (correct) { playCorrect(); setScore(s => s + 1); } else playWrong();
-    answeredRef.current += 1;
     setStage("reveal");
 
     // Fire-and-forget, like the live modes: a slow round trip must never hold
     // up the reveal a student is waiting on. A dropped write costs one row and
-    // the resume logic simply re-asks that question.
+    // the resume logic simply re-asks that question. This is the only write
+    // per question — game_students itself is untouched until the assignment
+    // is actually finished (see `next()`), so the teacher's monitor has
+    // nothing to update on and a mid-quiz refresh is a no-op for them.
     supabase.from("question_responses").insert({
       session_id: sessionId, student_id: me.id, question_id: q.id,
       question_index: idx, answer_index: choice, is_correct: correct,
     }).then(() => {});
-    supabase.from("game_students").update({
-      total_answers: answeredRef.current,
-      correct_answers: (me.correct_answers ?? 0) + (correct ? 1 : 0),
-    }).eq("id", me.id).then(() => {});
-    setMe((prev: any) => ({
-      ...prev,
-      total_answers: answeredRef.current,
-      correct_answers: (prev.correct_answers ?? 0) + (correct ? 1 : 0),
-    }));
   };
 
   const next = () => {
     setPicked(null);
-    if (idx + 1 >= questions.length) { playGameOver(); setStage("done"); }
-    else { setIdx(i => i + 1); setStage("question"); }
+    if (idx + 1 >= questions.length) {
+      playGameOver();
+      setStage("done");
+      // The one and only game_students write: this is what the teacher's
+      // monitor actually watches, so a submission is what makes it move.
+      supabase.from("game_students").update({
+        total_answers: questions.length, correct_answers: score,
+      }).eq("id", me.id).then(() => {});
+    } else { setIdx(i => i + 1); setStage("question"); }
   };
 
   const dueLabel = useMemo(() => {
@@ -328,7 +328,7 @@ const Homework = () => {
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-2.5 auto-rows-min content-center flex-1 min-h-0 overflow-y-auto">
+      <div className="grid grid-cols-2 gap-2.5 auto-rows-min content-center flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
         {q.options.map((opt, i) => {
           const isCorrect = i === q.correct_index;
           const isPicked = picked === i;

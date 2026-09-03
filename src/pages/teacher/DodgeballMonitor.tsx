@@ -186,7 +186,7 @@ const DodgeballMonitor = ({ session, sessionId }: Props) => {
   const endGame = async () => {
     if (!(await confirm(ar ? "إنهاء اللعبة الآن؟" : "End the game now?"))) return;
     await supabase.from("game_sessions").update({ status: "finished", ended_at: new Date().toISOString() }).eq("id", sessionId);
-    nav(`/app/games/${sessionId}/results`);
+    nav(`/app/games/${sessionId}/results`, { state: { justEnded: true } });
   };
 
   const goFullscreen = () => {

@@ -40,7 +40,7 @@ const Landing = () => {
         line2b: "",
         line3a: "",
         line3b: "في دقائق",
-        sub: "نفلها منصة اختبارات صفية تفاعلية بالذكاء الاصطناعي، ترافقك من فكرة الاختبار حتى تشغيله المباشر، ومن توليد الأسئلة حتى تحليل أداء طلابك.",
+        sub: "نفلها منصة تعليمية تفاعلية مدعومة بالذكاء الاصطناعي، ترافقك من فكرة الاختبار حتى تشغيله المباشر، ومن توليد الأسئلة حتى تحليل أداء طلابك.",
         cta: "ابدأ معنا",
         joinGame: "ادخل اللعبة",
 
@@ -121,9 +121,9 @@ const Landing = () => {
     >
       <Seo
         path="/"
-        titleAr="منصة اختبارات صفية تفاعلية بالذكاء الاصطناعي"
+        titleAr="منصة اختبارات تفاعلية مدعومة بالذكاء الاصطناعي"
         titleEn="AI-Powered Classroom Quiz Platform for Saudi Arabia"
-        descriptionAr="نفلها منصة اختبارات صفية تفاعلية بالذكاء الاصطناعي تزيد تفاعل الطلاب في الفصل العربي. أنشئ اختبارات بالذكاء الاصطناعي، وشغّل تسعة أنماط لعب مباشرة — بلا تطبيقات على الطلاب."
+        descriptionAr="نفلها منصة اختبارات تفاعلية مدعومة بالذكاء الاصطناعي ترفع تفاعل الطلاب داخل الفصل العربي. أنشئ اختباراتك بالذكاء الاصطناعي، وشغّل تسعة أنماط لعب مباشرة — دون أي تطبيق على أجهزة الطلاب."
         descriptionEn="nefelha is an AI-powered classroom quiz platform that boosts student engagement in the Arabic classroom. Generate AI quizzes and run nine live game modes — no apps for students."
         jsonLd={{
           "@context": "https://schema.org",
@@ -131,7 +131,7 @@ const Landing = () => {
           name: "نفلها",
           alternateName: "nefelha",
           url: "https://www.nefelha.com/",
-          description: "نفلها شركة ناشئة سعودية تبني منصة اختبارات وألعاب تفاعلية للفصل العربي، بتوليد أسئلة بالذكاء الاصطناعي وتسعة أنماط لعب صفية مباشرة.",
+          description: "نفلها شركة ناشئة سعودية تبني منصة اختبارات وألعاب تفاعلية للفصل العربي، بتوليد أسئلة بالذكاء الاصطناعي وتسعة أنماط لعب تعليمية مباشرة.",
           areaServed: { "@type": "Country", name: "Saudi Arabia" },
           address: { "@type": "PostalAddress", addressCountry: "SA" },
           inLanguage: ["ar", "en"],

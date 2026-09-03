@@ -46,8 +46,8 @@ const Quizzes = () => {
 
   return (
     <div className="space-y-6 max-w-6xl">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <h1 className="font-display text-3xl font-bold">{t("my_quizzes")}</h1>
+      <div className="rounded-2xl border-2 border-[hsl(var(--nb-border))] bg-white shadow-[4px_4px_0_0_hsl(var(--nb-border))] px-5 py-4 flex items-center justify-between gap-3 flex-wrap">
+        <h1 className="font-display text-2xl font-bold">{t("my_quizzes")}</h1>
         <div className="flex gap-2">
           <Button asChild className="bg-accent text-white hover:bg-accent/90"><Link to="/app/quizzes/new"><Plus className="h-4 w-4 me-2" />{t("manual_build")}</Link></Button>
           <Button asChild variant="outline"><Link to="/app/quizzes/new?ai=1"><Sparkles className="h-4 w-4 me-2" />{t("ai_generate")}</Link></Button>

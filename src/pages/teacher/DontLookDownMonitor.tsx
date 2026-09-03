@@ -131,11 +131,11 @@ const DontLookDownMonitor = ({ session, sessionId }: Props) => {
     await supabase.from("game_sessions").update({
       status: "finished", ended_at: new Date().toISOString(),
     }).eq("id", sessionId);
-    nav(`/app/games/${session.id}/results`);
+    nav(`/app/games/${session.id}/results`, { state: { justEnded: true } });
   };
 
   useEffect(() => {
-    if (session?.status === "finished") nav(`/app/games/${session.id}/results`, { replace: true });
+    if (session?.status === "finished") nav(`/app/games/${session.id}/results`, { replace: true, state: { justEnded: true } });
   }, [session?.status]);
 
   const goFullscreen = () => {

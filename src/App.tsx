@@ -30,6 +30,7 @@ const Quizzes     = lazy(() => import("./pages/teacher/Quizzes"));
 const QuizEditor  = lazy(() => import("./pages/teacher/QuizEditor"));
 const HostGame    = lazy(() => import("./pages/teacher/HostGame"));
 const HostedGames = lazy(() => import("./pages/teacher/HostedGames"));
+const HomeworkMonitorPage = lazy(() => import("./pages/teacher/HomeworkMonitorPage"));
 const GameMonitor = lazy(() => import("./pages/teacher/GameMonitor"));
 const GameResults = lazy(() => import("./pages/teacher/GameResults"));
 const Analytics    = lazy(() => import("./pages/teacher/Stubs").then(m => ({ default: m.Analytics })));
@@ -99,12 +100,15 @@ const AppContent = () => {
               <Route path="quizzes/:id/edit" element={<QuizEditor />} />
               <Route path="host/:quizId" element={<HostGame />} />
               <Route path="games" element={<HostedGames />} />
+              <Route path="games/:sessionId/homework" element={<HomeworkMonitorPage />} />
+              <Route path="games/:sessionId/results" element={<GameResults />} />
               <Route path="analytics" element={<Analytics />} />
               <Route path="settings" element={<SettingsPage />} />
             </Route>
-            {/* Full-screen projector views (no sidebar/header) */}
+            {/* Full-screen projector view (no sidebar/header) — this is the only
+                page that's genuinely live in front of a class; results and
+                homework are reviewed after the fact, so they stay in the shell. */}
             <Route path="/app/games/:sessionId/monitor" element={<RequireAuth><GameMonitor /></RequireAuth>} />
-            <Route path="/app/games/:sessionId/results" element={<RequireAuth><GameResults /></RequireAuth>} />
             <Route path="/index" element={<Navigate to="/" replace />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

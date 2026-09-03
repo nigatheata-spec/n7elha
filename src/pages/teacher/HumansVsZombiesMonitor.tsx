@@ -234,7 +234,7 @@ const HumansVsZombiesMonitor = ({ session, sessionId }: Props) => {
 
   // ── Navigate to results once finished ──────────────────────────────────────
   useEffect(() => {
-    if (session?.status === "finished") nav(`/app/games/${session.id}/results`, { replace: true });
+    if (session?.status === "finished") nav(`/app/games/${session.id}/results`, { replace: true, state: { justEnded: true } });
   }, [session?.status]);
 
   const endNow = async () => {
@@ -244,7 +244,7 @@ const HumansVsZombiesMonitor = ({ session, sessionId }: Props) => {
       status: "finished", ended_at: new Date().toISOString(),
       settings: { ...settingsRef.current, winner },
     }).eq("id", sessionId);
-    nav(`/app/games/${session.id}/results`);
+    nav(`/app/games/${session.id}/results`, { state: { justEnded: true } });
   };
 
   const goFullscreen = () => {

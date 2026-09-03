@@ -159,7 +159,7 @@ const HotPotatoMonitor = ({ session, sessionId }: Props) => {
     if (!session) return;
     if (!(await confirm(ar ? "إنهاء اللعبة الآن؟" : "End the game now?"))) return;
     await supabase.from("game_sessions").update({ status: "finished", ended_at: new Date().toISOString() }).eq("id", session.id);
-    nav(`/app/games/${session.id}/results`);
+    nav(`/app/games/${session.id}/results`, { state: { justEnded: true } });
   };
 
   const goFullscreen = () => {
@@ -211,7 +211,7 @@ const HotPotatoMonitor = ({ session, sessionId }: Props) => {
             })}
           </div>
         )}
-        <Button onClick={() => nav(`/app/games/${session.id}/results`)}
+        <Button onClick={() => nav(`/app/games/${session.id}/results`, { state: { justEnded: true } })}
           className="relative z-10 text-lg px-10 py-5 font-mono font-bold"
           style={{ background: PCB_GREEN, color: "hsl(210 22% 7%)" }}>
           <Trophy className="h-5 w-5 me-2" /> {ar ? "عرض النتائج الكاملة" : "View Full Results"}
