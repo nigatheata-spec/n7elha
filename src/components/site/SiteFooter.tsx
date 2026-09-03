@@ -105,7 +105,7 @@ export const SiteFooter = () => {
           ]} />
           <FooterCol title={t.footerCompany} items={[
             { label: t.footerAbout, to: "/about" },
-            { label: t.footerContact, to: "/partners" },
+            { label: t.footerContact, to: "/contact" },
             { label: t.footerCareers, to: "#" },
           ]} />
           <FooterCol title={t.footerLegal} items={[

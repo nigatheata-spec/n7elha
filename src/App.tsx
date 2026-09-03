@@ -20,6 +20,7 @@ const Landing     = lazy(() => import("./pages/Landing"));
 const Services    = lazy(() => import("./pages/Services"));
 const About       = lazy(() => import("./pages/About"));
 const Partners    = lazy(() => import("./pages/Partners"));
+const Contact     = lazy(() => import("./pages/Contact"));
 const Schools     = lazy(() => import("./pages/Schools"));
 const Blog        = lazy(() => import("./pages/Blog"));
 const BlogPost    = lazy(() => import("./pages/BlogPost"));
@@ -36,6 +37,7 @@ const SettingsPage = lazy(() => import("./pages/teacher/Stubs").then(m => ({ def
 const Join        = lazy(() => import("./pages/play/Join"));
 const Game        = lazy(() => import("./pages/play/Game"));
 const ScanSquare  = lazy(() => import("./pages/play/ScanSquare"));
+const Homework    = lazy(() => import("./pages/play/Homework"));
 // Dev-only art preview for Don't Look Down (see the file header).
 const DldPreview  = lazy(() => import("./pages/play/DldPreview"));
 const NotFound    = lazy(() => import("./pages/NotFound"));
@@ -79,6 +81,7 @@ const AppContent = () => {
             <Route path="/services" element={<Services />} />
             <Route path="/about" element={<About />} />
             <Route path="/partners" element={<Partners />} />
+            <Route path="/contact" element={<Contact />} />
             <Route path="/schools" element={<Schools />} />
             <Route path="/blog" element={<Blog />} />
             <Route path="/blog/:slug" element={<BlogPost />} />
@@ -87,6 +90,8 @@ const AppContent = () => {
             {import.meta.env.DEV && <Route path="/play/dld-preview" element={<DldPreview />} />}
             <Route path="/play/:sessionId" element={<Game />} />
             <Route path="/scan/:kitId/:typeCode" element={<ScanSquare />} />
+            {/* Homework links are shared straight to students — short, no code, no lobby. */}
+            <Route path="/hw/:sessionId" element={<Homework />} />
             <Route path="/app" element={<RequireAuth><TeacherLayout /></RequireAuth>}>
               <Route index element={<Dashboard />} />
               <Route path="quizzes" element={<Quizzes />} />

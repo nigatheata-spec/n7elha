@@ -48,7 +48,7 @@ export const SiteNav = () => {
               { to: "/schools", label: t.schools },
               { to: "/blog", label: t.blog },
               { to: "/about", label: t.about },
-              { to: "/partners", label: t.partners },
+              { to: "/contact", label: t.partners },
             ].map(item => {
               const active = pathname === item.to;
               return (
@@ -144,7 +144,7 @@ export const SiteNav = () => {
               { to: "/schools", label: t.schools },
               { to: "/blog", label: t.blog },
               { to: "/about", label: t.about },
-              { to: "/partners", label: t.partners },
+              { to: "/contact", label: t.partners },
             ].map((item) => {
               const active = pathname === item.to;
               return (

@@ -16,15 +16,22 @@ npm run test:watch           # Watch mode
 
 Single test file: `npx vitest run src/test/example.test.ts`
 
-Supabase (requires CLI and `SUPABASE_ACCESS_TOKEN` env var):
+Supabase — the CLI is **not** installed globally (no Homebrew binary, nothing on
+`PATH`). Run it through npx, which works against the linked project without a
+`SUPABASE_ACCESS_TOKEN`:
 ```bash
-supabase db push                                    # Apply new migrations
-supabase functions deploy generate-quiz             # Deploy quiz AI function
-supabase functions deploy generate-question-image   # Deploy image AI function
-supabase secrets set KEY=value                      # Set edge function secrets
+npx supabase@latest migration list                      # Compare local vs remote history
+npx supabase@latest db push                             # Apply new migrations
+npx supabase@latest functions deploy generate-quiz      # Deploy quiz AI function
+npx supabase@latest functions deploy generate-question-image
+npx supabase@latest secrets set KEY=value               # Set edge function secrets
 ```
 
-> **DB migrations**: `supabase db push` often fails without a valid PAT. Run new `.sql` files manually in the Supabase Dashboard SQL editor instead — "Success. No rows returned" is correct output.
+> **DB migrations**: always run `migration list` before `db push`. Push applies
+> *every* migration missing from the remote history, so if any past migration was
+> ever applied by hand instead of pushed, a push will try to replay it. When the
+> two columns line up, push is safe. Commands needing Docker (`db dump`, `db diff`,
+> local stack) do not work here — Docker isn't installed.
 
 ## What this app is
 

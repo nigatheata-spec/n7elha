@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
-import { Copy, Play, Users, Trash2, Zap, Heart, Skull, Timer, Trophy, Flame, ChevronLeft, Check, Minus, Plus, ListChecks, Biohazard, ChevronUp, QrCode } from "lucide-react";
+import { Copy, Play, Users, Trash2, Zap, Heart, Skull, Timer, Trophy, Flame, ChevronLeft, Check, Minus, Plus, ListChecks, Biohazard, ChevronUp, QrCode, BookOpen, Link2 } from "lucide-react";
 import { BitcoinIcon, StopwatchIcon, LavaBucketIcon, DynamiteIcon, PaintRollerIcon } from "@/components/game/icons";
 import { computeArenaSize } from "@/lib/paintFight";
 import { toast } from "@/components/ui/sonner";
@@ -13,7 +13,7 @@ const genCode = () => {
   return Array.from({ length: 4 }, () => c[Math.floor(Math.random() * c.length)]).join("");
 };
 
-type GameMode = "crypto_rush" | "dodgeball" | "hotpotato" | "lavafloor" | "classic" | "humansvszombies" | "dontlookdown" | "paintfight" | "physical";
+type GameMode = "crypto_rush" | "dodgeball" | "hotpotato" | "lavafloor" | "classic" | "humansvszombies" | "dontlookdown" | "paintfight" | "physical" | "homework";
 
 const MODES: { id: GameMode; icon: React.ReactNode; label: string; labelAr: string; desc: string; descAr: string; accent: string; num: string }[] = [
   {
@@ -105,6 +105,16 @@ const MODES: { id: GameMode; icon: React.ReactNode; label: string; labelAr: stri
     descAr: "العب على لوحة مطبوعة — امسح المربعات للحصول على أسئلة، بدون أجهزة للطلاب",
     accent: "#5b4636",
     num: "08",
+  },
+  {
+    id: "homework",
+    icon: <BookOpen className="h-6 w-6" strokeWidth={2} />,
+    label: "Homework",
+    labelAr: "واجب منزلي",
+    desc: "Share a link instead of a code — students answer on their own time",
+    descAr: "شارك رابطاً بدل الرمز — يحلّه الطلاب في وقتهم الخاص",
+    accent: "#6b5bb5",
+    num: "09",
   },
 ];
 
@@ -229,6 +239,8 @@ const HostGame = () => {
   // teacher explicitly opted in to that many seconds per question. Every mode
   // reads settings.timePerQ with this same contract: absent/null => no timer.
   const [secsPerQ, setSecsPerQ] = useState<number | null>(null);
+  // Homework only. Empty means no deadline — the link stays open until closed.
+  const [dueDate, setDueDate] = useState("");
   const maxStudents = 40;
 
   useEffect(() => {
@@ -348,6 +360,30 @@ const HostGame = () => {
     } catch (e: any) { toast.error(e.message); }
   };
 
+  // Homework skips the lobby entirely, like Physical Games: there is nobody to
+  // wait for. The session is created already `running` so the link works the
+  // instant it is shared, and the teacher lands on the roster/share screen.
+  const startHomework = async () => {
+    if (!user || !quizId) return;
+    try {
+      const settings: any = { mode: "homework", lang: i18n.language };
+      // Stored as an ISO instant so every client compares against the same
+      // moment regardless of the device's timezone.
+      if (dueDate) settings.dueAt = new Date(`${dueDate}T23:59:59`).toISOString();
+      let tryCode = code;
+      let data, error;
+      for (let attempt = 0; attempt < 5; attempt++) {
+        ({ data, error } = await supabase.from("game_sessions")
+          .insert({ teacher_id: user.id, quiz_id: quizId, code: tryCode, status: "running", started_at: new Date().toISOString(), settings })
+          .select().single());
+        if (!error || error.code !== "23505") break;
+        tryCode = genCode();
+      }
+      if (error) throw error;
+      navigate(`/app/games/${data.id}/monitor`);
+    } catch (e: any) { toast.error(e.message); }
+  };
+
   const cancelLobby = async () => {
     if (!sessionId) return;
     await supabase.from("game_sessions").update({ status: "cancelled" }).eq("id", sessionId);
@@ -429,7 +465,9 @@ const HostGame = () => {
 
   // ── Settings + lobby ──────────────────────────────────────────────────────
   const selectedAccent = selectedMode!.accent;
-  const needsTimer = mode !== "physical";
+  // Homework has no session clock (students answer over days) and no per-question
+  // countdown — the whole point is that nobody is being rushed.
+  const needsTimer = mode !== "physical" && mode !== "homework";
 
   return (
     <div className="min-h-full p-6 md:p-10" style={{ background: "hsl(var(--background))" }}>
@@ -574,6 +612,19 @@ const HostGame = () => {
                   </div>
                 </>
               )}
+              {mode === "homework" && (
+                <>
+                  <p className="text-black/65 leading-relaxed">
+                    {ar
+                      ? "بدل رمز الغرفة، تحصل على رابط ترسله لطلابك. كل طالب يفتحه في وقته، يكتب اسمه، ويجاوب على الأسئلة بالترتيب مرة واحدة — ويشوف الإجابة الصحيحة بعد كل سؤال. تشوف أنت النتائج هنا أول بأول."
+                      : "Instead of a room code you get a link to send your students. Each one opens it in their own time, enters their name, and answers the questions once in order — seeing the right answer after each. Results land here as they come in."}
+                  </p>
+                  <div className="flex items-center gap-2 text-black/45">
+                    <Link2 className="h-4 w-4 shrink-0" style={{ color: selectedAccent }} />
+                    <span>{ar ? "بدون رمز، بدون ردهة، بدون منافسة" : "No code, no lobby, no race"}</span>
+                  </div>
+                </>
+              )}
               {mode === "physical" && (
                 <>
                   <p className="text-black/65 leading-relaxed">
@@ -598,13 +649,48 @@ const HostGame = () => {
               </div>
             )}
 
-            {mode !== "physical" && (
+            {mode !== "physical" && mode !== "homework" && (
               <QuestionTimerControl ar={ar} value={secsPerQ} onChange={setSecsPerQ} />
+            )}
+
+            {mode === "homework" && (
+              <div>
+                <p className="text-xs font-semibold tracking-widest uppercase text-black/40 mb-1">
+                  {ar ? "موعد التسليم (اختياري)" : "Due date (optional)"}
+                </p>
+                <p className="text-[12px] text-black/45 mb-3">
+                  {ar
+                    ? "بعد نهاية هذا اليوم يتوقف الرابط عن قبول إجابات جديدة."
+                    : "After the end of this day the link stops accepting new answers."}
+                </p>
+                <input
+                  type="date"
+                  value={dueDate}
+                  onChange={e => setDueDate(e.target.value)}
+                  className="w-full rounded-xl border-2 border-[hsl(var(--nb-border))] bg-white px-4 py-3 text-sm font-medium text-[#3F5A63] focus:outline-none"
+                />
+              </div>
             )}
           </div>
 
           {/* ── Code + lobby card ── */}
-          {mode === "physical" ? (
+          {mode === "homework" ? (
+            <div className="rounded-2xl p-6 space-y-4 bg-white border-2 border-[hsl(var(--nb-border))] shadow-[4px_4px_0_0_hsl(var(--nb-border))]">
+              <h2 className="font-semibold text-[15px] text-[#3F5A63]">{ar ? "جاهز للإرسال" : "Ready to share"}</h2>
+              <p className="text-sm text-black/55 leading-relaxed">
+                {ar
+                  ? "اضغط إنشاء وبتحصل على رابط جاهز للنسخ وإرساله لطلابك."
+                  : "Press create and you'll get a link ready to copy and send to your students."}
+              </p>
+              <button
+                onClick={startHomework}
+                className="w-full flex items-center justify-center gap-2 rounded-xl py-3.5 text-base font-bold border-2 border-[hsl(var(--nb-border))] bg-[#3F5A63] text-white shadow-[4px_4px_0_0_hsl(var(--nb-border))] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_0_hsl(var(--nb-border))] transition-all active:scale-[0.99]"
+              >
+                <BookOpen className="h-5 w-5" />
+                {ar ? "إنشاء الواجب" : "Create Homework"}
+              </button>
+            </div>
+          ) : mode === "physical" ? (
             <div className="rounded-2xl p-6 space-y-4 bg-white border-2 border-[hsl(var(--nb-border))] shadow-[4px_4px_0_0_hsl(var(--nb-border))]">
               <h2 className="font-semibold text-[15px] text-[#3F5A63]">{ar ? "جاهز للبدء" : "Ready to start"}</h2>
               <p className="text-sm text-black/55 leading-relaxed">
