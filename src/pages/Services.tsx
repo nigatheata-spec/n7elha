@@ -54,6 +54,14 @@ const Services = () => {
         m8: "معركة الطلاء", m8d: "ساحة تلوين حرة للجميع — تحرك بعصا افتراضية واترك أثر لونك.",
         m9: "الألعاب الفعلية", m9d: "لوح مطبوع ورموز QR — بلا حاجة لجهاز لكل طالب، جهاز واحد فقط يمسح الرموز.",
 
+        physicalKicker: "الفرق",
+        physicalTitle: "ألعاب مادية و رقمية معاً",
+        physicalDesc: "نفلها تجمع بين الألعاب الرقمية الكاملة وألعاب مادية بلوح ورموز QR — تجربة يلمسها الطالب ويتفاعل معها فعلياً في الفصل. جهاز واحد يمسح لكل الفصل، وما تحتاج لكل طالب جهاز خاص. نفس الأسئلة، طريقتين مختلفتين للتفاعل.",
+
+        platformKicker: "منصة وحيدة",
+        platformTitle: "منصة واحدة لكل المواد",
+        platformDesc: "إسلامية، عربي، رياضيات، علوم — نفس المنصة، نفس الأدوات، نفس التجربة. ما تحتاج شراء منفصل لكل قسم. المعلم في الفيزياء والمعلمة في اللغة العربية، كلهم على نفس النظام.",
+
         howKicker: "كيف تعمل؟",
         howTitle: "ثلاث خطوات بس",
         s1: "ارفع المحتوى", s1d: "ملف الدرس أو ملاحظاتك. تتكفّل المنصة بالباقي.",
@@ -87,6 +95,14 @@ const Services = () => {
         m7: "Don't Look Down", m7d: "A 2D parkour platformer — energy from correct answers moves your climber upward.",
         m8: "Paint Fight", m8d: "A free-for-all territory arena — move with a virtual joystick and leave your color's trail.",
         m9: "Physical Games", m9d: "A printed board and QR codes — no device per student, just one shared scanner.",
+
+        physicalKicker: "THE DIFFERENCE",
+        physicalTitle: "Physical + Digital Games Together",
+        physicalDesc: "nefelha combines full digital games with physical games using a board and QR codes — an experience students touch and engage with in real space. One device scans for the whole class, no device needed per student. Same questions, two different ways to play.",
+
+        platformKicker: "ONE PLATFORM",
+        platformTitle: "One Platform for Every Subject",
+        platformDesc: "Islamic Studies, Arabic, Math, Science — same platform, same tools, same experience. One purchase covers every subject. Your physics teacher and your Arabic teacher work on the same system.",
 
         howKicker: "HOW IT WORKS",
         howTitle: "Three steps to your first live session",
@@ -167,6 +183,28 @@ const Services = () => {
             </div>
           ))}
         </div>
+        </div>
+      </section>
+
+      {/* ---------------- PHYSICAL + DIGITAL GAMES ---------------- */}
+      <section className="wrap px-5 sm:px-8 md:px-14 py-20 sm:py-28 bg-[#F5F1E8]">
+        <div className="max-w-3xl">
+          <span className={`text-[12px] font-semibold text-[#3F5A63] ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`}>{t.physicalKicker}</span>
+          <h2 className="mt-3 text-[28px] sm:text-[40px] tracking-tight leading-[1.1] mb-4" style={{ color: "#3F5A63", fontFamily: "'ArslanWessam', 'Almarai', sans-serif" }}>
+            {t.physicalTitle}
+          </h2>
+          <p className="text-[15px] leading-relaxed text-black/70">{t.physicalDesc}</p>
+        </div>
+      </section>
+
+      {/* ---------------- ONE PLATFORM, EVERY SUBJECT ---------------- */}
+      <section className="wrap px-5 sm:px-8 md:px-14 py-20 sm:py-28">
+        <div className="max-w-3xl">
+          <span className={`text-[12px] font-semibold text-[#3F5A63] ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`}>{t.platformKicker}</span>
+          <h2 className="mt-3 text-[28px] sm:text-[40px] tracking-tight leading-[1.1] mb-4" style={{ color: "#3F5A63", fontFamily: "'ArslanWessam', 'Almarai', sans-serif" }}>
+            {t.platformTitle}
+          </h2>
+          <p className="text-[15px] leading-relaxed text-black/70">{t.platformDesc}</p>
         </div>
       </section>
 
