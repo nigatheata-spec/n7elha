@@ -35,26 +35,26 @@ const Landing = () => {
 
   const t = isAr
     ? {
-        line1: "صمّم اختبارك",
-        line2a: "وشغّله",
+        line1: "نخلي الطالب",
+        line2a: "يحب التعلّم",
         line2b: "",
         line3a: "",
-        line3b: "في دقائق",
-        sub: "نفلها منصة تعليمية تفاعلية مدعومة بالذكاء الاصطناعي، ترافقك من فكرة الاختبار حتى تشغيله المباشر، ومن توليد الأسئلة حتى تحليل أداء طلابك.",
+        line3b: "مو يكرهه",
+        sub: "نفلها مو نظام إدارة تعلّم (LMS) ثاني، ولا أداة اختبارات. إحنا نغيّر نظرة الطالب للتعلّم — نخليه ينتظر الحصة، مو يتهرّب منها. تجربة مصمّمة للفصل العربي من الأساس: أنت جهّز درسك، وإحنا نحوّله لشي يحبه طلابك.",
         cta: "ابدأ معنا",
         joinGame: "ادخل اللعبة",
 
         mapCaption: "من هنا نبدأ",
         storyKicker: "قصتنا",
-        storyTitle: "إحنا كنّا الطلاب اللي ما يرفعون إيدهم",
-        sp1: "نعرف زين وش يصير في حصة المراجعة: المعلم يسأل، والفصل ساكت. مو لأن حد ما فهم الدرس، بس محد يبي يكون أول واحد يجاوب ويغلط قدّام الكل.",
-        sp2: "جرّبنا المنصات الجاهزة، بس كل وحدة مبنية بعقلية ثانية، والعربي فيها زي إنه مضاف بعدين كترجمة بس. الأسئلة تتكسر، الاتجاه يتقلب، والتجربة كلها تحس فيها غريبة عن فصولنا.",
-        sp3: "قلنا نسوي اللي كنا نتمنى نلقاه وإحنا قاعدين على نفس الكراسي: منصة تخلي المراجعة شي الطالب يستناه، مو شي يتهرب منه. من هني طلعت نفلها.",
+        storyTitle: "الطالب حاضر بجسمه، غايب بعقله",
+        sp1: "نعرف زين شكل الحصة: الطالب قاعد قدامك بس عقله بمكان ثاني. عيونه على الساعة، أو على الجوال تحت الطاولة، يعدّ الدقايق للجرس. مو لأنه ما يفهم — الطريقة اللي يتعلّم فيها ميتة، ما تعطيه سبب يهتم.",
+        sp2: "والمعلم يحارب معركة خاسرة. ينافس جوالات وتطبيقات على انتباهٍ ما عاد يطول أكثر من دقايق. يجتهد ويجهّز زين، بس الصف طافي قبل لا يبدأ الدرس.",
+        sp3: "هالمفهوم — تجربة تعليمية تخلي الطالب يحب التعلّم بدل ما يهرب منه — ما موجود في الفصول العربية. قررنا نكون أول واحد يبنيه. من هني طلعت نفلها.",
 
         feelKicker: "ما نؤمن به",
         feelLine1: "التفاعل مو رقم",
         feelLine2: "في تقرير",
-        feelBody: "هو شعور يسعى له كل طالب: لحظة يرفع فيها يده بثقة، لا خوفًا من الخطأ. لحظة يضحك فيها الصف على إجابة، ويتحمّس للسؤال التالي. هذا ما نصممه، سؤالًا سؤالًا.",
+        feelBody: "هو إحساس نبيه لكل طالب: لحظة يدخل فيها الحصة وهو متحمّس، مو طافي. لحظة يتفاعل مع السؤال لأنه يبي، مو لأنه مجبور. هذا اللي نصمّمه، سؤال ورا سؤال.",
 
         howKicker: "كيف تعمل؟",
         howTitle: "ثلاث خطوات بس",
@@ -74,26 +74,26 @@ const Landing = () => {
 
       }
     : {
-        line1: "Build your quiz.",
-        line2a: "Launch it",
+        line1: "Make students",
+        line2a: "love learning",
         line2b: "",
         line3a: "",
-        line3b: "in minutes.",
-        sub: "nefelha is an interactive, AI-powered classroom quiz platform that walks with you from idea to live session — from AI-generated questions to real-time student insights.",
+        line3b: "not dread it.",
+        sub: "nefelha isn't another LMS, and it isn't a quiz tool. We change how students feel about learning — so they look forward to class instead of running from it. Built for the Arabic classroom from the ground up: you prepare the lesson, we turn it into something your students love.",
         cta: "Get started",
         joinGame: "JOIN GAME",
 
         mapCaption: "This is where we start",
         storyKicker: "OUR STORY",
-        storyTitle: "We were the students who never raised their hands",
-        sp1: "We know exactly what a review lesson looks like. The teacher asks, and the room goes quiet. Not because nobody understood, but because nobody wants to be the first one to answer and get it wrong in front of everyone.",
-        sp2: "We tried the platforms that already existed. They were designed in another language and another mindset, with Arabic added afterwards as a translation. Questions break, direction flips, and the whole thing feels foreign to our classrooms.",
-        sp3: "So we built what we wished we had while we were still sitting in those seats: a platform that makes review something students look forward to instead of something they avoid. That is how nefelha started.",
+        storyTitle: "Students show up. Their minds don't.",
+        sp1: "We know exactly what class looks like. The student's body is there, but their mind is somewhere else. Eyes on the clock. Scrolling under the desk. Counting down to the bell. Not because they don't understand — it's because the way we teach gives them no reason to care.",
+        sp2: "The teacher is fighting a losing battle over attention. Competing with devices they can't beat. Working hard, preparing well, but the room checks out before the lesson even starts.",
+        sp3: "The idea of making students actually want to learn — of creating an experience that intrinsically engages instead of coercing compliance — doesn't exist yet in Arabic classrooms. We decided to build it first. That's how nefelha started.",
 
         feelKicker: "WHAT WE BELIEVE",
         feelLine1: "Engagement isn't a number",
         feelLine2: "on a report",
-        feelBody: "It's a feeling every student strives for: the moment they raise their hand with confidence, not fear of getting it wrong. The moment the room laughs at an answer and leans into the next question. That's what we design, one question at a time.",
+        feelBody: "It's a feeling every student needs: the moment they walk into class excited instead of checked out. The moment they answer because they want to, not because they have to. That's what we design, one question at a time.",
 
         howKicker: "HOW IT WORKS",
         howTitle: "Three steps to your first live session",
@@ -121,17 +121,17 @@ const Landing = () => {
     >
       <Seo
         path="/"
-        titleAr="منصة اختبارات تفاعلية مدعومة بالذكاء الاصطناعي"
-        titleEn="AI-Powered Classroom Quiz Platform for Saudi Arabia"
-        descriptionAr="نفلها منصة اختبارات تفاعلية مدعومة بالذكاء الاصطناعي ترفع تفاعل الطلاب داخل الفصل العربي. أنشئ اختباراتك بالذكاء الاصطناعي، وشغّل تسعة أنماط لعب مباشرة — دون أي تطبيق على أجهزة الطلاب."
-        descriptionEn="nefelha is an AI-powered classroom quiz platform that boosts student engagement in the Arabic classroom. Generate AI quizzes and run nine live game modes — no apps for students."
+        titleAr="نفلها — نخلي الطلاب يحبون التعلّم | تجربة تفاعلية للفصل العربي"
+        titleEn="nefelha — Make Students Love Learning | Interactive Classroom Experience"
+        descriptionAr="نفلها مو نظام LMS ولا أداة اختبارات — إحنا نغيّر نظرة الطالب للتعلّم ونخليه يحب الحصة. تجربة تفاعلية للفصل العربي، تشتغل بدون أي تطبيق على أجهزة الطلاب."
+        descriptionEn="nefelha isn't an LMS or a quiz tool. It's an interactive classroom experience that makes students love learning, not dread it. AI-powered, Arabic-first, nine play modes — no apps needed."
         jsonLd={{
           "@context": "https://schema.org",
           "@type": "EducationalOrganization",
           name: "نفلها",
           alternateName: "nefelha",
           url: "https://www.nefelha.com/",
-          description: "نفلها شركة ناشئة سعودية تبني منصة اختبارات وألعاب تفاعلية للفصل العربي، بتوليد أسئلة بالذكاء الاصطناعي وتسعة أنماط لعب تعليمية مباشرة.",
+          description: "نفلها شركة ناشئة سعودية تبني تجربة تعليمية تفاعلية تخلي الطلاب يحبون التعلّم — بتوليد أسئلة بالذكاء الاصطناعي وتسعة أنماط لعب مباشرة بلا تطبيقات.",
           areaServed: { "@type": "Country", name: "Saudi Arabia" },
           address: { "@type": "PostalAddress", addressCountry: "SA" },
           inLanguage: ["ar", "en"],

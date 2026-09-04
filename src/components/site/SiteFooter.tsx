@@ -11,10 +11,10 @@ export const SiteFooter = () => {
 
   const t = isAr
     ? {
-        ctaTitle: "معلمك القادم مافيه شي يمنعه من البداية",
-        ctaSub: "مجاني تبدأ فيه، ودقائق تشغّله. جرّب أول اختبار لك الحين.",
+        ctaTitle: "خلّ طلابك يجرّبون حصة يحبونها",
+        ctaSub: "مجاني تبدأ، وبدقايق تشغّل. جرّب نفلها مع فصلك وشوف الفرق من أول حصة.",
         ctaBtn: "ابدأ معنا",
-        footerTagline: "منصة الاختبارات التفاعلية للمعلمين باللغة العربية.",
+        footerTagline: "نخلي الطلاب يحبون التعلّم — تجربة تفاعلية للفصل العربي.",
         footerProduct: "المنتج",
         footerCompany: "الشركة",
         footerLegal: "قانوني",
@@ -29,10 +29,10 @@ export const SiteFooter = () => {
         footerRights: "© 2026 نفلها. جميع الحقوق محفوظة.",
       }
     : {
-        ctaTitle: "Nothing's stopping your first quiz but a click.",
-        ctaSub: "Free to start, minutes to launch. Try your first quiz now.",
+        ctaTitle: "Let your students experience a class they actually love",
+        ctaSub: "Free to start, minutes to launch. Try nefelha with your class and see the difference from session one.",
         ctaBtn: "Get started",
-        footerTagline: "The interactive quiz platform built for Arabic-speaking classrooms.",
+        footerTagline: "Make students love learning — interactive classroom experience for the Arabic world.",
         footerProduct: "Product",
         footerCompany: "Company",
         footerLegal: "Legal",

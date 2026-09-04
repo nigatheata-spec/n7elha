@@ -14,7 +14,7 @@ const Schools = () => {
     ? {
         kicker: "للمدارس",
         title: "نفلها لمدرستك بالكامل، لا لصف واحد فقط",
-        sub: "منصة تفاعل صفي واحدة تُدار على مستوى المدرسة كلها — بلا حاجة لجهاز لكل طالب في كل صف.",
+        sub: "تجربة تعليمية وحدة تديرها على مستوى المدرسة كلها، تخلي الطلاب يحبون حصصهم — وتشتغل حتى بدون جهاز لكل طالب.",
 
         f1Title: "تفعيل عبر عدة صفوف ومعلمين",
         f1Desc: "كل معلم يبني اختباراته الخاصة ويستضيف جلساته بشكل مستقل، وأنت تدير التفعيل على مستوى المدرسة دون أن تتوقف على معلم واحد.",
@@ -35,7 +35,7 @@ const Schools = () => {
     : {
         kicker: "FOR SCHOOLS",
         title: "nefelha for your whole school, not just one class",
-        sub: "One classroom engagement platform managed school-wide — no device-per-student requirement in every room.",
+        sub: "One educational experience you manage school-wide, that makes students love their classes — and works even without a device for every student.",
 
         f1Title: "Roll out across classes and teachers",
         f1Desc: "Each teacher builds their own quizzes and hosts their own sessions independently, while you manage adoption at the school level without depending on a single teacher.",

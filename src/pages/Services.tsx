@@ -29,7 +29,7 @@ const Services = () => {
     ? {
         kicker: "الخدمات",
         title: "كل ما يحتاجه فصلك في مكان واحد",
-        sub: "من تحضير السؤال إلى تحليل النتيجة، نفلها مجموعة أدوات تفاعلية للصف تجمع بين التعلّم باللعب والذكاء الاصطناعي — مصممة لتعمل من أول ثانية بلا تعقيد.",
+        sub: "نفلها مو مجموعة أدوات، ولا نظام إدارة تعلّم. هي طريقة تخلي طلابك يحبون الحصة — وخلف هالتجربة كل اللي تحتاجه: من تجهيز السؤال بالذكاء الاصطناعي إلى تحليل النتيجة، يشتغل من أول ثانية بدون تعقيد.",
 
         f1Title: "توليد الأسئلة بالذكاء الاصطناعي",
         f1Desc: "ارفع ملف الدرس (PDF أو Word أو PowerPoint) واترك المنصة تستخرج لك أسئلة دقيقة بمستويات صعوبة مختلفة، جاهزة للمراجعة والتعديل قبل النشر.",
@@ -41,7 +41,7 @@ const Services = () => {
         f4Desc: "اعرف من أتقن الدرس ومن يحتاج إلى مراجعة، عبر تقارير واضحة بعد كل جلسة تُظهر أداء كل طالب وكل سؤال على حدة.",
 
         modesKicker: "أنماط اللعب",
-        modesTitle: "تسعة أنماط، فكرة واحدة: اجعل المراجعة تجربة",
+        modesTitle: "تسعة أنماط، هدف واحد: الطالب يطلع وهو يحب المادة",
         modesSub: "كل نمط يحوّل نفس الأسئلة إلى تجربة مختلفة — من سباق سريع إلى بقاء جماعي إلى لوح مطبوع بلا أجهزة إطلاقًا.",
 
         m1: "الوضع الكلاسيكي", m1d: "سباق الاختبار الأصلي — أجب بسرعة، اكسب أكثر.",
@@ -63,7 +63,7 @@ const Services = () => {
     : {
         kicker: "SERVICES",
         title: "Everything your classroom needs, in one place",
-        sub: "From writing the first question to reading the final report, nefelha is a set of classroom engagement tools that blend gamified learning with AI — built to work from the first second, no setup friction.",
+        sub: "nefelha isn't a set of tools, and it isn't an LMS. It's a way to make your students love class — and behind that experience is everything you need: from AI-powered question generation to real-time analytics, working from the first second with zero friction.",
 
         f1Title: "AI question generation",
         f1Desc: "Upload your lesson (PDF, Word or PowerPoint) and let the platform extract precise questions across difficulty levels, ready to review and edit before you publish.",
@@ -75,7 +75,7 @@ const Services = () => {
         f4Desc: "Know who mastered the lesson and who needs a review, through clear reports after every session breaking down each student and each question.",
 
         modesKicker: "GAME MODES",
-        modesTitle: "Nine modes, one idea: make review feel like play",
+        modesTitle: "Nine modes, one goal: students leave class loving the subject",
         modesSub: "Every mode turns the same question set into a different experience — from a fast-paced race to co-op survival to a printed board with no student devices at all.",
 
         m1: "Classic", m1d: "The original quiz race — answer fast, earn more.",
@@ -114,10 +114,10 @@ const Services = () => {
     >
       <Seo
         path="/services"
-        titleAr="أدوات تفاعل الطلاب وألعاب تعليمية — تسعة أنماط لعب مباشرة"
-        titleEn="Classroom Engagement Tools & Educational Games — Nine Play Modes"
-        descriptionAr="أدوات تفاعل حقيقية للصف: توليد أسئلة بالذكاء الاصطناعي، بث مباشر برمز واحد، وتسعة ألعاب تعليمية من سباق كلاسيكي إلى حرب الزومبي — كل ما يحتاجه معلم الفصل العربي في مكان واحد."
-        descriptionEn="Real classroom engagement tools: AI question generation, one-code live sessions, and nine educational games from Classic to Humans vs Zombies — everything an Arabic-classroom teacher needs, in one place."
+        titleAr="تجربة تعليمية تفاعلية تخلي الطلاب يحبون التعلّم — تسعة أنماط لعب"
+        titleEn="Interactive Educational Experience That Makes Students Love Learning — Nine Play Modes"
+        descriptionAr="تجربة تفاعلية تخلي طلابك يحبون الحصة: توليد أسئلة بالذكاء الاصطناعي، بث مباشر برمز واحد، وتسعة أنماط لعب من سباق كلاسيكي إلى حرب الزومبي — كل ما يحتاجه معلم الفصل العربي."
+        descriptionEn="An interactive experience that makes students love learning: AI question generation, one-code live sessions, and nine play modes from Classic to Humans vs Zombies — everything an Arabic-classroom teacher needs."
       />
       <SiteNav />
 

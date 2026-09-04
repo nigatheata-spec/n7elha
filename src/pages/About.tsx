@@ -19,10 +19,10 @@ const About = () => {
         sub: "نفلها شركة ناشئة سعودية في تقنية التعليم (EdTech) تبني منصة تعليمية تفاعلية للفصل العربي. لم نبدأ من دراسة سوق، بدأنا من تجربتنا نحن كطلاب.",
 
         storyKicker: "قصتنا",
-        storyTitle: "كنّا الطلاب الذين لا يرفعون أيديهم",
-        p1: "نعرف تمامًا كيف تبدو حصة المراجعة. المعلم يسأل، والصف يصمت. ليس لأن أحدًا لم يفهم الدرس، بل لأن لا أحد يريد أن يكون أول من يجيب ويخطئ أمام الجميع.",
-        p2: "جرّبنا المنصات الجاهزة. كانت مصممة بلغة أخرى وذهنية أخرى، والعربية فيها مجرد ترجمة أُضيفت لاحقًا. الأسئلة تنكسر، والاتجاه يختل، والتجربة تبدو غريبة عن صفوفنا.",
-        p3: "فقررنا أن نبني ما كنا نتمنى وجوده ونحن على تلك المقاعد: منصة تجعل المراجعة شيئًا ينتظره الطالب، لا شيئًا يتهرب منه. هكذا وُلدت نفلها.",
+        storyTitle: "المشكلة مو إن الطالب ما يفهم، المشكلة إنه ما يهتم",
+        p1: "نعرف شكل الحصة زين. الطالب موجود، بس عقله مو موجود — عيونه على الساعة والجوال، يستنى الجرس. مو لأنه ما فهم، بس لأن الطريقة ما تعطيه سبب يهتم.",
+        p2: "والمعلم يحارب معركة خاسرة على الانتباه، ينافس شاشات صعب يغلبها. يجتهد، بس الصف طافي قبل لا يبدأ. جرّبنا المنصات الجاهزة، وكانت مبنية بلغة وذهنية ثانية، والعربي فيها مجرد ترجمة أُضيفت بعدين.",
+        p3: "هالتجربة اللي تخلي الطالب يبي يتعلّم — ما موجودة في الفصول العربية حالياً. قررنا نكون أول واحد يبنيها. هكذا طلعت نفلها.",
 
         factsKicker: "ما بنيناه حتى الآن",
         f1n: "٩", f1l: "أنماط لعب مختلفة، من سباق سريع إلى لوح مطبوع",
@@ -51,10 +51,10 @@ const About = () => {
         sub: "nefelha is a Saudi EdTech startup building an interactive learning platform for the Arabic classroom. We did not begin with market research. We began with our own time as students.",
 
         storyKicker: "OUR STORY",
-        storyTitle: "We were the students who never raised their hands",
-        p1: "We know exactly what a review lesson looks like. The teacher asks, and the room goes quiet. Not because nobody understood, but because nobody wants to be the first one to answer and get it wrong in front of everyone.",
-        p2: "We tried the platforms that already existed. They were designed in another language and another mindset, with Arabic added afterwards as a translation. Questions break, direction flips, and the whole thing feels foreign to our classrooms.",
-        p3: "So we built what we wished we had while we were still sitting in those seats: a platform that makes review something students look forward to instead of something they avoid. That is how nefelha started.",
+        storyTitle: "Students show up. Their minds don't.",
+        p1: "We know exactly what class looks like. The student's body is there, but their mind is somewhere else. Eyes on the clock. Scrolling under the desk. Counting down to the bell. Not because they don't understand — it's because the way we teach gives them no reason to care.",
+        p2: "The teacher is fighting a losing battle over attention. Competing with devices they can't beat. Working hard, preparing well, but the room checks out before the lesson even starts.",
+        p3: "The idea of making students actually want to learn — of creating an experience that intrinsically engages instead of coercing compliance — doesn't exist yet in Arabic classrooms. We decided to build it first. That's how nefelha started.",
 
         factsKicker: "WHAT WE HAVE BUILT SO FAR",
         f1n: "9", f1l: "distinct game modes, from a fast race to a printed board",
