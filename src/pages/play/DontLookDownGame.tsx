@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "@/components/ui/sonner";
@@ -11,13 +11,13 @@ import {
   INCOME_TIERS, STREAK_INSURANCE_TIERS, MULTIPLIER_INSURANCE_TIERS,
   ENERGY_TANK_TIERS, BATTERY_TIERS,
   DOUBLE_JUMP_COST, FEATHER_FALL_COST, FEATHER_FALL_MS, FEATHER_FALL_GRAVITY_SCALE,
-  PLATFORMS, SUMMIT_Y, spawnFor,
+  buildClimb, groundSpawn,
 } from "@/lib/dontLookDown";
 import {
   setupPixelCanvas, drawSky, drawStars, drawCloud, drawBlock,
-  drawCharacter, drawNameTag, drawTopFog, drawGround, CLOUDS,
+  drawCharacter, drawNameTag, drawTopFog, drawGround, drawPlatform, drawHint, forEachCloud,
 } from "@/lib/dontLookDownRender";
-import { SKINNED, PX, themeBlendAt, themeIndexAt, THEMES, GROUND_Y, groundSpawn } from "@/lib/dldLevel";
+import { PX, themeBlendAt, themeIndexAt, starAlphaAt, THEMES, STARRY_FROM } from "@/lib/dldLevel";
 
 type Q = { id: string; text: string; options: string[]; correct_index: number; image_url?: string };
 type Phase = "waiting" | "playing" | "done";
@@ -71,6 +71,11 @@ const DontLookDownGame = ({ sessionId, studentId }: Props) => {
   });
 
   const settings = session?.settings ?? {};
+  // Built from the session's length: a five minute round gets a climb you can
+  // finish, a twenty minute one gets four times as much of it.
+  const climb = useMemo(() => buildClimb(settings.minutes ?? 5), [settings.minutes]);
+  const climbRef = useRef(climb);
+  climbRef.current = climb;
   const ar   = (settings.lang ?? i18n.language) === "ar";
   const cash = me?.crypto ?? 0;
 
@@ -98,7 +103,9 @@ const DontLookDownGame = ({ sessionId, studentId }: Props) => {
       const { data: m } = await supabase.from("game_students").select("*").eq("id", studentId).maybeSingle();
       if (m) {
         setMe(m);
-        const sp = groundSpawn(WORLD.playerW);
+        // Built straight from the session that just loaded rather than from the
+        // ref, which is still holding the placeholder climb until React rerenders.
+        const sp = groundSpawn(buildClimb(s?.settings?.minutes ?? 5));
         pRef.current.x = sp.x; pRef.current.y = sp.y;
         pRef.current.maxHeight = (m as any).height_reached ?? 0;
         pRef.current.energy = ENERGY.start;
@@ -242,13 +249,14 @@ const DontLookDownGame = ({ sessionId, studentId }: Props) => {
       // One-way platform collision: only land when descending through the top.
       p.grounded = false;
       if (p.vy <= 0) {
-        for (let i = 0; i < SKINNED.length; i++) {
-          const pl = SKINNED[i];
+        const plats = climbRef.current.platforms;
+        for (let i = 0; i < plats.length; i++) {
+          const pl = plats[i];
           const overlapX = p.x + WORLD.playerW > pl.x && p.x < pl.x + pl.w;
           if (!overlapX) continue;
           if (prevY >= pl.y && p.y <= pl.y) {
             p.y = pl.y; p.vy = 0; p.grounded = true; p.usedDoubleJump = false;
-            if (pl.y >= SUMMIT_Y && !summitRef.current) {
+            if (pl.y >= climbRef.current.summitY && !summitRef.current) {
               summitRef.current = true;
               setSummited(true);
               toast.success(ar ? "وصلت القمة!" : "You reached the summit!");
@@ -260,8 +268,8 @@ const DontLookDownGame = ({ sessionId, studentId }: Props) => {
 
       // The grass is solid, unlike the one-way blocks — you never pass through
       // it, you just walk on it and start climbing again.
-      if (p.y <= GROUND_Y) {
-        p.y = GROUND_Y;
+      if (p.y <= climbRef.current.groundY) {
+        p.y = climbRef.current.groundY;
         if (p.vy < 0) p.vy = 0;
         p.grounded = true;
         p.usedDoubleJump = false;
@@ -293,39 +301,45 @@ const DontLookDownGame = ({ sessionId, studentId }: Props) => {
       const sx = (wx: number) => Math.round(wx * PX) - camBX;
       const sy = (wy: number) => bh - (Math.round(wy * PX) - camBY);
 
-      const blend = themeBlendAt(p.y);
+      const blend = themeBlendAt(climbRef.current, p.y);
       drawSky(bctx, bw, bh, blend);
 
       // Stars fade in as the city dusk gives way to orbit.
-      const ti = themeIndexAt(p.y);
-      const starAlpha = ti >= 3 ? 1 : ti === 2 ? 0.35 + blend.t * 0.65 : 0;
+      const ti = themeIndexAt(climbRef.current, p.y);
+      const starAlpha = starAlphaAt(climbRef.current, p.y);
       drawStars(bctx, bw, bh, p.camX * PX, p.camY * PX, starAlpha);
 
       // Parallax clouds — thinner out in orbit.
-      const cloudAlpha = ti >= 3 ? 0 : 1;
-      for (const c of CLOUDS) {
-        const px = Math.round(c.x * PX - camBX * c.depth);
-        const py = Math.round(bh - (c.y * PX - camBY * c.depth));
-        if (cloudAlpha === 0) break;
-        if (px < -60 || px > bw + 60 || py < -40 || py > bh + 40) continue;
-        bctx.globalAlpha = (0.55 + c.depth * 0.45) * cloudAlpha;
-        drawCloud(bctx, px, py, c.s);
+      const cloudAlpha = ti > STARRY_FROM ? 0 : 1;
+      if (cloudAlpha > 0) {
+        forEachCloud(camBX, camBY, bw, bh, (px, py, c) => {
+          bctx.globalAlpha = (0.55 + c.depth * 0.45) * cloudAlpha;
+          drawCloud(bctx, px, py, c.s);
+        });
+        bctx.globalAlpha = 1;
       }
-      bctx.globalAlpha = 1;
 
       // Solid ground under the starting platform, then the void below it.
       // Ground sits just under the starting block's base so the first platform
       // reads as standing on it rather than sunk into it.
-      const groundTop = sy(GROUND_Y);
+      const groundTop = sy(climbRef.current.groundY);
       if (groundTop < bh) drawGround(bctx, groundTop, bw, bh);
 
       // Blocks
-      for (const pl of SKINNED) {
+      for (const pl of climbRef.current.platforms) {
         const x = sx(pl.x), y = sy(pl.y);
         const wpx = Math.round(pl.w * PX), hpx = Math.round(pl.h * PX);
         if (x + wpx < -8 || x > bw + 8) continue;
         if (y > bh + 8 || y + hpx < -8) continue;
-        drawBlock(bctx, x, y, pl.block);
+        drawPlatform(bctx, x, y, pl.sprites);
+      }
+
+      // Signs along the starting ground — what the controls are, and which way
+      // is up — so the first thing a player meets is not a blind jump.
+      for (const hint of climbRef.current.hints) {
+        const x = sx(hint.x), y = sy(hint.y);
+        if (x < -80 || x > bw + 80 || y < -20 || y > bh + 20) continue;
+        drawHint(bctx, x, y, ar ? hint.ar : hint.en);
       }
 
       // Other climbers

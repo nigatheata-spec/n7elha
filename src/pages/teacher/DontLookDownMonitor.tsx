@@ -1,20 +1,21 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Square, Maximize, ChevronUp, Trophy } from "lucide-react";
 import { PixelShield } from "@/components/PixelIcons";
-import { SUMMIT_Y, WORLD } from "@/lib/dontLookDown";
+import { buildClimb, WORLD } from "@/lib/dontLookDown";
 import { Avatar } from "@/components/Avatar";
 import {
   setupPixelCanvas, drawSky, drawStars, drawCloud, drawBlock,
-  drawCharacter, drawNameTag, drawTopFog, drawGround, CLOUDS,
+  drawCharacter, drawNameTag, drawTopFog, drawGround, drawPlatform, forEachCloud,
 } from "@/lib/dontLookDownRender";
-import { SKINNED, PX, themeBlendAt, themeIndexAt, GROUND_Y } from "@/lib/dldLevel";
+import { PX, themeBlendAt, themeIndexAt, starAlphaAt, STARRY_FROM } from "@/lib/dldLevel";
 import { useConfirmDialog } from "@/hooks/use-confirm-dialog";
 
-type Peer = { id: string; name: string; x: number; y: number; t: number };
+type Peer = { id: string; name: string; x: number; y: number; t: number;
+  avatarColor?: number | null; avatarFace?: number | null };
 
 interface Props { session: any; sessionId: string; }
 
@@ -24,6 +25,8 @@ const DontLookDownMonitor = ({ session, sessionId }: Props) => {
   const { i18n } = useTranslation();
   const ar = (session?.settings?.lang ?? i18n.language) === "ar";
   const [students, setStudents] = useState<any[]>([]);
+  // Same climb the students are on — it is built from the session's length.
+  const climb = useMemo(() => buildClimb(session?.settings?.minutes ?? 5), [session?.settings?.minutes]);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const peersRef  = useRef<Record<string, Peer>>({});
 
@@ -62,45 +65,58 @@ const DontLookDownMonitor = ({ session, sessionId }: Props) => {
       const { ctx: bctx, bw, bh } = setupPixelCanvas(canvas);
       if (!bctx) return;
 
-      // Frame the whole climb: fit its full width and height into the buffer.
-      const minX = Math.min(...SKINNED.map(p => p.x)) - 60;
-      const maxX = Math.max(...SKINNED.map(p => p.x + p.w)) + 60;
-      const worldW = maxX - minX, worldH = SUMMIT_Y + 320;
-      const scale = Math.min(bw / worldW, bh / worldH);
+      // The climb is ~10,000m tall, so fitting all of it on screen would make
+      // every student a single pixel. Frame the full WIDTH instead — the
+      // left-right shape of the climb is what makes a formation readable — and
+      // follow the pack vertically, opening the window only as far as it has to
+      // to keep the highest and lowest climber both on screen.
+      const minX = Math.min(...climb.platforms.map(p => p.x)) - 60;
+      const maxX = Math.max(...climb.platforms.map(p => p.x + p.w)) + 60;
+      const worldW = maxX - minX;
+
+      const ys = [
+        ...students.map(s => s.height_reached ?? 0),
+        ...Object.values(peersRef.current).map(p => p.y),
+      ];
+      const packLo = ys.length ? Math.min(...ys) : 0;
+      const packHi = ys.length ? Math.max(...ys) : 0;
+      const windowH = Math.max(1200, (packHi - packLo) * 1.45 + 500);
+      const scale = Math.min(bw / worldW, bh / windowH);
       const offX = Math.round((bw - worldW * scale) / 2);
+      // Never scroll below the ground — the bottom of the climb is a real floor.
+      const camLo = Math.max(-200, (packLo + packHi) / 2 - windowH / 2);
 
       const sx = (wx: number) => Math.round(offX + (wx - minX) * scale);
-      const sy = (wy: number) => Math.round(bh - (wy + 160) * scale);
+      const sy = (wy: number) => Math.round(bh - (wy - camLo) * scale);
       const tSec = Date.now() / 1000;
 
       // Sky/star tint follows whoever is highest, so the board reads the mood
       // of the lead climber's altitude.
       const lead = Math.max(0, ...students.map(s => s.height_reached ?? 0));
-      const blend = themeBlendAt(lead);
+      const blend = themeBlendAt(climb, lead);
       drawSky(bctx, bw, bh, blend);
-      const ti = themeIndexAt(lead);
-      drawStars(bctx, bw, bh, 0, 0, ti >= 3 ? 1 : ti === 2 ? 0.4 : 0);
+      const ti = themeIndexAt(climb, lead);
+      drawStars(bctx, bw, bh, 0, 0, starAlphaAt(climb, lead));
 
-      for (const c of CLOUDS) {
-        if (c.depth < 0.5) continue;
-        const px = sx(c.x), py = sy(c.y);
-        if (px < -40 || px > bw + 40 || py < -30 || py > bh + 30) continue;
-        bctx.globalAlpha = 0.7;
-        drawCloud(bctx, px, py, 1);
+      if (ti <= STARRY_FROM) {
+        forEachCloud(Math.round(minX * scale), Math.round(camLo * scale), bw, bh, (px, py) => {
+          bctx.globalAlpha = 0.6;
+          drawCloud(bctx, px, py, 1);
+        });
+        bctx.globalAlpha = 1;
       }
-      bctx.globalAlpha = 1;
 
-      const groundTop = sy(GROUND_Y);
+      const groundTop = sy(climb.groundY);
       if (groundTop < bh) drawGround(bctx, groundTop, bw, bh);
 
       // The tower is zoomed way out here, so blocks are drawn as their own art
       // where there is room for it and as a solid chip when there is not —
       // scaling the art down would smear it off the pixel grid.
-      for (const pl of SKINNED) {
+      for (const pl of climb.platforms) {
         const x = sx(pl.x), y = sy(pl.y);
         const wpx = Math.round(pl.w * scale), hpx = Math.max(2, Math.round(pl.h * scale));
         if (wpx >= Math.round(pl.w * PX) * 0.9) {
-          drawBlock(bctx, x, y, pl.block);
+          drawPlatform(bctx, x, y, pl.sprites);
         } else {
           bctx.fillStyle = "#2f3646";
           bctx.fillRect(x, y, Math.max(2, wpx), hpx);
@@ -127,7 +143,7 @@ const DontLookDownMonitor = ({ session, sessionId }: Props) => {
     };
     raf = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(raf);
-  }, [students]);
+  }, [students, climb]);
 
   const endNow = async () => {
     if (!session || !(await confirm(ar ? "إنهاء اللعبة الآن؟" : "End the game now?"))) return;
@@ -158,7 +174,7 @@ const DontLookDownMonitor = ({ session, sessionId }: Props) => {
             <span className="mx-3 opacity-30">|</span>
             <span className="font-bold">{students.length} {ar ? "متسلق" : students.length === 1 ? "CLIMBER" : "CLIMBERS"}</span>
             <span className="mx-3 opacity-30">|</span>
-            {ar ? "القمة" : "SUMMIT"} <span className="font-bold">{SUMMIT_Y}m</span>
+            {ar ? "القمة" : "SUMMIT"} <span className="font-bold">{climb.summitY}m</span>
           </div>
           <div className="flex gap-2">
             <Button size="sm" variant="ghost" onClick={goFullscreen} className="text-sky-300 hover:text-sky-300 hover:bg-sky-400/10">

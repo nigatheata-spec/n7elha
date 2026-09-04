@@ -15,7 +15,7 @@
 // The character is the one deliberate exception — see the comment at
 // `drawCharacter` for why it's a real circle instead of another pixel grid.
 
-import { BLOCKS, type BlockId } from "./dldArt";
+import { artW, artH, type ArtId } from "./dldArt";
 import { PX, type Theme } from "./dldLevel";
 import { resolveColor, resolveFace } from "./avatarIdentity";
 
@@ -39,14 +39,17 @@ export const setupPixelCanvas = (canvas: HTMLCanvasElement) => {
 };
 
 // ── Block images ────────────────────────────────────────────────────────────
-const images = new Map<BlockId, HTMLImageElement>();
+// The only place that touches the PNGs; everything else works off the baked
+// sizes in dldArtManifest, so the level and its tests stay free of assets.
+const urls = import.meta.glob("../assets/dld/*.png", { eager: true, import: "default" }) as Record<string, string>;
+const images = new Map<string, HTMLImageElement>();
 let loaded = 0;
-(Object.keys(BLOCKS) as BlockId[]).forEach(id => {
+for (const [path, url] of Object.entries(urls)) {
   const img = new Image();
   img.onload = () => { loaded++; };
-  img.src = BLOCKS[id].src;
-  images.set(id, img);
-});
+  img.src = url;
+  images.set(path.slice(path.lastIndexOf("/") + 1, -4), img);
+}
 export const blocksLoaded = () => loaded;
 
 // ── Palette ─────────────────────────────────────────────────────────────────
@@ -135,16 +138,45 @@ export const drawStars = (
 
 // ── Clouds ──────────────────────────────────────────────────────────────────
 export type Cloud = { x: number; y: number; s: number; depth: number };
+
+/**
+ * The cloud field tiles at this size, in buffer pixels. Large enough that the
+ * repeat is not obvious as you climb past it, and sparse enough that the sky
+ * still reads as sky rather than as weather.
+ */
+const CLOUD_SPAN_X = 1400;
+const CLOUD_SPAN_Y = 1000;
 export const CLOUDS: Cloud[] = (() => {
   let seed = 20260807;
   const rnd = () => (seed = (seed * 1664525 + 1013904223) % 4294967296) / 4294967296;
-  return Array.from({ length: 120 }, () => ({
-    x: rnd() * 5200 - 1400,
-    y: rnd() * 4400 - 300,
+  return Array.from({ length: 34 }, () => ({
+    x: rnd() * CLOUD_SPAN_X,
+    y: rnd() * CLOUD_SPAN_Y,
     s: rnd() < 0.4 ? 1 : 2,
     depth: 0.2 + rnd() * 0.5,
   }));
 })();
+
+/**
+ * Walk the clouds visible right now. The field tiles in both directions rather
+ * than being generated to fit, because a forty minute climb is nearly 30,000
+ * units tall and no fixed field covers that without costing a frame to iterate.
+ */
+export const forEachCloud = (
+  camBX: number, camBY: number, bw: number, bh: number,
+  cb: (x: number, y: number, c: Cloud) => void,
+) => {
+  for (const c of CLOUDS) {
+    const px = (((c.x - camBX * c.depth) % CLOUD_SPAN_X) + CLOUD_SPAN_X) % CLOUD_SPAN_X;
+    const py = bh - ((((c.y - camBY * c.depth) % CLOUD_SPAN_Y) + CLOUD_SPAN_Y) % CLOUD_SPAN_Y);
+    for (const x of [px - CLOUD_SPAN_X, px]) {
+      for (const y of [py, py + CLOUD_SPAN_Y]) {
+        if (x < -60 || x > bw + 60 || y < -40 || y > bh + 40) continue;
+        cb(x, y, c);
+      }
+    }
+  }
+};
 
 /** A chunky pixel cloud: stacked rectangles, no curves, no anti-aliasing. */
 export const drawCloud = (ctx: CanvasRenderingContext2D, cx: number, cy: number, s: number) => {
@@ -193,12 +225,23 @@ export const drawGround = (ctx: CanvasRenderingContext2D, topY: number, bw: numb
  * Blit a block 1:1 at its baked size. `x`/`y` are the top-left of the block's
  * box in buffer pixels, already snapped by the caller.
  */
-export const drawBlock = (ctx: CanvasRenderingContext2D, x: number, y: number, id: BlockId) => {
+/**
+ * Blit a whole platform. A wide platform is one sprite repeated along its
+ * length, which is where the climb's range of platform sizes comes from — so
+ * this is a loop rather than one stretched image.
+ */
+export const drawPlatform = (
+  ctx: CanvasRenderingContext2D, x: number, y: number,
+  sprites: { id: ArtId; dx: number }[],
+) => {
+  for (const s of sprites) drawBlock(ctx, x + s.dx * PX, y, s.id);
+};
+
+export const drawBlock = (ctx: CanvasRenderingContext2D, x: number, y: number, id: ArtId) => {
   const img = images.get(id);
-  const b = BLOCKS[id];
   if (!img || !img.complete || img.naturalWidth === 0) {
     ctx.fillStyle = "#6b7280";
-    ctx.fillRect(Math.round(x), Math.round(y), b.w, b.h);
+    ctx.fillRect(Math.round(x), Math.round(y), artW(id) * PX, artH(id) * PX);
     return;
   }
   ctx.drawImage(img, Math.round(x), Math.round(y));
@@ -321,6 +364,28 @@ export const drawNameTag = (
   ctx.fillRect(x, y, w, 8);
   ctx.fillStyle = C.tagFg;
   ctx.fillText(label, Math.round(cx), y + 1);
+  ctx.textAlign = "left";
+};
+
+/**
+ * A sign painted into the world, used along the starting ground to say what the
+ * controls are. Same tag styling as a name, one shade quieter, so it reads as
+ * part of the level rather than as another climber.
+ */
+export const drawHint = (
+  ctx: CanvasRenderingContext2D, cx: number, topY: number, text: string,
+) => {
+  ctx.font = "6px monospace";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
+  const w = Math.ceil(ctx.measureText(text).width) + 8;
+  const x = Math.round(cx - w / 2), y = Math.round(topY);
+  ctx.globalAlpha = 0.82;
+  ctx.fillStyle = C.tagBg;
+  ctx.fillRect(x, y, w, 9);
+  ctx.fillStyle = "#ffd876";
+  ctx.fillText(text, Math.round(cx), y + 2);
+  ctx.globalAlpha = 1;
   ctx.textAlign = "left";
 };
 
