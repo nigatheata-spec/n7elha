@@ -141,9 +141,3 @@ export const checkpointIndexAt = (platformIndex: number): number | null => {
   return p?.checkpoint ? platformIndex : null;
 };
 
-export const PLAYER_COLORS = ["#38bdf8", "#4ade80", "#facc15", "#fb7185", "#a78bfa", "#22d3ee", "#fb923c", "#f472b6"];
-export const colorFor = (id: string) => {
-  let h = 0;
-  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) & 0xffffffff;
-  return PLAYER_COLORS[Math.abs(h) % PLAYER_COLORS.length];
-};

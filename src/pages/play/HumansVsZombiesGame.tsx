@@ -253,7 +253,7 @@ const HumansVsZombiesGame = ({ sessionId, studentId }: Props) => {
       setPhase(prev => prev === "waiting" ? "question" : prev);
     else if (session.status === "cancelled") {
       toast.error(ar ? "أغلق المعلّم الردهة" : "The teacher closed the lobby");
-      navigate("/play");
+      navigate("/join");
     }
   }, [session?.status]);
 
@@ -735,7 +735,7 @@ const HumansVsZombiesGame = ({ sessionId, studentId }: Props) => {
                     </div>
                   </div>
                 </div>
-                <button onClick={() => navigate("/play")} className="pixel-button mt-2 px-6 py-3"
+                <button onClick={() => navigate("/join")} className="pixel-button mt-2 px-6 py-3"
                   style={{ background: `${TEAM_COLOR[team]}22`, borderColor: TEAM_COLOR[team], color: TEAM_COLOR[team] }}>
                   {ar ? "خروج" : "EXIT"}
                 </button>

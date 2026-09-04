@@ -5,7 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Square, Maximize, ChevronUp, Trophy } from "lucide-react";
 import { PixelShield } from "@/components/PixelIcons";
-import { SUMMIT_Y, WORLD, colorFor } from "@/lib/dontLookDown";
+import { SUMMIT_Y, WORLD } from "@/lib/dontLookDown";
+import { Avatar } from "@/components/Avatar";
 import {
   setupPixelCanvas, drawSky, drawStars, drawCloud, drawBlock,
   drawCharacter, drawNameTag, drawTopFog, drawGround, CLOUDS,
@@ -114,7 +115,9 @@ const DontLookDownMonitor = ({ session, sessionId }: Props) => {
         if (p.t < cutoff) { delete peersRef.current[id]; continue; }
         const x = sx(p.x), y = sy(p.y);
         if (x < -30 || x > bw + 30 || y < -30 || y > bh + 30) continue;
-        drawCharacter(bctx, x, y, WORLD.playerW * scale, WORLD.playerH * scale, colorFor(id), 1, { t: tSec });
+        drawCharacter(bctx, x, y, WORLD.playerW * scale, WORLD.playerH * scale, p.name ?? "?", 1, {
+          t: tSec, colorIndex: p.avatarColor, faceIndex: p.avatarFace,
+        });
         drawNameTag(bctx, x + (WORLD.playerW * scale) / 2, y - 22, p.name ?? "");
       }
 
@@ -187,10 +190,7 @@ const DontLookDownMonitor = ({ session, sessionId }: Props) => {
                 <div key={s.id} className="flex items-center gap-2.5 px-3 py-2 rounded-lg"
                   style={{ background: "rgba(255,255,255,0.05)", border: `1px solid ${i === 0 ? "rgba(250,204,21,0.4)" : "rgba(255,255,255,0.08)"}` }}>
                   <span className="font-black text-sm w-5 tabular-nums text-center" style={{ color: "rgba(255,255,255,0.4)" }}>{i + 1}</span>
-                  <div className="h-8 w-8 rounded flex items-center justify-center font-black text-sm shrink-0"
-                    style={{ background: colorFor(s.id), color: "#0B1020" }}>
-                    {(s.name ?? "?").charAt(0).toUpperCase()}
-                  </div>
+                  <Avatar name={s.name ?? "?"} colorIndex={s.avatar_color} faceIndex={s.avatar_face} size={32} />
                   <span className="flex-1 text-sm font-bold truncate">{s.name}</span>
                   {i === 0 && <Trophy className="h-3.5 w-3.5 shrink-0" style={{ color: "#facc15" }} />}
                   <div className="text-right shrink-0">

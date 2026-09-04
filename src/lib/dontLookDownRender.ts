@@ -1,19 +1,23 @@
 // ── Don't Look Down — pixel renderer ────────────────────────────────────────
 // Everything here draws into a SMALL canvas (a few hundred pixels across) that
 // the browser then scales up with nearest-neighbour via `image-rendering`.
-// That is what makes the mode read as a real pixel game rather than pixel-art
-// stickers pasted onto smooth vector art: the character, the sky, the clouds,
-// the ground and the generated blocks all sit on one shared pixel grid.
+// That is what makes the world read as a real pixel game rather than pixel-art
+// stickers pasted onto smooth vector art: the sky, the clouds, the ground and
+// the generated blocks all sit on one shared pixel grid.
 //
-// Two rules keep it honest, and breaking either is what makes pixel art look
-// cheap:
+// Two rules keep the world honest, and breaking either is what makes pixel art
+// look cheap:
 //   1. Never scale a block. Each PNG is baked to its exact drawn size, so it
 //      is blitted 1:1. No drawImage(...w,h) with a computed size, ever.
 //   2. Snap every coordinate to whole buffer pixels. A sub-pixel camera makes
 //      the whole scene shimmer as it scrolls.
+//
+// The character is the one deliberate exception — see the comment at
+// `drawCharacter` for why it's a real circle instead of another pixel grid.
 
 import { BLOCKS, type BlockId } from "./dldArt";
 import { PX, type Theme } from "./dldLevel";
+import { resolveColor, resolveFace } from "./avatarIdentity";
 
 // ── Pixel canvas ────────────────────────────────────────────────────────────
 /** Target width of the pixel buffer. Zoom is chosen to land near this. */
@@ -48,10 +52,6 @@ export const blocksLoaded = () => loaded;
 // ── Palette ─────────────────────────────────────────────────────────────────
 const C = {
   outline: "#12151f",
-  skin: "#f2c9a0", skinShade: "#d9a87d",
-  pants: "#37406e", pantsShade: "#28305a",
-  boot: "#2a2018",
-  eye: "#12151f",
   cloud: "#ffffff", cloudShade: "#d9ecf7",
   grass: "#5fa84a", grassDark: "#41823a",
   dirt: "#6b4a32", dirtDark: "#503726", dirtDeep: "#3b2819",
@@ -205,62 +205,34 @@ export const drawBlock = (ctx: CanvasRenderingContext2D, x: number, y: number, i
 };
 
 // ── Character ───────────────────────────────────────────────────────────────
-// 16×22, drawn from a string grid. Feet sit on the last row so the sprite can
-// be planted exactly on the collision box's bottom edge.
-const HEAD = [
-  ".....oooooo.....",
-  "...ooSSSSSSoo...",
-  "..oSSSSSSSSSSo..",
-  "..oSSSSSSSSSSo..",
-  "..oSSEESSEESSo..",
-  "..oSSEESSEESSo..",
-  "..oSSSSSSSSSSo..",
-  "..oSSSooooSSSo..",
-  "...oSSSSSSSSo...",
-  "....oooooooo....",
-];
-const TORSO = [
-  "...oCCCCCCCCo...",
-  "..oCCCCCCCCCCo..",
-  ".oCCCCCCCCCCCCo.",
-  ".oSCCCCCCCCCCSo.",
-  ".oSCCCCCCCCCCSo.",
-  ".ooCCCCCCCCCCoo.",
-  "..oCCCCCCCCCCo..",
-];
-const LEGS = {
-  stand: [
-    "..oPPPPPPPPPPo..",
-    "..oPPPPPPPPPPo..",
-    "..oPPPooooPPPo..",
-    "..oPPPo..oPPPo..",
-    "..oBBBo..oBBBo..",
-  ],
-  run1: [
-    "..oPPPPPPPPPPo..",
-    "..oPPPPPPPPPPo..",
-    ".oPPPPoooPPPo...",
-    ".oPPPo...oPPPo..",
-    ".oBBBo....oBBBo.",
-  ],
-  run2: [
-    "..oPPPPPPPPPPo..",
-    "..oPPPPPPPPPPo..",
-    "...oPPPoooPPPPo.",
-    "..oPPPo...oPPPo.",
-    ".oBBBo....oBBBo.",
-  ],
-  jump: [
-    "..oPPPPPPPPPPo..",
-    ".oPPPPPPPPPPPPo.",
-    ".oPPPo....oPPPo.",
-    "oBBBo......oBBBo",
-    "................",
-  ],
+// The character IS the player's avatar — same hashed face + color as their
+// circle everywhere else in the app (lobby roster, leaderboards, results) —
+// with two stubby legs added so it can stand on a platform. Drawn as a real
+// circle rather than on the blocky ASCII grid the rest of this file uses:
+// nearest-neighbour upscaling (the canvas's own `image-rendering: pixelated`)
+// still chunks its edges at final size, which is enough to keep it feeling
+// like it belongs in the pixel world without losing what makes it recognizable
+// as "their" avatar.
+
+export const SPRITE_W = 22;
+export const SPRITE_H = 28;
+
+const faceImageCache = new Map<string, HTMLImageElement>();
+const getFaceImage = (src: string) => {
+  let img = faceImageCache.get(src);
+  if (!img) {
+    img = new Image();
+    img.src = src;
+    faceImageCache.set(src, img);
+  }
+  return img;
 };
 
-export const SPRITE_W = 16;
-export const SPRITE_H = 22;
+const CIRCLE_D = 20;
+const LEG_W = 4;
+const LEG_H = 8;
+const LEG_GAP = 3;
+const LEG_TUCK = 4; // legs start this far above the circle's bottom edge
 
 /**
  * `feetX` is the LEFT edge of the collision box and `feetY` is the box's
@@ -270,57 +242,67 @@ export const SPRITE_H = 22;
 export const drawCharacter = (
   ctx: CanvasRenderingContext2D,
   feetX: number, feetY: number, boxW: number, _boxH: number,
-  color: string, face: 1 | -1,
-  opts: { t?: number; vx?: number; grounded?: boolean; alpha?: number; frozen?: boolean } = {},
+  name: string, _face: 1 | -1,
+  opts: { t?: number; vx?: number; grounded?: boolean; alpha?: number; frozen?: boolean; colorIndex?: number | null; faceIndex?: number | null } = {},
 ) => {
-  const { t = 0, vx = 0, grounded = true, alpha = 1, frozen = false } = opts;
+  const { t = 0, vx = 0, grounded = true, alpha = 1, frozen = false, colorIndex, faceIndex } = opts;
+  const color = resolveColor(name, colorIndex);
 
   const moving = Math.abs(vx) > 20;
-  const legs = !grounded
-    ? LEGS.jump
-    : moving
-      ? (Math.floor(t * 11) % 2 === 0 ? LEGS.run1 : LEGS.run2)
-      : LEGS.stand;
+  // A simple alternating stride: one leg a little longer, one a little shorter.
+  const stride = !grounded ? 0 : moving ? (Math.floor(t * 11) % 2 === 0 ? 1 : -1) : 0;
+  const legHL = LEG_H + (stride > 0 ? 2 : stride < 0 ? -2 : 0);
+  const legHR = LEG_H + (stride < 0 ? 2 : stride > 0 ? -2 : 0);
+  const legH = Math.max(legHL, legHR);
 
   // Idle bob — one pixel, on the grid.
   const bob = grounded && !moving ? (Math.floor(t * 2) % 2) : 0;
 
-  const rows = [...HEAD, ...TORSO, ...legs];
-  const shade = hexMix(color, "#000000", 0.28);
-
-  // Plant the sprite's feet on the surface, centred on the box.
+  const totalH = CIRCLE_D + legH - LEG_TUCK;
   const ox = Math.round(feetX + boxW / 2 - SPRITE_W / 2);
-  const oy = Math.round(feetY - SPRITE_H) + bob;
+  const oy = Math.round(feetY - totalH) + bob;
+  const cx = ox + SPRITE_W / 2;
+  const cyTop = oy;
 
   if (alpha < 1) ctx.globalAlpha = alpha;
+  ctx.imageSmoothingEnabled = true;
 
-  for (let r = 0; r < rows.length; r++) {
-    const row = rows[r];
-    for (let c = 0; c < row.length; c++) {
-      const ch = row[c];
-      if (ch === ".") continue;
-      let fill: string;
-      switch (ch) {
-        case "o": fill = C.outline; break;
-        case "S": fill = C.skin; break;
-        case "E": fill = frozen ? "#8899aa" : C.eye; break;
-        case "C": fill = color; break;
-        case "P": fill = C.pants; break;
-        case "B": fill = C.boot; break;
-        default: continue;
-      }
-      // Mirror horizontally when facing left, still on whole pixels.
-      const px = face === -1 ? ox + (SPRITE_W - 1 - c) : ox + c;
-      ctx.fillStyle = fill;
-      ctx.fillRect(px, oy + r, 1, 1);
-    }
+  // Legs, drawn first so the circle covers where they tuck in underneath it.
+  const legsTopY = cyTop + CIRCLE_D - LEG_TUCK;
+  const lx = cx - LEG_GAP / 2 - LEG_W;
+  const rx = cx + LEG_GAP / 2;
+  ctx.fillStyle = C.outline;
+  ctx.fillRect(Math.round(lx) - 1, Math.round(legsTopY) - 1, LEG_W + 2, legHL + 1);
+  ctx.fillRect(Math.round(rx) - 1, Math.round(legsTopY) - 1, LEG_W + 2, legHR + 1);
+  ctx.fillStyle = color;
+  ctx.fillRect(Math.round(lx), Math.round(legsTopY), LEG_W, legHL);
+  ctx.fillRect(Math.round(rx), Math.round(legsTopY), LEG_W, legHR);
+
+  // The circle itself — outline ring, then the fill, then the face on top.
+  const r = CIRCLE_D / 2;
+  ctx.beginPath();
+  ctx.arc(cx, cyTop + r, r + 1, 0, Math.PI * 2);
+  ctx.fillStyle = C.outline;
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(cx, cyTop + r, r, 0, Math.PI * 2);
+  ctx.fillStyle = color;
+  ctx.fill();
+
+  const img = getFaceImage(resolveFace(name, faceIndex));
+  if (img.complete && img.naturalWidth > 0) {
+    const fd = CIRCLE_D * 1.15;
+    ctx.drawImage(img, cx - fd / 2, cyTop + r - fd / 2, fd, fd);
   }
 
-  // A one-pixel shade down the trailing side gives the sprite a little volume.
-  ctx.fillStyle = shade;
-  const sx = face === -1 ? ox + 2 : ox + SPRITE_W - 3;
-  ctx.fillRect(sx, oy + 11, 1, 5);
+  if (frozen) {
+    ctx.beginPath();
+    ctx.arc(cx, cyTop + r, r, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(150,200,255,0.45)";
+    ctx.fill();
+  }
 
+  ctx.imageSmoothingEnabled = false;
   ctx.globalAlpha = 1;
 };
 

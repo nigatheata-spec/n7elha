@@ -6,25 +6,10 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Trophy, Square, Maximize } from "lucide-react";
 import { useConfirmDialog } from "@/hooks/use-confirm-dialog";
+import { Avatar } from "@/components/Avatar";
 
 const fmt = (n: number) => n.toLocaleString();
 
-const AV_COLORS = ["#8FC44A", "#3F5A63", "#2563eb", "#16a34a", "#b45309", "#7c3aed", "#0891b2", "#c2410c"];
-const av = (name: string) => {
-  let h = 0;
-  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xffffffff;
-  return { bg: AV_COLORS[Math.abs(h) % AV_COLORS.length], letter: (name.charAt(0) || "?").toUpperCase() };
-};
-const Avatar = ({ name, size = "md" }: { name: string; size?: "sm" | "md" }) => {
-  const { bg, letter } = av(name);
-  const cls = size === "md" ? "h-10 w-10 text-sm" : "h-8 w-8 text-xs";
-  return (
-    <div style={{ background: bg }}
-      className={cn("rounded-full flex items-center justify-center font-black text-white select-none shrink-0 border-2 border-[hsl(var(--nb-border))]", cls)}>
-      {letter}
-    </div>
-  );
-};
 
 interface Props { session: any; sessionId: string; }
 
@@ -127,7 +112,7 @@ const ClassicMonitor = ({ session, sessionId }: Props) => {
                   i === 0 ? "shadow-[4px_4px_0_0_hsl(var(--nb-border))]" : "shadow-[3px_3px_0_0_hsl(var(--nb-border))]")}
                 style={{ animation: `fade-up 0.3s cubic-bezier(0.16,1,0.3,1) ${Math.min(i * 40, 400)}ms both` }}>
                 <span className="w-6 text-center font-black tabular-nums" style={{ color: "hsl(199 15% 55%)" }}>{i + 1}</span>
-                <Avatar name={s.name} />
+                <Avatar name={s.name} colorIndex={s.avatar_color} faceIndex={s.avatar_face} />
                 <span className="flex-1 font-bold truncate">{s.name}</span>
                 {i === 0 && <Trophy className="h-4 w-4 shrink-0" style={{ color: "#8FC44A" }} />}
                 <span className="font-black tabular-nums text-lg">{fmt(s.crypto ?? 0)}</span>

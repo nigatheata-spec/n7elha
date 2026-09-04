@@ -12,15 +12,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/sonner";
 import { Copy, Check, X, Link2, Square, BookOpen, Users, Percent, ChevronLeft, ChevronDown } from "lucide-react";
 import { useConfirmDialog } from "@/hooks/use-confirm-dialog";
+import { Avatar } from "@/components/Avatar";
 
 interface Props { session: any; sessionId: string; }
-
-const AV_COLORS = ["#2563eb", "#16a34a", "#b45309", "#dc2626", "#7c3aed", "#0891b2", "#c2410c", "#0f766e"];
-const av = (name: string) => {
-  let h = 0;
-  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xffffffff;
-  return { bg: AV_COLORS[Math.abs(h) % AV_COLORS.length], letter: (name.charAt(0) || "?").toUpperCase() };
-};
 
 const NB = "border-2 border-[hsl(var(--nb-border))]";
 
@@ -202,7 +196,6 @@ const HomeworkMonitor = ({ session, sessionId }: Props) => {
           ) : (
             <ul className="divide-y divide-black/[0.06]">
               {ranked.map(s => {
-                const { bg, letter } = av(s.name ?? "?");
                 const answered = s.total_answers ?? 0;
                 const correct = s.correct_answers ?? 0;
                 const complete = total > 0 && answered >= total;
@@ -217,8 +210,7 @@ const HomeworkMonitor = ({ session, sessionId }: Props) => {
                       onClick={complete ? () => toggleExpand(s.id) : undefined}
                       className={`w-full flex items-center gap-3 px-5 py-3 text-start transition-colors ${complete ? "hover:bg-black/[0.02]" : ""}`}
                     >
-                      <div className="h-9 w-9 rounded-full flex items-center justify-center font-black text-white text-sm shrink-0"
-                        style={{ background: bg }}>{letter}</div>
+                      <Avatar name={s.name ?? "?"} colorIndex={s.avatar_color} faceIndex={s.avatar_face} size={36} />
                       <div className="flex-1 min-w-0">
                         <div className="font-bold text-sm text-[#3F5A63] truncate">{s.name}</div>
                         <div className="text-[12px] text-black/40">

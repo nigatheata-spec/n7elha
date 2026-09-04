@@ -28,7 +28,7 @@ type LogLine = { id: number; text: string; tone: "dim" | "green" | "white" };
 
 const fmt = (n: number) => n.toLocaleString();
 
-// DEV-ONLY PREVIEW HARNESS — view any phase at /play/preview?preview=1&phase=waiting|question|done
+// DEV-ONLY PREVIEW HARNESS — view any phase at /join/preview?preview=1&phase=waiting|question|done
 // No Supabase writes, no accounts. Remove before shipping to production.
 const MOCK_STUDENTS = [
   { id: "s1", name: "Sara",   crypto: 4200, correct_answers: 8, total_answers: 9 },
@@ -170,7 +170,7 @@ const Game = () => {
     } else if (session.status === "cancelled") {
       const ar = (session.settings?.lang ?? i18n.language) === "ar";
       toast.error(ar ? "أغلق المعلّم الردهة" : "The teacher closed the lobby");
-      navigate("/play");
+      navigate("/join");
     }
   }, [session?.status]);
 
@@ -328,7 +328,7 @@ const Game = () => {
       {/* Live-session view keyed to a one-off room code — nothing links to it
           and it's not in the sitemap, but noindex anyway as defense in depth. */}
       <Seo
-        path={`/play/${sessionId}`}
+        path={`/join/${sessionId}`}
         titleAr="جلسة لعب مباشرة"
         titleEn="Live Game Session"
         descriptionAr="جلسة لعب مباشرة على نفلها."
@@ -512,7 +512,7 @@ const Game = () => {
               </div>
 
               <button
-                onClick={() => navigate("/play")}
+                onClick={() => navigate("/join")}
                 className="mt-auto py-3 text-sm font-bold"
                 style={{ border: "2px solid hsl(120 100% 55% / 0.5)", color: "hsl(120 90% 62%)" }}
               >

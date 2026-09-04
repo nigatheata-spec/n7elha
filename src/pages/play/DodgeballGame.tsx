@@ -10,6 +10,7 @@ import logoLight from "@/assets/logo-light.png";
 import { playGameOver, primeAudio } from "@/lib/sound";
 import { AsteroidCard } from "@/components/AsteroidCard";
 import { SpaceBackdrop } from "@/components/SpaceBackdrop";
+import { Avatar } from "@/components/Avatar";
 
 type Q = { id: string; text: string; options: string[]; correct_index: number; image_url?: string };
 type Phase =
@@ -23,23 +24,6 @@ type Phase =
   | "revived"
   | "done";
 
-// ── Letter avatar ────────────────────────────────────────────────────────────
-const AV_COLORS = ["#2563eb","#16a34a","#b45309","#dc2626","#7c3aed","#0891b2","#c2410c","#0f766e"];
-const av = (name: string) => {
-  let h = 0;
-  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xffffffff;
-  return { bg: AV_COLORS[Math.abs(h) % AV_COLORS.length], letter: (name.charAt(0) || "?").toUpperCase() };
-};
-const Avatar = ({ name, size = "md" }: { name: string; size?: "sm" | "md" | "xl" }) => {
-  const { bg, letter } = av(name);
-  const cls = size === "xl" ? "h-20 w-20 text-3xl" : size === "md" ? "h-10 w-10 text-base" : "h-8 w-8 text-xs";
-  return (
-    <div style={{ background: bg }}
-      className={cn("rounded-full flex items-center justify-center font-black text-white select-none shrink-0", cls)}>
-      {letter}
-    </div>
-  );
-};
 
 // Starmap icon — represents astronomical mastery
 const CrystalIcon = ({ className, dim = false }: { className?: string; dim?: boolean }) => {
@@ -151,7 +135,7 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
     else if (session.status === "cancelled") {
       const arLang = (session.settings?.lang ?? i18n.language) === "ar";
       toast.error(arLang ? "أغلق المعلّم الردهة" : "The teacher closed the lobby");
-      navigate("/play");
+      navigate("/join");
     }
   }, [session?.status]);
 
@@ -392,7 +376,7 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
                     style={{ animation: `fade-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) ${Math.min(i * 60, 600)}ms both` }}
                   >
                     <div className="h-full p-2.5 flex items-center gap-2.5">
-                      <Avatar name={s.name} size="md" />
+                      <Avatar name={s.name} colorIndex={s.avatar_color} faceIndex={s.avatar_face} size="md" />
                       <div className="min-w-0 flex-1">
                         <div className="text-lg font-black truncate" style={{ color: isMe ? "hsl(0 0% 100%)" : "hsl(220 15% 82%)" }}>
                           {s.name}
@@ -497,7 +481,7 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
               )}
 
               <Button
-                onClick={() => navigate("/play")}
+                onClick={() => navigate("/join")}
                 className="mt-2 bg-primary text-primary-foreground tracking-widest font-black"
               >
                 {ar ? "خروج" : "Exit"}
@@ -708,7 +692,7 @@ const DodgeballGame = ({ sessionId, studentId }: Props) => {
                   <AsteroidCard seed={s.name} dim={s.eliminated}>
                     <div className="h-full p-3 flex flex-col justify-center gap-1.5">
                       <div className="flex items-center gap-2">
-                        <Avatar name={s.name} size="sm" />
+                        <Avatar name={s.name} colorIndex={s.avatar_color} faceIndex={s.avatar_face} size="sm" />
                         <span className={cn("text-sm font-bold truncate",
                           s.eliminated ? "text-muted-foreground line-through" : "text-primary")}>
                           {s.name}

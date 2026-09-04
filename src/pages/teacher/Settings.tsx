@@ -11,14 +11,7 @@ import { Label } from "@/components/ui/label";
 import { LogOut, Check } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
 import { cn } from "@/lib/utils";
-
-// ── Letter avatar ─────────────────────────────────────────────────────────────
-const AV_COLORS = ["#2563eb","#16a34a","#b45309","#dc2626","#7c3aed","#0891b2","#c2410c","#0f766e"];
-const av = (name: string) => {
-  let h = 0;
-  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xffffffff;
-  return { bg: AV_COLORS[Math.abs(h) % AV_COLORS.length], letter: (name.charAt(0) || "?").toUpperCase() };
-};
+import { Avatar } from "@/components/Avatar";
 
 const LANGS = [
   { code: "ar", label: "العربية", sub: "Arabic" },
@@ -32,7 +25,6 @@ export const SettingsPage = () => {
   const ar = i18n.language === "ar";
 
   const displayName = user?.user_metadata?.full_name ?? user?.email?.split("@")[0] ?? "";
-  const { bg, letter } = av(displayName || "?");
 
   const [name, setName]         = useState(displayName);
   const [nameSaving, setNameSaving] = useState(false);
@@ -80,10 +72,7 @@ export const SettingsPage = () => {
 
         {/* Avatar + email identity */}
         <div className="flex items-center gap-4">
-          <div style={{ background: bg }}
-            className="h-14 w-14 rounded-full flex items-center justify-center font-black text-white text-xl select-none shrink-0">
-            {letter}
-          </div>
+          <Avatar name={displayName || "?"} size={56} />
           <div className="min-w-0">
             <div className="font-semibold truncate">{displayName}</div>
             <div className="text-sm text-muted-foreground truncate">{user?.email}</div>

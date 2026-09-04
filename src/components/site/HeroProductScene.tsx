@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from "react";
 import { Trophy } from "lucide-react";
+import { Avatar } from "@/components/Avatar";
 
 /* The live-classroom moment, rebuilt as real markup.
  *
@@ -15,13 +16,6 @@ import { Trophy } from "lucide-react";
  */
 
 const ANSWER_COLORS = ["#3a9e6e", "#3F5A63", "#C8783A", "#8B4A3A"];
-
-const AV_COLORS = ["#2563eb", "#16a34a", "#b45309", "#7c3aed", "#0891b2"];
-const av = (name: string) => {
-  let h = 0;
-  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xffffffff;
-  return { bg: AV_COLORS[Math.abs(h) % AV_COLORS.length], letter: (name.charAt(0) || "?").toUpperCase() };
-};
 
 type Copy = {
   question: string;
@@ -144,7 +138,6 @@ export const HeroProductScene = ({ isAr, tilted = false }: { isAr: boolean; tilt
           {/* live leaderboard */}
           <div className="px-4 sm:px-5 py-4 space-y-1.5">
             {board.map((s, i) => {
-              const a = av(s.name);
               return (
                 <div
                   key={s.name}
@@ -156,12 +149,7 @@ export const HeroProductScene = ({ isAr, tilted = false }: { isAr: boolean; tilt
                   <span className="w-4 text-center text-[12px] font-black tabular-nums" style={{ color: "hsl(199 15% 55%)" }}>
                     {i + 1}
                   </span>
-                  <span
-                    className="grid h-6 w-6 shrink-0 place-items-center rounded-full text-[11px] font-black text-white"
-                    style={{ background: a.bg }}
-                  >
-                    {a.letter}
-                  </span>
+                  <Avatar name={s.name} size={24} />
                   <span className="flex-1 truncate text-[13px] font-bold" style={{ color: "#3F5A63" }}>
                     {s.name}
                   </span>

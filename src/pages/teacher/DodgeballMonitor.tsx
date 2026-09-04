@@ -8,26 +8,15 @@ import { Trophy, Timer, Square, Maximize, Zap } from "lucide-react";
 import { AsteroidCard } from "@/components/AsteroidCard";
 import { SpaceBackdrop } from "@/components/SpaceBackdrop";
 import { useConfirmDialog } from "@/hooks/use-confirm-dialog";
+import { Avatar as BaseAvatar } from "@/components/Avatar";
 
-// ── Letter avatar ─────────────────────────────────────────────────────────────
-const AV_COLORS = ["#2563eb","#16a34a","#b45309","#dc2626","#7c3aed","#0891b2","#c2410c","#0f766e"];
-const av = (name: string) => {
-  let h = 0;
-  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xffffffff;
-  return { bg: AV_COLORS[Math.abs(h) % AV_COLORS.length], letter: (name.charAt(0) || "?").toUpperCase() };
-};
-const Avatar = ({ name, size = "md", dim = false }: { name: string; size?: "sm" | "md"; dim?: boolean }) => {
-  const { bg, letter } = av(name);
-  return (
-    <div style={{ background: dim ? "#555" : bg }}
-      className={cn(
-        "rounded-full flex items-center justify-center font-black text-white select-none shrink-0 font-mono",
-        size === "md" ? "h-10 w-10 text-sm" : "h-8 w-8 text-xs"
-      )}>
-      {letter}
-    </div>
-  );
-};
+// Eliminated players fade to grayscale instead of swapping the fill color —
+// the face illustration stays recognizable, just visibly "out".
+const Avatar = ({
+  name, size = "md", dim = false, colorIndex, faceIndex,
+}: { name: string; size?: "sm" | "md"; dim?: boolean; colorIndex?: number | null; faceIndex?: number | null }) => (
+  <BaseAvatar name={name} size={size} colorIndex={colorIndex} faceIndex={faceIndex} className={dim ? "grayscale opacity-40" : undefined} />
+);
 
 // Arcane crystal icon — same as student screen
 const CrystalIcon = ({ className, dim = false }: { className?: string; dim?: boolean }) => (
@@ -44,11 +33,13 @@ const CrystalIcon = ({ className, dim = false }: { className?: string; dim?: boo
 );
 
 // Player card — shared cartoon asteroid surface with roster content on top.
-const PlayerCard = ({ name, lives, dim = false }: { name: string; lives: number; dim?: boolean }) => (
+const PlayerCard = ({
+  name, lives, dim = false, colorIndex, faceIndex,
+}: { name: string; lives: number; dim?: boolean; colorIndex?: number | null; faceIndex?: number | null }) => (
   <AsteroidCard seed={name} dim={dim}>
     <div className="p-3 flex flex-col gap-1.5">
       <div className="flex items-center gap-2.5">
-        <Avatar name={name} size="md" dim={dim} />
+        <Avatar name={name} size="md" dim={dim} colorIndex={colorIndex} faceIndex={faceIndex} />
         <span className={cn("font-mono font-black text-xl truncate flex-1", dim ? "text-muted-foreground/50 line-through" : "text-primary")}>{name}</span>
       </div>
       {!dim ? (
@@ -245,10 +236,10 @@ const DodgeballMonitor = ({ session, sessionId }: Props) => {
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {alive.map(s => (
-                <PlayerCard key={s.id} name={s.name} lives={s.lives ?? 1} />
+                <PlayerCard key={s.id} name={s.name} lives={s.lives ?? 1} colorIndex={s.avatar_color} faceIndex={s.avatar_face} />
               ))}
               {eliminated.map(s => (
-                <PlayerCard key={s.id} name={s.name} lives={0} dim />
+                <PlayerCard key={s.id} name={s.name} lives={0} dim colorIndex={s.avatar_color} faceIndex={s.avatar_face} />
               ))}
             </div>
           )}

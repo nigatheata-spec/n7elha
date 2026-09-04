@@ -15,34 +15,19 @@ import flaskDoodle from "@/assets/doodles/flask.png";
 import keyDoodle from "@/assets/doodles/key.png";
 import notebookDoodle from "@/assets/doodles/notebook.png";
 import catDoodle from "@/assets/doodles/cool-cat.png";
+import { Avatar } from "@/components/Avatar";
 
 type Q = { id: string; text: string; options: string[]; correct_index: number; position: number; image_url?: string };
 type Phase = "waiting" | "question" | "answered" | "done";
 
 const fmt = (n: number) => n.toLocaleString();
 
-const AV_COLORS = ["#8FC44A", "#3F5A63", "#2563eb", "#16a34a", "#b45309", "#7c3aed", "#0891b2", "#c2410c"];
-const av = (name: string) => {
-  let h = 0;
-  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xffffffff;
-  return { bg: AV_COLORS[Math.abs(h) % AV_COLORS.length], letter: (name.charAt(0) || "?").toUpperCase() };
-};
-const Avatar = ({ name, size = "md" }: { name: string; size?: "sm" | "md" | "xl" }) => {
-  const { bg, letter } = av(name);
-  const cls = size === "xl" ? "h-16 w-16 text-2xl" : size === "md" ? "h-9 w-9 text-sm" : "h-7 w-7 text-xs";
-  return (
-    <div style={{ background: bg }}
-      className={cn("rounded-full flex items-center justify-center font-black text-white select-none shrink-0 border-2 border-[hsl(var(--nb-border))]", cls)}>
-      {letter}
-    </div>
-  );
-};
 
 // Kahoot-style speed scoring: faster correct answers earn more, floor at MIN_POINTS
 const MAX_POINTS = 1000;
 const MIN_POINTS = 100;
 
-// DEV-ONLY PREVIEW HARNESS — /play/preview?preview=1&mode=classic&phase=waiting|question|done
+// DEV-ONLY PREVIEW HARNESS — /join/preview?preview=1&mode=classic&phase=waiting|question|done
 const MOCK_STUDENTS = [
   { id: "s1", name: "Sara",   crypto: 3840, correct_answers: 8, total_answers: 9 },
   { id: "s2", name: "Omar",   crypto: 3100, correct_answers: 7, total_answers: 9 },
@@ -170,7 +155,7 @@ const ClassicGame = ({ sessionId, studentId }: Props) => {
     } else if (session.status === "cancelled") {
       const ar = (session.settings?.lang ?? i18n.language) === "ar";
       toast.error(ar ? "أغلق المعلّم الردهة" : "The teacher closed the lobby");
-      navigate("/play");
+      navigate("/join");
     }
   }, [session?.status]);
 
@@ -286,7 +271,7 @@ const ClassicGame = ({ sessionId, studentId }: Props) => {
                       isMe ? "shadow-[4px_4px_0_0_hsl(var(--nb-border))]" : "shadow-[3px_3px_0_0_hsl(var(--nb-border))]")}
                     style={{ animation: `fade-up 0.3s cubic-bezier(0.16,1,0.3,1) ${Math.min(i * 50, 500)}ms both` }}
                   >
-                    <Avatar name={s.name} size="sm" />
+                    <Avatar name={s.name} colorIndex={s.avatar_color} faceIndex={s.avatar_face} size="sm" />
                     <span className="font-bold text-sm truncate" style={{ color: "#3F5A63" }}>{s.name}</span>
                   </div>
                 );
@@ -374,7 +359,7 @@ const ClassicGame = ({ sessionId, studentId }: Props) => {
               {winner && (
                 <div className={cn("rounded-2xl bg-[#8FC44A] p-5 flex flex-col items-center gap-2 text-center", NB, "shadow-[5px_5px_0_0_hsl(var(--nb-border))]")}>
                   <Trophy className="h-6 w-6 text-white" />
-                  <Avatar name={winner.name} size="xl" />
+                  <Avatar name={winner.name} colorIndex={winner.avatar_color} faceIndex={winner.avatar_face} size="xl" />
                   <div className="font-black text-lg text-white">{winner.name}</div>
                   <div className="font-black text-2xl tabular-nums text-white">{fmt(winner.crypto ?? 0)} pts</div>
                 </div>
@@ -387,7 +372,7 @@ const ClassicGame = ({ sessionId, studentId }: Props) => {
                     <div key={s.id} className={cn("flex items-center gap-3 px-3 py-2.5 rounded-2xl bg-white", NB,
                       isMe ? "shadow-[4px_4px_0_0_hsl(var(--nb-border))]" : "shadow-[3px_3px_0_0_hsl(var(--nb-border))]")}>
                       <span className="font-black tabular-nums w-5 text-center text-sm" style={{ color: "hsl(199 15% 55%)" }}>{i + 2}</span>
-                      <Avatar name={s.name} size="sm" />
+                      <Avatar name={s.name} colorIndex={s.avatar_color} faceIndex={s.avatar_face} size="sm" />
                       <span className="font-bold text-sm flex-1 truncate" style={{ color: "#3F5A63" }}>{s.name}{isMe && " ←"}</span>
                       <span className="font-black tabular-nums text-sm" style={{ color: "#3F5A63" }}>{fmt(s.crypto ?? 0)}</span>
                     </div>
@@ -396,7 +381,7 @@ const ClassicGame = ({ sessionId, studentId }: Props) => {
                 {myRank > 6 && me && (
                   <div className={cn("flex items-center gap-3 px-3 py-2.5 rounded-2xl bg-white", NB, "shadow-[4px_4px_0_0_hsl(var(--nb-border))]")}>
                     <span className="font-black tabular-nums w-5 text-center text-sm" style={{ color: "hsl(199 15% 55%)" }}>{myRank}</span>
-                    <Avatar name={me.name} size="sm" />
+                    <Avatar name={me.name} colorIndex={me.avatar_color} faceIndex={me.avatar_face} size="sm" />
                     <span className="font-bold text-sm flex-1 truncate" style={{ color: "#3F5A63" }}>{me.name} ←</span>
                     <span className="font-black tabular-nums text-sm" style={{ color: "#3F5A63" }}>{fmt(me.crypto ?? 0)}</span>
                   </div>
@@ -404,7 +389,7 @@ const ClassicGame = ({ sessionId, studentId }: Props) => {
               </div>
 
               <button
-                onClick={() => navigate("/play")}
+                onClick={() => navigate("/join")}
                 className={cn("mt-auto py-3 rounded-2xl font-bold text-sm bg-[#3F5A63] text-white", NB, "shadow-[4px_4px_0_0_hsl(var(--nb-border))] hover:translate-x-px hover:translate-y-px hover:shadow-[2px_2px_0_0_hsl(var(--nb-border))] transition-all")}
               >
                 {ar ? "خروج" : "exit"}

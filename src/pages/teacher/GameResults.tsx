@@ -7,34 +7,10 @@ import { ArrowLeft, Download, Trophy, Check, Clock, Users, Target } from "lucide
 import { cn } from "@/lib/utils";
 import { Seo } from "@/components/Seo";
 import { computeCoverage, type CoverageRow, type Stroke } from "@/lib/paintFight";
+import { Avatar } from "@/components/Avatar";
 
 const fmt = (n: number) => n.toLocaleString();
 const pct = (n: number) => `${n.toFixed(0)}%`;
-
-// ── Letter avatar ────────────────────────────────────────────────────────────
-const AV_COLORS = ["#2563eb","#16a34a","#b45309","#dc2626","#7c3aed","#0891b2","#c2410c","#0f766e"];
-const av = (name: string) => {
-  let h = 0;
-  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xffffffff;
-  return { bg: AV_COLORS[Math.abs(h) % AV_COLORS.length], letter: (name.charAt(0) || "?").toUpperCase() };
-};
-
-const Avatar = ({ name, size = "md" }: { name: string; size?: "sm" | "md" | "lg" | "xl" }) => {
-  const { bg, letter } = av(name);
-  const cls = size === "xl"
-    ? "h-20 w-20 text-3xl"
-    : size === "lg"
-    ? "h-16 w-16 text-2xl"
-    : size === "md"
-    ? "h-10 w-10 text-base"
-    : "h-8 w-8 text-xs";
-  return (
-    <div style={{ background: bg }}
-      className={cn("rounded-full flex items-center justify-center font-black text-white select-none shrink-0 font-mono", cls)}>
-      {letter}
-    </div>
-  );
-};
 
 // ── Component ────────────────────────────────────────────────────────────────
 const GameResults = () => {
@@ -196,7 +172,7 @@ const GameResults = () => {
         {winner && (
           <div className="relative z-10 flex flex-col items-center gap-5 px-8 text-center">
             <div style={{ animation: "result-crash-in 0.75s 1.15s cubic-bezier(0.16,1,0.3,1) both" }}>
-              <Avatar name={winner.name} size="xl" />
+              <Avatar name={winner.name} colorIndex={winner.avatar_color} faceIndex={winner.avatar_face} size="xl" />
             </div>
             <div style={{ animation: "result-crash-in 0.75s 1.35s cubic-bezier(0.16,1,0.3,1) both" }}>
               <div className="text-[clamp(2.4rem,9vw,6.5rem)] font-black tracking-tighter text-primary leading-none"
@@ -223,7 +199,7 @@ const GameResults = () => {
             style={{ animation: "fade-up 0.5s 2.8s both", opacity: 0 }}>
             {second && (
               <div className="flex items-center gap-2.5">
-                <Avatar name={second.name} size="sm" />
+                <Avatar name={second.name} colorIndex={second.avatar_color} faceIndex={second.avatar_face} size="sm" />
                 <div>
                   <div className="text-[9px] tracking-widest text-primary/30 uppercase">{ar ? "الثاني" : "2nd"}</div>
                   <div className="text-sm font-bold text-primary/65">{second.name}</div>
@@ -233,7 +209,7 @@ const GameResults = () => {
             {second && third && <div className="h-8 w-px bg-primary/15" />}
             {third && (
               <div className="flex items-center gap-2.5">
-                <Avatar name={third.name} size="sm" />
+                <Avatar name={third.name} colorIndex={third.avatar_color} faceIndex={third.avatar_face} size="sm" />
                 <div>
                   <div className="text-[9px] tracking-widest text-primary/30 uppercase">{ar ? "الثالث" : "3rd"}</div>
                   <div className="text-sm font-bold text-primary/65">{third.name}</div>
@@ -331,7 +307,7 @@ const GameResults = () => {
                         <Trophy className="h-3 w-3" style={{ color: m.color }} />
                         {ar ? m.labelAr : m.labelEn}
                       </div>
-                      <Avatar name={s.name} size={step.avatar} />
+                      <Avatar name={s.name} colorIndex={s.avatar_color} faceIndex={s.avatar_face} size={step.avatar} />
                       <div className={cn("font-black tracking-tight text-primary leading-none truncate max-w-full", step.name)}>
                         {s.name}
                       </div>
@@ -360,7 +336,7 @@ const GameResults = () => {
                         className="rounded-xl border-2 border-[hsl(var(--nb-border))] bg-white px-4 py-3 flex items-center gap-3 shadow-[3px_3px_0_0_hsl(var(--nb-border))]"
                         style={{ animation: `fade-up 0.4s ${idx * 70}ms both` }}>
                         <span className="text-primary/60 font-black tabular-nums text-sm w-5 shrink-0">{rank}</span>
-                        <Avatar name={s.name} size="sm" />
+                        <Avatar name={s.name} colorIndex={s.avatar_color} faceIndex={s.avatar_face} size="sm" />
                         <span className="font-bold text-primary flex-1 truncate min-w-0">{s.name}</span>
                         <span className="text-xs text-primary/65 tabular-nums shrink-0">{pct(acc)}</span>
                         {scoreFor(s) !== null
@@ -431,7 +407,7 @@ const GameResults = () => {
                         <td className="px-4 py-3 font-bold text-primary/60 tabular-nums">{i + 1}</td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2.5">
-                            <Avatar name={s.name} size="sm" />
+                            <Avatar name={s.name} colorIndex={s.avatar_color} faceIndex={s.avatar_face} size="sm" />
                             <span className={cn("font-bold truncate max-w-[140px]",
                               i === 0 ? "text-primary" : "text-foreground")}>{s.name}</span>
                             {i === 0 && <Trophy className="h-3.5 w-3.5 text-amber-400 shrink-0" />}

@@ -7,6 +7,9 @@ import { cn } from "@/lib/utils";
 import logoLight from "@/assets/logo-light.png";
 import { hueForJoinIndex } from "@/lib/paintFight";
 import { Seo } from "@/components/Seo";
+import { Avatar } from "@/components/Avatar";
+import { CIRCLE_COLORS, FACES, colorIndexForName, faceIndexForName } from "@/lib/avatarIdentity";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 // ─── Password pools (Crypto Rush only) ─────────────────────────────────────
 // English pool: trendy internet-slang flavored, keeps the "hacker handle" feel
@@ -47,6 +50,20 @@ const Join = () => {
   const [loading, setLoading] = useState(false);
   const [stage, setStage]     = useState<Stage>("code");
   const [chosen, setChosen]   = useState<string | null>(null);
+
+  // Avatar color/face follow the name hash until the student taps a swatch or
+  // an arrow — after that this pair is what actually gets stored, not a
+  // re-derived hash, so their pick sticks even if they keep editing the name.
+  const [avatarColorIdx, setAvatarColorIdx] = useState(0);
+  const [avatarFaceIdx, setAvatarFaceIdx]   = useState(0);
+  const [colorTouched, setColorTouched] = useState(false);
+  const [faceTouched, setFaceTouched]   = useState(false);
+  useEffect(() => {
+    const n = name.trim();
+    if (!n) return;
+    if (!colorTouched) setAvatarColorIdx(colorIndexForName(n));
+    if (!faceTouched) setAvatarFaceIdx(faceIndexForName(n));
+  }, [name]);
 
   // Paint body + html dark so no cream bleeds through on iOS edges
   useEffect(() => {
@@ -189,7 +206,10 @@ const Join = () => {
 
   const doInsert = async (sess: any, playerName: string, password: string) => {
     try {
-      const payload: any = { session_id: sess.id, name: playerName.trim(), password };
+      const payload: any = {
+        session_id: sess.id, name: playerName.trim(), password,
+        avatar_color: avatarColorIdx, avatar_face: avatarFaceIdx,
+      };
       if (sess.settings?.mode === "humansvszombies") {
         const { data: existing } = await supabase.from("game_students").select("team").eq("session_id", sess.id) as any;
         const humanCount  = (existing ?? []).filter((s: any) => s.team === "human").length;
@@ -207,7 +227,7 @@ const Join = () => {
         .select().single();
       if (error) throw error;
       localStorage.setItem(`hash_student_${sess.id}`, student.id);
-      nav(`/play/${sess.id}`);
+      nav(`/join/${sess.id}`);
     } catch (err: any) {
       toast.error(err.message || (ar ? "تعذّر الانضمام" : "Could not join"));
       setStage("name");
@@ -310,8 +330,87 @@ const Join = () => {
 
         <div className="relative z-10 w-full max-w-xs text-center space-y-12 animate-fade-up">
           <div className="space-y-3 flex flex-col items-center">
-            <img src={logoLight} alt="nefelha" className="h-16 w-16 object-contain" />
-            <div className="text-white/30 text-sm tracking-wide">{ar ? "اسمك في اللعبة؟" : "What's your name?"}</div>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                aria-label={ar ? "الوجه السابق" : "Previous face"}
+                onClick={() => { setFaceTouched(true); setAvatarFaceIdx(i => (i - 1 + FACES.length) % FACES.length); }}
+                className={cn(
+                  "h-8 w-8 flex items-center justify-center text-white/25 hover:text-white/70 transition-all duration-200",
+                  name.trim() ? "opacity-100" : "opacity-0 pointer-events-none"
+                )}
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </button>
+
+              <div className="relative h-16 w-16 shrink-0">
+                <img
+                  src={logoLight} alt="nefelha"
+                  className={cn(
+                    "absolute inset-0 h-16 w-16 object-contain transition-opacity duration-200",
+                    name.trim() ? "opacity-0" : "opacity-100"
+                  )}
+                />
+                <div
+                  className={cn(
+                    "absolute inset-0 flex items-center justify-center transition-all duration-200",
+                    name.trim() ? "opacity-100 scale-100" : "opacity-0 scale-75"
+                  )}
+                >
+                  {name.trim() && (
+                    <Avatar
+                      key={`${avatarColorIdx}-${avatarFaceIdx}`}
+                      name={name.trim()}
+                      colorIndex={avatarColorIdx}
+                      faceIndex={avatarFaceIdx}
+                      size={64}
+                      className="animate-scale-in"
+                    />
+                  )}
+                </div>
+              </div>
+
+              <button
+                type="button"
+                aria-label={ar ? "الوجه التالي" : "Next face"}
+                onClick={() => { setFaceTouched(true); setAvatarFaceIdx(i => (i + 1) % FACES.length); }}
+                className={cn(
+                  "h-8 w-8 flex items-center justify-center text-white/25 hover:text-white/70 transition-all duration-200",
+                  name.trim() ? "opacity-100" : "opacity-0 pointer-events-none"
+                )}
+              >
+                <ChevronRight className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div
+              className={cn(
+                "flex gap-2 transition-opacity duration-200",
+                name.trim() ? "opacity-100" : "opacity-0 pointer-events-none"
+              )}
+            >
+              {CIRCLE_COLORS.map((c, i) => (
+                <button
+                  key={c}
+                  type="button"
+                  aria-label={ar ? `اللون ${i + 1}` : `Color ${i + 1}`}
+                  onClick={() => { setColorTouched(true); setAvatarColorIdx(i); }}
+                  className={cn(
+                    "h-5 w-5 rounded-full transition-all duration-150",
+                    avatarColorIdx === i && name.trim()
+                      ? "scale-125 ring-2 ring-white/70 ring-offset-2 ring-offset-[#0d1119]"
+                      : "opacity-50 hover:opacity-90"
+                  )}
+                  style={{ background: c }}
+                />
+              ))}
+            </div>
+
+            <div className="text-white/30 text-sm tracking-wide">
+              {name.trim()
+                ? name.trim()
+                : ar ? "اسمك في اللعبة؟" : "What's your name?"}
+            </div>
           </div>
 
           <form onSubmit={submitName} className="space-y-4">

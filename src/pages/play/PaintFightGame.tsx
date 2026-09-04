@@ -434,7 +434,7 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
             <div className="text-2xl font-extrabold tabular-nums" style={{ color: "#15803d" }}>{me?.correct_answers ?? 0}</div>
           </div>
         </div>
-        <button onClick={() => navigate("/play")}
+        <button onClick={() => navigate("/join")}
           className="mt-3 px-7 py-3 font-extrabold text-sm text-white border-2 border-[hsl(var(--nb-border))] shadow-[4px_4px_0_0_hsl(var(--nb-border))] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[2px_2px_0_0_hsl(var(--nb-border))] transition-transform"
           style={{ background: "#8FC44A" }}>
           {ar ? "خروج" : "EXIT"}

@@ -72,7 +72,7 @@ export const SiteNav = () => {
           <div className="hidden md:flex items-center gap-2">
             <LangToggle variant="pill" />
             <Link
-              to="/play"
+              to="/join"
               className={`px-4 py-2 rounded-full border-2 border-[hsl(var(--nb-border))] bg-white text-[#3F5A63] text-[13px] font-medium shadow-[3px_3px_0_0_hsl(var(--nb-border))] hover:bg-[#3F5A63] hover:text-white hover:translate-x-px hover:translate-y-px hover:shadow-[2px_2px_0_0_hsl(var(--nb-border))] transition-all ${isAr ? "" : "tracking-wider"}`}
             >
               {t.joinGame}
@@ -173,7 +173,7 @@ export const SiteNav = () => {
 
           {/* CTAs — the only pill-styled buttons */}
           <div className="mt-auto px-5 pt-4 pb-6 border-t border-black/[0.06] flex flex-col gap-2.5">
-            <Link to="/play" onClick={() => setMenuOpen(false)} className="w-full px-4 py-2.5 rounded-full border-2 border-[hsl(var(--nb-border))] bg-white text-[#3F5A63] text-[13px] tracking-wider font-medium text-center shadow-[3px_3px_0_0_hsl(var(--nb-border))]">
+            <Link to="/join" onClick={() => setMenuOpen(false)} className="w-full px-4 py-2.5 rounded-full border-2 border-[hsl(var(--nb-border))] bg-white text-[#3F5A63] text-[13px] tracking-wider font-medium text-center shadow-[3px_3px_0_0_hsl(var(--nb-border))]">
               {t.joinGame}
             </Link>
             {user ? (

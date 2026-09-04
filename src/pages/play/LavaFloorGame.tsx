@@ -198,7 +198,7 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
     else if (session.status === "cancelled") {
       const arLang = (session.settings?.lang ?? i18n.language) === "ar";
       toast.error(arLang ? "أغلق المعلّم الردهة" : "The teacher closed the lobby");
-      navigate("/play");
+      navigate("/join");
     }
   }, [session?.status]);
 
@@ -940,7 +940,7 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
                 )}
 
                 <button
-                  onClick={() => navigate("/play")}
+                  onClick={() => navigate("/join")}
                   className="pixel-button mt-2 px-6 py-3"
                   style={{
                     background: "hsl(14 72% 52% / 0.15)",

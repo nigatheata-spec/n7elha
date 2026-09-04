@@ -11,7 +11,7 @@ import {
   INCOME_TIERS, STREAK_INSURANCE_TIERS, MULTIPLIER_INSURANCE_TIERS,
   ENERGY_TANK_TIERS, BATTERY_TIERS,
   DOUBLE_JUMP_COST, FEATHER_FALL_COST, FEATHER_FALL_MS, FEATHER_FALL_GRAVITY_SCALE,
-  PLATFORMS, SUMMIT_Y, spawnFor, colorFor,
+  PLATFORMS, SUMMIT_Y, spawnFor,
 } from "@/lib/dontLookDown";
 import {
   setupPixelCanvas, drawSky, drawStars, drawCloud, drawBlock,
@@ -22,7 +22,7 @@ import { SKINNED, PX, themeBlendAt, themeIndexAt, THEMES, GROUND_Y, groundSpawn 
 type Q = { id: string; text: string; options: string[]; correct_index: number; image_url?: string };
 type Phase = "waiting" | "playing" | "done";
 type ShopTab = "economy" | "parkour";
-type Peer = { id: string; name: string; x: number; y: number; face: number; t: number };
+type Peer = { id: string; name: string; x: number; y: number; face: number; t: number; avatarColor?: number | null; avatarFace?: number | null };
 
 // Floating white HUD chip, matching the reference's rounded pills over the sky.
 const PILL = "flex items-center gap-2 px-3 py-1.5 rounded-full shadow-md pointer-events-none";
@@ -134,7 +134,7 @@ const DontLookDownGame = ({ sessionId, studentId }: Props) => {
     else if (session.status === "running") setPhase(prev => (prev === "waiting" ? "playing" : prev));
     else if (session.status === "cancelled") {
       toast.error(ar ? "أغلق المعلّم الردهة" : "The teacher closed the lobby");
-      navigate("/play");
+      navigate("/join");
     }
   }, [session?.status]);
 
@@ -336,8 +336,8 @@ const DontLookDownGame = ({ sessionId, studentId }: Props) => {
         if (peer.t < cutoff) { delete peersRef.current[id]; continue; }
         const x = sx(peer.x), y = sy(peer.y);
         if (x < -30 || x > bw + 30 || y < -30 || y > bh + 30) continue;
-        drawCharacter(bctx, x, y, WORLD.playerW * PX, WORLD.playerH * PX, colorFor(id), (peer.face ?? 1) as 1 | -1, {
-          t: tSec, alpha: 0.75, grounded: true,
+        drawCharacter(bctx, x, y, WORLD.playerW * PX, WORLD.playerH * PX, peer.name ?? "?", (peer.face ?? 1) as 1 | -1, {
+          t: tSec, alpha: 0.75, grounded: true, colorIndex: peer.avatarColor, faceIndex: peer.avatarFace,
         });
         drawNameTag(bctx, x + (WORLD.playerW * PX) / 2, y - 22, peer.name ?? "");
       }
@@ -352,8 +352,9 @@ const DontLookDownGame = ({ sessionId, studentId }: Props) => {
         bctx.fillRect(pxs - 4, pys - 14, 1, 12);
         bctx.fillRect(pxs + WORLD.playerW * PX + 3, pys - 14, 1, 12);
       }
-      drawCharacter(bctx, pxs, pys, WORLD.playerW * PX, WORLD.playerH * PX, colorFor(studentId), p.face as 1 | -1, {
+      drawCharacter(bctx, pxs, pys, WORLD.playerW * PX, WORLD.playerH * PX, meRef.current?.name ?? "?", p.face as 1 | -1, {
         t: tSec, vx: p.vx, grounded: p.grounded, frozen,
+        colorIndex: meRef.current?.avatar_color, faceIndex: meRef.current?.avatar_face,
       });
       drawNameTag(bctx, pxs + (WORLD.playerW * PX) / 2, pys - 22, meRef.current?.name ?? "");
 
@@ -383,7 +384,10 @@ const DontLookDownGame = ({ sessionId, studentId }: Props) => {
         const p = pRef.current;
         chanRef.current?.send({
           type: "broadcast", event: "pos",
-          payload: { id: studentId, name: meRef.current?.name ?? "", x: Math.round(p.x), y: Math.round(p.y), face: p.face },
+          payload: {
+            id: studentId, name: meRef.current?.name ?? "", x: Math.round(p.x), y: Math.round(p.y), face: p.face,
+            avatarColor: meRef.current?.avatar_color, avatarFace: meRef.current?.avatar_face,
+          },
         });
       }
       // Persist best height every 3s so the teacher leaderboard ranks the climb
@@ -548,7 +552,7 @@ const DontLookDownGame = ({ sessionId, studentId }: Props) => {
             </div>
           ))}
         </div>
-        <button onClick={() => navigate("/play")}
+        <button onClick={() => navigate("/join")}
           className="mt-3 px-7 py-3 rounded-xl font-extrabold text-sm text-white shadow-lg active:scale-95 transition-transform"
           style={{ background: "#4f46e5" }}>
           {ar ? "خروج" : "EXIT"}

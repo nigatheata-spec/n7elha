@@ -51,7 +51,7 @@ const AppContent = () => {
   const location = useLocation();
 
   const getSweepColor = () => {
-    if (location.pathname.startsWith("/play")) {
+    if (location.pathname.startsWith("/join")) {
       return "rgba(255,255,255,0.7)";
     }
     return "#EBDFC7";
@@ -87,9 +87,9 @@ const AppContent = () => {
             <Route path="/blog" element={<Blog />} />
             <Route path="/blog/:slug" element={<BlogPost />} />
             <Route path="/auth" element={<Auth />} />
-            <Route path="/play" element={<Join />} />
-            {import.meta.env.DEV && <Route path="/play/dld-preview" element={<DldPreview />} />}
-            <Route path="/play/:sessionId" element={<Game />} />
+            <Route path="/join" element={<Join />} />
+            {import.meta.env.DEV && <Route path="/join/dld-preview" element={<DldPreview />} />}
+            <Route path="/join/:sessionId" element={<Game />} />
             <Route path="/scan/:kitId/:typeCode" element={<ScanSquare />} />
             {/* Homework links are shared straight to students — short, no code, no lobby. */}
             <Route path="/hw/:sessionId" element={<Homework />} />

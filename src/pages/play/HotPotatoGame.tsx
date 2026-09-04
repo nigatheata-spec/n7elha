@@ -9,29 +9,13 @@ import { BombIcon } from "@/components/BombIcon";
 import { Trophy, Zap, Check, X as XIcon } from "lucide-react";
 import logoLight from "@/assets/logo-light.png";
 import { playSelect, playCorrect, playWrong, playExplode, playGameOver, primeAudio } from "@/lib/sound";
+import { Avatar } from "@/components/Avatar";
 
 type Q = { id: string; text: string; options: string[]; correct_index: number; image_url?: string };
 type Phase = "waiting" | "question" | "answered" | "passing" | "exploded" | "done";
 
 const POINTS_PER_CORRECT = 100;
 const PASS_SECONDS = 5;
-
-const AV_COLORS = ["#2563eb","#16a34a","#b45309","#dc2626","#7c3aed","#0891b2","#c2410c","#0f766e"];
-const av = (name: string) => {
-  let h = 0;
-  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xffffffff;
-  return { bg: AV_COLORS[Math.abs(h) % AV_COLORS.length], letter: (name.charAt(0) || "?").toUpperCase() };
-};
-const Avatar = ({ name, size = "md" }: { name: string; size?: "sm" | "md" | "xl" }) => {
-  const { bg, letter } = av(name);
-  const cls = size === "xl" ? "h-20 w-20 text-3xl" : size === "md" ? "h-10 w-10 text-base" : "h-8 w-8 text-xs";
-  return (
-    <div style={{ background: bg }}
-      className={cn("rounded-full flex items-center justify-center font-black text-white select-none shrink-0", cls)}>
-      {letter}
-    </div>
-  );
-};
 
 interface Props { sessionId: string; studentId: string; }
 
@@ -124,7 +108,7 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
     else if (session.status === "cancelled") {
       const arLang = (session.settings?.lang ?? i18n.language) === "ar";
       toast.error(arLang ? "أغلق المعلّم الردهة" : "The teacher closed the lobby");
-      navigate("/play");
+      navigate("/join");
     }
   }, [session?.status]);
 
@@ -370,7 +354,7 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
                         animation: `fade-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) ${Math.min(i * 60, 600)}ms both`,
                       }}
                     >
-                      <Avatar name={s.name} size="sm" />
+                      <Avatar name={s.name} colorIndex={s.avatar_color} faceIndex={s.avatar_face} size="sm" />
                       <div className="min-w-0 flex-1">
                         <div className="text-sm font-bold truncate font-mono" style={{ color: isMe ? "hsl(210 10% 90%)" : "hsl(210 10% 72%)" }}>
                           {s.name}
@@ -527,7 +511,7 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
                 </div>
 
                 <Button
-                  onClick={() => navigate("/play")}
+                  onClick={() => navigate("/join")}
                   className="mt-2 tracking-widest font-black"
                   style={{ background: "hsl(210 18% 24%)", color: "hsl(210 10% 90%)" }}
                 >
@@ -638,7 +622,7 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
                 {passTargets.map(target => (
                   <button key={target.id} onClick={() => passBomb(target.id)}
                     className="relative group btn-panel rounded-xl p-4 flex items-center gap-3 transition-all hover:scale-[1.02] active:scale-[0.97]">
-                    <Avatar name={target.name} size="md" />
+                    <Avatar name={target.name} colorIndex={target.avatar_color} faceIndex={target.avatar_face} size="md" />
                     <div className="flex-1 min-w-0 text-left">
                       <div className="font-bold text-base truncate" style={{ color: "hsl(210 10% 82%)" }}>{target.name}</div>
                       <div className="text-success/80 text-xs font-mono tabular-nums">{fmt(target.crypto ?? 0)} {ar ? "نقطة" : "pts"}</div>

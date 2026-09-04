@@ -7,25 +7,9 @@ import { cn } from "@/lib/utils";
 import { Square, Maximize, Trophy } from "lucide-react";
 import { BombIcon } from "@/components/BombIcon";
 import { useConfirmDialog } from "@/hooks/use-confirm-dialog";
+import { Avatar } from "@/components/Avatar";
 
 const fmt = (n: number) => n.toLocaleString();
-
-const AV_COLORS = ["#2563eb","#16a34a","#b45309","#dc2626","#7c3aed","#0891b2","#c2410c","#0f766e"];
-const av = (name: string) => {
-  const n = name || "?";
-  let h = 0;
-  for (let i = 0; i < n.length; i++) h = (h * 31 + n.charCodeAt(i)) & 0xffffffff;
-  return { bg: AV_COLORS[Math.abs(h) % AV_COLORS.length], letter: n.charAt(0).toUpperCase() };
-};
-const Avatar = ({ name }: { name: string }) => {
-  const { bg, letter } = av(name);
-  return (
-    <div style={{ background: bg }}
-      className="h-10 w-10 rounded-full flex items-center justify-center font-black text-white text-sm select-none shrink-0 font-mono">
-      {letter}
-    </div>
-  );
-};
 
 
 // Shared metal panel style — matches student screen
@@ -293,7 +277,7 @@ const HotPotatoMonitor = ({ session, sessionId }: Props) => {
                     style={{ color: isFirst ? PCB_GREEN : "hsl(210 10% 38%)" }}>
                     {i + 1}
                   </span>
-                  <Avatar name={s.name} />
+                  <Avatar name={s.name} colorIndex={s.avatar_color} faceIndex={s.avatar_face} />
                   <span className="font-mono text-lg font-bold flex-1 truncate"
                     style={{ color: isFirst ? "hsl(210 10% 92%)" : "hsl(210 10% 72%)" }}>
                     {s.name}
