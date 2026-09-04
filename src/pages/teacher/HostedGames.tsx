@@ -85,7 +85,7 @@ const HostedGames = () => {
       ) : (
         <>
           <div className="rounded-2xl border-2 border-[hsl(var(--nb-border))] bg-white divide-y divide-black/[0.06] overflow-hidden">
-            {visible.map(g => {
+            {visible.map((g, idx) => {
               const mode = g.settings?.mode as string | undefined;
               const isHomework = mode === "homework";
               const path = actionPath(g.id, g.status, mode);
@@ -102,6 +102,7 @@ const HostedGames = () => {
                   to={path || "#"}
                   className={cn(
                     "flex items-center gap-3 px-4 py-3 hover:bg-black/[0.02] transition-colors",
+                    idx % 2 === 1 && "bg-[#8FC44A]/[0.08]",
                     !path && "cursor-default",
                   )}
                 >
