@@ -8,10 +8,9 @@ export default {
     container: { center: true, padding: "2rem", screens: { "2xl": "1400px" } },
     extend: {
       fontFamily: {
-        sans: ['Tajawal', 'Cairo', 'system-ui', 'sans-serif'],
-        display: ['Cairo', 'Tajawal', 'system-ui', 'sans-serif'],
+        sans: ['Almarai', 'Outfit', 'system-ui', 'sans-serif'],
+        display: ['Almarai', 'Outfit', 'system-ui', 'sans-serif'],
         mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
-        handwritten: ['Caveat', 'cursive'],
       },
       colors: {
         border: "hsl(var(--border))",

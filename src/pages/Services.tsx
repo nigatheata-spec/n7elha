@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Sparkles,
@@ -17,6 +18,7 @@ import {
   Coins,
 } from "lucide-react";
 import triDoodle from "@/assets/doodles/triangle-trio.png";
+import { SQUARE_TYPES } from "@/lib/physicalGames";
 import { SiteNav } from "@/components/site/SiteNav";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { Seo } from "@/components/Seo";
@@ -57,10 +59,12 @@ const Services = () => {
         physicalKicker: "الفرق",
         physicalTitle: "ألعاب مادية و رقمية معاً",
         physicalDesc: "نفلها تجمع بين الألعاب الرقمية الكاملة وألعاب مادية بلوح ورموز QR — تجربة يلمسها الطالب ويتفاعل معها فعلياً في الفصل. جهاز واحد يمسح لكل الفصل، وما تحتاج لكل طالب جهاز خاص. نفس الأسئلة، طريقتين مختلفتين للتفاعل.",
+        boardKicker: "مربعات اللوح المطبوع",
 
         platformKicker: "منصة وحيدة",
         platformTitle: "منصة واحدة لكل المواد",
-        platformDesc: "إسلامية، عربي، رياضيات، علوم — نفس المنصة، نفس الأدوات، نفس التجربة. ما تحتاج شراء منفصل لكل قسم. المعلم في الفيزياء والمعلمة في اللغة العربية، كلهم على نفس النظام.",
+        platformDesc: "نفس المنصة، نفس الأدوات، نفس التجربة. ما تحتاج شراء منفصل لكل قسم. المعلم في الفيزياء والمعلمة في اللغة العربية، كلهم على نفس النظام.",
+        subjects: ["إسلامية", "عربي", "رياضيات", "علوم"],
 
         howKicker: "كيف تعمل؟",
         howTitle: "ثلاث خطوات بس",
@@ -99,10 +103,12 @@ const Services = () => {
         physicalKicker: "THE DIFFERENCE",
         physicalTitle: "Physical + Digital Games Together",
         physicalDesc: "nefelha combines full digital games with physical games using a board and QR codes — an experience students touch and engage with in real space. One device scans for the whole class, no device needed per student. Same questions, two different ways to play.",
+        boardKicker: "PRINTED BOARD SQUARES",
 
         platformKicker: "ONE PLATFORM",
         platformTitle: "One Platform for Every Subject",
-        platformDesc: "Islamic Studies, Arabic, Math, Science — same platform, same tools, same experience. One purchase covers every subject. Your physics teacher and your Arabic teacher work on the same system.",
+        platformDesc: "Same platform, same tools, same experience. One purchase covers every subject. Your physics teacher and your Arabic teacher work on the same system.",
+        subjects: ["Islamic Studies", "Arabic", "Math", "Science"],
 
         howKicker: "HOW IT WORKS",
         howTitle: "Three steps to your first live session",
@@ -111,16 +117,29 @@ const Services = () => {
         s3: "See results", s3d: "Live leaderboard plus a full report once the quiz ends.",
       };
 
-  const modes: { icon: React.ReactNode; title: string; desc: string }[] = [
-    { icon: <Trophy className="h-5 w-5" />, title: t.m1, desc: t.m1d },
-    { icon: <Coins className="h-5 w-5" />, title: t.m2, desc: t.m2d },
-    { icon: <ShieldAlert className="h-5 w-5" />, title: t.m3, desc: t.m3d },
-    { icon: <Flame className="h-5 w-5" />, title: t.m4, desc: t.m4d },
-    { icon: <Mountain className="h-5 w-5" />, title: t.m5, desc: t.m5d },
-    { icon: <Skull className="h-5 w-5" />, title: t.m6, desc: t.m6d },
-    { icon: <Swords className="h-5 w-5" />, title: t.m7, desc: t.m7d },
-    { icon: <Palette className="h-5 w-5" />, title: t.m8, desc: t.m8d },
-    { icon: <QrCode className="h-5 w-5" />, title: t.m9, desc: t.m9d },
+  const features: { icon: React.ReactNode; title: string; desc: string; emphasis?: boolean }[] = [
+    { icon: <Sparkles className="h-5 w-5" />, title: t.f1Title, desc: t.f1Desc, emphasis: true },
+    { icon: <FileText className="h-5 w-5" />, title: t.f2Title, desc: t.f2Desc },
+    { icon: <Radio className="h-5 w-5" />, title: t.f3Title, desc: t.f3Desc },
+    { icon: <BarChart3 className="h-5 w-5" />, title: t.f4Title, desc: t.f4Desc, emphasis: true },
+  ];
+
+  const modes: { n: string; icon: React.ReactNode; title: string; desc: string }[] = [
+    { n: "00", icon: <Trophy className="h-4 w-4" />, title: t.m1, desc: t.m1d },
+    { n: "01", icon: <Coins className="h-4 w-4" />, title: t.m2, desc: t.m2d },
+    { n: "02", icon: <ShieldAlert className="h-4 w-4" />, title: t.m3, desc: t.m3d },
+    { n: "03", icon: <Flame className="h-4 w-4" />, title: t.m4, desc: t.m4d },
+    { n: "04", icon: <Mountain className="h-4 w-4" />, title: t.m5, desc: t.m5d },
+    { n: "05", icon: <Skull className="h-4 w-4" />, title: t.m6, desc: t.m6d },
+    { n: "06", icon: <Swords className="h-4 w-4" />, title: t.m7, desc: t.m7d },
+    { n: "07", icon: <Palette className="h-4 w-4" />, title: t.m8, desc: t.m8d },
+    { n: "08", icon: <QrCode className="h-4 w-4" />, title: t.m9, desc: t.m9d },
+  ];
+
+  const steps = [
+    { n: "01", icon: <Upload className="h-4 w-4" />, title: t.s1, desc: t.s1d },
+    { n: "02", icon: <Users className="h-4 w-4" />, title: t.s2, desc: t.s2d },
+    { n: "03", icon: <Trophy className="h-4 w-4" />, title: t.s3, desc: t.s3d },
   ];
 
   return (
@@ -152,11 +171,10 @@ const Services = () => {
 
       {/* ---------------- FEATURES ---------------- */}
       <section className="wrap px-5 sm:px-8 md:px-14 pb-16 sm:pb-24 pt-16 sm:pt-24">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <FeatureLarge icon={<Sparkles className="h-6 w-6" />} title={t.f1Title} desc={t.f1Desc} tilt="-rotate-[0.5deg]" />
-          <Feature icon={<FileText className="h-5 w-5" />} title={t.f2Title} desc={t.f2Desc} tilt="rotate-[0.9deg]" />
-          <Feature icon={<Radio className="h-5 w-5" />} title={t.f3Title} desc={t.f3Desc} tilt="-rotate-[0.8deg]" />
-          <FeatureLarge icon={<BarChart3 className="h-6 w-6" />} title={t.f4Title} desc={t.f4Desc} tilt="rotate-[0.5deg]" />
+        <div className="border-t-2 border-[hsl(var(--nb-border))]">
+          {features.map((f, i) => (
+            <FeatureRow key={f.title} n={`0${i + 1}`} icon={f.icon} title={f.title} desc={f.desc} emphasis={f.emphasis} />
+          ))}
         </div>
       </section>
 
@@ -170,46 +188,67 @@ const Services = () => {
           <p className="mt-4 text-[15px] text-white/65 leading-relaxed">{t.modesSub}</p>
         </div>
 
-        <div className="mt-10 sm:mt-14 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {modes.map((m, i) => (
-            <div key={m.title} className={`group h-full ${i % 2 === 0 ? "-rotate-[0.4deg]" : "rotate-[0.5deg]"} hover:rotate-0 transition-transform duration-300`}>
-              <div className="relative h-full rounded-2xl border-2 border-[#0B1418] bg-[#3F5A63] p-5 shadow-[4px_4px_0_0_#0B1418] group-hover:shadow-[7px_7px_0_0_#0B1418] group-hover:-translate-x-1 group-hover:-translate-y-1 transition-all">
-                <div className="h-9 w-9 rounded-xl border-2 border-[#0B1418] bg-[#8FC44A] text-[#3F5A63] flex items-center justify-center">
-                  {m.icon}
-                </div>
-                <h3 className="mt-4 text-[15px] font-semibold leading-tight text-white">{m.title}</h3>
-                <p className="mt-1.5 text-[13px] leading-relaxed text-white/65">{m.desc}</p>
-              </div>
-            </div>
+        <div className="mt-10 sm:mt-14 border-t border-white/10">
+          {modes.map((m) => (
+            <ModeRow key={m.title} n={m.n} icon={m.icon} title={m.title} desc={m.desc} />
           ))}
         </div>
         </div>
       </section>
 
       {/* ---------------- PHYSICAL + DIGITAL GAMES ---------------- */}
-      <section className="wrap px-5 sm:px-8 md:px-14 py-20 sm:py-28 bg-[#F5F1E8]">
-        <div className="max-w-3xl">
-          <span className={`text-[12px] font-semibold text-[#3F5A63] ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`}>{t.physicalKicker}</span>
-          <h2 className="mt-3 text-[28px] sm:text-[40px] tracking-tight leading-[1.1] mb-4" style={{ color: "#3F5A63", fontFamily: "'ArslanWessam', 'Almarai', sans-serif" }}>
-            {t.physicalTitle}
-          </h2>
-          <p className="text-[15px] leading-relaxed text-black/70">{t.physicalDesc}</p>
+      <section className="wrap px-5 sm:px-8 md:px-14 py-16 sm:py-20 bg-[#F5F1E8]">
+        <div className="grid md:grid-cols-2 gap-10 md:gap-16 items-center">
+          <div className="max-w-lg">
+            <span className={`text-[12px] font-semibold text-[#3F5A63] ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`}>{t.physicalKicker}</span>
+            <h2 className="mt-3 text-[28px] sm:text-[40px] tracking-tight leading-[1.1] mb-4" style={{ color: "#3F5A63", fontFamily: "'ArslanWessam', 'Almarai', sans-serif" }}>
+              {t.physicalTitle}
+            </h2>
+            <p className="text-[15px] leading-relaxed text-black/70">{t.physicalDesc}</p>
+          </div>
+
+          <div>
+            <p className={`text-[11px] font-semibold text-black/40 mb-3 ${isAr ? "" : "tracking-[0.2em]"}`}>{t.boardKicker}</p>
+            <div className="border-t border-black/15">
+              {Object.values(SQUARE_TYPES).map((sq) => (
+                <div key={sq.code} className="flex items-center gap-3 py-2.5 border-b border-black/15">
+                  <span className="h-3.5 w-3.5 rounded-sm shrink-0" style={{ background: sq.color }} aria-hidden />
+                  <span className="text-[13.5px] text-black/75">{isAr ? sq.label_ar : sq.label_en}</span>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 
       {/* ---------------- ONE PLATFORM, EVERY SUBJECT ---------------- */}
-      <section className="wrap px-5 sm:px-8 md:px-14 py-20 sm:py-28">
+      <section className="wrap px-5 sm:px-8 md:px-14 py-16 sm:py-20">
         <div className="max-w-3xl">
           <span className={`text-[12px] font-semibold text-[#3F5A63] ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`}>{t.platformKicker}</span>
-          <h2 className="mt-3 text-[28px] sm:text-[40px] tracking-tight leading-[1.1] mb-4" style={{ color: "#3F5A63", fontFamily: "'ArslanWessam', 'Almarai', sans-serif" }}>
+          <h2 className="mt-3 text-[28px] sm:text-[40px] tracking-tight leading-[1.1]" style={{ color: "#3F5A63", fontFamily: "'ArslanWessam', 'Almarai', sans-serif" }}>
             {t.platformTitle}
           </h2>
-          <p className="text-[15px] leading-relaxed text-black/70">{t.platformDesc}</p>
         </div>
+
+        <div className={`mt-8 sm:mt-10 flex flex-wrap items-baseline gap-x-3 gap-y-2 ${isAr ? "" : "tracking-tight"}`}>
+          {t.subjects.map((subj, i) => (
+            <Fragment key={subj}>
+              <span
+                className="text-[26px] sm:text-[38px] leading-none"
+                style={{ color: "#3F5A63", fontFamily: "'ArslanWessam', 'Almarai', sans-serif" }}
+              >
+                {subj}
+              </span>
+              {i < t.subjects.length - 1 && <span className="text-[20px] sm:text-[28px] text-[#8FC44A]">·</span>}
+            </Fragment>
+          ))}
+        </div>
+
+        <p className="mt-6 max-w-2xl text-[15px] leading-relaxed text-black/70">{t.platformDesc}</p>
       </section>
 
       {/* ---------------- HOW IT WORKS ---------------- */}
-      <section id="how" className="wrap px-5 sm:px-8 md:px-14 py-20 sm:py-28">
+      <section id="how" className="wrap px-5 sm:px-8 md:px-14 py-16 sm:py-20">
         <div className="max-w-2xl">
           <span className={`text-[12px] font-semibold text-[#3F5A63] ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`}>{t.howKicker}</span>
           <h2 className="mt-3 text-[28px] sm:text-[40px] tracking-tight leading-[1.1]" style={{ color: "#3F5A63", fontFamily: "'ArslanWessam', 'Almarai', sans-serif" }}>
@@ -217,10 +256,13 @@ const Services = () => {
           </h2>
         </div>
 
-        <div className="mt-10 sm:mt-14 grid grid-cols-1 md:grid-cols-3 gap-5">
-          <Step n="01" icon={<Upload className="h-5 w-5" />} title={t.s1} desc={t.s1d} tilt="-rotate-[0.6deg]" />
-          <Step n="02" icon={<Users className="h-5 w-5" />} title={t.s2} desc={t.s2d} tilt="rotate-[0.8deg]" />
-          <Step n="03" icon={<Trophy className="h-5 w-5" />} title={t.s3} desc={t.s3d} tilt="-rotate-[0.9deg]" />
+        <div className="mt-10 sm:mt-14 flex flex-col sm:flex-row sm:items-start gap-8 sm:gap-6">
+          {steps.map((s, i) => (
+            <Fragment key={s.n}>
+              <StepItem n={s.n} icon={s.icon} title={s.title} desc={s.desc} />
+              {i < steps.length - 1 && <div className="hidden sm:block flex-1 h-px bg-black/15 mt-4" />}
+            </Fragment>
+          ))}
         </div>
       </section>
 
@@ -230,45 +272,48 @@ const Services = () => {
 };
 
 /* ---------- helpers ---------- */
+/* No card boxes: every list below is rows separated by a single hairline
+   divider, distinguished by index number, icon and type scale rather than
+   a bordered/shadowed container per item. */
 
-const FeatureLarge = ({ icon, title, desc, tilt = "-rotate-[0.6deg]" }: { icon: React.ReactNode; title: string; desc: string; tilt?: string }) => (
-  <div className={`md:col-span-2 group ${tilt} hover:rotate-0 transition-transform duration-300`}>
-    <div className="relative rounded-2xl border-2 border-[hsl(var(--nb-border))] bg-white p-7 shadow-[5px_5px_0_0_hsl(var(--nb-border))] group-hover:shadow-[8px_8px_0_0_hsl(var(--nb-border))] group-hover:-translate-x-1 group-hover:-translate-y-1 transition-all">
-      <div className="flex items-start gap-5">
-        <div className="h-12 w-12 rounded-2xl border-2 border-[hsl(var(--nb-border))] bg-[#3F5A63] text-white flex items-center justify-center shrink-0">
-          {icon}
-        </div>
-        <div>
-          <h3 className="text-[18px] font-semibold leading-tight" style={{ color: "#3F5A63" }}>{title}</h3>
-          <p className="mt-2 text-[14px] leading-relaxed text-black/65 max-w-lg">{desc}</p>
-        </div>
-      </div>
+const FeatureRow = ({ n, icon, title, desc, emphasis }: { n: string; icon: React.ReactNode; title: string; desc: string; emphasis?: boolean }) => (
+  <div className="group grid grid-cols-[40px_1fr] sm:grid-cols-[56px_44px_1fr] items-start gap-x-4 sm:gap-x-6 gap-y-3 py-7 sm:py-9 border-b-2 border-[hsl(var(--nb-border))]">
+    <span className="hidden sm:block pt-2 text-[13px] font-mono tracking-widest text-black/30">{n}</span>
+    <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl bg-[#3F5A63] text-white flex items-center justify-center shrink-0 group-hover:bg-[#8FC44A] group-hover:text-[#14212A] transition-colors">
+      {icon}
+    </div>
+    <div>
+      <h3 className={emphasis ? "text-[20px] sm:text-[24px] font-semibold leading-tight" : "text-[17px] font-semibold leading-tight"} style={{ color: "#3F5A63" }}>
+        {title}
+      </h3>
+      <p className={`mt-2 leading-relaxed text-black/65 ${emphasis ? "text-[15px] max-w-xl" : "text-[14px] max-w-lg"}`}>{desc}</p>
     </div>
   </div>
 );
 
-const Feature = ({ icon, title, desc, tilt = "rotate-[0.8deg]" }: { icon: React.ReactNode; title: string; desc: string; tilt?: string }) => (
-  <div className={`group ${tilt} hover:rotate-0 transition-transform duration-300`}>
-    <div className="relative rounded-2xl border-2 border-[hsl(var(--nb-border))] bg-white p-6 shadow-[5px_5px_0_0_hsl(var(--nb-border))] group-hover:shadow-[8px_8px_0_0_hsl(var(--nb-border))] group-hover:-translate-x-1 group-hover:-translate-y-1 transition-all">
-      <div className="h-10 w-10 rounded-2xl border-2 border-[hsl(var(--nb-border))] bg-[#3F5A63]/10 text-[#3F5A63] flex items-center justify-center group-hover:bg-[#3F5A63] group-hover:text-white transition-colors">
-        {icon}
-      </div>
-      <h3 className="mt-5 text-[17px] font-semibold leading-tight" style={{ color: "#3F5A63" }}>{title}</h3>
-      <p className="mt-2 text-[13.5px] leading-relaxed text-black/65">{desc}</p>
+const ModeRow = ({ n, icon, title, desc }: { n: string; icon: React.ReactNode; title: string; desc: string }) => (
+  <div className="group grid grid-cols-[36px_36px_1fr] sm:grid-cols-[48px_40px_1fr] items-start gap-x-4 sm:gap-x-6 gap-y-1.5 py-5 sm:py-6 border-b border-white/10">
+    <span className="pt-1.5 text-[12px] font-mono tracking-widest text-white/30">{n}</span>
+    <div className="h-8 w-8 sm:h-9 sm:w-9 rounded-lg border border-white/15 text-[#8FC44A] flex items-center justify-center shrink-0 group-hover:border-[#8FC44A] transition-colors">
+      {icon}
+    </div>
+    <div>
+      <h3 className="inline text-[16px] sm:text-[17px] font-semibold leading-tight text-white underline decoration-transparent group-hover:decoration-[#8FC44A] decoration-2 underline-offset-4 transition-[text-decoration-color]">
+        {title}
+      </h3>
+      <p className="mt-1 text-[13.5px] leading-relaxed text-white/55 max-w-xl">{desc}</p>
     </div>
   </div>
 );
 
-const Step = ({ n, icon, title, desc, tilt = "-rotate-[0.7deg]" }: { n: string; icon: React.ReactNode; title: string; desc: string; tilt?: string }) => (
-  <div className={`group ${tilt} hover:rotate-0 transition-transform duration-300`}>
-    <div className="relative rounded-2xl bg-white border-2 border-[hsl(var(--nb-border))] p-6 shadow-[5px_5px_0_0_hsl(var(--nb-border))] group-hover:shadow-[8px_8px_0_0_hsl(var(--nb-border))] group-hover:-translate-x-1 group-hover:-translate-y-1 transition-all">
-      <div className="flex items-center justify-between">
-        <span className="text-[12px] font-mono tracking-widest text-black/40">{n}</span>
-        <div className="h-9 w-9 rounded-full bg-background text-[#3F5A63] flex items-center justify-center">{icon}</div>
-      </div>
-      <h3 className="mt-6 text-[18px] font-semibold text-black">{title}</h3>
-      <p className="mt-2 text-[13.5px] leading-relaxed text-black/65">{desc}</p>
+const StepItem = ({ n, icon, title, desc }: { n: string; icon: React.ReactNode; title: string; desc: string }) => (
+  <div className="sm:flex-1 min-w-0 shrink-0">
+    <div className="flex items-center gap-3">
+      <span className="text-[12px] font-mono tracking-widest text-black/40">{n}</span>
+      <div className="h-8 w-8 rounded-full border-2 border-[hsl(var(--nb-border))] text-[#3F5A63] flex items-center justify-center">{icon}</div>
     </div>
+    <h3 className="mt-4 text-[17px] font-semibold" style={{ color: "#3F5A63" }}>{title}</h3>
+    <p className="mt-1.5 text-[13.5px] leading-relaxed text-black/65 max-w-[22ch]">{desc}</p>
   </div>
 );
 
