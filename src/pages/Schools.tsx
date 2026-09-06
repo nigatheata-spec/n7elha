@@ -82,10 +82,10 @@ const Schools = () => {
 
       {/* ---------------- FEATURES ---------------- */}
       <section className="wrap px-5 sm:px-8 md:px-14 pb-16 sm:pb-24">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Feature icon={<Users className="h-5 w-5" />} title={t.f1Title} desc={t.f1Desc} tilt="-rotate-[0.6deg]" />
-          <Feature icon={<QrCode className="h-5 w-5" />} title={t.f2Title} desc={t.f2Desc} tilt="rotate-[0.8deg]" />
-          <Feature icon={<BarChart3 className="h-5 w-5" />} title={t.f3Title} desc={t.f3Desc} tilt="-rotate-[0.9deg]" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-y-8 border-t-2 border-[hsl(var(--nb-border))]">
+          <Feature n="01" icon={<Users className="h-5 w-5" />} title={t.f1Title} desc={t.f1Desc} />
+          <Feature n="02" icon={<QrCode className="h-5 w-5" />} title={t.f2Title} desc={t.f2Desc} divider />
+          <Feature n="03" icon={<BarChart3 className="h-5 w-5" />} title={t.f3Title} desc={t.f3Desc} divider />
         </div>
       </section>
 
@@ -106,7 +106,7 @@ const Schools = () => {
       </section>
 
       {/* ---------------- CTA ---------------- */}
-      <section className="bg-[#14212A] text-white px-5 sm:px-8 md:px-14 py-20 sm:py-28">
+      <section className="bg-[#14212A] text-white px-5 sm:px-8 md:px-14 py-16 sm:py-20">
         <div className="wrap max-w-2xl">
           <div className="h-12 w-12 rounded-2xl border-2 border-[#0B1418] bg-[#8FC44A] text-[#3F5A63] flex items-center justify-center">
             <Building2 className="h-6 w-6" />
@@ -131,15 +131,16 @@ const Schools = () => {
   );
 };
 
-const Feature = ({ icon, title, desc, tilt = "rotate-[0.8deg]" }: { icon: React.ReactNode; title: string; desc: string; tilt?: string }) => (
-  <div className={`group ${tilt} hover:rotate-0 transition-transform duration-300`}>
-    <div className="relative h-full rounded-2xl border-2 border-[hsl(var(--nb-border))] bg-white p-6 shadow-[5px_5px_0_0_hsl(var(--nb-border))] group-hover:shadow-[8px_8px_0_0_hsl(var(--nb-border))] group-hover:-translate-x-1 group-hover:-translate-y-1 transition-all">
-      <div className="h-10 w-10 rounded-2xl border-2 border-[hsl(var(--nb-border))] bg-[#3F5A63]/10 text-[#3F5A63] flex items-center justify-center group-hover:bg-[#3F5A63] group-hover:text-white transition-colors">
+const Feature = ({ n, icon, title, desc, divider }: { n: string; icon: React.ReactNode; title: string; desc: string; divider?: boolean }) => (
+  <div className={`group pt-7 md:pe-8 ${divider ? "md:ps-8 md:border-s md:border-black/15" : ""}`}>
+    <div className="flex items-center gap-3">
+      <span className="text-[12px] font-mono tracking-widest text-black/30">{n}</span>
+      <div className="h-9 w-9 rounded-xl bg-[#3F5A63] text-white flex items-center justify-center group-hover:bg-[#8FC44A] group-hover:text-[#14212A] transition-colors">
         {icon}
       </div>
-      <h3 className="mt-5 text-[17px] font-semibold leading-tight" style={{ color: "#3F5A63" }}>{title}</h3>
-      <p className="mt-2 text-[13.5px] leading-relaxed text-black/65">{desc}</p>
     </div>
+    <h3 className="mt-5 text-[17px] font-semibold leading-tight" style={{ color: "#3F5A63" }}>{title}</h3>
+    <p className="mt-2 text-[13.5px] leading-relaxed text-black/65">{desc}</p>
   </div>
 );
 

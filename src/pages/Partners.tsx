@@ -75,46 +75,33 @@ const Partners = () => {
       </section>
 
       {/* ---------------- TWO PATHS ---------------- */}
-      <section className="wrap px-5 sm:px-8 md:px-14 py-20 sm:py-28">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="-rotate-[0.4deg] hover:rotate-0 transition-transform duration-300">
-            <div className="relative rounded-2xl border-2 border-[hsl(var(--nb-border))] bg-white p-7 shadow-[5px_5px_0_0_hsl(var(--nb-border))]">
-              <div className="h-12 w-12 rounded-2xl border-2 border-[hsl(var(--nb-border))] bg-[#3F5A63] text-white flex items-center justify-center">
-                <School className="h-6 w-6" />
-              </div>
-              <h3 className="mt-5 text-[18px] font-semibold leading-tight" style={{ color: "#3F5A63" }}>{t.schoolsTitle}</h3>
-              <p className="mt-2 text-[14px] leading-relaxed text-black/65">{t.schoolsDesc}</p>
-              <a
-                href="mailto:hello@nefelha.com?subject=School%20partnership"
-                className="mt-5 inline-flex items-center gap-2 rounded-full border-2 border-[hsl(var(--nb-border))] bg-[#3F5A63] text-white px-5 py-2.5 text-[13px] font-semibold shadow-[3px_3px_0_0_hsl(var(--nb-border))] hover:translate-x-px hover:translate-y-px hover:shadow-[2px_2px_0_0_hsl(var(--nb-border))] transition-all"
-              >
-                <Mail className="h-4 w-4" />
-                {t.schoolsCta}
-              </a>
-            </div>
-          </div>
-
-          <div className="rotate-[0.5deg] hover:rotate-0 transition-transform duration-300">
-            <div className="relative rounded-2xl border-2 border-[hsl(var(--nb-border))] bg-white p-7 shadow-[5px_5px_0_0_hsl(var(--nb-border))]">
-              <div className="h-12 w-12 rounded-2xl border-2 border-[hsl(var(--nb-border))] bg-[#8FC44A] text-[#3F5A63] flex items-center justify-center">
-                <UserRound className="h-6 w-6" />
-              </div>
-              <h3 className="mt-5 text-[18px] font-semibold leading-tight" style={{ color: "#3F5A63" }}>{t.teachersTitle}</h3>
-              <p className="mt-2 text-[14px] leading-relaxed text-black/65">{t.teachersDesc}</p>
-              <a
-                href="mailto:hello@nefelha.com?subject=Support"
-                className="mt-5 inline-flex items-center gap-2 rounded-full border-2 border-[hsl(var(--nb-border))] bg-white text-[#3F5A63] px-5 py-2.5 text-[13px] font-semibold shadow-[3px_3px_0_0_hsl(var(--nb-border))] hover:bg-[#3F5A63] hover:text-white hover:translate-x-px hover:translate-y-px hover:shadow-[2px_2px_0_0_hsl(var(--nb-border))] transition-all"
-              >
-                <Mail className="h-4 w-4" />
-                {t.teachersCta}
-              </a>
-            </div>
-          </div>
+      <section className="wrap px-5 sm:px-8 md:px-14 py-16 sm:py-20">
+        <div className="border-t-2 border-[hsl(var(--nb-border))]">
+          <PathRow
+            n="01"
+            icon={<School className="h-5 w-5" />}
+            title={t.schoolsTitle}
+            desc={t.schoolsDesc}
+            cta={t.schoolsCta}
+            href="mailto:hello@nefelha.com?subject=School%20partnership"
+            iconStyle={{ background: "#3F5A63", color: "#fff" }}
+            ctaStyle={{ background: "#3F5A63", color: "#fff" }}
+          />
+          <PathRow
+            n="02"
+            icon={<UserRound className="h-5 w-5" />}
+            title={t.teachersTitle}
+            desc={t.teachersDesc}
+            cta={t.teachersCta}
+            href="mailto:hello@nefelha.com?subject=Support"
+            iconStyle={{ background: "#8FC44A", color: "#14212A" }}
+            ctaStyle={{ background: "#fff", color: "#3F5A63" }}
+          />
         </div>
       </section>
 
       {/* ---------------- CONTACT DETAILS ---------------- */}
-      <section className="bg-[#14212A] text-white px-5 sm:px-8 md:px-14 py-20 sm:py-28"><div className="wrap">
+      <section className="bg-[#14212A] text-white px-5 sm:px-8 md:px-14 py-16 sm:py-20"><div className="wrap">
         <span className={`text-[12px] font-semibold text-[#8FC44A] ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`}>{t.contactKicker}</span>
         <h2 className="mt-3 text-[26px] sm:text-[36px] tracking-tight leading-[1.15] text-white" style={{ fontFamily: "'ArslanWessam', 'Almarai', sans-serif" }}>
           {t.contactTitle}
@@ -131,13 +118,13 @@ const Partners = () => {
 
           <div className="flex items-center gap-2">
             <span className="text-[13px] text-white/55">{t.socialLabel}</span>
-            <a href="#" className="h-9 w-9 rounded-full border-2 border-[#22333A] bg-white text-[#3F5A63] flex items-center justify-center shadow-[2px_2px_0_0_#22333A] hover:translate-x-px hover:translate-y-px hover:shadow-[1px_1px_0_0_#22333A] transition-all">
+            <a href="#" aria-label="Twitter" className="h-9 w-9 rounded-full border-2 border-[#22333A] bg-white text-[#3F5A63] flex items-center justify-center shadow-[2px_2px_0_0_#22333A] hover:translate-x-px hover:translate-y-px hover:shadow-[1px_1px_0_0_#22333A] transition-all">
               <Twitter className="h-4 w-4" />
             </a>
-            <a href="#" className="h-9 w-9 rounded-full border-2 border-[#22333A] bg-white text-[#3F5A63] flex items-center justify-center shadow-[2px_2px_0_0_#22333A] hover:translate-x-px hover:translate-y-px hover:shadow-[1px_1px_0_0_#22333A] transition-all">
+            <a href="#" aria-label="Instagram" className="h-9 w-9 rounded-full border-2 border-[#22333A] bg-white text-[#3F5A63] flex items-center justify-center shadow-[2px_2px_0_0_#22333A] hover:translate-x-px hover:translate-y-px hover:shadow-[1px_1px_0_0_#22333A] transition-all">
               <Instagram className="h-4 w-4" />
             </a>
-            <a href="#" className="h-9 w-9 rounded-full border-2 border-[#22333A] bg-white text-[#3F5A63] flex items-center justify-center shadow-[2px_2px_0_0_#22333A] hover:translate-x-px hover:translate-y-px hover:shadow-[1px_1px_0_0_#22333A] transition-all">
+            <a href="#" aria-label="GitHub" className="h-9 w-9 rounded-full border-2 border-[#22333A] bg-white text-[#3F5A63] flex items-center justify-center shadow-[2px_2px_0_0_#22333A] hover:translate-x-px hover:translate-y-px hover:shadow-[1px_1px_0_0_#22333A] transition-all">
               <Github className="h-4 w-4" />
             </a>
           </div>
@@ -149,5 +136,50 @@ const Partners = () => {
     </div>
   );
 };
+
+/* ---------- helpers ---------- */
+/* Same dividered-row language as Services: no bordered/shadowed box per
+   item, distinguished by index number, icon and type scale instead. */
+
+const PathRow = ({
+  n,
+  icon,
+  title,
+  desc,
+  cta,
+  href,
+  iconStyle,
+  ctaStyle,
+}: {
+  n: string;
+  icon: React.ReactNode;
+  title: string;
+  desc: string;
+  cta: string;
+  href: string;
+  iconStyle: React.CSSProperties;
+  ctaStyle: React.CSSProperties;
+}) => (
+  <div className="grid grid-cols-[40px_1fr] sm:grid-cols-[56px_44px_1fr] items-start gap-x-4 sm:gap-x-6 gap-y-3 py-7 sm:py-9 border-b-2 border-[hsl(var(--nb-border))]">
+    <span className="hidden sm:block pt-2 text-[13px] font-mono tracking-widest text-black/30">{n}</span>
+    <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl flex items-center justify-center shrink-0" style={iconStyle}>
+      {icon}
+    </div>
+    <div>
+      <h3 className="text-[20px] sm:text-[24px] font-semibold leading-tight" style={{ color: "#3F5A63" }}>
+        {title}
+      </h3>
+      <p className="mt-2 max-w-xl text-[15px] leading-relaxed text-black/65">{desc}</p>
+      <a
+        href={href}
+        className="mt-5 inline-flex items-center gap-2 rounded-full border-2 border-[hsl(var(--nb-border))] px-5 py-2.5 text-[13px] font-semibold shadow-[3px_3px_0_0_hsl(var(--nb-border))] hover:translate-x-px hover:translate-y-px hover:shadow-[2px_2px_0_0_hsl(var(--nb-border))] transition-all"
+        style={ctaStyle}
+      >
+        <Mail className="h-4 w-4" />
+        {cta}
+      </a>
+    </div>
+  </div>
+);
 
 export default Partners;

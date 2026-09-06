@@ -147,19 +147,16 @@ const About = () => {
       {/* ---------------- PRODUCT FACTS ---------------- */}
       <section className="wrap px-5 sm:px-8 md:px-14 py-16 sm:py-20">
         <span className={`text-[12px] font-semibold text-black/40 ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`}>{t.factsKicker}</span>
-        <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="mt-8 grid grid-cols-2 lg:grid-cols-4 border-t-2 border-[hsl(var(--nb-border))]">
           {facts.map(f => (
-            <div
-              key={f.l}
-              className="rounded-2xl border-2 border-[hsl(var(--nb-border))] bg-white p-6 shadow-[4px_4px_0_0_hsl(var(--nb-border))]"
-            >
+            <div key={f.l} className="py-7 pe-6 border-b-2 border-[hsl(var(--nb-border))]">
               <div
-                className="text-[44px] leading-none tracking-tight"
+                className="text-[46px] sm:text-[56px] leading-none tracking-tight"
                 style={{ color: "#3F5A63", fontFamily: "'ArslanWessam', 'Almarai', sans-serif" }}
               >
                 {f.n}
               </div>
-              <p className="mt-3 text-[13.5px] leading-relaxed text-black/60">{f.l}</p>
+              <p className="mt-3 max-w-[24ch] text-[13.5px] leading-relaxed text-black/60">{f.l}</p>
             </div>
           ))}
         </div>
@@ -202,7 +199,7 @@ const About = () => {
       </section>
 
       {/* ---------------- VALUES ---------------- */}
-      <section className="wrap px-5 sm:px-8 md:px-14 py-20 sm:py-28">
+      <section className="wrap px-5 sm:px-8 md:px-14 py-16 sm:py-20">
         <div className="max-w-2xl">
           <span className={`text-[12px] font-semibold text-[#8FC44A] ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`}>{t.valuesKicker}</span>
           <h2 className="mt-3 text-[26px] sm:text-[36px] tracking-tight leading-[1.15] text-[#14212A]" style={{ fontFamily: "'ArslanWessam', 'Almarai', sans-serif" }}>
@@ -210,16 +207,17 @@ const About = () => {
           </h2>
         </div>
 
-        <div className="mt-10 sm:mt-14 grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="mt-10 sm:mt-14 grid grid-cols-1 sm:grid-cols-3 gap-y-8 border-t-2 border-[hsl(var(--nb-border))]">
           {values.map((v, i) => (
-            <div key={v.title} className={`group h-full ${i % 2 === 0 ? "-rotate-[0.5deg]" : "rotate-[0.6deg]"} hover:rotate-0 transition-transform duration-300`}>
-              <div className="relative h-full rounded-2xl border-2 border-[#14212A] bg-[#3F5A63] p-6 shadow-[5px_5px_0_0_#14212A] group-hover:shadow-[8px_8px_0_0_#14212A] group-hover:-translate-x-1 group-hover:-translate-y-1 transition-all">
-                <div className="h-10 w-10 rounded-2xl border-2 border-[#14212A] bg-[#8FC44A] text-[#3F5A63] flex items-center justify-center">
-                  {v.icon}
-                </div>
-                <h3 className="mt-5 text-[16px] font-semibold leading-tight text-white">{v.title}</h3>
-                <p className="mt-2 text-[13.5px] leading-relaxed text-white/65">{v.desc}</p>
+            <div
+              key={v.title}
+              className={`group pt-7 sm:pe-8 ${i > 0 ? "sm:ps-8 sm:border-s sm:border-black/15" : ""}`}
+            >
+              <div className="h-10 w-10 rounded-xl bg-[#3F5A63] text-[#8FC44A] flex items-center justify-center group-hover:bg-[#8FC44A] group-hover:text-[#14212A] transition-colors">
+                {v.icon}
               </div>
+              <h3 className="mt-5 text-[17px] font-semibold leading-tight" style={{ color: "#3F5A63" }}>{v.title}</h3>
+              <p className="mt-2 text-[13.5px] leading-relaxed text-black/65">{v.desc}</p>
             </div>
           ))}
         </div>
