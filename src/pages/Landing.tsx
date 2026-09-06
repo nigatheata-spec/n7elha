@@ -7,6 +7,9 @@ import { SiteNav } from "@/components/site/SiteNav";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { Seo } from "@/components/Seo";
 import productMockup from "@/assets/product-mockup.png";
+import phoneJoin from "@/assets/phone-join.png";
+import phoneClassic from "@/assets/phone-classic.png";
+import phoneCrypto from "@/assets/phone-crypto.png";
 import saudiMap from "@/assets/saudi-map.svg";
 
 /* ---------- helpers ---------- */
@@ -65,6 +68,13 @@ const Landing = () => {
         s3: "اعرض النتائج",
         s3d: "ترتيب لحظي، وتقرير كامل بعد انتهاء الاختبار.",
 
+        phonesKicker: "على جوال الطالب",
+        phonesTitle: "نفس السؤال، عوالم مختلفة",
+        phonesSub: "الطالب يدخل برمز من أربعة أرقام، ثم يلعب. كل نمط يغيّر الشكل والإحساس بالكامل، فنفس أسئلتك تصير تجربة جديدة كل حصة.",
+        phoneJoinCap: "يدخل بالرمز",
+        phoneClassicCap: "الوضع الكلاسيكي",
+        phoneCryptoCap: "سباق التشفير",
+
         forWhoKicker: "لمن هذه المنصة؟",
         forWhoTitle: "صُممت للمعلم العربي أولاً",
         forWho1: "سواء كنت معلمًا في مدرسة حكومية تبحث عن طريقة تجعل مراجعة الدرس أكثر حيوية، أو مدرّسًا خاصًا يريد تتبع مستوى كل طالب بدقة — نفلها صُممت لك.",
@@ -103,6 +113,13 @@ const Landing = () => {
         s2d: "Share the game code — anyone can join from any device.",
         s3: "See results",
         s3d: "Live leaderboard plus a full report once the quiz ends.",
+
+        phonesKicker: "ON THE STUDENT'S PHONE",
+        phonesTitle: "The same question, different worlds",
+        phonesSub: "A student joins with a four-digit code, then plays. Each mode changes the look and the feel completely, so the questions you already wrote become a new experience every lesson.",
+        phoneJoinCap: "Joins with a code",
+        phoneClassicCap: "Classic",
+        phoneCryptoCap: "Crypto Rush",
 
         forWhoKicker: "WHO IS IT FOR",
         forWhoTitle: "Built around the Arabic-speaking teacher",
@@ -267,6 +284,55 @@ const Landing = () => {
             <Step n="02" icon={<Users className="h-5 w-5" />} title={t.s2} desc={t.s2d} />
             <Step n="03" icon={<Trophy className="h-5 w-5" />} title={t.s3} desc={t.s3d} />
           </div>
+          </div>
+        </section>
+
+        {/* ---------------- ON THE STUDENT'S PHONE ---------------- */}
+        {/* The one place the marketing site shows the game as a student sees it:
+            three real screens, dark ground so the cream one reads as lit. */}
+        <section className="bg-[#14212A] text-white px-5 sm:px-8 md:px-14 py-16 sm:py-24 overflow-hidden">
+          <div className="wrap">
+            <div className="max-w-2xl">
+              <span className={`text-[12px] font-semibold text-[#8FC44A] ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`}>{t.phonesKicker}</span>
+              <h2 className="mt-3 text-[28px] sm:text-[40px] tracking-tight leading-[1.1] text-white" style={{ fontFamily: "'ArslanWessam', 'Almarai', sans-serif" }}>
+                {t.phonesTitle}
+              </h2>
+              <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-white/60">{t.phonesSub}</p>
+            </div>
+
+            {/* Fanned rather than lined up: the side phones tuck behind the centre
+                one so the three read as a single object. Forced LTR so the fan
+                stays symmetrical and the captions keep matching it in Arabic. */}
+            <div dir="ltr" className="mt-12 sm:mt-16">
+              <div className="flex items-end justify-center">
+                <img
+                  src={phoneJoin}
+                  alt={t.phoneJoinCap}
+                  loading="lazy"
+                  className="w-[27%] max-w-[196px] h-auto select-none origin-bottom -rotate-[9deg] translate-y-3 -mr-[6%] drop-shadow-[0_18px_34px_rgba(0,0,0,0.5)]"
+                />
+                <img
+                  src={phoneClassic}
+                  alt={t.phoneClassicCap}
+                  loading="lazy"
+                  className="relative z-10 w-[31%] max-w-[226px] h-auto select-none drop-shadow-[0_22px_40px_rgba(0,0,0,0.55)]"
+                />
+                <img
+                  src={phoneCrypto}
+                  alt={t.phoneCryptoCap}
+                  loading="lazy"
+                  className="w-[27%] max-w-[196px] h-auto select-none origin-bottom rotate-[9deg] translate-y-3 -ml-[6%] drop-shadow-[0_18px_34px_rgba(0,0,0,0.5)]"
+                />
+              </div>
+
+              <div className="mt-8 flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5 text-[12px] sm:text-[13.5px] font-semibold text-white/70">
+                <span>{t.phoneJoinCap}</span>
+                <span className="text-[#8FC44A]">·</span>
+                <span className="text-white">{t.phoneClassicCap}</span>
+                <span className="text-[#8FC44A]">·</span>
+                <span>{t.phoneCryptoCap}</span>
+              </div>
+            </div>
           </div>
         </section>
 
