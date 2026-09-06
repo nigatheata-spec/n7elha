@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import { useTranslation } from "react-i18next";
-import { ArrowUpRight, Play, Upload, Users, Trophy } from "lucide-react";
+import { ArrowUpRight, Play } from "lucide-react";
 import { useSmoothScroll } from "@/lib/smoothScroll";
 import { SiteNav } from "@/components/site/SiteNav";
 import { SiteFooter } from "@/components/site/SiteFooter";
@@ -13,22 +13,6 @@ import phoneCrypto from "@/assets/phone-crypto.png";
 import saudiMap from "@/assets/saudi-map.svg";
 
 /* ---------- helpers ---------- */
-
-const Step = ({ n, icon, title, desc }: { n: string; icon: React.ReactNode; title: string; desc: string }) => (
-  <div className="relative">
-    <span
-      className="absolute -top-3 start-0 text-[64px] sm:text-[72px] font-black leading-none text-white/10 select-none"
-      style={{ fontFamily: "monospace" }}
-    >
-      {n}
-    </span>
-    <div className="relative pt-8">
-      <div className="h-10 w-10 rounded-full bg-background text-[#3F5A63] flex items-center justify-center">{icon}</div>
-      <h3 className="mt-5 text-[18px] font-semibold text-white">{title}</h3>
-      <p className="mt-2 text-[13.5px] leading-relaxed text-white/60">{desc}</p>
-    </div>
-  </div>
-);
 
 const Landing = () => {
   const { user } = useAuth();
@@ -58,15 +42,6 @@ const Landing = () => {
         feelLine1: "التفاعل مو رقم",
         feelLine2: "في تقرير",
         feelBody: "هو إحساس نبيه لكل طالب: لحظة يدخل فيها الحصة وهو متحمّس، مو طافي. لحظة يتفاعل مع السؤال لأنه يبي، مو لأنه مجبور. هذا اللي نصمّمه، سؤال ورا سؤال.",
-
-        howKicker: "كيف تعمل؟",
-        howTitle: "ثلاث خطوات بس",
-        s1: "ارفع المحتوى",
-        s1d: "ملف الدرس أو ملاحظاتك. تتكفّل المنصة بالباقي.",
-        s2: "ادعُ طلابك",
-        s2d: "شارك رمز اللعبة، وسينضم الجميع من أي جهاز.",
-        s3: "اعرض النتائج",
-        s3d: "ترتيب لحظي، وتقرير كامل بعد انتهاء الاختبار.",
 
         phonesKicker: "على جوال الطالب",
         phonesTitle: "نفس السؤال، عوالم مختلفة",
@@ -104,15 +79,6 @@ const Landing = () => {
         feelLine1: "Engagement isn't a number",
         feelLine2: "on a report",
         feelBody: "It's a feeling every student needs: the moment they walk into class excited instead of checked out. The moment they answer because they want to, not because they have to. That's what we design, one question at a time.",
-
-        howKicker: "HOW IT WORKS",
-        howTitle: "Three steps to your first live session",
-        s1: "Upload content",
-        s1d: "Your lesson file or notes. The platform handles the rest.",
-        s2: "Invite students",
-        s2d: "Share the game code — anyone can join from any device.",
-        s3: "See results",
-        s3d: "Live leaderboard plus a full report once the quiz ends.",
 
         phonesKicker: "ON THE STUDENT'S PHONE",
         phonesTitle: "The same question, different worlds",
@@ -251,39 +217,6 @@ const Landing = () => {
             <p className="mt-7 mx-auto max-w-xl text-[16px] sm:text-[17px] leading-relaxed text-black/60">
               {t.feelBody}
             </p>
-          </div>
-        </section>
-
-        {/* ---------------- HOW IT WORKS ---------------- */}
-        <section id="how" className="bg-[#3F5A63] text-white px-5 sm:px-8 md:px-14 py-20 sm:py-28">
-          <div className="wrap"><div className="max-w-2xl">
-            <span className={`text-[12px] font-semibold text-[#8FC44A] ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`}>{t.howKicker}</span>
-            <h2 className="mt-3 text-[28px] sm:text-[40px] tracking-tight leading-[1.1]" style={{ color: "#FFFFFF", fontFamily: "'ArslanWessam', 'Almarai', sans-serif" }}>
-              {t.howTitle}
-            </h2>
-          </div>
-
-          <div className="relative mt-12 sm:mt-16 grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-6">
-            <svg
-              className="hidden md:block absolute left-0 top-[26px] w-full h-10 pointer-events-none"
-              viewBox="0 0 100 10"
-              preserveAspectRatio="none"
-              aria-hidden="true"
-            >
-              <path
-                d="M 16 5 Q 33 -2, 50 5 T 84 5"
-                fill="none"
-                stroke="#8FC44A"
-                strokeWidth="0.5"
-                strokeDasharray="2.4 2.4"
-                strokeLinecap="round"
-                opacity="0.55"
-              />
-            </svg>
-            <Step n="01" icon={<Upload className="h-5 w-5" />} title={t.s1} desc={t.s1d} />
-            <Step n="02" icon={<Users className="h-5 w-5" />} title={t.s2} desc={t.s2d} />
-            <Step n="03" icon={<Trophy className="h-5 w-5" />} title={t.s3} desc={t.s3d} />
-          </div>
           </div>
         </section>
 
