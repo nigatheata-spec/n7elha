@@ -9,6 +9,7 @@ import { AsteroidCard } from "@/components/AsteroidCard";
 import { SpaceBackdrop } from "@/components/SpaceBackdrop";
 import { useConfirmDialog } from "@/hooks/use-confirm-dialog";
 import { Avatar as BaseAvatar } from "@/components/Avatar";
+import { pickTimerWinner } from "@/lib/dodgeball";
 
 // Eliminated players fade to grayscale instead of swapping the fill color —
 // the face illustration stays recognizable, just visibly "out".
@@ -160,12 +161,8 @@ const DodgeballMonitor = ({ session, sessionId }: Props) => {
     const { data: latestTaps } = await supabase
       .from("dodgeball_timer_taps").select("*")
       .eq("session_id", sessionId).eq("timer_round_id", timerRoundId ?? "").order("elapsed_ms");
-    const TARGET_MS = 10_000;
-    let winnerId: string | null = null;
-    if (latestTaps && latestTaps.length > 0) {
-      const best = latestTaps.reduce((prev, cur) =>
-        Math.abs(cur.elapsed_ms - TARGET_MS) < Math.abs(prev.elapsed_ms - TARGET_MS) ? cur : prev);
-      winnerId = best.student_id;
+    const winnerId = pickTimerWinner(latestTaps ?? []);
+    if (winnerId) {
       const winner = students.find(s => s.id === winnerId);
       if (winner) await supabase.from("game_students").update({ lives: (winner.lives ?? 1) + 1 }).eq("id", winnerId);
     }

@@ -9,6 +9,7 @@ import { Seo } from "@/components/Seo";
 import { computeCoverage, type CoverageRow, type Stroke } from "@/lib/paintFight";
 import { Avatar } from "@/components/Avatar";
 import { readSettings } from "@/lib/sessionSettings";
+import { rankStudents } from "@/lib/results";
 
 const fmt = (n: number) => n.toLocaleString();
 const pct = (n: number) => `${n.toFixed(0)}%`;
@@ -72,35 +73,13 @@ const GameResults = () => {
   const isPointsMode = mode === "crypto_rush" || mode === "classic" || mode === "humansvszombies" || mode === "dontlookdown";
   const hvzWinner = session?.settings?.winner as ("humans" | "zombies" | undefined);
 
-  const ranked = useMemo(() => {
-    if (mode === "dodgeball") {
-      return [...students].sort((a, b) => {
-        if (!a.eliminated && b.eliminated) return -1;
-        if (a.eliminated && !b.eliminated) return 1;
-        if (a.eliminated_at && b.eliminated_at)
-          return new Date(b.eliminated_at).getTime() - new Date(a.eliminated_at).getTime();
-        return 0;
-      });
-    }
-    if (mode === "humansvszombies") {
-      const winningTeam = hvzWinner === "zombies" ? "zombie" : "human";
-      return [...students].sort((a, b) => {
-        if (a.team === winningTeam && b.team !== winningTeam) return -1;
-        if (a.team !== winningTeam && b.team === winningTeam) return 1;
-        return (b.crypto ?? 0) - (a.crypto ?? 0);
-      });
-    }
-    // Don't Look Down ranks by how high they climbed, not cash
-    if (mode === "dontlookdown") {
-      return [...students].sort((a, b) => (b.height_reached ?? 0) - (a.height_reached ?? 0));
-    }
-    // Paint Fight ranks by territory %, from the replayed paint log
-    if (mode === "paintfight") {
-      const pctById = new Map(paintCoverage.map(r => [r.studentId, r.pct]));
-      return [...students].sort((a, b) => (pctById.get(b.id) ?? 0) - (pctById.get(a.id) ?? 0));
-    }
-    return students;
-  }, [students, mode, hvzWinner, paintCoverage]);
+  const ranked = useMemo(
+    () => rankStudents(students, mode, {
+      hvzWinner,
+      paintPctById: new Map(paintCoverage.map(r => [r.studentId, r.pct])),
+    }),
+    [students, mode, hvzWinner, paintCoverage],
+  );
 
   const paintPctFor = (studentId: string) => paintCoverage.find(r => r.studentId === studentId)?.pct ?? 0;
 
