@@ -18,6 +18,7 @@ import {
   drawCharacter, drawNameTag, drawTopFog, drawGround, drawPlatform, drawHint, forEachCloud,
 } from "@/lib/dontLookDownRender";
 import { PX, themeBlendAt, themeIndexAt, starAlphaAt, THEMES, STARRY_FROM } from "@/lib/dldLevel";
+import { readSettings } from "@/lib/sessionSettings";
 
 type Q = { id: string; text: string; options: string[]; correct_index: number; image_url?: string };
 type Phase = "waiting" | "playing" | "done";
@@ -105,7 +106,7 @@ const DontLookDownGame = ({ sessionId, studentId }: Props) => {
         setMe(m);
         // Built straight from the session that just loaded rather than from the
         // ref, which is still holding the placeholder climb until React rerenders.
-        const sp = groundSpawn(buildClimb(s?.settings?.minutes ?? 5));
+        const sp = groundSpawn(buildClimb(readSettings(s?.settings).minutes ?? 5));
         pRef.current.x = sp.x; pRef.current.y = sp.y;
         pRef.current.maxHeight = (m as any).height_reached ?? 0;
         pRef.current.energy = ENERGY.start;

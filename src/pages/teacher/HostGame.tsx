@@ -7,6 +7,7 @@ import { Copy, Play, Users, Trash2, Zap, Heart, Skull, Timer, Trophy, Flame, Che
 import { BitcoinIcon, StopwatchIcon, LavaBucketIcon, DynamiteIcon, PaintRollerIcon } from "@/components/game/icons";
 import { computeArenaSize } from "@/lib/paintFight";
 import { toast } from "@/components/ui/sonner";
+import { readSettings } from "@/lib/sessionSettings";
 
 const genCode = () => {
   const c = "0123456789";
@@ -266,11 +267,12 @@ const HostGame = () => {
         navigate(`/app/games/${data.id}/monitor`);
         return;
       }
-      setMode((data.settings?.mode as GameMode) ?? null);
+      const cfg = readSettings(data.settings);
+      setMode((cfg.mode as GameMode) ?? null);
       setCode(data.code);
       setSessionId(data.id);
-      if (data.settings?.minutes) setMinutes(data.settings.minutes);
-      setSecsPerQ(typeof data.settings?.timePerQ === "number" ? data.settings.timePerQ : null);
+      if (cfg.minutes) setMinutes(cfg.minutes);
+      setSecsPerQ(typeof cfg.timePerQ === "number" ? cfg.timePerQ : null);
     })();
   }, [user, quizId]);
 
@@ -336,7 +338,7 @@ const HostGame = () => {
       // cramped for 20, and every client renders an identically-sized grid.
       const { data: cur } = await supabase.from("game_sessions").select("settings").eq("id", sessionId).maybeSingle();
       const { cols, rows } = computeArenaSize(students.length);
-      patch.settings = { ...(cur?.settings ?? {}), arenaCols: cols, arenaRows: rows };
+      patch.settings = { ...readSettings(cur?.settings), arenaCols: cols, arenaRows: rows };
     }
     await supabase.from("game_sessions").update(patch).eq("id", sessionId);
     navigate(`/app/games/${sessionId}/monitor`);

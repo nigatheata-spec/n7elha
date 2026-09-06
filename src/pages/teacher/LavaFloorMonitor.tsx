@@ -211,13 +211,11 @@ const LavaFloorMonitor = ({ session, sessionId }: Props) => {
         status: "finished",
         ended_at: new Date().toISOString(),
         settings: { ...settingsRef.current },
-      }).eq("id", sessionId).then(() => {
-        // Navigate immediately to avoid blank screen on DB lag or failure
-        nav(`/app/games/${sessionId}/results`, { replace: true, state: { justEnded: true } });
-      }).catch(() => {
-        // If DB fails, still navigate locally
-        nav(`/app/games/${sessionId}/results`, { replace: true, state: { justEnded: true } });
-      });
+      }).eq("id", sessionId).then(
+        // Navigate immediately either way, to avoid a blank screen on DB lag or failure.
+        () => nav(`/app/games/${sessionId}/results`, { replace: true, state: { justEnded: true } }),
+        () => nav(`/app/games/${sessionId}/results`, { replace: true, state: { justEnded: true } }),
+      );
     }
   }, [left, session, ending, sessionId, nav]);
 
@@ -392,7 +390,7 @@ const LavaFloorMonitor = ({ session, sessionId }: Props) => {
                   ))}
                   {/* Height readout sits on top of the stack, growing with it */}
                   <div className="flex items-center gap-1 pb-1">
-                    <PixelHouse className="h-3.5 w-3.5" color="currentColor" style={{ color: "hsl(200 60% 55%)" }} />
+                    <PixelHouse className="h-3.5 w-3.5" color="hsl(200 60% 55%)" />
                     <span className="text-sm font-pixel font-black tabular-nums" style={{ color: "hsl(200 60% 70%)" }}>
                       {fmt(towerHeight)}
                     </span>
@@ -468,7 +466,7 @@ const LavaFloorMonitor = ({ session, sessionId }: Props) => {
             </div>
             <div className="text-center">
               <div className="flex items-center justify-center gap-1">
-                <PixelHouse className="h-5 w-5" color="currentColor" style={{ color: "hsl(200 60% 55%)" }} />
+                <PixelHouse className="h-5 w-5" color="hsl(200 60% 55%)" />
                 <span className="text-2xl font-pixel font-black" style={{ color: "hsl(200 60% 65%)" }}>{fmt(towerHeight)}</span>
               </div>
               <div className="text-[10px] text-muted-foreground uppercase tracking-widest">{ar ? "ارتفاع البرج" : "tower height"}</div>

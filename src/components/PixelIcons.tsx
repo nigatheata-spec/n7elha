@@ -1,6 +1,6 @@
-export function PixelShield({ className, size = 24 }: { className?: string; size?: number }) {
+export function PixelShield({ className, size = 24, color }: { className?: string; size?: number; color?: string }) {
   return (
-    <svg viewBox="0 0 24 24" width={size} height={size} className={className} xmlns="http://www.w3.org/2000/svg">
+    <svg viewBox="0 0 24 24" width={size} height={size} className={className} style={color ? { color } : undefined} xmlns="http://www.w3.org/2000/svg">
       <g fill="currentColor" shapeRendering="crispEdges">
         {/* Shield outline — hard edges, 4-unit grid */}
         <rect x="6" y="3" width="12" height="2" />
@@ -16,9 +16,9 @@ export function PixelShield({ className, size = 24 }: { className?: string; size
   );
 }
 
-export function PixelFlame({ className, size = 24 }: { className?: string; size?: number }) {
+export function PixelFlame({ className, size = 24, color }: { className?: string; size?: number; color?: string }) {
   return (
-    <svg viewBox="0 0 24 24" width={size} height={size} className={className} xmlns="http://www.w3.org/2000/svg">
+    <svg viewBox="0 0 24 24" width={size} height={size} className={className} style={color ? { color } : undefined} xmlns="http://www.w3.org/2000/svg">
       <g fill="currentColor" shapeRendering="crispEdges">
         {/* Flame — blocky blocks stacked upward */}
         <rect x="10" y="12" width="4" height="2" />
@@ -34,9 +34,9 @@ export function PixelFlame({ className, size = 24 }: { className?: string; size?
   );
 }
 
-export function PixelTrophy({ className, size = 24 }: { className?: string; size?: number }) {
+export function PixelTrophy({ className, size = 24, color }: { className?: string; size?: number; color?: string }) {
   return (
-    <svg viewBox="0 0 24 24" width={size} height={size} className={className} xmlns="http://www.w3.org/2000/svg">
+    <svg viewBox="0 0 24 24" width={size} height={size} className={className} style={color ? { color } : undefined} xmlns="http://www.w3.org/2000/svg">
       <g fill="currentColor" shapeRendering="crispEdges">
         {/* Trophy cup — pixel blocks */}
         <rect x="7" y="3" width="2" height="2" />
@@ -58,9 +58,9 @@ export function PixelTrophy({ className, size = 24 }: { className?: string; size
   );
 }
 
-export function PixelPlank({ className, size = 24 }: { className?: string; size?: number }) {
+export function PixelPlank({ className, size = 24, color }: { className?: string; size?: number; color?: string }) {
   return (
-    <svg viewBox="0 0 24 24" width={size} height={size} className={className} xmlns="http://www.w3.org/2000/svg">
+    <svg viewBox="0 0 24 24" width={size} height={size} className={className} style={color ? { color } : undefined} xmlns="http://www.w3.org/2000/svg">
       <g fill="currentColor" shapeRendering="crispEdges">
         {/* Single wooden plank, laid flat */}
         <rect x="3" y="10" width="18" height="4" />
@@ -73,9 +73,9 @@ export function PixelPlank({ className, size = 24 }: { className?: string; size?
   );
 }
 
-export function PixelBrick({ className, size = 24 }: { className?: string; size?: number }) {
+export function PixelBrick({ className, size = 24, color }: { className?: string; size?: number; color?: string }) {
   return (
-    <svg viewBox="0 0 24 24" width={size} height={size} className={className} xmlns="http://www.w3.org/2000/svg">
+    <svg viewBox="0 0 24 24" width={size} height={size} className={className} style={color ? { color } : undefined} xmlns="http://www.w3.org/2000/svg">
       <g fill="currentColor" shapeRendering="crispEdges">
         {/* Offset brick courses */}
         <rect x="3" y="6" width="8" height="4" />
@@ -88,9 +88,9 @@ export function PixelBrick({ className, size = 24 }: { className?: string; size?
   );
 }
 
-export function PixelStaircase({ className, size = 24 }: { className?: string; size?: number }) {
+export function PixelStaircase({ className, size = 24, color }: { className?: string; size?: number; color?: string }) {
   return (
-    <svg viewBox="0 0 24 24" width={size} height={size} className={className} xmlns="http://www.w3.org/2000/svg">
+    <svg viewBox="0 0 24 24" width={size} height={size} className={className} style={color ? { color } : undefined} xmlns="http://www.w3.org/2000/svg">
       <g fill="currentColor" shapeRendering="crispEdges">
         {/* Ascending steps */}
         <rect x="3" y="16" width="6" height="4" />
@@ -101,9 +101,9 @@ export function PixelStaircase({ className, size = 24 }: { className?: string; s
   );
 }
 
-export function PixelHouse({ className, size = 24 }: { className?: string; size?: number }) {
+export function PixelHouse({ className, size = 24, color }: { className?: string; size?: number; color?: string }) {
   return (
-    <svg viewBox="0 0 24 24" width={size} height={size} className={className} xmlns="http://www.w3.org/2000/svg">
+    <svg viewBox="0 0 24 24" width={size} height={size} className={className} style={color ? { color } : undefined} xmlns="http://www.w3.org/2000/svg">
       <g fill="currentColor" shapeRendering="crispEdges">
         {/* Roof — stepped pixel triangle */}
         <rect x="11" y="2" width="2" height="2" />
@@ -122,9 +122,9 @@ export function PixelHouse({ className, size = 24 }: { className?: string; size?
   );
 }
 
-export function PixelSkull({ className, size = 24 }: { className?: string; size?: number }) {
+export function PixelSkull({ className, size = 24, color }: { className?: string; size?: number; color?: string }) {
   return (
-    <svg viewBox="0 0 24 24" width={size} height={size} className={className} xmlns="http://www.w3.org/2000/svg">
+    <svg viewBox="0 0 24 24" width={size} height={size} className={className} style={color ? { color } : undefined} xmlns="http://www.w3.org/2000/svg">
       <g fill="currentColor" shapeRendering="crispEdges">
         {/* Cranium — top rounded blocks */}
         <rect x="9" y="4" width="6" height="2" />

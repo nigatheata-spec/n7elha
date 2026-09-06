@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Check, Square } from "lucide-react";
 import { findActiveSessionForKit, dispensePhysicalQuestion, SQUARE_TYPES, type DispenseResult } from "@/lib/physicalGames";
 import { Seo } from "@/components/Seo";
+import { readSettings } from "@/lib/sessionSettings";
 
 // Public, unauthenticated page opened directly by any phone's camera app when
 // it scans a printed square QR — the page load itself IS the scan. Each
@@ -27,7 +28,7 @@ const ScanSquare = () => {
     (async () => {
       const found = await findActiveSessionForKit(kitId);
       if ("error" in found) { setState(found.error === "kit-inactive" ? "no-kit" : "no-session"); return; }
-      setAr((found.session.settings?.lang ?? i18n.language) === "ar");
+      setAr((readSettings(found.session.settings).lang ?? i18n.language) === "ar");
       const r = await dispensePhysicalQuestion(found.session.id, found.session.quiz_id, Number(typeCode));
       setResult(r);
       setState("done");

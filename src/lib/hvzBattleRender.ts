@@ -200,7 +200,7 @@ const placeArmy = (
     // Depth follows the soldier's current position, so scale grows as they
     // approach rather than popping in at full size mid-march.
     const depth = (y - HUMAN_ANCHOR.y) / dy;
-    const scale = (0.88 + Math.max(0, Math.min(1, depth)) * 0.24) * (1 - dying * 0.25 * deathU);
+    const scale = (0.88 + Math.max(0, Math.min(1, depth)) * 0.24) * (1 - (dying ? 0.25 * deathU : 0));
 
     // Falling reads as a sink-and-fade: settle down a half body height and
     // vanish, rather than just blinking out mid-formation.

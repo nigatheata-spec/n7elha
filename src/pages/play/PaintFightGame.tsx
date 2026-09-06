@@ -17,6 +17,7 @@ import {
   resizeCanvas, drawArenaBackground, drawPlayerRoller, drawNameTag, hueFill,
   createPaintLayer, paintCells, blitPaint, rollerIconSize, computeCamera, drawMinimap,
 } from "@/lib/paintFightRender";
+import { readSettings } from "@/lib/sessionSettings";
 
 // ── Paint Fight, student view ───────────────────────────────────────────────
 // Deliberately small: move, paint, answer to refill. No power-ups, no timers,
@@ -138,8 +139,9 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
       if (cancelled) return;
       setSession(s);
 
-      const cols = s?.settings?.arenaCols ?? 40;
-      const rows = s?.settings?.arenaRows ?? 60;
+      const cfg = readSettings(s?.settings);
+      const cols = cfg.arenaCols ?? 40;
+      const rows = cfg.arenaRows ?? 60;
       colsRef.current = cols;
       rowsRef.current = rows;
       layerRef.current = createPaintLayer(cols, rows);

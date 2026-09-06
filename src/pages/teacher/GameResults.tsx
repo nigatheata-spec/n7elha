@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { Seo } from "@/components/Seo";
 import { computeCoverage, type CoverageRow, type Stroke } from "@/lib/paintFight";
 import { Avatar } from "@/components/Avatar";
+import { readSettings } from "@/lib/sessionSettings";
 
 const fmt = (n: number) => n.toLocaleString();
 const pct = (n: number) => `${n.toFixed(0)}%`;
@@ -47,10 +48,11 @@ const GameResults = () => {
       ]);
       setStudents(ss ?? []);
       setResponses(rs ?? []);
-      if (s?.settings?.mode === "paintfight") {
+      const cfg = readSettings(s?.settings);
+      if (cfg.mode === "paintfight") {
         const { data: strokes } = await supabase.from("paint_fight_strokes")
           .select("student_id,hue,cell_indices").eq("session_id", sessionId).order("created_at", { ascending: true });
-        const totalCells = (s.settings.arenaCols ?? 0) * (s.settings.arenaRows ?? 0);
+        const totalCells = (cfg.arenaCols ?? 0) * (cfg.arenaRows ?? 0);
         setPaintCoverage(computeCoverage((strokes ?? []) as Stroke[], totalCells));
       }
       setPhase(justEnded ? "cinematic" : "results");

@@ -88,7 +88,7 @@ export const dispensePhysicalQuestion = async (sessionId: string, quizId: string
     .eq("session_id", sessionId).eq("type_code", typeCode).maybeSingle();
   if (cached?.question_id && Date.now() - new Date(cached.dispensed_at).getTime() < SCAN_CACHE_TTL_MS) {
     const { data: q } = await supabase.from("questions").select("id,text,options,correct_index").eq("id", cached.question_id).maybeSingle();
-    if (q) return { kind: "question", type, q };
+    if (q) return { kind: "question", type, q: { ...q, options: q.options as string[] } };
   }
 
   const difficulty = type.kind === "wildcard"
@@ -137,5 +137,5 @@ export const dispensePhysicalQuestion = async (sessionId: string, quizId: string
     { session_id: sessionId, type_code: typeCode, question_id: q.id, dispensed_at: new Date().toISOString() },
     { onConflict: "session_id,type_code" }
   );
-  return { kind: "question", type, q };
+  return { kind: "question", type, q: { ...q, options: q.options as string[] } };
 };
