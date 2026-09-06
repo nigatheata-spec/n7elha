@@ -14,9 +14,17 @@ import { ART } from "@/lib/dldArtManifest";
 const DURATIONS = [3, 5, 8, 10, 15, 20, 30, 40];
 const climbs = DURATIONS.map(m => [m, buildClimb(m)] as const);
 
-/** Edge-to-edge gap into platform `i`, and the rise to get there. */
+/**
+ * The climb proper. The tutorial trail's practice bumps are excluded: they sit
+ * on walkable ground, so getting past one is never a jump you are forced into,
+ * and pairing them into the chain would measure jumps nobody has to make.
+ */
+const chainOf = (c: Climb) => c.platforms.filter(p => !p.tutorial);
+
+/** Edge-to-edge gap into platform `i` of the chain, and the rise to get there. */
 const jump = (c: Climb, i: number) => {
-  const a = c.platforms[i - 1], b = c.platforms[i];
+  const chain = chainOf(c);
+  const a = chain[i - 1], b = chain[i];
   const centre = Math.abs(b.x + b.w / 2 - (a.x + a.w / 2));
   return { dy: b.y - a.y, gap: centre - (a.w + b.w) / 2, needsDouble: !!b.needsDouble };
 };
@@ -28,14 +36,14 @@ describe.each(climbs)("Don't Look Down — %i minute climb", (minutes, c) => {
   });
 
   it("never asks for a rise past what that jump can reach", () => {
-    for (let i = 1; i < c.platforms.length; i++) {
+    for (let i = 1; i < chainOf(c).length; i++) {
       const { dy, needsDouble } = jump(c, i);
       expect(dy, `platform ${i}`).toBeLessThan(needsDouble ? DOUBLE_APEX : JUMP_APEX);
     }
   });
 
   it("never asks for a gap longer than that jump carries", () => {
-    for (let i = 1; i < c.platforms.length; i++) {
+    for (let i = 1; i < chainOf(c).length; i++) {
       const { dy, gap, needsDouble } = jump(c, i);
       const reach = needsDouble ? doubleReach(dy) : singleReach(dy);
       expect(gap, `platform ${i} (dy ${dy})`).toBeLessThan(reach);
@@ -43,7 +51,7 @@ describe.each(climbs)("Don't Look Down — %i minute climb", (minutes, c) => {
   });
 
   it("keeps every jump clearable with a double jump, whatever else it asks", () => {
-    for (let i = 1; i < c.platforms.length; i++) {
+    for (let i = 1; i < chainOf(c).length; i++) {
       const { dy, gap } = jump(c, i);
       expect(gap).toBeLessThan(doubleReach(dy));
     }
@@ -71,11 +79,27 @@ describe.each(climbs)("Don't Look Down — %i minute climb", (minutes, c) => {
   });
 
   it("builds every platform out of whole, unstretched sprites", () => {
-    for (const p of c.platforms) {
+    for (const p of c.platforms.filter(p => !p.ground)) {
       expect(p.sprites.length).toBeGreaterThan(0);
       expect(p.w).toBe(p.sprites.reduce((n, s) => n + artW(s.id), 0));
       for (const s of p.sprites) expect(ART[s.id]).toBeDefined();
     }
+  });
+
+  it("keeps the tutorial trail clear of the climb", () => {
+    const ground = c.platforms.find(p => p.ground)!;
+    const tower = chainOf(c).filter(p => !p.ground);
+    // The trail ends before the tower starts, so the parkour never hangs over it.
+    expect(ground.x + ground.w).toBeLessThanOrEqual(Math.min(...tower.map(p => p.x)));
+  });
+
+  it("starts on one wide ground trail that is drawn as ground, not as blocks", () => {
+    const ground = c.platforms.filter(p => p.ground);
+    expect(ground).toHaveLength(1);
+    expect(ground[0]).toBe(c.platforms[0]);
+    expect(ground[0].sprites).toHaveLength(0);
+    expect(ground[0].y).toBe(c.groundY);
+    expect(ground[0].w).toBeGreaterThan(WORLD.playerW * 10);
   });
 
   it("has small perches to land on, not just wide ledges", () => {
@@ -86,7 +110,7 @@ describe.each(climbs)("Don't Look Down — %i minute climb", (minutes, c) => {
   });
 
   it("stays in a readable corridor instead of wandering sideways", () => {
-    const xs = c.platforms.flatMap(p => [p.x, p.x + p.w]);
+    const xs = chainOf(c).filter(p => !p.ground).flatMap(p => [p.x, p.x + p.w]);
     expect(Math.max(...xs) - Math.min(...xs)).toBeLessThan(4200);
   });
 });

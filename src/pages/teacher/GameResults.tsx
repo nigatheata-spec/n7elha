@@ -10,6 +10,7 @@ import { computeCoverage, type CoverageRow, type Stroke } from "@/lib/paintFight
 import { Avatar } from "@/components/Avatar";
 import { readSettings } from "@/lib/sessionSettings";
 import { rankStudents } from "@/lib/results";
+import { toMetres } from "@/lib/dontLookDown";
 
 const fmt = (n: number) => n.toLocaleString();
 const pct = (n: number) => `${n.toFixed(0)}%`;
@@ -426,7 +427,7 @@ const GameResults = () => {
                         }
                         {mode === "dontlookdown" &&
                           <td className="px-4 py-3 text-center font-black tabular-nums text-primary">
-                            {s.height_reached ?? 0}m
+                            {toMetres(s.height_reached ?? 0)}m
                           </td>
                         }
                       </tr>

@@ -17,6 +17,7 @@
 
 import { artW, artH, type ArtId } from "./dldArt";
 import { PX, type Theme } from "./dldLevel";
+import { SCENERY, type SceneryId } from "./dldArtScenery";
 import { resolveColor, resolveFace } from "./avatarIdentity";
 
 // ── Pixel canvas ────────────────────────────────────────────────────────────
@@ -36,6 +37,30 @@ export const setupPixelCanvas = (canvas: HTMLCanvasElement) => {
   const ctx = canvas.getContext("2d");
   if (ctx) { ctx.imageSmoothingEnabled = false; ctx.setTransform(1, 0, 0, 1, 0, 0); }
   return { ctx, bw, bh, zoom };
+};
+
+/**
+ * A second canvas stacked over the pixel buffer, for the few things that must
+ * stay legible rather than pixelated: a climber's face, their name tag and the
+ * hint signs. Nearest-neighbour upscaling turns 6px text into unreadable
+ * blocks, so those are drawn here at `zoom x dpr` resolution instead.
+ *
+ * The backing store is an exact multiple of the pixel buffer and the element
+ * carries the same CSS size, so the browser stretches both by the same factor
+ * and the two layers line up to the pixel. Callers keep passing buffer-space
+ * coordinates: the transform does the rest.
+ */
+export const setupOverlayCanvas = (canvas: HTMLCanvasElement, bw: number, bh: number, zoom: number) => {
+  const dpr = Math.min(3, window.devicePixelRatio || 1);
+  const k = Math.max(1, Math.round(zoom * dpr));
+  const w = bw * k, h = bh * k;
+  if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return { ctx: null };
+  ctx.setTransform(k, 0, 0, k, 0, 0);
+  ctx.clearRect(0, 0, bw, bh);
+  ctx.imageSmoothingEnabled = true;
+  return { ctx };
 };
 
 // ── Block images ────────────────────────────────────────────────────────────
@@ -247,6 +272,26 @@ export const drawBlock = (ctx: CanvasRenderingContext2D, x: number, y: number, i
   ctx.drawImage(img, Math.round(x), Math.round(y));
 };
 
+/**
+ * Scenery: buildings, street furniture, the black hole over the summit. Blitted
+ * 1:1 like everything else, positioned by the surface it stands on rather than
+ * by its top edge, since that is how the level describes it.
+ */
+export const drawScenery = (
+  ctx: CanvasRenderingContext2D, x: number, groundY: number, id: SceneryId, alpha = 1,
+) => {
+  const img = images.get(id);
+  const { w, h } = SCENERY[id];
+  if (alpha < 1) ctx.globalAlpha = alpha;
+  if (!img || !img.complete || img.naturalWidth === 0) {
+    ctx.fillStyle = "#39405a";
+    ctx.fillRect(Math.round(x), Math.round(groundY - h), w, h);
+  } else {
+    ctx.drawImage(img, Math.round(x), Math.round(groundY - h));
+  }
+  ctx.globalAlpha = 1;
+};
+
 // ── Character ───────────────────────────────────────────────────────────────
 // The character IS the player's avatar — same hashed face + color as their
 // circle everywhere else in the app (lobby roster, leaderboards, results) —
@@ -349,21 +394,36 @@ export const drawCharacter = (
   ctx.globalAlpha = 1;
 };
 
+// Sized in buffer units; the overlay's transform is what makes this legible.
+const TAG_FONT = "700 7px 'Almarai', system-ui, -apple-system, sans-serif";
+
+const roundRect = (ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) => {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+};
+
 // ── Name tags ───────────────────────────────────────────────────────────────
 export const drawNameTag = (
   ctx: CanvasRenderingContext2D, cx: number, topY: number, name: string,
 ) => {
   if (!name) return;
-  const label = name.length > 9 ? name.slice(0, 9) : name;
-  ctx.font = "6px monospace";
+  const label = name.length > 12 ? name.slice(0, 12) : name;
+  ctx.font = TAG_FONT;
   ctx.textAlign = "center";
-  ctx.textBaseline = "top";
-  const w = Math.ceil(ctx.measureText(label).width) + 4;
-  const x = Math.round(cx - w / 2), y = Math.round(topY) - 9;
+  ctx.textBaseline = "middle";
+  const w = Math.ceil(ctx.measureText(label).width) + 7;
+  const h = 11;
+  const x = cx - w / 2, y = topY - h - 2;
+  roundRect(ctx, x, y, w, h, 3);
   ctx.fillStyle = C.tagBg;
-  ctx.fillRect(x, y, w, 8);
+  ctx.fill();
   ctx.fillStyle = C.tagFg;
-  ctx.fillText(label, Math.round(cx), y + 1);
+  ctx.fillText(label, cx, y + h / 2 + 0.5);
   ctx.textAlign = "left";
 };
 
@@ -375,16 +435,18 @@ export const drawNameTag = (
 export const drawHint = (
   ctx: CanvasRenderingContext2D, cx: number, topY: number, text: string,
 ) => {
-  ctx.font = "6px monospace";
+  ctx.font = TAG_FONT;
   ctx.textAlign = "center";
-  ctx.textBaseline = "top";
-  const w = Math.ceil(ctx.measureText(text).width) + 8;
-  const x = Math.round(cx - w / 2), y = Math.round(topY);
-  ctx.globalAlpha = 0.82;
+  ctx.textBaseline = "middle";
+  const w = Math.ceil(ctx.measureText(text).width) + 10;
+  const h = 12;
+  const x = cx - w / 2, y = topY;
+  ctx.globalAlpha = 0.9;
+  roundRect(ctx, x, y, w, h, 3);
   ctx.fillStyle = C.tagBg;
-  ctx.fillRect(x, y, w, 9);
+  ctx.fill();
   ctx.fillStyle = "#ffd876";
-  ctx.fillText(text, Math.round(cx), y + 2);
+  ctx.fillText(text, cx, y + h / 2 + 0.5);
   ctx.globalAlpha = 1;
   ctx.textAlign = "left";
 };

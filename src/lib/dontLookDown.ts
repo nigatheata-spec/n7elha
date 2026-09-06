@@ -1,4 +1,5 @@
 import { BAND_ART, BAND_ORDER, artW, artH, type ArtId, type BandId, type Role } from "./dldArt";
+import { SCENERY, type SceneryId } from "./dldArtScenery";
 
 // ── Don't Look Down — 2D parkour platformer ─────────────────────────────────
 // World space: +X right, +Y UP (a platform at y=400 is higher than one at y=0).
@@ -23,7 +24,22 @@ export const ENERGY = {
   moveDrainPerSec: 2,
   jumpCost: 15,
   rewardPerCorrect: 25,
+  /** At or below this, warn before the player commits to a jump they can't afford. */
+  low: 35,
 };
+
+/**
+ * World units are the physics grid; metres are what a player reads. The tower
+ * is generated at roughly 700 units per minute, and showing that 1:1 put a
+ * five minute climb several thousand metres up, which reads as nonsense.
+ *
+ * This is display only. Every stored `height_reached`, platform position and
+ * jump reach stays in world units, so physics, level generation, ranking and
+ * dldLevel.test.ts are all untouched by it. Anything that prints an "m" to a
+ * person must go through `toMetres`, or two screens will disagree.
+ */
+export const METRES_PER_UNIT = 0.1;
+export const toMetres = (units: number) => Math.max(0, Math.round(units * METRES_PER_UNIT));
 
 /** Void-fall cash penalty at insurance level 1. Scaled down by the insurance tier. */
 export const VOID_CASH_PENALTY_PCT = 10;
@@ -115,14 +131,28 @@ export type Platform = {
   checkpoint?: boolean;
   /** The gap INTO this platform is past a single jump — it wants both. */
   needsDouble?: boolean;
+  /** The starting trail. Collision only: the renderer's ground IS its surface,
+      so it carries no sprites and must not be drawn as blocks. */
+  ground?: boolean;
+  /** A practice obstacle standing ON the trail. Not part of the climb: you can
+      walk around it at ground level, so it is not a jump anything depends on. */
+  tutorial?: boolean;
 };
 
 export type Hint = { x: number; y: number; en: string; ar: string };
+
+/** Scenery. Drawn, never collided with: `y` is the surface it stands on. */
+/**
+ * Scenery. Drawn, never collided with: `y` is the surface it stands on, and
+ * `back` puts it behind the platforms instead of in front of them.
+ */
+export type SceneryPiece = { id: SceneryId; x: number; y: number; back?: boolean };
 
 export type Climb = {
   minutes: number;
   platforms: Platform[];
   hints: Hint[];
+  scenery: SceneryPiece[];
   summitY: number;
   groundY: number;
   /** Band boundaries by height, for the sky ramp. */
@@ -162,6 +192,9 @@ export const buildClimb = (minutes: number): Climb => {
   const rnd = rngFrom(0x5eed ^ Math.round(target));
   const out: Platform[] = [];
   const hints: Hint[] = [];
+  const scenery: SceneryPiece[] = [];
+  /** How far either side of centre the climb is allowed to wander. */
+  const CORRIDOR = 1100;
   const used = new Map<ArtId, number>();
 
   let stage = -1, cx = 0, y = 0, dir = 1;
@@ -228,31 +261,73 @@ export const buildClimb = (minutes: number): Climb => {
   // controls, see what a jump looks like, and miss one without it costing a
   // thing. The parkour starts at the far end of it.
   stage = 0;
+  // Practice obstacles are collected here and pushed AFTER the climb is built.
+  // `step` measures each jump from the last platform pushed, so leaving a bump
+  // there would have the climb start from a two-block step instead of from the
+  // trail, and the first jump of the game would be measured from the wrong edge.
+  const tutorialProps: Platform[] = [];
   {
     const band: BandId = "school";
-    const id = BAND_ART[band].tile[0];
-    used.set(id, 1);
-    const tw = artW(id), n = 16;
-    out.push({
-      x: -tw * 4, y: 0, w: n * tw, h: artH(id), stage, band, checkpoint: true,
-      sprites: Array.from({ length: n }, (_, i) => ({ id, dx: i * tw })),
-    });
-    cx = -tw * 4 + (n * tw) / 2;
-    // Plain words, no arrow glyphs: the canvas draws these left-to-right in a
-    // bitmap font, and a neutral arrow character reorders itself around Arabic.
+    // The trail runs on the ground itself. There is no row of blocks under your
+    // feet: the grass the renderer already draws IS the surface, so this
+    // platform carries no sprites and exists only so the player can stand on it.
+    //
+    // It ends left of the climb's corridor on purpose: the parkour then builds
+    // away from it instead of hanging over the tutorial, and the walk out to it
+    // is what makes the climb feel like somewhere you arrive at.
+    const TRAIL_W = 2600;
+    // Clear of the corridor by more than the widest platform's half-width: the
+    // corridor bounds a platform's CENTRE, so its left edge reaches past it.
+    const TRAIL_END = -(CORRIDOR + 800);
+    const x0 = TRAIL_END - TRAIL_W;
+    const at = (d: number) => x0 + d;
+    out.push({ x: x0, y: 0, w: TRAIL_W, h: 40, stage, band, checkpoint: true, ground: true, sprites: [] });
+
+    const step: ArtId = "block-cube-brick";
+    const stepW = artW(step), stepH = artH(step);
+    const bump = (bx: number, tiles: number, levels: number) => {
+      for (let L = 0; L < levels; L++) {
+        const n = Math.max(1, tiles - L);
+        tutorialProps.push({
+          x: bx + (L * stepW) / 2, y: stepH * (L + 1), w: n * stepW, h: stepH, stage, band, tutorial: true,
+          sprites: Array.from({ length: n }, (_, i) => ({ id: step, dx: i * stepW })),
+        });
+        used.set(step, (used.get(step) ?? 0) + n);
+      }
+    };
+    bump(at(900), 2, 1);    // a hop
+    bump(at(1560), 3, 2);   // and a step up that wants a real jump
+
     hints.push(
-      { x: -tw * 3.2, y: 132, en: "HOLD LEFT OR RIGHT TO RUN", ar: "اضغط مطولا للجري" },
-      { x: tw * 0.4, y: 210, en: "TAP JUMP", ar: "اضغط للقفز" },
-      { x: tw * 3.6, y: 132, en: "ANSWER QUESTIONS FOR ENERGY", ar: "أجب لكسب الطاقة" },
-      { x: tw * 6.6, y: 210, en: "NOW CLIMB", ar: "والان تسلق" },
+      { x: at(430),  y: 120, en: "HOLD LEFT OR RIGHT TO RUN", ar: "اضغط مطولا للجري" },
+      { x: at(900),  y: 250, en: "TAP JUMP", ar: "اضغط للقفز" },
+      { x: at(1980), y: 120, en: "ANSWER QUESTIONS FOR ENERGY", ar: "أجب لكسب الطاقة" },
+      { x: at(2520), y: 200, en: "NOW CLIMB", ar: "والان تسلق" },
     );
-    cx = out[0].x + out[0].w - artW(id);
+
+    // Street furniture lines the walk; the buildings close it off at the end.
+    for (const [d, id] of [
+      [80,   "scenery-fence"],
+      [560,  "scenery-bench"],
+      [700,  "scenery-bush"],
+      [1180, "scenery-lamp"],
+      [1300, "scenery-bush"],
+      [2060, "scenery-fence"],
+      [2400, "scenery-lamp"],
+    ] as [number, SceneryId][]) {
+      scenery.push({ id, x: at(d), y: 0 });
+    }
+    scenery.push({ id: "scenery-house", x: at(1700), y: 0, back: true });
+    scenery.push({ id: "scenery-apartment", x: at(2180), y: 0, back: true });
+
+    // `step` tracks platform CENTRES, and adds half of each platform's width
+    // when it places the next one, so this has to be the trail's centre. Handing
+    // it the right-hand edge puts the first jump of the climb a trail-width out.
+    cx = x0 + TRAIL_W / 2;
   }
 
   // ── Stages ────────────────────────────────────────────────────────────────
   const ARCS = ["stairs", "shaft", "dip", "pillars", "chain", "dip", "leap"] as const;
-  /** How far either side of centre the climb is allowed to wander. */
-  const CORRIDOR = 1100;
   let arc = 0;
 
   while (y < target) {
@@ -332,12 +407,30 @@ export const buildClimb = (minutes: number): Climb => {
   }
 
   const summitY = last().y;
+
+  // What the whole climb is for. A black hole hanging over the summit platform,
+  // behind it, so the top of the tower is an arrival rather than one more ledge.
+  {
+    const top = last();
+    const art = SCENERY["scenery-blackhole"];
+    scenery.push({
+      id: "scenery-blackhole",
+      x: top.x + top.w / 2 - (art.w * 2) / 2,
+      // Low enough to sit fully in frame from the summit platform, and behind
+      // it, so the last thing you do is stand in front of the thing.
+      y: top.y + 60,
+      back: true,
+    });
+  }
+  // Safe to add now: nothing after this reads `last()`.
+  out.push(...tutorialProps);
+
   const bandEdges = BAND_ORDER.map((band, i) => ({
     band,
     upto: i === BAND_ORDER.length - 1 ? Infinity : ((i + 1) / BAND_ORDER.length) * target,
   }));
 
-  return { minutes, platforms: out, hints, summitY, groundY: out[0].y - out[0].h + 6, bandEdges };
+  return { minutes, platforms: out, hints, scenery, summitY, groundY: out[0].y, bandEdges };
 };
 
 export const checkpointsOf = (c: Climb) =>
@@ -349,7 +442,7 @@ export const spawnFor = (c: Climb, checkpointIndex: number) => {
 };
 
 export const groundSpawn = (c: Climb) => ({
-  x: c.platforms[0].x + c.platforms[0].w / 2 - WORLD.playerW / 2,
+  x: c.platforms[0].x + 200,
   y: c.platforms[0].y + 4,
 });
 

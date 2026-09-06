@@ -9,13 +9,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { WORLD, buildClimb } from "@/lib/dontLookDown";
 import {
-  setupPixelCanvas, drawSky, drawStars, drawCloud, drawPlatform, drawHint,
-  drawCharacter, drawNameTag, drawTopFog, drawGround, forEachCloud,
+  setupPixelCanvas, setupOverlayCanvas, drawSky, drawStars, drawCloud, drawPlatform, drawHint,
+  drawCharacter, drawNameTag, drawScenery, drawTopFog, drawGround, forEachCloud,
 } from "@/lib/dontLookDownRender";
 import { PX, themeBlendAt, themeIndexAt, starAlphaAt, THEMES, STARRY_FROM } from "@/lib/dldLevel";
 
 const DldPreview = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const overlayRef = useRef<HTMLCanvasElement | null>(null);
   const keys = useRef(new Set<string>());
   // ?y=1500 drops the camera to a height; ?min=20 previews the climb a twenty
   // minute session would generate.
@@ -61,7 +62,8 @@ const DldPreview = () => {
       cam.current.vx = dx * 300;
       if (dx) cam.current.face = dx > 0 ? 1 : -1;
 
-      const { ctx, bw, bh } = setupPixelCanvas(canvas);
+      const { ctx, bw, bh, zoom } = setupPixelCanvas(canvas);
+      const sharp = (overlayRef.current ? setupOverlayCanvas(overlayRef.current, bw, bh, zoom).ctx : null) ?? ctx;
       if (!ctx) { raf = requestAnimationFrame(frame); return; }
 
       const viewW = bw / PX, viewH = bh / PX;
@@ -91,6 +93,13 @@ const DldPreview = () => {
       const groundTop = sy(climb.groundY);
       if (groundTop < bh) drawGround(ctx, groundTop, bw, bh);
 
+      for (const pc of climb.scenery) {
+        if (!pc.back) continue;
+        const px = sx(pc.x), py = sy(pc.y);
+        if (px < -420 || px > bw + 420 || py < -420 || py > bh + 420) continue;
+        drawScenery(ctx, px, py, pc.id, 0.85);
+      }
+
       for (const pl of climb.platforms) {
         const x = sx(pl.x), y = sy(pl.y);
         const wpx = Math.round(pl.w * PX), hpx = Math.round(pl.h * PX);
@@ -99,17 +108,24 @@ const DldPreview = () => {
         drawPlatform(ctx, x, y, pl.sprites);
       }
 
+      for (const pc of climb.scenery) {
+        if (pc.back) continue;
+        const px = sx(pc.x), py = sy(pc.y);
+        if (px < -120 || px > bw + 120 || py < -120 || py > bh + 120) continue;
+        drawScenery(ctx, px, py, pc.id);
+      }
+
       for (const hint of climb.hints) {
         const hx = sx(hint.x), hy = sy(hint.y);
         if (hx < -80 || hx > bw + 80 || hy < -20 || hy > bh + 20) continue;
-        drawHint(ctx, hx, hy, hint.en);
+        drawHint(sharp, hx, hy, hint.en);
       }
 
       const px = sx(cam.current.x), py = sy(cam.current.y);
-      drawCharacter(ctx, px, py, WORLD.playerW * PX, WORLD.playerH * PX, "Preview", cam.current.face, {
+      drawCharacter(sharp, px, py, WORLD.playerW * PX, WORLD.playerH * PX, "Preview", cam.current.face, {
         t: t / 1000, vx: cam.current.vx, grounded: true,
       });
-      drawNameTag(ctx, px + (WORLD.playerW * PX) / 2, py - 22, "You");
+      drawNameTag(sharp, px + (WORLD.playerW * PX) / 2, py - 22, "You");
 
       drawTopFog(ctx, bw, bh, blend);
 
@@ -127,6 +143,7 @@ const DldPreview = () => {
   return (
     <div className="fixed inset-0 bg-black">
       <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" style={{ imageRendering: "pixelated" }} />
+      <canvas ref={overlayRef} className="absolute inset-0 h-full w-full pointer-events-none" />
       <div className="absolute top-3 left-3 font-mono text-xs text-white bg-black/60 px-3 py-2 rounded">
         <div>WASD / arrows to fly</div>
         <div>y = {hud.y} / {climb.summitY}</div>

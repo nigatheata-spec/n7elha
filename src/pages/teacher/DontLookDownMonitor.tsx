@@ -5,10 +5,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Square, Maximize, ChevronUp, Trophy } from "lucide-react";
 import { PixelShield } from "@/components/PixelIcons";
-import { buildClimb, WORLD } from "@/lib/dontLookDown";
+import { buildClimb, WORLD, toMetres } from "@/lib/dontLookDown";
 import { Avatar } from "@/components/Avatar";
 import {
-  setupPixelCanvas, drawSky, drawStars, drawCloud, drawBlock,
+  setupPixelCanvas, setupOverlayCanvas, drawSky, drawStars, drawCloud, drawBlock,
   drawCharacter, drawNameTag, drawTopFog, drawGround, drawPlatform, forEachCloud,
 } from "@/lib/dontLookDownRender";
 import { PX, themeBlendAt, themeIndexAt, starAlphaAt, STARRY_FROM } from "@/lib/dldLevel";
@@ -25,9 +25,19 @@ const DontLookDownMonitor = ({ session, sessionId }: Props) => {
   const { i18n } = useTranslation();
   const ar = (session?.settings?.lang ?? i18n.language) === "ar";
   const [students, setStudents] = useState<any[]>([]);
+  const [now, setNow] = useState(Date.now());
+  const [ending, setEnding] = useState(false);
+
+  const minutes   = session?.settings?.minutes ?? 5;
+  const startedAt = session?.started_at ? new Date(session.started_at).getTime() : 0;
+  const elapsed   = startedAt ? Math.floor((now - startedAt) / 1000) : 0;
+  const left      = Math.max(0, minutes * 60 - elapsed);
+  const mm        = String(Math.floor(left / 60)).padStart(2, "0");
+  const ss        = String(left % 60).padStart(2, "0");
   // Same climb the students are on — it is built from the session's length.
   const climb = useMemo(() => buildClimb(session?.settings?.minutes ?? 5), [session?.settings?.minutes]);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const overlayRef = useRef<HTMLCanvasElement | null>(null);
   const peersRef  = useRef<Record<string, Peer>>({});
 
   // ── Data + live position feed ─────────────────────────────────────────────
@@ -62,16 +72,23 @@ const DontLookDownMonitor = ({ session, sessionId }: Props) => {
     const draw = () => {
       // Same pixel buffer as the student view, so the tower the teacher sees is
       // built from the exact same grid and art.
-      const { ctx: bctx, bw, bh } = setupPixelCanvas(canvas);
+      const { ctx: bctx, bw, bh, zoom } = setupPixelCanvas(canvas);
       if (!bctx) return;
+      const octx = overlayRef.current
+        ? setupOverlayCanvas(overlayRef.current, bw, bh, zoom).ctx
+        : null;
+      const sharp = octx ?? bctx;
 
       // The climb is ~10,000m tall, so fitting all of it on screen would make
       // every student a single pixel. Frame the full WIDTH instead — the
       // left-right shape of the climb is what makes a formation readable — and
       // follow the pack vertically, opening the window only as far as it has to
       // to keep the highest and lowest climber both on screen.
-      const minX = Math.min(...climb.platforms.map(p => p.x)) - 60;
-      const maxX = Math.max(...climb.platforms.map(p => p.x + p.w)) + 60;
+      // The tutorial trail sits well left of the tower and is three times its
+      // width; framing it too would zoom the whole board out to fit a walk.
+      const tower = climb.platforms.filter(p => !p.ground && !p.tutorial);
+      const minX = Math.min(...tower.map(p => p.x)) - 60;
+      const maxX = Math.max(...tower.map(p => p.x + p.w)) + 60;
       const worldW = maxX - minX;
 
       const ys = [
@@ -113,6 +130,7 @@ const DontLookDownMonitor = ({ session, sessionId }: Props) => {
       // where there is room for it and as a solid chip when there is not —
       // scaling the art down would smear it off the pixel grid.
       for (const pl of climb.platforms) {
+        if (pl.ground) continue; // drawn by drawGround, not as blocks
         const x = sx(pl.x), y = sy(pl.y);
         const wpx = Math.round(pl.w * scale), hpx = Math.max(2, Math.round(pl.h * scale));
         if (wpx >= Math.round(pl.w * PX) * 0.9) {
@@ -131,10 +149,10 @@ const DontLookDownMonitor = ({ session, sessionId }: Props) => {
         if (p.t < cutoff) { delete peersRef.current[id]; continue; }
         const x = sx(p.x), y = sy(p.y);
         if (x < -30 || x > bw + 30 || y < -30 || y > bh + 30) continue;
-        drawCharacter(bctx, x, y, WORLD.playerW * scale, WORLD.playerH * scale, p.name ?? "?", 1, {
+        drawCharacter(sharp, x, y, WORLD.playerW * scale, WORLD.playerH * scale, p.name ?? "?", 1, {
           t: tSec, colorIndex: p.avatarColor, faceIndex: p.avatarFace,
         });
-        drawNameTag(bctx, x + (WORLD.playerW * scale) / 2, y - 22, p.name ?? "");
+        drawNameTag(sharp, x + (WORLD.playerW * scale) / 2, y - 22, p.name ?? "");
       }
 
       drawTopFog(bctx, bw, bh, blend);
@@ -152,6 +170,24 @@ const DontLookDownMonitor = ({ session, sessionId }: Props) => {
     }).eq("id", sessionId);
     nav(`/app/games/${session.id}/results`, { state: { justEnded: true } });
   };
+
+  useEffect(() => {
+    const tick = setInterval(() => setNow(Date.now()), 500);
+    return () => clearInterval(tick);
+  }, []);
+
+  // Without this the climb ran forever: this mode had no clock at all.
+  useEffect(() => {
+    if (!session || session.status !== "running" || ending) return;
+    if (left > 0) return;
+    setEnding(true);
+    supabase.from("game_sessions").update({
+      status: "finished", ended_at: new Date().toISOString(),
+    }).eq("id", sessionId).then(
+      () => nav(`/app/games/${sessionId}/results`, { replace: true, state: { justEnded: true } }),
+      () => nav(`/app/games/${sessionId}/results`, { replace: true, state: { justEnded: true } }),
+    );
+  }, [left, session, ending, sessionId, nav]);
 
   useEffect(() => {
     if (session?.status === "finished") nav(`/app/games/${session.id}/results`, { replace: true, state: { justEnded: true } });
@@ -174,7 +210,13 @@ const DontLookDownMonitor = ({ session, sessionId }: Props) => {
             <span className="mx-3 opacity-30">|</span>
             <span className="font-bold">{students.length} {ar ? "متسلق" : students.length === 1 ? "CLIMBER" : "CLIMBERS"}</span>
             <span className="mx-3 opacity-30">|</span>
-            {ar ? "القمة" : "SUMMIT"} <span className="font-bold">{climb.summitY}m</span>
+            {ar ? "القمة" : "SUMMIT"} <span className="font-bold">{toMetres(climb.summitY)}m</span>
+          </div>
+          <div
+            className="text-2xl font-black tabular-nums tracking-widest"
+            style={{ color: left <= 30 ? "#f87171" : "#7dd3fc" }}
+          >
+            {mm}:{ss}
           </div>
           <div className="flex gap-2">
             <Button size="sm" variant="ghost" onClick={goFullscreen} className="text-sky-300 hover:text-sky-300 hover:bg-sky-400/10">
@@ -188,7 +230,10 @@ const DontLookDownMonitor = ({ session, sessionId }: Props) => {
 
         <div className="flex-1 grid grid-cols-[1fr_320px] gap-4 min-h-0">
           <div className="rounded-xl overflow-hidden min-h-0" style={{ border: "1px solid rgba(255,255,255,0.1)" }}>
-            <canvas ref={canvasRef} className="h-full w-full" style={{ imageRendering: "pixelated" }} />
+            <div className="relative h-full w-full">
+              <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" style={{ imageRendering: "pixelated" }} />
+              <canvas ref={overlayRef} className="absolute inset-0 h-full w-full pointer-events-none" />
+            </div>
           </div>
 
           <div className="flex flex-col gap-2 min-h-0">
@@ -210,7 +255,7 @@ const DontLookDownMonitor = ({ session, sessionId }: Props) => {
                   <span className="flex-1 text-sm font-bold truncate">{s.name}</span>
                   {i === 0 && <Trophy className="h-3.5 w-3.5 shrink-0" style={{ color: "#facc15" }} />}
                   <div className="text-right shrink-0">
-                    <div className="text-sm font-black tabular-nums" style={{ color: "#7dd3fc" }}>{s.height_reached ?? 0}m</div>
+                    <div className="text-sm font-black tabular-nums" style={{ color: "#7dd3fc" }}>{toMetres(s.height_reached ?? 0)}m</div>
                     <div className="flex items-center gap-1 justify-end text-[10px] font-bold tabular-nums"
                       style={{ color: "hsl(45 76% 64%)" }}>
                       <PixelShield className="h-2.5 w-2.5" />${s.crypto ?? 0}

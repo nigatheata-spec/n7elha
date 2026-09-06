@@ -5,19 +5,21 @@ import { toast } from "@/components/ui/sonner";
 import { Store, X, ChevronUp, Zap, Battery, Feather, ArrowUp, ArrowLeft, ArrowRight, Trophy, HelpCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
-import { PixelShield, PixelFlame } from "@/components/PixelIcons";
+import { PixelShield } from "@/components/PixelIcons";
+import { Avatar } from "@/components/Avatar";
 import {
-  WORLD, ENERGY, streakMultiplier,
+  WORLD, ENERGY, toMetres, streakMultiplier,
   INCOME_TIERS, STREAK_INSURANCE_TIERS, MULTIPLIER_INSURANCE_TIERS,
   ENERGY_TANK_TIERS, BATTERY_TIERS,
   DOUBLE_JUMP_COST, FEATHER_FALL_COST, FEATHER_FALL_MS, FEATHER_FALL_GRAVITY_SCALE,
   buildClimb, groundSpawn,
 } from "@/lib/dontLookDown";
 import {
-  setupPixelCanvas, drawSky, drawStars, drawCloud, drawBlock,
-  drawCharacter, drawNameTag, drawTopFog, drawGround, drawPlatform, drawHint, forEachCloud,
+  setupPixelCanvas, setupOverlayCanvas, drawSky, drawStars, drawCloud, drawBlock,
+  drawCharacter, drawNameTag, drawScenery, drawTopFog, drawGround, drawPlatform, drawHint, forEachCloud,
 } from "@/lib/dontLookDownRender";
 import { PX, themeBlendAt, themeIndexAt, starAlphaAt, THEMES, STARRY_FROM } from "@/lib/dldLevel";
+import { artH } from "@/lib/dldArt";
 import { readSettings } from "@/lib/sessionSettings";
 
 type Q = { id: string; text: string; options: string[]; correct_index: number; image_url?: string };
@@ -26,10 +28,50 @@ type ShopTab = "economy" | "parkour";
 type Peer = { id: string; name: string; x: number; y: number; face: number; t: number; avatarColor?: number | null; avatarFace?: number | null };
 
 // Floating white HUD chip, matching the reference's rounded pills over the sky.
-const PILL = "flex items-center gap-2 px-3 py-1.5 rounded-full shadow-md pointer-events-none";
-const PILL_STYLE: React.CSSProperties = { background: "rgba(255,255,255,0.93)", backdropFilter: "blur(4px)" };
+/* HUD chips are slabs, not soft pills: hard 2px outline and an offset shadow,
+   so they sit in the pixel world instead of floating over it. */
+const PILL = "flex items-center gap-2 px-2.5 py-1 pointer-events-none";
+const PILL_STYLE: React.CSSProperties = {
+  background: "rgba(255,255,255,0.94)",
+  border: "2px solid #12151f",
+  boxShadow: "0 3px 0 0 rgba(18,21,31,0.5)",
+};
+
+/* Every control is the same slab: hard outline, lit top edge, offset shadow. */
+const CTRL: React.CSSProperties = {
+  border: `2px solid ${"#12151f"}`,
+  borderTopWidth: 4,
+  borderTopColor: "rgba(255,255,255,0.75)",
+  boxShadow: "0 5px 0 0 #12151f",
+};
+/** Clamped against the short axis, so landscape shrinks rather than crowds. */
+const CTRL_D = "clamp(3.6rem, 17.5vmin, 4.75rem)";
+const JUMP_D = "clamp(4.4rem, 21vmin, 5.75rem)";
+
+/* The jump button is the primary action, so it takes the gold the in-world
+   signs use. Nothing in this world is purple. */
+const GOLD = "#ffc94d";
+const INK = "#12151f";
 
 interface Props { sessionId: string; studentId: string; }
+
+/* The quiz screen borrows the top band's sky ramp and a sparse star field, so
+   answering reads as a pause inside the climb rather than a different screen. */
+/* Fixed rather than random per render, so the burst does not reshuffle itself
+   on every frame the celebration is on screen. */
+const CONFETTI = Array.from({ length: 34 }, (_, i) => ({
+  left: `${(i * 37) % 100}%`,
+  color: ["#ffd876", "#7fe0a2", "#7dd3fc", "#f87171", "#ffffff"][i % 5],
+  dur: `${1.7 + ((i * 13) % 16) / 10}s`,
+  delay: `${((i * 7) % 20) / 10}s`,
+}));
+
+const DLD_SKY = "linear-gradient(180deg,#05060f 0%,#0a0c1d 34%,#11142f 68%,#191d44 100%)";
+const DLD_STARS = [
+  ["12%", "14%"], ["31%", "7%"], ["58%", "18%"], ["77%", "9%"], ["91%", "24%"],
+  ["7%", "38%"], ["44%", "31%"], ["68%", "44%"], ["23%", "56%"], ["86%", "52%"],
+  ["37%", "71%"], ["61%", "82%"], ["15%", "88%"], ["94%", "77%"],
+].map(([x, y]) => `radial-gradient(1px 1px at ${x} ${y}, rgba(255,255,255,0.75) 50%, transparent 50%)`).join(",");
 
 const DontLookDownGame = ({ sessionId, studentId }: Props) => {
   const navigate = useNavigate();
@@ -45,7 +87,7 @@ const DontLookDownGame = ({ sessionId, studentId }: Props) => {
   const [currentQ, setCurrentQ]   = useState<Q | null>(null);
   const [picked, setPicked]       = useState<number | null>(null);
   const [qSeed, setQSeed]         = useState(0);
-  const [summited, setSummited]   = useState(false);
+  const [showSummit, setShowSummit] = useState(false);
 
   // HUD mirrors of the physics state — updated on a throttle, not every frame,
   // so the 60fps loop never triggers a React render.
@@ -53,6 +95,7 @@ const DontLookDownGame = ({ sessionId, studentId }: Props) => {
   const [now, setNow] = useState(Date.now());
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const overlayRef = useRef<HTMLCanvasElement | null>(null);
   const keysRef   = useRef<Set<string>>(new Set());
   const peersRef  = useRef<Record<string, Peer>>({});
   const chanRef   = useRef<any>(null);
@@ -259,8 +302,7 @@ const DontLookDownGame = ({ sessionId, studentId }: Props) => {
             p.y = pl.y; p.vy = 0; p.grounded = true; p.usedDoubleJump = false;
             if (pl.y >= climbRef.current.summitY && !summitRef.current) {
               summitRef.current = true;
-              setSummited(true);
-              toast.success(ar ? "وصلت القمة!" : "You reached the summit!");
+              setShowSummit(true);
             }
             break;
           }
@@ -283,8 +325,14 @@ const DontLookDownGame = ({ sessionId, studentId }: Props) => {
       const p = pRef.current;
       // The whole scene is painted into a small pixel buffer; CSS scales it up
       // with nearest-neighbour so every layer shares one pixel grid.
-      const { ctx: bctx, bw, bh } = setupPixelCanvas(canvas);
+      const { ctx: bctx, bw, bh, zoom } = setupPixelCanvas(canvas);
       if (!bctx) return;
+      // Faces, names and hint signs go on the sharp layer; everything else
+      // stays on the pixel grid.
+      const octx = overlayRef.current
+        ? setupOverlayCanvas(overlayRef.current, bw, bh, zoom).ctx
+        : null;
+      const sharp = octx ?? bctx;
 
       // Camera in world units, player centred horizontally and sitting low so
       // there is more sky than floor on screen.
@@ -327,6 +375,14 @@ const DontLookDownGame = ({ sessionId, studentId }: Props) => {
       if (groundTop < bh) drawGround(bctx, groundTop, bw, bh);
 
       // Blocks
+      // Scenery behind the platforms: buildings, and the black hole over the top.
+      for (const p of climbRef.current.scenery) {
+        if (!p.back) continue;
+        const px = sx(p.x), py = sy(p.y);
+        if (px < -420 || px > bw + 420 || py < -420 || py > bh + 420) continue;
+        drawScenery(bctx, px, py, p.id, 0.85);
+      }
+
       for (const pl of climbRef.current.platforms) {
         const x = sx(pl.x), y = sy(pl.y);
         const wpx = Math.round(pl.w * PX), hpx = Math.round(pl.h * PX);
@@ -337,10 +393,18 @@ const DontLookDownGame = ({ sessionId, studentId }: Props) => {
 
       // Signs along the starting ground — what the controls are, and which way
       // is up — so the first thing a player meets is not a blind jump.
+      // Scenery in front: street furniture lining the trail.
+      for (const p of climbRef.current.scenery) {
+        if (p.back) continue;
+        const px = sx(p.x), py = sy(p.y);
+        if (px < -120 || px > bw + 120 || py < -120 || py > bh + 120) continue;
+        drawScenery(bctx, px, py, p.id);
+      }
+
       for (const hint of climbRef.current.hints) {
         const x = sx(hint.x), y = sy(hint.y);
         if (x < -80 || x > bw + 80 || y < -20 || y > bh + 20) continue;
-        drawHint(bctx, x, y, ar ? hint.ar : hint.en);
+        drawHint(sharp, x, y, ar ? hint.ar : hint.en);
       }
 
       // Other climbers
@@ -351,10 +415,10 @@ const DontLookDownGame = ({ sessionId, studentId }: Props) => {
         if (peer.t < cutoff) { delete peersRef.current[id]; continue; }
         const x = sx(peer.x), y = sy(peer.y);
         if (x < -30 || x > bw + 30 || y < -30 || y > bh + 30) continue;
-        drawCharacter(bctx, x, y, WORLD.playerW * PX, WORLD.playerH * PX, peer.name ?? "?", (peer.face ?? 1) as 1 | -1, {
+        drawCharacter(sharp, x, y, WORLD.playerW * PX, WORLD.playerH * PX, peer.name ?? "?", (peer.face ?? 1) as 1 | -1, {
           t: tSec, alpha: 0.75, grounded: true, colorIndex: peer.avatarColor, faceIndex: peer.avatarFace,
         });
-        drawNameTag(bctx, x + (WORLD.playerW * PX) / 2, y - 22, peer.name ?? "");
+        drawNameTag(sharp, x + (WORLD.playerW * PX) / 2, y - 22, peer.name ?? "");
       }
 
       // Self
@@ -367,11 +431,11 @@ const DontLookDownGame = ({ sessionId, studentId }: Props) => {
         bctx.fillRect(pxs - 4, pys - 14, 1, 12);
         bctx.fillRect(pxs + WORLD.playerW * PX + 3, pys - 14, 1, 12);
       }
-      drawCharacter(bctx, pxs, pys, WORLD.playerW * PX, WORLD.playerH * PX, meRef.current?.name ?? "?", p.face as 1 | -1, {
+      drawCharacter(sharp, pxs, pys, WORLD.playerW * PX, WORLD.playerH * PX, meRef.current?.name ?? "?", p.face as 1 | -1, {
         t: tSec, vx: p.vx, grounded: p.grounded, frozen,
         colorIndex: meRef.current?.avatar_color, faceIndex: meRef.current?.avatar_face,
       });
-      drawNameTag(bctx, pxs + (WORLD.playerW * PX) / 2, pys - 22, meRef.current?.name ?? "");
+      drawNameTag(sharp, pxs + (WORLD.playerW * PX) / 2, pys - 22, meRef.current?.name ?? "");
 
       // Last, so it hazes the blocks rather than sitting behind them.
       drawTopFog(bctx, bw, bh, blend);
@@ -522,6 +586,8 @@ const DontLookDownGame = ({ sessionId, studentId }: Props) => {
 
   const energyPct = Math.max(0, Math.min(100, (hud.energy / maxEnergy) * 100));
   const frozen = hud.energy <= 0;
+  // Warned before committing to a jump, rather than after falling off one.
+  const lowEnergy = !frozen && hud.energy <= ENERGY.low;
   const featherLeft = Math.max(0, Math.ceil((hud.featherUntil - now) / 1000));
 
   // ── Waiting ───────────────────────────────────────────────────────────────
@@ -557,7 +623,7 @@ const DontLookDownGame = ({ sessionId, studentId }: Props) => {
         <div className="text-2xl font-extrabold">{ar ? "انتهى التسلّق" : "Climb Over"}</div>
         <div className="flex gap-3">
           {[
-            { label: ar ? "الارتفاع" : "HEIGHT", value: `${Math.round(Math.max(pRef.current.maxHeight, me?.height_reached ?? 0))}m`, color: "#0284c7" },
+            { label: ar ? "الارتفاع" : "HEIGHT", value: `${toMetres(Math.max(pRef.current.maxHeight, me?.height_reached ?? 0))}m`, color: "#0284c7" },
             { label: ar ? "النقود" : "CASH", value: `$${cash}`, color: "#b45309" },
             { label: ar ? "صحيح" : "CORRECT", value: `${me?.correct_answers ?? 0}`, color: "#15803d" },
           ].map(s => (
@@ -568,8 +634,8 @@ const DontLookDownGame = ({ sessionId, studentId }: Props) => {
           ))}
         </div>
         <button onClick={() => navigate("/join")}
-          className="mt-3 px-7 py-3 rounded-xl font-extrabold text-sm text-white shadow-lg active:scale-95 transition-transform"
-          style={{ background: "#4f46e5" }}>
+          className="mt-3 px-7 py-3 text-sm font-black active:translate-y-[3px] transition-transform"
+          style={{ ...CTRL, background: GOLD, color: "#3b2606", borderTopColor: "#ffe9a8" }}>
           {ar ? "خروج" : "EXIT"}
         </button>
       </div>
@@ -580,27 +646,28 @@ const DontLookDownGame = ({ sessionId, studentId }: Props) => {
   return (
     <div className="fixed inset-0 overflow-hidden select-none" style={{ background: "#8bd9f7", touchAction: "none" }}>
       <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" style={{ imageRendering: "pixelated" }} />
+      <canvas ref={overlayRef} className="absolute inset-0 h-full w-full pointer-events-none" />
 
       {/* ── HUD: floating white pills over the sky ── */}
       <div className="absolute inset-x-0 top-0 p-3 pointer-events-none" style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}>
         <div className="flex items-start justify-between gap-3">
           <div className="flex flex-col gap-2 items-start">
             <div className={PILL} style={PILL_STYLE}>
-              <span className="text-sm font-extrabold tabular-nums" style={{ color: "#1e293b" }}>
-                {ar ? "الارتفاع" : "Height"}: {Math.max(0, Math.round(hud.height))}m
+              <span className="text-base font-black tabular-nums" style={{ color: "#1e293b" }}>
+                {toMetres(hud.height)}m
               </span>
             </div>
-            <div className={PILL} style={{ ...PILL_STYLE, minWidth: 152 }}>
-              <Zap className="h-3.5 w-3.5 shrink-0" style={{ color: frozen ? "#dc2626" : "#0284c7" }} />
-              <div className="flex-1 h-2 overflow-hidden rounded-full" style={{ background: "rgba(15,23,42,0.12)" }}>
-                <div className="h-full rounded-full transition-[width] duration-100"
-                  style={{ width: `${energyPct}%`, background: frozen ? "#dc2626" : energyPct < 25 ? "#f59e0b" : "#0ea5e9" }} />
+            <div className={cn(PILL, lowEnergy && "animate-pulse")} style={{ ...PILL_STYLE, minWidth: 152 }}>
+              <Zap className="h-3.5 w-3.5 shrink-0" style={{ color: frozen ? "#dc2626" : lowEnergy ? "#b45309" : "#0284c7" }} />
+              <div className="flex-1 h-2 overflow-hidden" style={{ background: "rgba(15,23,42,0.14)" }}>
+                <div className="h-full transition-[width] duration-100"
+                  style={{ width: `${energyPct}%`, background: frozen ? "#dc2626" : lowEnergy ? "#f59e0b" : "#0ea5e9" }} />
               </div>
               <span className="text-[11px] font-extrabold tabular-nums shrink-0"
-                style={{ color: frozen ? "#dc2626" : "#0f172a" }}>{Math.round(hud.energy)}</span>
+                style={{ color: frozen ? "#dc2626" : lowEnergy ? "#b45309" : "#0f172a" }}>{Math.round(hud.energy)}</span>
             </div>
             {featherLeft > 0 && (
-              <div className={PILL} style={{ ...PILL_STYLE, background: "rgba(14,165,233,0.94)" }}>
+              <div className={PILL} style={{ ...PILL_STYLE, background: "#0ea5e9" }}>
                 <Feather className="h-3.5 w-3.5" style={{ color: "white" }} />
                 <span className="text-xs font-extrabold tabular-nums text-white">{featherLeft}s</span>
               </div>
@@ -611,12 +678,6 @@ const DontLookDownGame = ({ sessionId, studentId }: Props) => {
             <div className={PILL} style={PILL_STYLE}>
               <PixelShield className="h-3.5 w-3.5" />
               <span className="text-sm font-extrabold tabular-nums" style={{ color: "#1e293b" }}>${cash}</span>
-            </div>
-            <div className={PILL} style={PILL_STYLE}>
-              <PixelFlame className="h-3.5 w-3.5" />
-              <span className="text-sm font-extrabold tabular-nums" style={{ color: streak >= 2 ? "#b45309" : "#475569" }}>
-                {streak} ×{mult}
-              </span>
             </div>
           </div>
         </div>
@@ -631,106 +692,173 @@ const DontLookDownGame = ({ sessionId, studentId }: Props) => {
         </div>
       )}
 
-      {summited && !frozen && (
-        <div className="absolute inset-x-0 top-28 flex justify-center pointer-events-none">
-          <div className="px-5 py-2.5 rounded-2xl text-sm font-extrabold shadow-lg"
-            style={{ background: "rgba(245,158,11,0.96)", color: "#3b2606" }}>
-            {ar ? "وصلت القمة!" : "SUMMIT REACHED!"}
+      {lowEnergy && (
+        <div className="absolute inset-x-0 z-10 flex justify-center pointer-events-none px-6"
+          style={{ top: "calc(max(0.75rem, env(safe-area-inset-top)) + 5.5rem)" }}>
+          <div className="flex items-center gap-2 px-4 py-2 text-xs font-black animate-pulse"
+            style={{ background: "#f59e0b", color: "#3b2606", border: "2px solid #12151f", borderTopWidth: 4, borderTopColor: "#ffe9a8", boxShadow: "0 4px 0 0 #12151f" }}>
+            <Zap className="h-3.5 w-3.5" />
+            {ar ? "طاقة منخفضة" : "LOW ENERGY"}
           </div>
         </div>
       )}
 
-      {/* ── Answer Questions (matches the reference's bottom-left CTA) ── */}
-      <button onClick={() => { setQSeed(s => s + 1); setShowQuiz(true); }}
-        className={cn("absolute left-4 z-10 px-4 py-2.5 rounded-xl text-sm font-extrabold text-white shadow-lg active:scale-95 transition-transform",
-          frozen && "animate-pulse")}
-        style={{ background: frozen ? "#dc2626" : "#4f46e5", bottom: "calc(env(safe-area-inset-bottom) + 6.5rem)" }}>
-        {ar ? "أجب على الأسئلة" : "Answer Questions"}
-      </button>
+      {showSummit && (
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center overflow-hidden select-none"
+          style={{ background: "rgba(5,6,15,0.86)" }}
+          onClick={() => setShowSummit(false)}>
+          <div className="pointer-events-none absolute left-1/2 top-1/2 h-[160vmax] w-[160vmax] -translate-x-1/2 -translate-y-1/2 animate-dld-summit-rays"
+            style={{ background: "conic-gradient(from 0deg, rgba(255,216,118,0.16) 0 6deg, transparent 6deg 30deg)" }} />
 
-      {/* ── Touch controls ── */}
-      <div className="absolute inset-x-0 bottom-0 p-4 flex items-end justify-between gap-3"
+          {CONFETTI.map((c, i) => (
+            <span key={i} aria-hidden
+              className="pointer-events-none absolute top-0 h-2.5 w-2.5 animate-dld-confetti"
+              style={{ left: c.left, background: c.color, animationDuration: c.dur, animationDelay: c.delay }} />
+          ))}
+
+          <div className="relative flex flex-col items-center animate-dld-summit-pop">
+            <Avatar name={meRef.current?.name ?? "?"} size="xl"
+              colorIndex={meRef.current?.avatar_color} faceIndex={meRef.current?.avatar_face} />
+            <Trophy className="h-8 w-8 mt-4" style={{ color: "#ffd876" }} />
+            <div className="mt-2 text-3xl sm:text-4xl font-black tracking-tight text-center" style={{ color: "#ffd876" }}>
+              {ar ? "وصلت القمة!" : "SUMMIT REACHED!"}
+            </div>
+            <div className="mt-3 px-5 py-2 text-lg font-black tabular-nums"
+              style={{ background: "#2f3646", color: "#dce4f0", border: "2px solid #12151f", borderTopWidth: 4, borderTopColor: "#7fe0a2", boxShadow: "0 5px 0 0 #12151f" }}>
+              {toMetres(hud.height)}m
+            </div>
+            <p className="mt-6 text-xs font-bold" style={{ color: "rgba(220,228,240,0.6)" }}>
+              {ar ? "المس للمتابعة" : "TAP TO KEEP CLIMBING"}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* ── Controls ────────────────────────────────────────────────────────
+          dir="ltr" is load-bearing: the site runs RTL, which was mirroring the
+          control bar so move and jump swapped sides between screens. Movement
+          is always left, jump is always right. Sizes are in vmin so landscape,
+          where height is the scarce axis, shrinks them instead of cramping. */}
+      <div dir="ltr" className="absolute inset-x-0 bottom-0 z-10 flex items-end justify-between gap-3 p-4"
         style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}>
-        <div className="flex gap-2.5">
+        <div className="flex items-end gap-4">
           {([["arrowleft", ArrowLeft], ["arrowright", ArrowRight]] as const).map(([key, Icon]) => (
             <button key={key}
               onPointerDown={e => { e.preventDefault(); holdKey(key, true); }}
               onPointerUp={() => holdKey(key, false)}
               onPointerLeave={() => holdKey(key, false)}
               onPointerCancel={() => holdKey(key, false)}
-              className="h-16 w-16 rounded-2xl flex items-center justify-center shadow-md active:scale-95 transition-transform"
-              style={{ background: "rgba(255,255,255,0.92)", color: "#1e293b" }}>
-              <Icon className="h-7 w-7" strokeWidth={2.6} />
+              className="flex items-center justify-center active:translate-y-[3px] transition-transform"
+              style={{ ...CTRL, width: CTRL_D, height: CTRL_D, background: "#f4f8fb", color: "#1e293b" }}>
+              <Icon style={{ width: "45%", height: "45%" }} strokeWidth={2.6} />
             </button>
           ))}
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-end gap-4">
           <button onClick={() => setShowShop(true)}
-            className="h-14 w-14 rounded-2xl flex flex-col items-center justify-center gap-0.5 shadow-md active:scale-95 transition-transform"
-            style={{ background: "rgba(255,255,255,0.92)", color: "#1e293b" }}>
-            <Store className="h-5 w-5" strokeWidth={2.4} />
-            <span className="text-[8px] font-extrabold">{ar ? "متجر" : "SHOP"}</span>
+            className="flex flex-col items-center justify-center gap-0.5 active:translate-y-[3px] transition-transform"
+            style={{ ...CTRL, width: CTRL_D, height: CTRL_D, background: "#f4f8fb", color: "#1e293b" }}>
+            <Store style={{ width: "34%", height: "34%" }} strokeWidth={2.4} />
+            <span className="text-[9px] font-black">{ar ? "متجر" : "SHOP"}</span>
           </button>
           <button
             onPointerDown={e => { e.preventDefault(); holdKey(" ", true); }}
             onPointerUp={() => holdKey(" ", false)}
             onPointerLeave={() => holdKey(" ", false)}
             onPointerCancel={() => holdKey(" ", false)}
-            className="h-20 w-20 rounded-2xl flex flex-col items-center justify-center shadow-lg active:scale-95 transition-transform"
-            style={{ background: "#4f46e5", color: "white" }}>
-            <ArrowUp className="h-8 w-8" strokeWidth={2.8} />
-            {hasDoubleJump && <span className="text-[8px] font-extrabold tracking-wider">×2</span>}
+            className="flex flex-col items-center justify-center active:translate-y-[3px] transition-transform"
+            style={{ ...CTRL, width: JUMP_D, height: JUMP_D, background: GOLD, color: "#3b2606", borderTopColor: "#ffe9a8" }}>
+            <ArrowUp style={{ width: "44%", height: "44%" }} strokeWidth={2.8} />
+            {hasDoubleJump && <span className="text-[9px] font-black tracking-wider">x2</span>}
           </button>
         </div>
       </div>
 
+      {/* Sits directly above the movement pad, on the same side, so the two
+          things a thumb reaches for are never on opposite edges. */}
+      <button dir="ltr" onClick={() => { setQSeed(s => s + 1); setShowQuiz(true); }}
+        className={cn("absolute left-4 z-10 px-4 py-2.5 text-sm font-black active:translate-y-[3px] transition-transform",
+          frozen && "animate-pulse")}
+        style={{
+          ...CTRL,
+          background: frozen ? "#dc2626" : "#12203a",
+          color: frozen ? "#ffffff" : "#ffd876",
+          borderTopColor: frozen ? "#fca5a5" : "#3d4560",
+          bottom: `calc(env(safe-area-inset-bottom) + 1rem + ${CTRL_D} + 0.75rem)`,
+        }}>
+        {ar ? "أجب على الأسئلة" : "Answer Questions"}
+      </button>
+
       {/* ── Quiz overlay ── */}
+      {/* ── Questions ──────────────────────────────────────────────────────
+          Dressed as part of the climb rather than as a generic quiz sheet: the
+          night sky the player is climbing through, the question on a slab like
+          the hint signs in the world, and each answer built as a platform with
+          a lit top edge that settles under you when you press it. */}
       {showQuiz && (
-        <div className="absolute inset-0 z-40 flex flex-col" style={{ background: "rgba(8,12,24,0.96)" }}>
-          <div className="flex items-center justify-between px-4 py-3 shrink-0"
-            style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+        <div className="absolute inset-0 z-40 flex flex-col" style={{ background: DLD_SKY }}>
+          <div className="pointer-events-none absolute inset-0" style={{ backgroundImage: DLD_STARS }} />
+
+          <div className="relative flex items-center justify-between px-4 py-3 shrink-0"
+            style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))", borderBottom: "2px solid rgba(125,211,252,0.16)" }}>
             <div className="flex items-center gap-2">
               <Zap className="h-4 w-4" style={{ color: "#38bdf8" }} />
               <span className="text-sm font-black tabular-nums" style={{ color: "#7dd3fc" }}>
                 {Math.round(hud.energy)}/{maxEnergy}
               </span>
-              <span className="text-xs opacity-50" style={{ color: "white" }}>
+              <span className="text-xs font-bold" style={{ color: "#ffd876" }}>
                 +{ENERGY.rewardPerCorrect * mult} {ar ? "لكل إجابة" : "per correct"}
               </span>
             </div>
             <button onClick={() => setShowQuiz(false)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black"
-              style={{ background: "rgba(255,255,255,0.1)", color: "white" }}>
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-black active:translate-y-[2px] transition-transform"
+              style={{ background: "#2f3646", color: "#dce4f0", border: "2px solid #12151f", borderTopColor: "#98a3b5", boxShadow: "0 3px 0 0 #12151f" }}>
               <X className="h-3.5 w-3.5" />{ar ? "تسلّق" : "CLIMB"}
             </button>
           </div>
 
           {currentQ && (
-            <div className="flex-1 flex flex-col gap-3 p-4 min-h-0 overflow-y-auto">
-              <div className="rounded-xl px-4 py-5 shrink-0"
-                style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}>
+            <div className="relative flex-1 flex flex-col gap-4 p-4 min-h-0 overflow-y-auto">
+              {/* The question, on a sign like the ones staked into the level */}
+              <div className="shrink-0 px-4 py-4"
+                style={{ background: "rgba(12,16,26,0.85)", border: "2px solid #12151f", borderTopColor: "#3d4560", boxShadow: "0 4px 0 0 #12151f" }}>
                 {currentQ.image_url && (
-                  <img src={currentQ.image_url} alt="" className="mx-auto max-h-[22vh] w-auto object-contain mb-3 rounded" />
+                  <img src={currentQ.image_url} alt="" className="mx-auto max-h-[22vh] w-auto object-contain mb-3" />
                 )}
-                <p className="text-base font-bold leading-snug text-center" style={{ color: "hsl(210 30% 92%)" }}>
+                <p className="text-base font-bold leading-snug text-center" style={{ color: "#ffd876" }}>
                   {currentQ.text}
                 </p>
               </div>
-              <div className="grid grid-cols-2 gap-2.5 flex-1 min-h-0">
+
+              <div className="grid grid-cols-2 gap-3 flex-1 min-h-0">
                 {currentQ.options.map((opt, i) => {
                   const isCorrect = i === currentQ.correct_index;
                   const isPicked = picked === i;
                   const show = picked !== null;
-                  let bg = "rgba(255,255,255,0.06)", bd = "rgba(255,255,255,0.14)", col = "hsl(210 30% 88%)";
-                  if (show && isCorrect)       { bg = "rgba(34,197,94,0.16)"; bd = "#22c55e"; col = "#86efac"; }
-                  else if (show && isPicked)   { bg = "rgba(239,68,68,0.16)"; bd = "#ef4444"; col = "#fca5a5"; }
-                  else if (show)               { bg = "rgba(255,255,255,0.03)"; bd = "rgba(255,255,255,0.06)"; col = "rgba(255,255,255,0.3)"; }
+                  // A platform: dark stone body, a lit top edge, a hard shadow
+                  // underneath so it reads as something with thickness.
+                  let body = "#2f3646", top = "#98a3b5", col = "#dce4f0", dim = false;
+                  if (show && isCorrect)     { body = "#1f4635"; top = "#7fe0a2"; col = "#b8f5d0"; }
+                  else if (show && isPicked) { body = "#4a2230"; top = "#f87171"; col = "#fecaca"; }
+                  else if (show)             { body = "#20242f"; top = "#3d4560"; col = "#5d6780"; dim = true; }
                   return (
                     <button key={i} disabled={picked !== null} onClick={() => answer(i)}
-                      className="relative rounded-xl px-3 py-4 text-sm font-bold transition-all"
-                      style={{ minHeight: 76, background: bg, border: `2px solid ${bd}`, color: col }}>
-                      <span className="absolute top-2 left-2.5 text-[9px] font-black opacity-40">{["A","B","C","D"][i]}</span>
+                      className={cn(
+                        "relative flex items-center justify-center px-3 py-4 text-sm font-bold transition-all",
+                        !show && "active:translate-y-[3px]",
+                      )}
+                      style={{
+                        minHeight: 82,
+                        background: body,
+                        color: col,
+                        border: "2px solid #12151f",
+                        borderTopWidth: 4,
+                        borderTopColor: top,
+                        boxShadow: show ? "0 2px 0 0 #12151f" : "0 5px 0 0 #12151f",
+                        opacity: dim ? 0.55 : 1,
+                      }}>
+                      <span className="absolute top-1.5 start-2 h-2 w-2" style={{ background: top }} aria-hidden />
                       {opt}
                     </button>
                   );

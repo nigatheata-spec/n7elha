@@ -878,12 +878,34 @@
   .animate-dot-rise        { animation: dot-rise 6s ease-in-out infinite; }
   .animate-shadow-contract { animation: shadow-contract 9s ease-in-out infinite; }
 
+  /* Don't Look Down — reaching the summit. Confetti is square and un-eased so
+     it falls like the game's own pixels rather than like paper. */
+  @keyframes dld-confetti {
+    0%   { transform: translateY(-12vh) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(112vh) rotate(540deg); opacity: 0.9; }
+  }
+  @keyframes dld-summit-pop {
+    0%   { transform: scale(0.4); opacity: 0; }
+    55%  { transform: scale(1.08); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  @keyframes dld-summit-rays {
+    0%   { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  .animate-dld-confetti   { animation: dld-confetti linear forwards; }
+  .animate-dld-summit-pop { animation: dld-summit-pop 620ms cubic-bezier(0.16,1,0.3,1) both; }
+  .animate-dld-summit-rays{ animation: dld-summit-rays 24s linear infinite; }
+
   @media (prefers-reduced-motion: reduce) {
     .animate-ribbon-flow,
     .animate-ribbon-draw,
     .animate-mark-breathe,
     .animate-halo-pulse,
     .animate-dot-rise,
-    .animate-shadow-contract { animation: none; }
+    .animate-shadow-contract,
+    .animate-dld-confetti,
+    .animate-dld-summit-pop,
+    .animate-dld-summit-rays { animation: none; }
   }
 }
