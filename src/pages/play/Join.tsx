@@ -26,10 +26,55 @@ const PASSWORD_POOL_AR = [
   "sigma_67", "gyatt_alert", "labubu_67", "goated_af",
 ];
 
-// Crypto Rush terminal theme (used by boot + launch stages only)
-const CR = { bg: "#06110d", accent: "#00ff88", accentDim: "#00ff8825", accentBorder: "#00ff8845" };
+// Crypto Rush terminal theme (used by boot + launch stages only) — same green
+// as the real in-session terminal (Game.tsx) and the teacher monitor, not an
+// independently-invented shade.
+const CR = { bg: "#06110d", accent: "hsl(120 100% 55%)", accentDim: "hsl(120 100% 55% / 0.14)", accentBorder: "hsl(120 100% 55% / 0.27)" };
 
 type Stage = "code" | "name" | "boot" | "launch";
+
+/**
+ * Types out `lines` one character at a time while `active` is true, restarting
+ * fresh each time `active` flips from false to true (not on every re-render —
+ * `lines` is read through a ref so a parent re-render recreating the array
+ * doesn't reset progress). Driven by a single setTimeout chain instead of an
+ * async loop: the effect's cleanup clears the pending timer, so double-firing
+ * the effect (React re-running effects) can't produce two overlapping chains.
+ */
+const useTypewriter = (lines: string[], active: boolean) => {
+  const [committed, setCommitted] = useState<string[]>([]);
+  const [current, setCurrent] = useState("");
+  const linesRef = useRef<string[]>(lines);
+  linesRef.current = lines;
+
+  useEffect(() => {
+    if (!active) return;
+    const script = linesRef.current;
+    setCommitted([]);
+    setCurrent("");
+    let li = 0, ci = 0;
+    let timer: ReturnType<typeof setTimeout>;
+    const tick = () => {
+      if (li >= script.length) return;
+      const line = script[li];
+      if (ci < line.length) {
+        ci += 1;
+        setCurrent(line.slice(0, ci));
+        timer = setTimeout(tick, 58);
+      } else {
+        const finishedLine = line;
+        li += 1; ci = 0;
+        setCommitted(prev => [...prev, finishedLine]);
+        setCurrent("");
+        timer = setTimeout(tick, 408);
+      }
+    };
+    timer = setTimeout(tick, 0);
+    return () => clearTimeout(timer);
+  }, [active]);
+
+  return { committed, current, done: committed.length > 0 && committed.length === lines.length };
+};
 
 // ─── Join ───────────────────────────────────────────────────────────────────
 const Join = () => {
@@ -84,11 +129,6 @@ const Join = () => {
       document.documentElement.dir = prevDir;
     };
   }, []);
-
-  // Typewriter buffers
-  const [bootLines, setBootLines]     = useState<string[]>([]);
-  const [bootCurrent, setBootCurrent] = useState("");
-  const [launchLines, setLaunchLines] = useState<string[]>([]);
 
   const code  = cells.join("");
   const mode  = (session?.settings?.mode as string) ?? "crypto_rush";
@@ -157,52 +197,32 @@ const Join = () => {
     cellRefs[Math.min(text.length, 3)].current?.focus();
   };
 
-  // ── Crypto Rush: boot typewriter ──────────────────────────────
+  // ── Crypto Rush: boot typewriter, then launch typewriter ──────
   const BOOT_LINES = ar
     ? ["> تم اكتشاف مستخدم جديد!", "> أهلاً بك في بوابة اختراق الطرفية", "> اختر كلمة مرور:"]
     : ["> New User Detected!", "> Welcome to the Terminal Hacking Portal", "> Please select a password:"];
-  useEffect(() => {
-    if (stage !== "boot") return;
-    setBootLines([]); setBootCurrent("");
-    let cancelled = false;
-    let li = 0;
-    (async () => {
-      while (li < BOOT_LINES.length) {
-        for (let i = 1; i <= BOOT_LINES[li].length; i++) {
-          if (cancelled) return;
-          setBootCurrent(BOOT_LINES[li].slice(0, i));
-          await new Promise(r => setTimeout(r, 58));
-        }
-        if (cancelled) return;
-        setBootLines(prev => [...prev, BOOT_LINES[li]]);
-        setBootCurrent(""); li++;
-        await new Promise(r => setTimeout(r, 408));
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [stage]);
-  const showPasswords = bootLines.length === BOOT_LINES.length;
-
-  // ── Crypto Rush: launch sequence then navigate ────────────────
   const LAUNCH_LINES = ar
     ? ["> تم التحقق من الهوية", "> جارٍ تحميل برنامج تعدين الكريبتو...", ">", "> .......", "> .......", "> جارٍ الإطلاق..."]
     : ["> Authentication Complete", "> Loading Crypto Mining Software...", ">", "> .......", "> .......", "> Launching..."];
+
+  const boot = useTypewriter(BOOT_LINES, stage === "boot");
+  const launch = useTypewriter(LAUNCH_LINES, stage === "launch");
+  const showPasswords = boot.done;
+
+  // Boot + launch render as ONE continuous scrolling terminal — this ref
+  // auto-scrolls to the bottom as lines append, same pattern as the real
+  // in-session terminal's log in Game.tsx.
+  const logRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (stage !== "launch" || !session) return;
-    setLaunchLines([]);
-    let cancelled = false;
-    const snap = { session, name, chosen };
-    (async () => {
-      for (const line of LAUNCH_LINES) {
-        if (cancelled) return;
-        setLaunchLines(prev => [...prev, line]);
-        await new Promise(r => setTimeout(r, 1054));
-      }
-      if (cancelled) return;
-      await doInsert(snap.session, snap.name, snap.chosen ?? "");
-    })();
-    return () => { cancelled = true; };
-  }, [stage]);
+    logRef.current?.scrollTo({ top: logRef.current.scrollHeight });
+  }, [boot.committed, boot.current, launch.committed, chosen]);
+
+  // Once the launch line-up finishes typing, actually join the game.
+  useEffect(() => {
+    if (!launch.done || !session) return;
+    doInsert(session, name, chosen ?? "");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [launch.done]);
 
   const doInsert = async (sess: any, playerName: string, password: string) => {
     try {
@@ -444,25 +464,36 @@ const Join = () => {
     );
   }
 
-  // ── Crypto Rush: boot + password ─────────────────────────────
-  if (stage === "boot") {
+  // ── Crypto Rush: boot + password + launch, one continuous terminal ──────
+  // Picking a password never swaps to a fresh screen — it keeps appending to
+  // the same scrolling log, auto-scrolled to the bottom as new lines arrive.
+  if (stage === "boot" || stage === "launch") {
     return (
-      <div className="fixed inset-0 font-mono overflow-y-auto terminal-screen" style={{ color: CR.accent }}>
+      <div className="fixed inset-0 font-mono overflow-hidden terminal-screen" style={{ color: CR.accent }}>
         <div className="scan-sweep" style={{ "--sweep-color": CR.accent } as React.CSSProperties} />
-        <div className="pointer-events-none fixed inset-0 terminal-scanlines" />
-        <div className="pointer-events-none fixed inset-0 terminal-vignette" />
-        <div className="relative p-6 md:p-16 py-12 min-h-full font-pixel scan-sweep-fade">
-          <h1 className="text-3xl md:text-5xl font-black tracking-wider mb-8" style={{ filter: `drop-shadow(0 0 18px ${CR.accent}70)` }}>
+        <div className="pointer-events-none fixed inset-0 terminal-scanlines z-20" />
+        <div className="pointer-events-none fixed inset-0 terminal-vignette z-20" />
+        <div className="relative z-10 flex flex-col h-full p-6 md:p-16 py-12 scan-sweep-fade">
+          <h1
+            className="shrink-0 font-pixel text-center leading-[1.7] mb-4 text-3xl md:text-5xl font-black tracking-wider"
+            style={{ filter: `drop-shadow(0 0 18px ${CR.accent}70)` }}
+          >
             {ar ? "أهلاً أيها المخترق" : "WELCOME HACKER"}
           </h1>
 
-          <div className="space-y-2 text-base md:text-xl">
-            {bootLines.map((l, i) => <div key={i}>{l}</div>)}
-            {bootCurrent && <div>{bootCurrent}<span className="animate-pulse">▌</span></div>}
+          <div ref={logRef} className="flex-1 min-h-0 overflow-y-auto space-y-2 text-base md:text-xl">
+            {boot.committed.map((l, i) => <div key={`b${i}`}>{l}</div>)}
+            {boot.current && <div>{boot.current}<span className="animate-pulse">▌</span></div>}
+            {chosen && (
+              <div className="opacity-60">{ar ? `> كلمة المرور: ${chosen}` : `> password: ${chosen}`}</div>
+            )}
+            {launch.committed.map((l, i) => <div key={`l${i}`}>{l}</div>)}
+            {launch.current && <div>{launch.current}<span className="animate-pulse">▌</span></div>}
+            {stage === "launch" && launch.done && <div className="animate-pulse">▌</div>}
           </div>
 
-          {showPasswords && (
-            <div className="mt-8 flex flex-wrap gap-3">
+          {stage === "boot" && showPasswords && (
+            <div className="shrink-0 mt-8 flex flex-wrap gap-3">
               {passwordChoices.map(p => (
                 <button
                   key={p}
@@ -477,21 +508,6 @@ const Join = () => {
               ))}
             </div>
           )}
-        </div>
-      </div>
-    );
-  }
-
-  // ── Crypto Rush: launch sequence ─────────────────────────────
-  if (stage === "launch") {
-    return (
-      <div className="fixed inset-0 font-mono terminal-screen" style={{ color: CR.accent }}>
-        <div className="scan-sweep" style={{ "--sweep-color": CR.accent } as React.CSSProperties} />
-        <div className="pointer-events-none fixed inset-0 terminal-scanlines" />
-        <div className="pointer-events-none fixed inset-0 terminal-vignette" />
-        <div className="relative p-6 md:p-16 py-12 space-y-3 text-base md:text-xl font-pixel scan-sweep-fade">
-          {launchLines.map((l, i) => <div key={i}>{l}</div>)}
-          <div className="animate-pulse mt-2">▌</div>
         </div>
       </div>
     );

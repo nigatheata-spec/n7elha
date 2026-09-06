@@ -6,6 +6,7 @@ import { Bitcoin, Square, Maximize, ArrowRight, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Seo } from "@/components/Seo";
 import { useConfirmDialog } from "@/hooks/use-confirm-dialog";
+import { colorForName } from "@/lib/avatarIdentity";
 import DodgeballMonitor from "./DodgeballMonitor";
 import HotPotatoMonitor from "./HotPotatoMonitor";
 import LavaFloorMonitor from "./LavaFloorMonitor";
@@ -25,6 +26,18 @@ const ord = (n: number) => {
 const GREEN = "hsl(120 100% 55%)";
 const GREEN_DIM = "hsl(120 60% 38%)";
 const GREEN_FAINT = "hsl(120 40% 22%)";
+
+/** A player's name as a solid color-on-black chip, not plain colored text —
+    readable at a glance on a projector where thin colored text on a dark
+    scanline background disappears from the back of a room. */
+const NameTag = ({ name, size = "md" }: { name: string; size?: "sm" | "md" }) => (
+  <span
+    className={`inline-block font-extrabold rounded ${size === "sm" ? "text-xs px-1.5 py-0.5" : "text-sm px-2.5 py-1"}`}
+    style={{ background: colorForName(name), color: "#0B1418", border: "2px solid #0B1418" }}
+  >
+    {name}
+  </span>
+);
 
 const GameMonitor = () => {
   const { sessionId } = useParams();
@@ -137,8 +150,8 @@ const GameMonitor = () => {
 
   return (
     <div
-      className="fixed inset-0 overflow-hidden font-mono flex flex-col"
-      style={{ background: "#050505", color: GREEN }}
+      className="theme-game terminal-screen crt-flicker fixed inset-0 overflow-hidden font-mono flex flex-col"
+      style={{ color: GREEN }}
     >
       {ConfirmDialog}
       <Seo
@@ -149,33 +162,13 @@ const GameMonitor = () => {
         descriptionEn="Teacher's live-session projector view."
         index={false}
       />
-      {/* dim pixel-art hacker bg */}
-      <div
-        className="pointer-events-none fixed inset-0"
-        style={{
-          backgroundImage: "url(/leaderboard-bg.png)",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          backgroundRepeat: "no-repeat",
-          opacity: 0.22,
-          imageRendering: "pixelated",
-        }}
-      />
-      {/* darkening + vignette overlay for contrast */}
-      <div
-        className="pointer-events-none fixed inset-0"
-        style={{
-          background:
-            "radial-gradient(ellipse at center, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.75) 75%, rgba(0,0,0,0.92) 100%)",
-        }}
-      />
-      {/* scanlines overlay */}
-      <div
-        className="pointer-events-none fixed inset-0 z-50"
-        style={{
-          backgroundImage: "repeating-linear-gradient(0deg, rgba(0,0,0,0.18) 0px, rgba(0,0,0,0.18) 1px, transparent 1px, transparent 4px)",
-        }}
-      />
+      {/* Same CRT phosphor treatment as the student Crypto Rush screen
+          (Game.tsx / Join.tsx) — a dark green glow, not flat black, with
+          scanlines and a soft vignette. Replaces an older ad-hoc dark
+          background image whose own baked-in "hacker UI" artwork competed
+          with the real leaderboard/hack-log text and read as illegible. */}
+      <div className="pointer-events-none fixed inset-0 terminal-scanlines z-20" />
+      <div className="pointer-events-none fixed inset-0 terminal-vignette z-20" />
 
       {/* ── TOP BAR ── */}
       <div
@@ -222,7 +215,7 @@ const GameMonitor = () => {
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] overflow-hidden">
 
         {/* LEFT — LEADERBOARD */}
-        <div className="flex flex-col overflow-hidden" style={{ borderRight: `1px solid ${GREEN_FAINT}` }}>
+        <div className="flex flex-col overflow-hidden">
           {/* section header */}
           <div
             className="text-xs px-5 py-2 shrink-0"
@@ -275,14 +268,8 @@ const GameMonitor = () => {
                     >
                       #{i + 1}
                     </span>
-                    <span
-                      className="truncate font-bold"
-                      style={{
-                        color: isFirst ? GREEN : "hsl(120 60% 50%)",
-                        textShadow: isFirst ? `0 0 10px hsl(120 100% 55% / 0.4)` : "none",
-                      }}
-                    >
-                      {s.name}
+                    <span className="truncate">
+                      <NameTag name={s.name} />
                     </span>
                     <span
                       className="font-black tabular-nums"
@@ -297,22 +284,27 @@ const GameMonitor = () => {
           </div>
         </div>
 
-        {/* RIGHT — HACK LOG + STATS */}
-        <div className="flex flex-col overflow-hidden">
+        {/* RIGHT — HACK LOG + STATS. Not a phosphor terminal at all — a solid
+            lime plaque with a thick black border, deliberately set apart
+            from the left panel's CRT green-on-black look. */}
+        <div
+          className="m-3 flex flex-col overflow-hidden rounded-lg"
+          style={{ background: "#8FC44A", border: "4px solid #0B1418" }}
+        >
 
           {/* HACK LOG */}
           <div className="flex-1 flex flex-col overflow-hidden">
             <div
-              className="text-xs px-5 py-2 flex items-center justify-between shrink-0"
-              style={{ color: GREEN_DIM, borderBottom: `1px solid ${GREEN_FAINT}` }}
+              className="text-xs px-5 py-2 flex items-center justify-between shrink-0 font-bold"
+              style={{ color: "#0B1418", borderBottom: "2px solid #0B1418" }}
             >
               <span>{ar ? "$ سجل_الاختراقات.مباشر" : "$ TAIL HACK_LOG.LIVE"}</span>
-              <span className="h-2 w-2 rounded-full animate-pulse" style={{ background: GREEN }} />
+              <span className="h-2 w-2 rounded-full animate-pulse" style={{ background: "#0B1418" }} />
             </div>
 
             <div className="flex-1 overflow-y-auto px-5 py-3 space-y-2">
               {hacks.length === 0 ? (
-                <div className="text-xs" style={{ color: GREEN_DIM }}>
+                <div className="text-xs font-semibold" style={{ color: "#0B1418" }}>
                   {">"} {ar ? "في انتظار أحداث الاختراق..." : "awaiting breach events..."}
                 </div>
               ) : (
@@ -322,20 +314,20 @@ const GameMonitor = () => {
                   return (
                     <div
                       key={h.id}
-                      className="flex items-start gap-2 text-xs leading-relaxed"
-                      style={{ color: h.success ? GREEN : GREEN_DIM, opacity: 1 - idx * 0.07 }}
+                      className="flex items-start gap-2 text-xs leading-relaxed font-semibold"
+                      style={{ color: "#0B1418", opacity: 1 - idx * 0.09 }}
                     >
                       <span className="shrink-0 mt-0.5">
                         {h.success ? ">" : "✗"}
                       </span>
-                      <span>
+                      <span className="inline-flex items-center gap-1.5 flex-wrap">
                         {h.success
                           ? (ar
-                              ? <><b>{hk}</b> اخترق <b>{tg}</b> · سرق ₿{fmt(h.crypto_transferred)}</>
-                              : <><b>{hk}</b> breached <b>{tg}</b> · stole ₿{fmt(h.crypto_transferred)}</>)
+                              ? <><NameTag name={hk} size="sm" /> اخترق <NameTag name={tg} size="sm" /> · سرق ₿{fmt(h.crypto_transferred)}</>
+                              : <><NameTag name={hk} size="sm" /> breached <NameTag name={tg} size="sm" /> · stole ₿{fmt(h.crypto_transferred)}</>)
                           : (ar
-                              ? <>فشل <b>{hk}</b> في اختراق <b>{tg}</b></>
-                              : <><b>{hk}</b> failed to breach <b>{tg}</b></>)
+                              ? <>فشل <NameTag name={hk} size="sm" /> في اختراق <NameTag name={tg} size="sm" /></>
+                              : <><NameTag name={hk} size="sm" /> failed to breach <NameTag name={tg} size="sm" /></>)
                         }
                       </span>
                     </div>
@@ -348,21 +340,18 @@ const GameMonitor = () => {
           {/* STATS BAR */}
           <div
             className="shrink-0 px-5 py-4 flex items-center justify-between"
-            style={{ borderTop: `1px solid ${GREEN_FAINT}` }}
+            style={{ borderTop: "2px solid #0B1418" }}
           >
             <div>
-              <div className="text-xs mb-0.5" style={{ color: GREEN_DIM }}>{ar ? "الإجمالي المتداول" : "TOTAL IN CIRCULATION"}</div>
-              <div
-                className="text-3xl font-black tabular-nums"
-                style={{ color: GREEN, textShadow: `0 0 20px hsl(120 100% 55% / 0.5)` }}
-              >
+              <div className="text-xs mb-0.5 font-bold" style={{ color: "#0B1418" }}>{ar ? "الإجمالي المتداول" : "TOTAL IN CIRCULATION"}</div>
+              <div className="text-3xl font-black tabular-nums" style={{ color: "#0B1418" }}>
                 ₿ {fmt(totalCrypto)}
               </div>
             </div>
             <div className="text-right">
-              <div className="text-xs" style={{ color: GREEN_DIM }}>{students.length} {ar ? "مخترق متصل" : "HACKERS ONLINE"}</div>
+              <div className="text-xs font-bold" style={{ color: "#0B1418" }}>{students.length} {ar ? "مخترق متصل" : "HACKERS ONLINE"}</div>
               {cap != null && (
-                <div className="text-xs mt-0.5" style={{ color: reachedCap ? GREEN : GREEN_DIM }}>
+                <div className="text-xs mt-0.5 font-bold" style={{ color: "#0B1418" }}>
                   {ar ? "الهدف" : "GOAL"}: ₿{fmt(cap)}
                 </div>
               )}
