@@ -53,7 +53,7 @@ const GameResults = () => {
       const cfg = readSettings(s?.settings);
       if (cfg.mode === "paintfight") {
         const { data: strokes } = await supabase.from("paint_fight_strokes")
-          .select("student_id,hue,cell_indices").eq("session_id", sessionId).order("created_at", { ascending: true });
+          .select("student_id,hue,cell_indices,op").eq("session_id", sessionId).order("created_at", { ascending: true });
         const totalCells = (cfg.arenaCols ?? 0) * (cfg.arenaRows ?? 0);
         setPaintCoverage(computeCoverage((strokes ?? []) as Stroke[], totalCells));
       }

@@ -41,6 +41,8 @@ const ScanSquare  = lazy(() => import("./pages/play/ScanSquare"));
 const Homework    = lazy(() => import("./pages/play/Homework"));
 // Dev-only art preview for Don't Look Down (see the file header).
 const DldPreview  = lazy(() => import("./pages/play/DldPreview"));
+// Dev-only rules/art preview for Paint Fight (see the file header).
+const PfPreview   = lazy(() => import("./pages/play/PaintFightPreview"));
 const NotFound    = lazy(() => import("./pages/NotFound"));
 
 import { ScrollToTop } from "@/components/ScrollToTop";
@@ -89,6 +91,7 @@ const AppContent = () => {
             <Route path="/auth" element={<Auth />} />
             <Route path="/join" element={<Join />} />
             {import.meta.env.DEV && <Route path="/join/dld-preview" element={<DldPreview />} />}
+            {import.meta.env.DEV && <Route path="/join/pf-preview" element={<PfPreview />} />}
             <Route path="/join/:sessionId" element={<Game />} />
             <Route path="/scan/:kitId/:typeCode" element={<ScanSquare />} />
             {/* Homework links are shared straight to students — short, no code, no lobby. */}

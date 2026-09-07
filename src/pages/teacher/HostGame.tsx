@@ -92,8 +92,8 @@ const MODES: { id: GameMode; icon: React.ReactNode; label: string; labelAr: stri
     icon: <PaintRollerIcon className="h-6 w-6" strokeWidth={2} />,
     label: "Paint Fight",
     labelAr: "معركة الطلاء",
-    desc: "Free-for-all territory battle — answers refill your paint",
-    descAr: "معركة حرة على الأرض — الإجابات تعيد ملء طلائك",
+    desc: "Capture ground by looping around it — answers fill your colour tank",
+    descAr: "احتلّ الأرض بالدوران حولها — الإجابات تملأ خزان اللون",
     accent: "#c2410c",
     num: "07",
   },
@@ -605,12 +605,12 @@ const HostGame = () => {
                 <>
                   <p className="text-black/65 leading-relaxed">
                     {ar
-                      ? "كل طالب يتحرك بعصا تحكم افتراضية على أرض مشتركة ويطلي أثره بلونه الخاص. التحرك يستهلك طلاءً، والإجابة الصحيحة هي الطريقة الوحيدة لتعبئته. اجمع قوى الدفع لتتحرك أسرع أو تطلي أوسع أو ترش مساحة فورية. الفائز من يطلي أكبر مساحة عند انتهاء الوقت."
-                      : "Each student drives a virtual joystick around a shared arena, painting a trail in their own color. Moving burns paint, and the only way to refill it is a correct answer. Power-ups let you move faster, roll wider, or splash an instant burst. Most territory painted when time runs out wins."}
+                      ? "كل طالب يملك قطعة أرض. اخرج منها وارسم دائرة وعُد إليها، فيصبح كل ما أحطت به لك — حتى لو كان لغيرك. لكنك مكشوف طوال وجودك خارج أرضك: من يلمس أثرك يقصيك وتخسر كل شيء، ومن تلمس أثره يخسر هو. التحرك يستهلك اللون، والإجابة الصحيحة هي الطريقة الوحيدة لتعبئة الخزان. صاحب أكبر مساحة عند انتهاء الوقت يفوز."
+                      : "Every student owns a patch of ground. Drive out of it, loop around, and come back: everything you enclosed becomes yours, whoever held it before. You are exposed the whole time you are outside your own ground — anyone who touches your trail cuts you off and you lose the lot, and the same goes for them. Moving spends colour, and the only way to refill your tank is a correct answer. Most ground held when time runs out wins."}
                   </p>
                   <div className="flex items-center gap-2 text-black/45">
                     <PaintRollerIcon className="h-4 w-4 shrink-0" style={{ color: selectedAccent }} />
-                    <span>{ar ? "أجب لتملأ الطلاء" : "Answer to refill your paint"}</span>
+                    <span>{ar ? "أجب لتملأ خزان اللون" : "Answer to fill your colour tank"}</span>
                   </div>
                 </>
               )}

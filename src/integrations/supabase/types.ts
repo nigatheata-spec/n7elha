@@ -192,6 +192,7 @@ export type Database = {
           eliminated_at: string | null
           energy_tier: number
           fight_hue: number | null
+          fight_kills: number
           hacks_made: number
           hacks_received: number
           height_reached: number
@@ -223,6 +224,7 @@ export type Database = {
           eliminated_at?: string | null
           energy_tier?: number
           fight_hue?: number | null
+          fight_kills?: number
           hacks_made?: number
           hacks_received?: number
           height_reached?: number
@@ -254,6 +256,7 @@ export type Database = {
           eliminated_at?: string | null
           energy_tier?: number
           fight_hue?: number | null
+          fight_kills?: number
           hacks_made?: number
           hacks_received?: number
           height_reached?: number
@@ -486,57 +489,13 @@ export type Database = {
           },
         ]
       }
-      paint_fight_powerups: {
-        Row: {
-          cell_index: number
-          claimed_at: string | null
-          claimed_by: string | null
-          created_at: string | null
-          id: string
-          kind: string
-          session_id: string
-        }
-        Insert: {
-          cell_index: number
-          claimed_at?: string | null
-          claimed_by?: string | null
-          created_at?: string | null
-          id?: string
-          kind: string
-          session_id: string
-        }
-        Update: {
-          cell_index?: number
-          claimed_at?: string | null
-          claimed_by?: string | null
-          created_at?: string | null
-          id?: string
-          kind?: string
-          session_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "paint_fight_powerups_claimed_by_fkey"
-            columns: ["claimed_by"]
-            isOneToOne: false
-            referencedRelation: "game_students"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "paint_fight_powerups_session_id_fkey"
-            columns: ["session_id"]
-            isOneToOne: false
-            referencedRelation: "game_sessions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       paint_fight_strokes: {
         Row: {
           cell_indices: number[]
           created_at: string | null
           hue: number
           id: string
+          op: string
           session_id: string
           student_id: string
         }
@@ -545,6 +504,7 @@ export type Database = {
           created_at?: string | null
           hue: number
           id?: string
+          op?: string
           session_id: string
           student_id: string
         }
@@ -553,6 +513,7 @@ export type Database = {
           created_at?: string | null
           hue?: number
           id?: string
+          op?: string
           session_id?: string
           student_id?: string
         }
