@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { TryGameButton } from "@/components/TryGameButton";
 import { Plus, Sparkles, Trash2, FileQuestion } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
 
@@ -57,12 +58,15 @@ const Quizzes = () => {
       {loading ? (
         <div className="text-muted-foreground">...</div>
       ) : quizzes.length === 0 ? (
-        <Card className="p-12 text-center">
-          <FileQuestion className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+        <div className="py-16 flex flex-col items-center text-center">
+          <FileQuestion className="h-12 w-12 text-muted-foreground mb-3" />
           <h3 className="font-bold text-lg">{t("no_quizzes")}</h3>
-          <p className="text-muted-foreground mb-4">{t("start_first")}</p>
-          <Button asChild className="bg-accent text-white hover:bg-accent/90"><Link to="/app/quizzes/new"><Plus className="h-4 w-4 me-2" />{t("create_quiz")}</Link></Button>
-        </Card>
+          <p className="text-muted-foreground mb-5">{t("start_first")}</p>
+          <div className="flex flex-wrap items-center justify-center gap-2.5">
+            <TryGameButton />
+            <Button asChild variant="outline" className="rounded-full"><Link to="/app/quizzes/new"><Plus className="h-4 w-4 me-2" />{t("create_quiz")}</Link></Button>
+          </div>
+        </div>
       ) : (
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-4">
           {quizzes.map((q) => (

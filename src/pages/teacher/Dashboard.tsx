@@ -12,6 +12,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/sonner";
+import { TryGameButton } from "@/components/TryGameButton";
 
 const PHRASES = {
   en: [
@@ -437,12 +438,15 @@ const Dashboard = () => {
         </div>
 
         {recentQuizzes.length === 0 ? (
-          <div className="py-14 flex flex-col items-center gap-3 text-center rounded-2xl border border-dashed border-border">
-            <div className="h-14 w-14 rounded-2xl bg-muted/60 flex items-center justify-center">
-              <FileQuestion className="h-6 w-6 opacity-30" />
-            </div>
-            <p className="text-sm text-muted-foreground max-w-xs">
-              {ar ? "ولّد اختباراً من الأعلى لتستضيف أول لعبة" : "Generate a quiz above to host your first game"}
+          <div className="py-12 flex flex-col items-center gap-4 text-center rounded-2xl border border-dashed border-border">
+            <p className="text-sm text-muted-foreground max-w-xs leading-relaxed">
+              {ar
+                ? "لا تحتاج إلى تحضير شيء. اختبار تجريبي جاهز، ورمز الغرفة على الشاشة خلال دقيقة."
+                : "Nothing to prepare. A sample quiz is ready, and a room code is on the board in a minute."}
+            </p>
+            <TryGameButton />
+            <p className="text-xs text-muted-foreground/70">
+              {ar ? "أو ولّد اختبارك الخاص من الأعلى" : "or generate your own quiz above"}
             </p>
           </div>
         ) : (

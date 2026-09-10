@@ -65,6 +65,7 @@ All state lives in Supabase — no separate backend. Everything is either a dire
 - `/app/host/:quizId` → mode picker (all 8 modes) then lobby config
 - `/app/games/:sessionId/monitor` → single route, `GameMonitor.tsx` — reads `session.settings.mode` and renders the matching `*Monitor` component (`ClassicMonitor`, `DodgeballMonitor`, `HotPotatoMonitor`, `LavaFloorMonitor`, `HumansVsZombiesMonitor`, `DontLookDownMonitor`, `PaintFightMonitor`; unmatched mode falls through to `GameMonitor`'s own Crypto Rush view)
 - `/app/games/:sessionId/results` → cinematic results screen
+- `/app/analytics` → `Analytics.tsx`, a view of `src/lib/analytics.ts` (pure, tested): per-session accuracy over time, hardest questions with the wrong option most students picked, quizzes by times hosted, and students to check on — folded by the *name they typed*, since students never log in. Fetches page through PostgREST's 1000-row cap with `.range()`.
 - `/app/settings` → account (display name, password) + language switcher
 
 **Student (`/play/*`)** — no auth, identity in `localStorage`:
@@ -112,7 +113,7 @@ Adding a new mode means: a `settings.mode` string, a `*Game.tsx` + `*Monitor.tsx
 
 Briefer than the two above since they're less central, but real and shipped:
 
-- **Classic** — simplest phase machine: `waiting → question → answered → done`. No dev-only preview harness on the others; `ClassicGame.tsx` has one at `/play/preview?preview=1&mode=classic&phase=...` for iterating on a phase's UI without hosting a real session.
+- **Classic** — simplest phase machine: `waiting → question → answered → done`. `ClassicGame.tsx` has a dev preview at `/play/preview?preview=1&mode=classic&phase=...` for iterating on a phase's UI without hosting a real session. Other DEV-only preview routes (registered only under `import.meta.env.DEV`): `/join/dld-preview` (Don't Look Down level art), `/join/pf-preview` (Paint Fight rules + look, with bots and a stand-in quiz), `/join/analytics-preview` (the analytics page over a synthetic term; `?empty=1`, `?lang=en`).
 - **Hot Potato** — `waiting → question → answered → passing → exploded → done`. The "potato" (bomb) passes between players on a fuse; whoever's holding it when `exploded` fires is out.
 - **Lava Floor** — co-op economy game. Correct answers earn currency spent on `BLOCK_TYPES` (`lavaFloorBlocks.ts`: plank → brick → staircase → house, each pricier and taller) to build a platform above the rising lava. Shares the income-tier upgrade pattern with Humans vs Zombies and Don't Look Down.
 - **Humans vs Zombies** — two-team economy game (`humansVsZombies.ts`). Each team has its own `INCOME_TIERS` (different flavor text per team, same cost/payout shape) and a `STREAK_DRAIN_TIERS` ladder that softens how much a wrong-answer streak reset costs.
@@ -128,6 +129,10 @@ Briefer than the two above since they're less central, but real and shipped:
 
 - `generate-quiz` → OpenRouter (`gemini-2.0-flash-001`) — document text + images → structured quiz via function calling
 - `generate-question-image` → Google AI (`gemini-2.0-flash-exp-image-generation`) → base64 image, uploaded to `question-images` storage bucket
+
+### First game
+
+A new teacher's empty states (dashboard, quiz list) offer `TryGameButton`: one tap inserts the bundled sample quiz (`src/lib/sampleQuiz.ts`, Arabic or English by current language, a real quiz in their account) and opens the host screen, so the first minute ends with a room code on the board.
 
 ### Auth
 

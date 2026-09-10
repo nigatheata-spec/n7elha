@@ -33,8 +33,8 @@ const HostedGames = lazy(() => import("./pages/teacher/HostedGames"));
 const HomeworkMonitorPage = lazy(() => import("./pages/teacher/HomeworkMonitorPage"));
 const GameMonitor = lazy(() => import("./pages/teacher/GameMonitor"));
 const GameResults = lazy(() => import("./pages/teacher/GameResults"));
-const Analytics    = lazy(() => import("./pages/teacher/Stubs").then(m => ({ default: m.Analytics })));
-const SettingsPage = lazy(() => import("./pages/teacher/Stubs").then(m => ({ default: m.SettingsPage })));
+const Analytics    = lazy(() => import("./pages/teacher/Analytics"));
+const SettingsPage = lazy(() => import("./pages/teacher/Settings").then(m => ({ default: m.SettingsPage })));
 const Join        = lazy(() => import("./pages/play/Join"));
 const Game        = lazy(() => import("./pages/play/Game"));
 const ScanSquare  = lazy(() => import("./pages/play/ScanSquare"));
@@ -43,6 +43,8 @@ const Homework    = lazy(() => import("./pages/play/Homework"));
 const DldPreview  = lazy(() => import("./pages/play/DldPreview"));
 // Dev-only rules/art preview for Paint Fight (see the file header).
 const PfPreview   = lazy(() => import("./pages/play/PaintFightPreview"));
+// Dev-only layout preview for the analytics page over synthetic data (see the file header).
+const AnalyticsPreview = lazy(() => import("./pages/teacher/AnalyticsPreview"));
 const NotFound    = lazy(() => import("./pages/NotFound"));
 
 import { ScrollToTop } from "@/components/ScrollToTop";
@@ -92,6 +94,7 @@ const AppContent = () => {
             <Route path="/join" element={<Join />} />
             {import.meta.env.DEV && <Route path="/join/dld-preview" element={<DldPreview />} />}
             {import.meta.env.DEV && <Route path="/join/pf-preview" element={<PfPreview />} />}
+            {import.meta.env.DEV && <Route path="/join/analytics-preview" element={<AnalyticsPreview />} />}
             <Route path="/join/:sessionId" element={<Game />} />
             <Route path="/scan/:kitId/:typeCode" element={<ScanSquare />} />
             {/* Homework links are shared straight to students — short, no code, no lobby. */}
