@@ -274,6 +274,21 @@
   html[lang="ar"] body { font-family: 'Almarai', system-ui, sans-serif; line-height: 1.55; }
 
   .font-mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+
+  /* iOS Safari zooms the whole page in when a form control with text smaller
+     than 16px gets focus, and never zooms back out — so one tap on a 14px
+     search box or select leaves the teacher looking at a cropped, blown-up
+     dashboard until they pinch. Force 16px on touch devices only; desktop keeps
+     the compact sizes. The :not() chain also lifts specificity past Tailwind's
+     text-sm utility, so no !important is needed. */
+  @media (hover: none) and (pointer: coarse) {
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+    textarea:not([hidden]),
+    select:not([hidden]),
+    button[role="combobox"] {
+      font-size: max(16px, 1em);
+    }
+  }
 }
 
 @layer utilities {
