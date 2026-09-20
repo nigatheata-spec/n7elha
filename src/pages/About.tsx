@@ -15,8 +15,8 @@ const About = () => {
   const t = isAr
     ? {
         kicker: "من نحن",
-        title: "بدأت الفكرة من المقاعد الخلفية",
-        sub: "نفلها شركة ناشئة سعودية في تقنية التعليم (EdTech) تبني منصة تعليمية تفاعلية للفصل العربي. لم نبدأ من دراسة سوق، بدأنا من تجربتنا نحن كطلاب.",
+        title: "كنا الطلاب اللي في آخر الصف",
+        sub: "نفلها شركة ناشئة سعودية في تقنية التعليم (EdTech) تبني منصة تعليمية تفاعلية للفصل. لم نبدأ من دراسة سوق، بدأنا من تجربتنا نحن كطلاب.",
 
         storyKicker: "قصتنا",
         storyTitle: "المشكلة مو إن الطالب ما يفهم، المشكلة إنه ما يهتم",
@@ -47,8 +47,8 @@ const About = () => {
       }
     : {
         kicker: "ABOUT US",
-        title: "It started in the back row",
-        sub: "nefelha is a Saudi EdTech startup building an interactive learning platform for the Arabic classroom. We did not begin with market research. We began with our own time as students.",
+        title: "We were the kids in the back row",
+        sub: "nefelha is a Saudi EdTech startup building an interactive learning platform for the classroom. We did not begin with market research. We began with our own time as students.",
 
         storyKicker: "OUR STORY",
         storyTitle: "Students show up. Their minds don't.",

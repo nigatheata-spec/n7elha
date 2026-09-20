@@ -11,7 +11,7 @@ import { Seo } from "@/components/Seo";
 
 const SUPPORT_EMAIL = "hello@nefelha.com";
 // TODO: placeholder — swap for the real support line once one exists.
-const SUPPORT_PHONE = "+966 50 000 0000";
+const SUPPORT_PHONE = "+966 53 923 3095";
 
 const Contact = () => {
   const { i18n } = useTranslation();
