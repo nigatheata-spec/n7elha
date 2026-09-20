@@ -1,1 +1,13 @@
 project_id = "qefffsvyhpcjikjokihi"
+
+# Where confirmation / reset emails send people. Without these Supabase ignores
+# the emailRedirectTo the app passes and falls back to its default localhost.
+[auth]
+site_url = "https://www.nefelha.com"
+additional_redirect_urls = [
+  "https://www.nefelha.com/**",
+  "https://nefelha.com/**",
+  "https://nefelha.app/**",
+  "http://localhost:8082/**",
+  "http://localhost:5173/**",
+]
