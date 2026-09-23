@@ -11,6 +11,19 @@ import { Avatar } from "@/components/Avatar";
 import { CIRCLE_COLORS, FACES, colorIndexForName, faceIndexForName } from "@/lib/avatarIdentity";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
+// Small, quiet back control shared by the code and name screens — same muted
+// chevron treatment as the avatar face arrows below, never a full button.
+const BackButton = ({ onClick, label }: { onClick: () => void; label: string }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    aria-label={label}
+    className="absolute top-6 left-6 z-20 h-9 w-9 flex items-center justify-center rounded-full text-white/25 hover:text-white/70 hover:bg-white/[0.06] transition-all duration-150 active:scale-90"
+  >
+    <ChevronLeft className="h-5 w-5" />
+  </button>
+);
+
 // ─── Password pools (Crypto Rush only) ─────────────────────────────────────
 // English pool: trendy internet-slang flavored, keeps the "hacker handle" feel
 const PASSWORD_POOL_EN = [
@@ -282,6 +295,7 @@ const Join = () => {
           descriptionEn="Enter your room code to join a live nefelha session."
           index={false}
         />
+        <BackButton onClick={() => nav("/")} label={ar ? "رجوع" : "Back"} />
         <div
           className="absolute inset-0 opacity-[0.04] pointer-events-none"
           style={{
@@ -339,6 +353,10 @@ const Join = () => {
         className="fixed inset-0 flex flex-col items-center justify-center p-6 safe-top safe-bottom overflow-hidden"
         style={{ background: "radial-gradient(ellipse at 50% 35%, #141928 0%, #080a10 70%)" }}
       >
+        <BackButton
+          onClick={() => { setSession(null); setCells(["", "", "", ""]); setStage("code"); setTimeout(() => r0.current?.focus(), 50); }}
+          label={ar ? "رجوع" : "Back"}
+        />
         <div
           className="absolute inset-0 opacity-[0.04] pointer-events-none"
           style={{
