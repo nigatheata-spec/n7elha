@@ -23,7 +23,7 @@
 //     stroke arriving) — not once a frame. `TerritoryPaths` below owns that
 //     cache and its invalidation.
 
-import { CELL, type Territory } from "./paintFight";
+import { CELL, type Territory, type GoldenDrop } from "./paintFight";
 import { resolveFace } from "./avatarIdentity";
 
 // An art-room table: a sheet of paper taped down on a wooden desk. The paper
@@ -514,6 +514,7 @@ export const drawMinimap = (
   cam: Camera, worldW: number, worldH: number,
   players: { x: number; y: number; hue: number }[],
   cx: number, cy: number, r: number,
+  drops: GoldenDrop[] = [],
 ) => {
   ctx.save();
   ctx.beginPath();
@@ -549,6 +550,15 @@ export const drawMinimap = (
     offX + (cam.x - cam.halfW) * mScale, offY + (cam.y - cam.halfH) * mScale,
     cam.halfW * 2 * mScale, cam.halfH * 2 * mScale,
   );
+  for (const d of drops) {
+    ctx.beginPath();
+    ctx.arc(offX + d.x * mScale, offY + d.y * mScale, 3.2, 0, Math.PI * 2);
+    ctx.fillStyle = GOLD;
+    ctx.fill();
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = GOLD_DEEP;
+    ctx.stroke();
+  }
   for (const p of players) {
     ctx.beginPath();
     ctx.arc(offX + p.x * mScale, offY + p.y * mScale, 2.4, 0, Math.PI * 2);
@@ -694,3 +704,83 @@ export class PaintFx {
     ctx.restore();
   }
 }
+
+// ── Golden drops ────────────────────────────────────────────────────────────
+
+const GOLD = "#F7C531";
+const GOLD_DEEP = "#B7861A";
+
+/** A fat drop of golden paint standing on the sheet: pops in, bobs and glints,
+ *  and blinks for its last second and a half so nobody drives to a ghost. */
+export const drawGoldenDrops = (
+  ctx: CanvasRenderingContext2D, drops: GoldenDrop[], offX: number, offY: number, scale: number, now = Date.now(),
+) => {
+  for (const d of drops) {
+    const age = now - d.bornAt, left = d.diesAt - now;
+    if (left <= 0) continue;
+    const pop = Math.min(1, age / 260);
+    const grow = pop < 1 ? 1 - Math.pow(1 - pop, 3) * Math.cos(pop * 7) * 0.4 : 1;
+    if (left < 1500 && Math.floor(left / 150) % 2 === 0) continue;
+    const bob = Math.sin(now / 260) * 2.2;
+    const x = offX + d.x * scale, y = offY + (d.y + bob) * scale;
+    const s = 11 * scale * grow;
+
+    ctx.save();
+    // Glow.
+    const glow = ctx.createRadialGradient(x, y, 0, x, y, s * 3.2);
+    glow.addColorStop(0, "rgba(255,214,90,0.55)");
+    glow.addColorStop(1, "rgba(255,214,90,0)");
+    ctx.fillStyle = glow;
+    ctx.beginPath(); ctx.arc(x, y, s * 3.2, 0, Math.PI * 2); ctx.fill();
+    // Shadow.
+    ctx.fillStyle = "rgba(18,58,51,0.2)";
+    ctx.beginPath(); ctx.ellipse(x, offY + (d.y + 12) * scale, s * 0.9, s * 0.32, 0, 0, Math.PI * 2); ctx.fill();
+    // Drop, point up.
+    const tip = s * 1.8, phi = Math.acos(1 / 1.8);
+    ctx.beginPath();
+    ctx.moveTo(x, y - tip);
+    ctx.arc(x, y, s, -Math.PI / 2 + phi, -Math.PI / 2 - phi + Math.PI * 2);
+    ctx.closePath();
+    const body = ctx.createLinearGradient(x - s, y - tip, x + s, y + s);
+    body.addColorStop(0, "#FFE58A");
+    body.addColorStop(1, GOLD);
+    ctx.fillStyle = body;
+    ctx.fill();
+    ctx.lineWidth = Math.max(1.5, s * 0.16);
+    ctx.lineJoin = "round";
+    ctx.strokeStyle = GOLD_DEEP;
+    ctx.stroke();
+    // Glint.
+    ctx.fillStyle = "rgba(255,255,255,0.85)";
+    ctx.beginPath(); ctx.ellipse(x - s * 0.35, y - s * 0.2, s * 0.2, s * 0.34, -0.4, 0, Math.PI * 2); ctx.fill();
+    const tw = (Math.sin(now / 180 + d.bornAt) + 1) / 2;
+    ctx.globalAlpha = tw;
+    ctx.strokeStyle = "#fff";
+    ctx.lineWidth = Math.max(1, s * 0.12);
+    const sx = x + s * 1.1, sy = y - s * 1.2, sl = s * 0.45;
+    ctx.beginPath(); ctx.moveTo(sx - sl, sy); ctx.lineTo(sx + sl, sy); ctx.moveTo(sx, sy - sl); ctx.lineTo(sx, sy + sl); ctx.stroke();
+    ctx.restore();
+  }
+};
+
+// ── The finished painting ───────────────────────────────────────────────────
+
+/** The whole round sheet as it ended — paper and territory, no players — fit
+ *  into a w×h box. Used for the end-of-match gallery. */
+export const drawPainting = (
+  ctx: CanvasRenderingContext2D, w: number, h: number,
+  board: Territory, paths: TerritoryPaths, cols: number, rows: number,
+) => {
+  ctx.clearRect(0, 0, w, h);
+  const worldW = cols * CELL, worldH = rows * CELL;
+  const scale = Math.min(w / worldW, h / worldH);
+  const offX = (w - worldW * scale) / 2, offY = (h - worldH * scale) / 2;
+  const cx = offX + (worldW * scale) / 2, cy = offY + (worldH * scale) / 2;
+  const r = (Math.min(worldW, worldH) * scale) / 2;
+  ctx.save();
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.clip();
+  ctx.fillStyle = worldPattern(ctx, getPaperTile(), offX, offY, scale) ?? PF.floor;
+  ctx.fillRect(0, 0, w, h);
+  drawTerritories(ctx, board, paths, offX, offY, scale);
+  ctx.restore();
+};

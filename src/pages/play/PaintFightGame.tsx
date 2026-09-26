@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Trophy, X, Skull, Droplet } from "lucide-react";
+import { X, Skull, Droplet } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import PaintJoystick, { type JoystickVector } from "@/components/game/PaintJoystick";
@@ -11,15 +11,17 @@ import {
   CELL, TANK, PLAYER_SPEED, TURN_RATE, TRAIL_RADIUS, RESPAWN_MS,
   PIXELS_PER_WORLD_UNIT, FLUSH_INTERVAL_MS, BROADCAST_INTERVAL_MS, PEER_TIMEOUT_MS,
   emptyTerritory, applyStroke, claimCells, wipePlayer, cellsOf, coverageOf,
-  captureFill, cellOfXY, spawnBlock, Trail, arenaCellCount, clampToArena, randomSpawnCell,
+  captureFill, cellOfXY, spawnBlock, Trail,
+  arenaCellCount, clampToArena, randomSpawnCell, goldenDropsAt, DROP_GRAB_RADIUS,
   type Stroke, type Territory, type CoverageRow,
 } from "@/lib/paintFight";
 import {
   resizeCanvas, drawArena, drawTerritories, drawTrail, drawPlayer, drawName,
-  computeCamera, drawMinimap, TerritoryPaths, PaintFx, hueFill, hueDeep, PF, avatarFor,
+  computeCamera, drawMinimap, TerritoryPaths, PaintFx, hueFill, hueDeep, PF, avatarFor, drawGoldenDrops,
   type PlayerAvatar,
 } from "@/lib/paintFightRender";
 import { readSettings } from "@/lib/sessionSettings";
+import PaintFightGallery from "@/components/game/PaintFightGallery";
 
 // ── Paint Fight, student view ───────────────────────────────────────────────
 // Drive out of your territory, come back, and everything your loop encloses is
@@ -49,6 +51,9 @@ interface Props { sessionId: string; studentId: string; }
 const PLAYER_SIZE = 30;      // world px
 const TRAIL_W = TRAIL_RADIUS * 2;
 
+/** Hue the effects use for golden paint. */
+const GOLD_HUE = 45;
+
 /** One colour per answer slot — the four a class recognises from the arena. */
 const ANSWER_HUES = [352, 145, 268, 40];
 
@@ -76,6 +81,11 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
   const [board, setBoard]       = useState<CoverageRow[]>([]);
   const [toast, setToast]       = useState<{ text: string; bad: boolean } | null>(null);
   const [feed, setFeed]         = useState<{ id: number; text: string; hue: number }[]>([]);
+  // A golden drop grabbed and not yet cashed in: the next correct answer
+  // fills the tank twice over. Ref for the answer handler, state for the HUD.
+  const [golden, setGolden]     = useState(false);
+  const goldenRef = useRef(false);
+  const takenRef  = useRef<Set<string>>(new Set());
 
   const reward = useFloatingRewards();
 
@@ -225,6 +235,12 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
         say(ar ? "أقصيت لاعبًا!" : "You cut someone off!", false);
         localWriteAtRef.current = Date.now();
         supabase.from("game_students").update({ fight_kills: pRef.current.kills }).eq("id", studentId).then(undefined, () => {});
+      })
+      .on("broadcast", { event: "grab" }, ({ payload }: any) => {
+        if (!payload?.id || takenRef.current.has(payload.id)) return;
+        takenRef.current.add(payload.id);
+        if (typeof payload.x === "number") fxRef.current.splash(payload.x, payload.y, GOLD_HUE, 1);
+        pushFeed(arRef.current ? `${payload.name ?? "?"} التقط الطلاء الذهبي` : `${payload.name ?? "?"} grabbed golden paint`, GOLD_HUE);
       })
       .subscribe();
     chanRef.current = ch;
@@ -431,6 +447,17 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
       ({ x: p.x, y: p.y } = clampToArena(nx, ny, cols(), rows()));
       p.tank = Math.max(0, p.tank - TANK.drainPerSec * dt);
 
+      for (const d of goldenDropsAt(sessionId, Date.now(), cols(), rows())) {
+        if (takenRef.current.has(d.id)) continue;
+        if (Math.hypot(d.x - p.x, d.y - p.y) > DROP_GRAB_RADIUS) continue;
+        takenRef.current.add(d.id);
+        goldenRef.current = true;
+        setGolden(true);
+        fxRef.current.splash(d.x, d.y, GOLD_HUE, 1.3);
+        say(arRef.current ? "طلاء ذهبي! إجابتك الصحيحة القادمة ×٢" : "Golden paint! Next correct answer x2", false);
+        chanRef.current?.send({ type: "broadcast", event: "grab", payload: { id: d.id, by: studentId, name: nameRef.current, x: d.x, y: d.y } });
+      }
+
       const cell = cellOfXY(p.x, p.y, cols(), rows()).index;
       const onOwn = boardRef.current.owner.get(cell)?.studentId === studentId;
 
@@ -480,6 +507,8 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
       drawArena(ctx, cssW, cssH, offX, offY, scale, worldW, worldH);
       fx.drawUnder(ctx, offX, offY, scale, now);
       drawTerritories(ctx, boardRef.current, pathsRef.current, offX, offY, scale);
+      const drops = goldenDropsAt(sessionId, Date.now(), cols(), rows()).filter(d => !takenRef.current.has(d.id));
+      drawGoldenDrops(ctx, drops, offX, offY, scale);
 
       const cutoff = Date.now() - PEER_TIMEOUT_MS;
       const dots = p.alive ? [{ x: p.x, y: p.y, hue: hueRef.current }] : [];
@@ -502,7 +531,7 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
 
       const r = 46;
       drawMinimap(ctx, boardRef.current, pathsRef.current, cam, worldW, worldH, dots,
-        cssW - r - 16, cssH - r - 140, r);
+        cssW - r - 16, cssH - r - 140, r, drops);
     };
 
     const frame = (t: number) => {
@@ -553,7 +582,7 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
 
     raf = requestAnimationFrame(frame);
     return () => cancelAnimationFrame(raf);
-  }, [phase, ready, studentId, ar]);
+  }, [phase, ready, studentId, sessionId, ar]);
 
   // ── Questions ───────────────────────────────────────────────────────────
   const nextQuestion = () => {
@@ -584,10 +613,12 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
     const correct = idx === currentQ.correct_index;
 
     if (correct) {
-      pRef.current.tank = Math.min(TANK.start, pRef.current.tank + TANK.rewardPerCorrect);
+      const gain = TANK.rewardPerCorrect * (goldenRef.current ? 2 : 1);
+      if (goldenRef.current) { goldenRef.current = false; setGolden(false); }
+      pRef.current.tank = Math.min(TANK.start, pRef.current.tank + gain);
       setHud(h => ({ ...h, tank: pRef.current.tank }));
       playCorrect();
-      reward.fire(`+${TANK.rewardPerCorrect}`, myColor);
+      reward.fire(`+${gain}`, gain > TANK.rewardPerCorrect ? "#D9A21B" : myColor);
     } else {
       playWrong();  // the button turning red is feedback enough
     }
@@ -637,26 +668,33 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
   }
 
   // ── Done ────────────────────────────────────────────────────────────────
+  // The finished sheet, framed — the same painting the projector hangs up —
+  // with this student's own numbers underneath.
   if (phase === "done") {
+    const size = Math.min(300, (typeof window !== "undefined" ? window.innerWidth : 360) - 64);
     return (
-      <div className="fixed inset-0 flex flex-col items-center justify-center gap-5 px-6 text-center"
+      <div className="fixed inset-0 overflow-y-auto flex flex-col items-center justify-center gap-5 px-6 py-8 text-center"
         style={{ background: PF.floor, color: "#123A33" }}>
-        <Trophy className="h-16 w-16" style={{ color: "#8FC44A" }} />
-        <div className="text-2xl font-extrabold">{ar ? "انتهت المعركة" : "Fight Over"}</div>
-        <div className="flex gap-2.5">
-          {[
-            { label: ar ? "أرضك" : "TERRITORY", value: `${hud.pct.toFixed(1)}%`, color: myInk },
-            { label: ar ? "إقصاءات" : "CUTS", value: String(hud.kills), color: "#b91c1c" },
-            { label: ar ? "صحيح" : "CORRECT", value: String(me?.correct_answers ?? 0), color: "#15803d" },
-          ].map(s => (
-            <div key={s.label} className="px-4 py-3 rounded-2xl bg-white/80">
-              <div className="text-[9px] tracking-widest font-bold opacity-50">{s.label}</div>
-              <div className="text-2xl font-extrabold tabular-nums" style={{ color: s.color }}>{s.value}</div>
-            </div>
-          ))}
-        </div>
+        <PaintFightGallery
+          board={boardRef.current} paths={pathsRef.current} cols={colsRef.current} rows={rowsRef.current} size={size}
+          title={ar ? "لوحة الصف" : "Your class's painting"}
+          subtitle={ar ? "انتهت المعركة" : "Fight over"}
+        >
+          <div dir="ltr" className="flex gap-2.5">
+            {[
+              { label: ar ? "أرضك" : "TERRITORY", value: `${hud.pct.toFixed(1)}%`, color: myInk },
+              { label: ar ? "إقصاءات" : "CUTS", value: String(hud.kills), color: "#b91c1c" },
+              { label: ar ? "صحيح" : "CORRECT", value: String(me?.correct_answers ?? 0), color: "#15803d" },
+            ].map(s => (
+              <div key={s.label} className="px-4 py-3 rounded-2xl bg-white/80">
+                <div className="text-[9px] tracking-widest font-bold opacity-50">{s.label}</div>
+                <div className="text-2xl font-extrabold tabular-nums" style={{ color: s.color }}>{s.value}</div>
+              </div>
+            ))}
+          </div>
+        </PaintFightGallery>
         <button onClick={() => navigate("/join")}
-          className="mt-3 px-8 py-3 rounded-full font-extrabold text-sm text-white active:scale-95 transition-transform"
+          className="mt-1 px-8 py-3 rounded-full font-extrabold text-sm text-white active:scale-95 transition-transform"
           style={{ background: "#123A33" }}>
           {ar ? "خروج" : "EXIT"}
         </button>
@@ -751,6 +789,10 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
           )}
           style={{ background: empty ? "#dc2626" : "#123A33", bottom: "calc(env(safe-area-inset-bottom) + 1rem)" }}>
           {ar ? "أجب لتملأ الخزان" : "Fill the tank"}
+          {golden && (
+            <span className="absolute -top-2 -end-2 px-2 py-0.5 rounded-full text-[11px] font-black shadow"
+              style={{ background: "#F7C531", color: "#5A3F00" }}>x2</span>
+          )}
         </button>
       )}
 
@@ -784,9 +826,15 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
                 <Droplet className="h-3.5 w-3.5 shrink-0" />
                 <span className="text-sm font-black tabular-nums">{Math.round(hud.tank)}</span>
               </div>
-              <span className="text-xs font-bold truncate" style={{ color: PF.inkSoft }}>
-                +{TANK.rewardPerCorrect} {ar ? "لكل إجابة صحيحة" : "per correct"}
-              </span>
+              {golden ? (
+                <span className="px-2 py-0.5 rounded-full text-xs font-black truncate" style={{ background: "#F7C531", color: "#5A3F00" }}>
+                  x2 · +{TANK.rewardPerCorrect * 2} {ar ? "للإجابة الصحيحة القادمة" : "next correct"}
+                </span>
+              ) : (
+                <span className="text-xs font-bold truncate" style={{ color: PF.inkSoft }}>
+                  +{TANK.rewardPerCorrect} {ar ? "لكل إجابة صحيحة" : "per correct"}
+                </span>
+              )}
               <reward.Layer />
             </div>
             <button onClick={() => setShowQuiz(false)} disabled={empty}

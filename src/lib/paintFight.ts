@@ -460,3 +460,53 @@ export const coverageOf = (t: Territory, totalCells: number): CoverageRow[] => {
 /** Per-student coverage %, derived from the same replay the live views use. */
 export const computeCoverage = (strokes: Stroke[], totalCells: number): CoverageRow[] =>
   coverageOf(replayStrokes(strokes, totalCells), totalCells);
+
+// ── Golden paint drops ──────────────────────────────────────────────────────
+// Something on the map worth driving to, that still runs through the quiz: a
+// golden drop doesn't give paint, it makes your NEXT CORRECT ANSWER fill the
+// tank twice over. The questions stay the only source of colour.
+//
+// No server decides where they are. Time is cut into fixed slots and each
+// slot's drops are a pure function of (session id, slot number), so every
+// phone and the projector compute the same drops at the same places from
+// their own clock — a second of skew between devices only shifts when a drop
+// pops in, never where. Grabbing one is announced by broadcast and everyone
+// hides that id; two players touching the same drop in the same instant both
+// keep it, which is harmless.
+
+export const DROP_SLOT_MS = 12_000;
+export const DROP_LIFE_MS = 10_000;
+/** Reach, in world px, from a player's centre to a drop's centre that grabs it. */
+export const DROP_GRAB_RADIUS = 22;
+
+export type GoldenDrop = { id: string; x: number; y: number; bornAt: number; diesAt: number };
+
+const hashStr = (s: string) => {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619);
+  return h >>> 0;
+};
+
+/** How many drops each slot spawns: more ground, more drops. */
+export const dropsPerSlot = (cols: number) => 1 + Math.floor(cols / 150);
+
+/** Every drop alive at `now` (epoch ms), before removing any that were grabbed. */
+export const goldenDropsAt = (seed: string, now: number, cols: number, rows: number): GoldenDrop[] => {
+  const out: GoldenDrop[] = [];
+  const slot = Math.floor(now / DROP_SLOT_MS);
+  const per = dropsPerSlot(cols);
+  // A drop outlives its slot only if LIFE > SLOT; checking the previous slot
+  // too keeps this correct if those constants are ever tuned that way.
+  for (const k of [slot - 1, slot]) {
+    const bornAt = k * DROP_SLOT_MS;
+    const diesAt = bornAt + DROP_LIFE_MS;
+    if (now < bornAt || now >= diesAt) continue;
+    for (let j = 0; j < per; j++) {
+      let st = hashStr(`${seed}:${k}:${j}`);
+      const rnd = () => { st = (Math.imul(st, 1664525) + 1013904223) >>> 0; return st / 4294967296; };
+      const { cx, cy } = randomSpawnCell(cols, rows, rnd);
+      out.push({ id: `${k}:${j}`, x: (cx + 0.5) * CELL, y: (cy + 0.5) * CELL, bornAt, diesAt });
+    }
+  }
+  return out;
+};

@@ -4,6 +4,7 @@ import {
   captureFill, cellsAlongSegment, spawnBlock, replayStrokes, cellsOf, coverageOf,
   emptyTerritory, claimCells, wipePlayer, Trail, cellOfXY, CELL, SPAWN_RADIUS, TRAIL_GRACE, type Stroke,
   arenaMask, arenaCellCount, insideArena, clampToArena, randomSpawnCell,
+  goldenDropsAt, DROP_SLOT_MS, DROP_LIFE_MS,
 } from "@/lib/paintFight";
 import { territoryPath } from "@/lib/paintFightRender";
 
@@ -288,5 +289,27 @@ describe("paintFight rendering", () => {
     expect(calls).toHaveLength(2);                       // row 0 alone, then row 1
     expect(calls[0]).toEqual([9 * CELL, 0, CELL, CELL]);
     expect(calls[1]).toEqual([0, CELL, 2 * CELL, CELL]);
+  });
+});
+
+describe("paintFight golden drops", () => {
+  it("puts the same drops in the same places on every device", () => {
+    const now = 149_000_000 * DROP_SLOT_MS + 2_000;   // 2s into a slot: drops alive
+    const a = goldenDropsAt("session-1", now, 180, 180);
+    const b = goldenDropsAt("session-1", now + 500, 180, 180);
+    expect(a.length).toBeGreaterThan(0);
+    expect(b).toEqual(a);
+    expect(goldenDropsAt("session-2", now, 180, 180)).not.toEqual(a);
+  });
+
+  it("keeps every drop inside the arena and gone by the end of its life", () => {
+    for (let k = 0; k < 50; k++) {
+      const t = k * DROP_SLOT_MS + 1000;
+      for (const d of goldenDropsAt("s", t, 300, 300)) {
+        expect(insideArena(d.x, d.y, 300, 300)).toBe(true);
+        expect(t).toBeLessThan(d.diesAt);
+      }
+      expect(goldenDropsAt("s", k * DROP_SLOT_MS + DROP_LIFE_MS + 1, 300, 300)).toEqual([]);
+    }
   });
 });

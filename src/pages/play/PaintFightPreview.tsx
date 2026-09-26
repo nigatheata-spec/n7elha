@@ -19,13 +19,14 @@ import {
   CELL, TANK, PLAYER_SPEED, TURN_RATE, TRAIL_RADIUS, PIXELS_PER_WORLD_UNIT,
   emptyTerritory, claimCells, wipePlayer, cellsOf, coverageOf, captureFill,
   cellOfXY, spawnBlock, hueForJoinIndex, computeArenaSize, Trail,
-  arenaCellCount, insideArena, clampToArena, randomSpawnCell,
+  arenaCellCount, insideArena, clampToArena, randomSpawnCell, goldenDropsAt, DROP_GRAB_RADIUS,
   type Territory, type CoverageRow,
 } from "@/lib/paintFight";
 import {
   resizeCanvas, drawArena, drawTerritories, drawTrail, drawPlayer, drawName,
-  computeCamera, drawMinimap, TerritoryPaths, PaintFx, hueFill, hueDeep, PF, avatarFor,
+  computeCamera, drawMinimap, TerritoryPaths, PaintFx, hueFill, hueDeep, PF, avatarFor, drawGoldenDrops,
 } from "@/lib/paintFightRender";
+import PaintFightGallery from "@/components/game/PaintFightGallery";
 import { FACES } from "@/lib/avatarIdentity";
 
 type Actor = {
@@ -61,6 +62,10 @@ const PaintFightPreview = () => {
   const [showQuiz, setShowQuiz] = useState(false);
   const [qIndex, setQIndex] = useState(0);
   const [picked, setPicked] = useState<number | null>(null);
+  const [golden, setGolden] = useState(false);
+  const [gallery, setGallery] = useState(false);
+  const goldenRef = useRef(false);
+  const takenRef = useRef(new Set<string>());
 
   const params = new URLSearchParams(window.location.search);
   const botCount = Math.max(0, Math.min(6, Number(params.get("bots") ?? 3)));
@@ -95,7 +100,18 @@ const PaintFightPreview = () => {
     };
     actorsRef.current = [make(0, false), ...Array.from({ length: botCount }, (_, i) => make(i + 1, true))];
 
-    const down = (e: KeyboardEvent) => keys.current.add(e.key.toLowerCase());
+    const down = (e: KeyboardEvent) => {
+      const k = e.key.toLowerCase();
+      // Dev shortcuts: G hangs the painting, T jumps to the nearest golden drop.
+      if (k === "g") { setGallery(v => !v); return; }
+      if (k === "t") {
+        const me = actorsRef.current[0];
+        const d = goldenDropsAt("preview", Date.now(), cols, rows).filter(x => !takenRef.current.has(x.id))[0];
+        if (me && d) { me.x = d.x - 60; me.y = d.y; me.angle = 0; }
+        return;
+      }
+      keys.current.add(k);
+    };
     const up = (e: KeyboardEvent) => keys.current.delete(e.key.toLowerCase());
     window.addEventListener("keydown", down);
     window.addEventListener("keyup", up);
@@ -167,6 +183,16 @@ const PaintFightPreview = () => {
         const hitWall = !insideArena(nx, ny, cols, rows);
         ({ x: a.x, y: a.y } = clampToArena(nx, ny, cols, rows));
         a.tank = Math.max(0, a.tank - TANK.drainPerSec * dt);
+        if (!a.bot) {
+          for (const d of goldenDropsAt("preview", Date.now(), cols, rows)) {
+            if (takenRef.current.has(d.id) || Math.hypot(d.x - a.x, d.y - a.y) > DROP_GRAB_RADIUS) continue;
+            takenRef.current.add(d.id);
+            goldenRef.current = true;
+            setGolden(true);
+            fxRef.current.splash(d.x, d.y, 45, 1.3);
+            setNote("Golden paint! Next correct answer x2");
+          }
+        }
 
         const cell = cellOfXY(a.x, a.y, cols, rows).index;
         const onOwn = boardRef.current.owner.get(cell)?.studentId === a.id;
@@ -216,6 +242,8 @@ const PaintFightPreview = () => {
       drawArena(ctx, cssW, cssH, offX, offY, scale, worldW, worldH);
       fx.drawUnder(ctx, offX, offY, scale, now);
       drawTerritories(ctx, boardRef.current, pathsRef.current, offX, offY, scale);
+      const drops = goldenDropsAt("preview", Date.now(), cols, rows).filter(d => !takenRef.current.has(d.id));
+      drawGoldenDrops(ctx, drops, offX, offY, scale);
       for (const a of actorsRef.current) {
         drawTrail(ctx, [...a.trail.points, { x: a.x, y: a.y }], a.hue, offX, offY, scale, TRAIL_RADIUS * 2);
         const x = offX + a.x * scale, y = offY + a.y * scale;
@@ -227,7 +255,7 @@ const PaintFightPreview = () => {
       fx.drawOver(ctx, offX, offY, scale, now);
       const r = 46;
       drawMinimap(ctx, boardRef.current, pathsRef.current, cam, worldW, worldH,
-        actorsRef.current.map(a => ({ x: a.x, y: a.y, hue: a.hue })), cssW - r - 16, cssH - r - 140, r);
+        actorsRef.current.map(a => ({ x: a.x, y: a.y, hue: a.hue })), cssW - r - 16, cssH - r - 140, r, drops);
     };
 
     const frame = (t: number) => {
@@ -260,7 +288,9 @@ const PaintFightPreview = () => {
     setPicked(i);
     if (i === q.correct) {
       const a = actorsRef.current[0];
-      if (a) { a.tank = Math.min(TANK.start, a.tank + TANK.rewardPerCorrect); setTank(a.tank); }
+      const gain = TANK.rewardPerCorrect * (goldenRef.current ? 2 : 1);
+      goldenRef.current = false; setGolden(false);
+      if (a) { a.tank = Math.min(TANK.start, a.tank + gain); setTank(a.tank); }
     }
     setTimeout(() => { setPicked(null); setQIndex(n => n + 1); }, 850);
   };
@@ -268,6 +298,12 @@ const PaintFightPreview = () => {
   return (
     <div className="fixed inset-0 overflow-hidden" style={{ background: PF.void }}>
       <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" />
+      {gallery && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center px-6" style={{ background: PF.floor, color: PF.ink }}>
+          <PaintFightGallery board={boardRef.current} paths={pathsRef.current} cols={cols} rows={rows}
+            size={Math.min(300, window.innerWidth - 64)} title="Your class's painting" subtitle="Fight over (press G)" />
+        </div>
+      )}
       <div dir="ltr" className="absolute inset-x-0 top-0 p-3 flex items-start justify-between gap-3 pointer-events-none">
         <div className="flex flex-col items-start gap-1.5">
           <div className="px-3 py-1 rounded-full text-white text-[15px] font-extrabold tabular-nums"
@@ -334,7 +370,7 @@ const PaintFightPreview = () => {
                 <span className="text-sm font-black tabular-nums">{Math.round(tank)}</span>
               </div>
               <span className="text-xs font-bold truncate" style={{ color: PF.inkSoft }}>
-                +{TANK.rewardPerCorrect} per correct
+                {golden ? `x2 · +${TANK.rewardPerCorrect * 2} next correct` : `+${TANK.rewardPerCorrect} per correct`}
               </span>
             </div>
             <button onClick={() => setShowQuiz(false)} disabled={empty}

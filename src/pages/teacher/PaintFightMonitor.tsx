@@ -3,15 +3,17 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Square, Maximize, Trophy, Timer, Skull } from "lucide-react";
+import { Square, Maximize, Trophy, Timer, Skull, ArrowRight } from "lucide-react";
 import {
-  CELL, PEER_TIMEOUT_MS, emptyTerritory, applyStroke, coverageOf, arenaCellCount,
+  CELL, PEER_TIMEOUT_MS, emptyTerritory, applyStroke, coverageOf, arenaCellCount, goldenDropsAt,
   type CoverageRow, type Stroke, type Territory,
 } from "@/lib/paintFight";
 import {
   resizeCanvas, drawArena, drawTerritories, drawTrail, drawPlayer, drawName,
-  TerritoryPaths, PaintFx, hueFill, hueDeep, PF, avatarFor, type PlayerAvatar,
+  TerritoryPaths, PaintFx, hueFill, hueDeep, hueSoft, PF, avatarFor, drawGoldenDrops, type PlayerAvatar,
 } from "@/lib/paintFightRender";
+import { resolveFace } from "@/lib/avatarIdentity";
+import PaintFightGallery from "@/components/game/PaintFightGallery";
 import { useConfirmDialog } from "@/hooks/use-confirm-dialog";
 
 // ── Paint Fight, teacher/projector view ─────────────────────────────────────
@@ -48,6 +50,8 @@ const PaintFightMonitor = ({ session, sessionId }: Props) => {
   const [claimedPct, setClaimedPct] = useState(0);
   const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
   const [feed, setFeed] = useState<{ id: number; text: string; hue: number }[]>([]);
+  // Match over: the finished sheet goes up in a frame before the results page.
+  const [gallery, setGallery] = useState(false);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const boardRef  = useRef<Territory>(emptyTerritory());
@@ -57,6 +61,7 @@ const PaintFightMonitor = ({ session, sessionId }: Props) => {
   const rowsRef   = useRef(rows);
   const endedRef  = useRef(false);
   const fxRef     = useRef(new PaintFx());
+  const takenRef  = useRef<Set<string>>(new Set());
   const arRef     = useRef(ar);
   arRef.current = ar;
 
@@ -130,6 +135,15 @@ const PaintFightMonitor = ({ session, sessionId }: Props) => {
         setFeed(f => [...f.slice(-3), { id, text, hue: payload.byHue ?? 0 }]);
         setTimeout(() => setFeed(f => f.filter(e => e.id !== id)), 5000);
       })
+      .on("broadcast", { event: "grab" }, ({ payload }: any) => {
+        if (!payload?.id || takenRef.current.has(payload.id)) return;
+        takenRef.current.add(payload.id);
+        if (typeof payload.x === "number") fxRef.current.splash(payload.x, payload.y, 45, 1.2);
+        const id = Date.now() + Math.random();
+        const text = arRef.current ? `${payload.name ?? "?"} التقط الطلاء الذهبي` : `${payload.name ?? "?"} grabbed golden paint`;
+        setFeed(f => [...f.slice(-3), { id, text, hue: 45 }]);
+        setTimeout(() => setFeed(f => f.filter(e => e.id !== id)), 5000);
+      })
       .subscribe();
 
     (async () => {
@@ -176,6 +190,9 @@ const PaintFightMonitor = ({ session, sessionId }: Props) => {
       drawArena(ctx, cssW, cssH, offX, offY, scale, worldW, worldH);
       fxRef.current.drawUnder(ctx, offX, offY, scale, now);
       drawTerritories(ctx, boardRef.current, pathsRef.current, offX, offY, scale);
+      drawGoldenDrops(ctx,
+        goldenDropsAt(sessionId, Date.now(), colsRef.current, rowsRef.current).filter(d => !takenRef.current.has(d.id)),
+        offX, offY, scale);
 
       const cutoff = Date.now() - PEER_TIMEOUT_MS;
       for (const id of Object.keys(peersRef.current)) {
@@ -191,7 +208,7 @@ const PaintFightMonitor = ({ session, sessionId }: Props) => {
     };
     raf = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(raf);
-  }, []);
+  }, [sessionId]);
 
   // ── Match clock ─────────────────────────────────────────────────────────
   // settings.minutes is optional; with no value the match runs until the
@@ -201,8 +218,9 @@ const PaintFightMonitor = ({ session, sessionId }: Props) => {
     if (endedRef.current) return;
     endedRef.current = true;
     await supabase.from("game_sessions").update({ status: "finished", ended_at: new Date().toISOString() }).eq("id", sessionId);
-    if (redirect) nav(`/app/games/${sessionId}/results`, { state: { justEnded: true } });
+    if (redirect) setGallery(true);
   };
+  const toResults = () => nav(`/app/games/${sessionId}/results`, { replace: true, state: { justEnded: true } });
 
   useEffect(() => {
     const minutes = Number(session?.settings?.minutes);
@@ -219,8 +237,8 @@ const PaintFightMonitor = ({ session, sessionId }: Props) => {
   }, [session?.started_at, session?.settings?.minutes, session?.status]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (session?.status === "finished") nav(`/app/games/${sessionId}/results`, { replace: true, state: { justEnded: true } });
-  }, [session?.status]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (session?.status === "finished") setGallery(true);
+  }, [session?.status]);
 
   const confirmEnd = async () => {
     if (!(await confirm(ar ? "إنهاء اللعبة الآن؟" : "End the game now?"))) return;
@@ -237,9 +255,41 @@ const PaintFightMonitor = ({ session, sessionId }: Props) => {
     ? null
     : `${String(Math.floor(secondsLeft / 60)).padStart(2, "0")}:${String(secondsLeft % 60).padStart(2, "0")}`;
 
+  const gallerySize = typeof window === "undefined" ? 480
+    : Math.round(Math.min(window.innerHeight * 0.66, window.innerWidth * 0.46));
+
   return (
     <div className="fixed inset-0 overflow-hidden" style={{ background: "#0F2E28", color: "#fff" }}>
       {ConfirmDialog}
+      {gallery && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center gap-12 px-10"
+          style={{ background: "radial-gradient(ellipse at 50% 40%, #1C4A41 0%, #0B221D 75%)" }}>
+          <PaintFightGallery
+            board={boardRef.current} paths={pathsRef.current} cols={cols} rows={rows} size={gallerySize}
+            title={ar ? "لوحة الصف" : "The class masterpiece"}
+            subtitle={ar ? `رسمها ${students.length} لاعب` : `Painted by ${students.length} ${students.length === 1 ? "player" : "players"}`}
+          />
+          <div dir="ltr" className="flex flex-col gap-3 w-[300px] shrink-0">
+            {coverage.slice(0, 3).map((row, i) => {
+              const s = studentFor(row.studentId);
+              return (
+                <div key={row.studentId} className="flex items-center gap-3 px-3 py-2.5 rounded-full animate-fade-up"
+                  style={{ background: hueFill(row.hue), color: "#0F2E28", animationDelay: `${200 + i * 150}ms` }}>
+                  <span className="w-6 text-center text-lg font-black opacity-70">{i + 1}</span>
+                  <span className="relative h-10 w-10 rounded-full overflow-hidden shrink-0 border-2" style={{ background: hueSoft(row.hue), borderColor: "#0F2E28" }}>
+                    <img src={resolveFace(s?.name ?? "", s?.avatar_face)} alt="" className="absolute left-1/2 top-1/2 w-[128%] max-w-none -translate-x-1/2 -translate-y-1/2" />
+                  </span>
+                  <span className="flex-1 min-w-0 truncate text-base font-extrabold">{s?.name ?? "—"}</span>
+                  <span className="text-base font-black tabular-nums">{row.pct.toFixed(1)}%</span>
+                </div>
+              );
+            })}
+            <Button onClick={toResults} className="mt-4 h-12 rounded-full bg-white text-[#0F2E28] hover:bg-white/90 font-extrabold text-base">
+              {ar ? "النتائج" : "See results"}<ArrowRight className="h-4 w-4 ms-2" />
+            </Button>
+          </div>
+        </div>
+      )}
       <div className="h-full flex flex-col p-4 gap-3">
         <div className="flex items-center justify-between text-xs gap-3 shrink-0">
           <div className="text-white/55">
