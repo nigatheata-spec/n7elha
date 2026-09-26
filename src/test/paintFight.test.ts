@@ -2,7 +2,8 @@ import { describe, it, expect } from "vitest";
 import {
   computeArenaSize, computeCoverage, hueForJoinIndex, cellsUnderDisc, cellIndex,
   captureFill, cellsAlongSegment, spawnBlock, replayStrokes, cellsOf, coverageOf,
-  emptyTerritory, claimCells, wipePlayer, Trail, cellOfXY, CELL, SPAWN_HALF, TRAIL_GRACE, type Stroke,
+  emptyTerritory, claimCells, wipePlayer, Trail, cellOfXY, CELL, SPAWN_RADIUS, TRAIL_GRACE, type Stroke,
+  arenaMask, arenaCellCount, insideArena, clampToArena, randomSpawnCell,
 } from "@/lib/paintFight";
 import { territoryPath } from "@/lib/paintFightRender";
 
@@ -17,9 +18,26 @@ describe("paintFight arena", () => {
   it("scales arena size up with more players, clamped at both ends", () => {
     const small = computeArenaSize(5);
     const big = computeArenaSize(20);
-    expect(small.cols).toBeGreaterThanOrEqual(60);
+    expect(small.cols).toBeGreaterThanOrEqual(180);
     expect(big.cols).toBeGreaterThan(small.cols);
-    expect(big.cols).toBeLessThanOrEqual(170);
+    expect(big.cols).toBeLessThanOrEqual(510);
+    expect(big.rows).toBe(big.cols);          // a circle lives in a square grid
+  });
+
+  it("only counts cells inside the arena circle as playable", () => {
+    const { mask, count } = arenaMask(40, 40);
+    expect(mask[0]).toBe(0);                          // corner: wall
+    expect(mask[cellIndex(20, 20, 40)]).toBe(1);      // middle: floor
+    expect(count).toBeGreaterThan(40 * 40 * 0.75);    // ~π/4 of the square
+    expect(count).toBeLessThan(40 * 40 * 0.8);
+    expect(arenaCellCount(40, 40)).toBe(count);
+  });
+
+  it("clamps a point that left the circle back onto the rim", () => {
+    expect(insideArena(200, 200, 40, 40)).toBe(true);
+    expect(insideArena(1, 1, 40, 40)).toBe(false);
+    const back = clampToArena(1, 1, 40, 40);
+    expect(insideArena(back.x, back.y, 40, 40)).toBe(true);
   });
 
   it("assigns distinct hues by join order", () => {
@@ -50,12 +68,25 @@ describe("paintFight arena", () => {
     }
   });
 
-  it("gives a fresh spawn a square home block, clipped at the arena edge", () => {
-    const full = spawnBlock(10, 10, 40, 40);
-    expect(full).toHaveLength((SPAWN_HALF * 2 + 1) ** 2);
-    const corner = spawnBlock(0, 0, 40, 40);
-    expect(corner).toHaveLength((SPAWN_HALF + 1) ** 2);
-    for (const idx of corner) expect(idx).toBeGreaterThanOrEqual(0);
+  it("gives a fresh spawn a round home patch, clipped to the arena", () => {
+    const full = spawnBlock(20, 20, 40, 40);
+    // Round, not square: fewer cells than the bounding square, more than the
+    // inscribed diamond.
+    const side = SPAWN_RADIUS * 2 + 1;
+    expect(full.length).toBeLessThan(side * side);
+    expect(full.length).toBeGreaterThan(side * side / 2);
+    expect(full).not.toContain(cellIndex(20 - SPAWN_RADIUS, 20 - SPAWN_RADIUS, 40));  // no square corner
+    const rim = spawnBlock(20, 0, 40, 40);
+    const { mask } = arenaMask(40, 40);
+    expect(rim.length).toBeLessThan(full.length);
+    for (const idx of rim) expect(mask[idx]).toBe(1);
+  });
+
+  it("always spawns inside the circle, clear of the rim", () => {
+    for (let i = 0; i < 200; i++) {
+      const { cx, cy } = randomSpawnCell(180, 180);
+      expect(insideArena((cx + 0.5) * CELL, (cy + 0.5) * CELL, 180, 180, SPAWN_RADIUS * CELL)).toBe(true);
+    }
   });
 
   it("sweeps every cell a move passes through, with no gaps", () => {
@@ -140,13 +171,23 @@ describe("paintFight capture", () => {
     expect(gained).toContain(6 * cols + 6);   // dead centre, whoever held it
   });
 
-  it("counts a bay sealed against the arena wall as enclosed", () => {
-    // The wall is a wall: a trail that runs from edge to edge closes the region
-    // behind it just as surely as a full loop does.
-    const trail = [...rect(0, 0, 3, 0, cols), ...rect(3, 0, 3, 3, cols), ...rect(0, 3, 3, 3, cols)];
-    const gained = captureFill(new Set(), trail, cols, rows);
-    expect(gained).toContain(1 * cols + 1);
-    expect(gained).not.toContain(5 * cols + 5);
+  it("counts a bay sealed against the arena rim as enclosed", () => {
+    // The wall is a wall: a U of trail whose two ends touch the rim closes the
+    // region between it and the rim just as surely as a full loop does.
+    const c = 20, r = 20;
+    const trail = [...rect(7, 0, 7, 4, c), ...rect(7, 4, 12, 4, c), ...rect(12, 0, 12, 4, c)];
+    const gained = captureFill(new Set(), trail, c, r);
+    expect(gained).toContain(1 * c + 9);
+    expect(gained).not.toContain(10 * c + 10);
+  });
+
+  it("never captures wall beyond the circle", () => {
+    const c = 20, r = 20;
+    const { mask } = arenaMask(c, r);
+    const box = [...rect(0, 0, 19, 0, c), ...rect(0, 19, 19, 19, c), ...rect(0, 0, 0, 19, c), ...rect(19, 0, 19, 19, c)];
+    for (const idx of captureFill(new Set(), box, c, r)) {
+      if (!box.includes(idx)) expect(mask[idx]).toBe(1);
+    }
   });
 
   it("claims nothing when the trail never closes", () => {

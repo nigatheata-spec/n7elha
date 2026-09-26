@@ -5,12 +5,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Square, Maximize, Trophy, Timer, Skull } from "lucide-react";
 import {
-  CELL, PEER_TIMEOUT_MS, emptyTerritory, applyStroke, coverageOf,
+  CELL, PEER_TIMEOUT_MS, emptyTerritory, applyStroke, coverageOf, arenaCellCount,
   type CoverageRow, type Stroke, type Territory,
 } from "@/lib/paintFight";
 import {
   resizeCanvas, drawArena, drawTerritories, drawTrail, drawPlayer, drawName,
-  TerritoryPaths, PaintFx, hueFill, hueDeep, PF,
+  TerritoryPaths, PaintFx, hueFill, hueDeep, PF, avatarFor, type PlayerAvatar,
 } from "@/lib/paintFightRender";
 import { useConfirmDialog } from "@/hooks/use-confirm-dialog";
 
@@ -29,6 +29,7 @@ import { useConfirmDialog } from "@/hooks/use-confirm-dialog";
 type Peer = {
   id: string; name: string; x: number; y: number; angle: number; hue: number;
   alive: boolean; trail: { x: number; y: number }[]; t: number;
+  face: number | null; avatar: PlayerAvatar;
 };
 
 interface Props { session: any; sessionId: string; }
@@ -111,10 +112,13 @@ const PaintFightMonitor = ({ session, sessionId }: Props) => {
         const trail = payload.reset || !prev ? [] : prev.trail;
         for (const [x, y] of (payload.pts ?? [])) trail.push({ x, y });
         if (trail.length > 400) trail.splice(0, trail.length - 400);
+        const name: string = payload.name ?? "";
+        const face: number | null = payload.af ?? null;
+        const avatar = prev && prev.name === name && prev.face === face ? prev.avatar : avatarFor(name, face);
         peersRef.current[payload.id] = {
-          id: payload.id, name: payload.name ?? "", x: payload.x, y: payload.y,
+          id: payload.id, name, x: payload.x, y: payload.y,
           angle: payload.angle ?? 0, hue: payload.hue ?? 0, alive: payload.alive !== false,
-          trail, t: Date.now(),
+          trail, t: Date.now(), face, avatar,
         };
       })
       .on("broadcast", { event: "kill" }, ({ payload }: any) => {
@@ -144,7 +148,7 @@ const PaintFightMonitor = ({ session, sessionId }: Props) => {
     // re-rendering the panel on each one is what made it flicker.
     const iv = setInterval(() => {
       if (cancelled) return;
-      const total = colsRef.current * rowsRef.current;
+      const total = arenaCellCount(colsRef.current, rowsRef.current);
       setCoverage(coverageOf(boardRef.current, total));
       setClaimedPct(total > 0 ? (boardRef.current.owner.size / total) * 100 : 0);
     }, 600);
@@ -180,8 +184,8 @@ const PaintFightMonitor = ({ session, sessionId }: Props) => {
         if (!p.alive) continue;
         drawTrail(ctx, p.trail, p.hue, offX, offY, scale, 9);
         const x = offX + p.x * scale, y = offY + p.y * scale;
-        drawPlayer(ctx, x, y, p.angle, p.hue, Math.max(16, 22 * scale));
-        drawName(ctx, x, y - Math.max(12, 17 * scale) * 0.9, p.name, p.hue, Math.max(11, 13 * scale));
+        drawPlayer(ctx, x, y, p.angle, p.hue, Math.max(22, 30 * scale), { avatar: p.avatar });
+        drawName(ctx, x, y - Math.max(22, 30 * scale) * 0.85, p.name, p.hue, Math.max(11, 13 * scale));
       }
       fxRef.current.drawOver(ctx, offX, offY, scale, now);
     };

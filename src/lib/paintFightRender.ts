@@ -24,6 +24,7 @@
 //     cache and its invalidation.
 
 import { CELL, type Territory } from "./paintFight";
+import { resolveFace } from "./avatarIdentity";
 
 // An art-room table: a sheet of paper taped down on a wooden desk. The paper
 // is the arena; the grain and the pencil dot grid are there so movement reads
@@ -42,8 +43,9 @@ export const hueDeep = (hue: number, alpha = 1) => `hsla(${hue}, 68%, 38%, ${alp
 export const hueSoft = (hue: number, alpha = 1) => `hsla(${hue}, 82%, 70%, ${alpha})`;
 
 /** How far the round-join stroke dilates a territory, in world px. Half of this
- *  is both the corner radius and the overspill, so it stays under half a cell. */
-const ROUND = CELL * 0.9;
+ *  is both the corner radius and the overspill: big enough that blobs read as
+ *  round, small enough (under a cell) that the picture never lies about a border. */
+const ROUND = CELL * 2;
 
 /** How far a territory's darker underside shows below it, in world px. */
 const DEPTH = 3;
@@ -196,8 +198,8 @@ const worldPattern = (ctx: CanvasRenderingContext2D, tile: HTMLCanvasElement, of
   return pat;
 };
 
-/** The desk, the sheet's shadow on it, the sheet, and masking tape holding it
- *  down along every edge. The tape is also the wall, so it reads as one. */
+/** The desk, the round sheet's shadow on it, the sheet, and a ring of masking
+ *  tape holding it down. The tape ring is the wall, so it reads as one. */
 export const drawArena = (
   ctx: CanvasRenderingContext2D, cssW: number, cssH: number,
   offX: number, offY: number, scale: number, worldW: number, worldH: number,
@@ -205,34 +207,31 @@ export const drawArena = (
   ctx.fillStyle = worldPattern(ctx, getWoodTile(), offX, offY, scale) ?? PF.void;
   ctx.fillRect(0, 0, cssW, cssH);
 
-  const w = worldW * scale, h = worldH * scale;
-  ctx.fillStyle = "rgba(40,22,6,0.28)";
-  ctx.fillRect(offX + 3 * scale, offY + 7 * scale, w, h);
-  ctx.fillStyle = worldPattern(ctx, getPaperTile(), offX, offY, scale) ?? PF.floor;
-  ctx.fillRect(offX, offY, w, h);
+  const cx = offX + (worldW / 2) * scale, cy = offY + (worldH / 2) * scale;
+  const r = (Math.min(worldW, worldH) / 2) * scale;
 
-  // Tape: a band straddling each edge, plus a crossed strip at each corner.
+  ctx.fillStyle = "rgba(40,22,6,0.28)";
+  ctx.beginPath(); ctx.arc(cx + 3 * scale, cy + 8 * scale, r, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = worldPattern(ctx, getPaperTile(), offX, offY, scale) ?? PF.floor;
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+
   const t = 14 * scale;
-  ctx.fillStyle = PF.tape;
-  ctx.fillRect(offX - t / 2, offY - t / 2, w + t, t);
-  ctx.fillRect(offX - t / 2, offY + h - t / 2, w + t, t);
-  ctx.fillRect(offX - t / 2, offY - t / 2, t, h + t);
-  ctx.fillRect(offX + w - t / 2, offY - t / 2, t, h + t);
-  ctx.fillStyle = "rgba(255,255,255,0.22)";
-  ctx.fillRect(offX - t / 2, offY - t / 2, w + t, t * 0.3);
-  ctx.fillRect(offX - t / 2, offY + h - t / 2, w + t, t * 0.3);
-  const corner = (cx: number, cy: number, rot: number) => {
+  ctx.lineWidth = t;
+  ctx.strokeStyle = PF.tape;
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
+  ctx.lineWidth = t * 0.28;
+  ctx.strokeStyle = "rgba(255,255,255,0.25)";
+  ctx.beginPath(); ctx.arc(cx, cy, r - t * 0.3, 0, Math.PI * 2); ctx.stroke();
+  // A few short strips across the rim, the way you'd actually tape a sheet down.
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2 + Math.PI / 8;
     ctx.save();
-    ctx.translate(cx, cy);
-    ctx.rotate(rot);
+    ctx.translate(cx + Math.cos(a) * r, cy + Math.sin(a) * r);
+    ctx.rotate(a);
     ctx.fillStyle = "rgba(230,212,160,0.95)";
-    ctx.fillRect(-t * 2.2, -t * 0.75, t * 4.4, t * 1.5);
+    ctx.fillRect(-t * 1.6, -t * 0.75, t * 3.2, t * 1.5);
     ctx.restore();
-  };
-  corner(offX, offY, -Math.PI / 4);
-  corner(offX + w, offY, Math.PI / 4);
-  corner(offX, offY + h, Math.PI / 4);
-  corner(offX + w, offY + h, -Math.PI / 4);
+  }
 };
 
 /**
@@ -318,10 +317,29 @@ export const drawTrail = (
  * stay upright (only the pupils follow the heading) so the face never ends up
  * upside down. An empty tank goes grey with closed eyes.
  */
+const faceCache = new Map<string, HTMLImageElement>();
+/** The lobby avatar face PNG for `src`, loaded once and shared by every view. */
+export const faceImage = (src: string) => {
+  let img = faceCache.get(src);
+  if (!img) { img = new Image(); img.src = src; faceCache.set(src, img); }
+  return img;
+};
+
+export type PlayerAvatar = { face: HTMLImageElement };
+/** A player's lobby avatar face — the one they picked on the join screen and
+ *  see in every other mode. Falls back to the name hash when nothing was
+ *  stored, exactly like the <Avatar> component. The circle behind it is their
+ *  PAINT colour, not their lobby circle colour: the avatar has to read as the
+ *  same colour as the ground it owns. */
+export const avatarFor = (name: string, faceIndex?: number | null): PlayerAvatar => ({
+  face: faceImage(resolveFace(name, faceIndex)),
+});
+
 export const drawPlayer = (
   ctx: CanvasRenderingContext2D, x: number, y: number, angle: number, hue: number, size: number,
-  opts: { frozen?: boolean; alpha?: number } = {},
+  opts: { frozen?: boolean; alpha?: number; avatar?: PlayerAvatar } = {},
 ) => {
+  if (opts.avatar) { drawAvatarPlayer(ctx, x, y, angle, hue, size, opts.avatar, opts); return; }
   const s = size / 2;
   const alpha = opts.alpha ?? 1;
   ctx.save();
@@ -380,6 +398,77 @@ export const drawPlayer = (
   ctx.restore();
 };
 
+/**
+ * The player as their lobby avatar: the circle with their face, exactly as the
+ * roster draws it, wrapped in a ring of their paint colour with a drop-shaped
+ * tail of paint streaming behind the heading. The avatar says WHO it is (same
+ * "them" as every other mode); the ring and tail say which territory is theirs
+ * and which way they are going. An empty tank greys the circle out.
+ */
+const drawAvatarPlayer = (
+  ctx: CanvasRenderingContext2D, x: number, y: number, angle: number, hue: number, size: number,
+  avatar: PlayerAvatar, opts: { frozen?: boolean; alpha?: number },
+) => {
+  const r = size / 2;
+  const alpha = opts.alpha ?? 1;
+
+  ctx.save();
+  ctx.globalAlpha = alpha * 0.22;
+  ctx.fillStyle = PF.ink;
+  ctx.beginPath();
+  ctx.ellipse(x, y + r * 0.95, r * 1.05, r * 0.4, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  ctx.save();
+  ctx.globalAlpha = alpha;
+
+  // Paint tail + ring, one teardrop in the paint colour.
+  const ring = r * 1.22;
+  const tip = ring * 1.75;
+  const phi = Math.acos(ring / tip);
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(angle);
+  ctx.beginPath();
+  ctx.moveTo(-tip, 0);
+  ctx.arc(0, 0, ring, Math.PI + phi, Math.PI - phi);
+  ctx.closePath();
+  ctx.fillStyle = opts.frozen ? "#A4ACA8" : hueFill(hue);
+  ctx.fill();
+  ctx.lineJoin = "round";
+  ctx.lineWidth = Math.max(1.5, size * 0.07);
+  ctx.strokeStyle = opts.frozen ? "#66716D" : hueDeep(hue);
+  ctx.stroke();
+  ctx.restore();
+
+  // The avatar circle: dark rim, a light tint of their paint colour (light so
+  // the black face ink stays legible, like the lobby's pastel circles), their
+  // face overscanned and clipped the same way <Avatar> does it.
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.fillStyle = PF.ink;
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(x, y, r * 0.9, 0, Math.PI * 2);
+  ctx.fillStyle = opts.frozen ? "#D5DAD8" : hueSoft(hue);
+  ctx.fill();
+  if (avatar.face.complete && avatar.face.naturalWidth > 0) {
+    ctx.save();
+    ctx.clip();
+    const d = r * 0.9 * 2 * 1.28;
+    ctx.drawImage(avatar.face, x - d / 2, y - d / 2, d, d);
+    ctx.restore();
+  }
+  if (opts.frozen) {
+    ctx.beginPath();
+    ctx.arc(x, y, r * 0.9, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(200,205,203,0.6)";
+    ctx.fill();
+  }
+  ctx.restore();
+};
+
 /** Name in the player's own color, above their block. No chip — the reference
  *  reads as bold colored text floating on the arena. */
 export const drawName = (
@@ -429,14 +518,16 @@ export const drawMinimap = (
   ctx.save();
   ctx.beginPath();
   ctx.arc(cx, cy, r, 0, Math.PI * 2);
-  ctx.fillStyle = "rgba(255,255,255,0.72)";
+  ctx.fillStyle = "rgba(185,142,95,0.85)";
   ctx.fill();
   ctx.clip();
 
-  const mScale = Math.min((r * 1.86) / worldW, (r * 1.86) / worldH);
+  const mScale = Math.min((r * 1.9) / worldW, (r * 1.9) / worldH);
   const offX = cx - (worldW * mScale) / 2, offY = cy - (worldH * mScale) / 2;
-  ctx.fillStyle = "rgba(255,255,255,0.85)";
-  ctx.fillRect(offX, offY, worldW * mScale, worldH * mScale);
+  ctx.fillStyle = PF.floor;
+  ctx.beginPath();
+  ctx.arc(offX + (worldW * mScale) / 2, offY + (worldH * mScale) / 2, (Math.min(worldW, worldH) * mScale) / 2, 0, Math.PI * 2);
+  ctx.fill();
 
   ctx.save();
   ctx.translate(offX, offY);

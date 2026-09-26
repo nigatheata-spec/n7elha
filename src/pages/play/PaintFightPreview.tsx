@@ -19,12 +19,14 @@ import {
   CELL, TANK, PLAYER_SPEED, TURN_RATE, TRAIL_RADIUS, PIXELS_PER_WORLD_UNIT,
   emptyTerritory, claimCells, wipePlayer, cellsOf, coverageOf, captureFill,
   cellOfXY, spawnBlock, hueForJoinIndex, computeArenaSize, Trail,
+  arenaCellCount, insideArena, clampToArena, randomSpawnCell,
   type Territory, type CoverageRow,
 } from "@/lib/paintFight";
 import {
   resizeCanvas, drawArena, drawTerritories, drawTrail, drawPlayer, drawName,
-  computeCamera, drawMinimap, TerritoryPaths, PaintFx, hueFill, hueDeep, PF,
+  computeCamera, drawMinimap, TerritoryPaths, PaintFx, hueFill, hueDeep, PF, avatarFor,
 } from "@/lib/paintFightRender";
+import { FACES } from "@/lib/avatarIdentity";
 
 type Actor = {
   id: string; name: string; hue: number; bot: boolean;
@@ -33,7 +35,7 @@ type Actor = {
   turnAt: number;
 };
 
-const PLAYER_SIZE = 22;
+const PLAYER_SIZE = 30;
 
 const ANSWER_HUES = [352, 145, 268, 40];
 const BLOBS = [
@@ -62,6 +64,9 @@ const PaintFightPreview = () => {
 
   const params = new URLSearchParams(window.location.search);
   const botCount = Math.max(0, Math.min(6, Number(params.get("bots") ?? 3)));
+  // Players are drawn as their lobby avatars; ?faces=0 shows the plain paint
+  // drop with drawn eyes instead.
+  const useFaces = params.get("faces") !== "0";
   const { cols, rows } = computeArenaSize(botCount + 1);
 
   const boardRef = useRef<Territory>(emptyTerritory());
@@ -75,8 +80,10 @@ const PaintFightPreview = () => {
     pathsRef.current = new TerritoryPaths(cols);
 
     const make = (i: number, bot: boolean): Actor => {
-      const cx = Math.round((cols * (i + 1)) / (botCount + 2));
-      const cy = Math.round(rows * (0.3 + 0.4 * ((i % 3) / 2)));
+      // Everyone on a ring around the middle, the player first.
+      const a = (i / (botCount + 1)) * Math.PI * 2 - Math.PI / 2;
+      const cx = Math.round(cols / 2 + Math.cos(a) * cols * 0.12);
+      const cy = Math.round(rows / 2 + Math.sin(a) * rows * 0.12);
       const hue = hueForJoinIndex(i);
       const id = bot ? `bot${i}` : "me";
       claimCells(board, id, hue, spawnBlock(cx, cy, cols, rows), cols * rows);
@@ -113,8 +120,7 @@ const PaintFightPreview = () => {
       fxRef.current.stain(a.x, a.y, a.hue);
       pathsRef.current.invalidate(wipePlayer(boardRef.current, a.id));
       a.trail.clear();
-      const cx = 4 + Math.floor(Math.random() * (cols - 8));
-      const cy = 4 + Math.floor(Math.random() * (rows - 8));
+      const { cx, cy } = randomSpawnCell(cols, rows);
       pathsRef.current.invalidate(
         claimCells(boardRef.current, a.id, a.hue, spawnBlock(cx, cy, cols, rows), total));
       a.x = (cx + 0.5) * CELL; a.y = (cy + 0.5) * CELL;
@@ -158,19 +164,14 @@ const PaintFightPreview = () => {
         const x0 = a.x, y0 = a.y;
         const nx = x0 + Math.cos(a.angle) * PLAYER_SPEED * dt;
         const ny = y0 + Math.sin(a.angle) * PLAYER_SPEED * dt;
-        const worldW = cols * CELL, worldH = rows * CELL;
-        const hitWall = nx <= 0 || ny <= 0 || nx >= worldW || ny >= worldH;
-        a.x = Math.max(0.5, Math.min(worldW - 0.5, nx));
-        a.y = Math.max(0.5, Math.min(worldH - 0.5, ny));
+        const hitWall = !insideArena(nx, ny, cols, rows);
+        ({ x: a.x, y: a.y } = clampToArena(nx, ny, cols, rows));
         a.tank = Math.max(0, a.tank - TANK.drainPerSec * dt);
 
         const cell = cellOfXY(a.x, a.y, cols, rows).index;
         const onOwn = boardRef.current.owner.get(cell)?.studentId === a.id;
-        if (hitWall && !onOwn) {
-          if (a.bot) a.angle += Math.PI / 2 + Math.random(); else { kill(a, "You hit the edge"); }
-          if (a.bot) continue;
-          continue;
-        }
+        // The rim just blocks. Bots turn back inward so they don't grind along it.
+        if (hitWall && a.bot) a.angle = Math.atan2(rows * CELL / 2 - a.y, cols * CELL / 2 - a.x) + (Math.random() - 0.5);
         if (onOwn) {
           if (a.trail.size > 0) {
             const gained = captureFill(cellsOf(boardRef.current, a.id), a.trail.cells.keys(), cols, rows);
@@ -218,7 +219,9 @@ const PaintFightPreview = () => {
       for (const a of actorsRef.current) {
         drawTrail(ctx, [...a.trail.points, { x: a.x, y: a.y }], a.hue, offX, offY, scale, TRAIL_RADIUS * 2);
         const x = offX + a.x * scale, y = offY + a.y * scale;
-        drawPlayer(ctx, x, y, a.angle, a.hue, PLAYER_SIZE * scale);
+        const n = actorsRef.current.indexOf(a);
+        const avatar = useFaces && FACES.length ? avatarFor(a.name, (n * 5) % FACES.length) : undefined;
+        drawPlayer(ctx, x, y, a.angle, a.hue, PLAYER_SIZE * scale, { avatar, frozen: a.tank <= 0 });
         drawName(ctx, x, y - PLAYER_SIZE * scale * 0.85, a.name, a.hue, 13);
       }
       fx.drawOver(ctx, offX, offY, scale, now);
@@ -239,13 +242,13 @@ const PaintFightPreview = () => {
       draw();
       if (hudAcc >= 0.25) {
         hudAcc = 0;
-        setRowsOut(coverageOf(boardRef.current, total).slice(0, 6));
+        setRowsOut(coverageOf(boardRef.current, arenaCellCount(cols, rows)).slice(0, 6));
         setTank(actorsRef.current[0]?.tank ?? 0);
       }
     };
     raf = requestAnimationFrame(frame);
     return () => cancelAnimationFrame(raf);
-  }, [cols, rows]);
+  }, [cols, rows, useFaces]);
 
   const me = rowsOut.find(r => r.studentId === "me");
   const myHue = hueForJoinIndex(0);

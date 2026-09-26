@@ -63,8 +63,10 @@ export const TURN_RATE = 6.2;
 /** Half-width of the trail in world px — just under one cell. */
 export const TRAIL_RADIUS = 4.5;
 
-/** A fresh spawn owns a (2n+1)² block of cells. */
-export const SPAWN_HALF = 3;
+/** A fresh spawn owns a disc of cells this many cells across its radius. */
+export const SPAWN_RADIUS = 4;
+/** How far a spawn centre must sit from the arena rim, in cells. */
+export const SPAWN_HALF = SPAWN_RADIUS;
 
 /** How long you sit dead before respawning. */
 export const RESPAWN_MS = 1500;
@@ -84,15 +86,71 @@ export const BROADCAST_INTERVAL_MS = 70;
 export const PEER_TIMEOUT_MS = 5000;
 
 /**
- * Arena grid, frozen into settings at Start from the confirmed roster. Sized so
- * a loop worth making takes a few seconds to run and 20 players aren't standing
- * on each other's spawns.
+ * Arena grid, frozen into settings at Start from the confirmed roster. The
+ * arena is a CIRCLE inscribed in a square grid — room to roam, with no corners
+ * to camp in. Its diameter grows with the class so twenty players aren't
+ * standing on each other's spawns; the whole ladder is three times the width
+ * the mode launched with, which was cramped enough that loops kept running
+ * into the wall.
  */
 export const computeArenaSize = (playerCount: number) => {
   const n = Math.max(1, playerCount);
-  const cols = Math.round(clamp(56 * Math.sqrt(n / 6), 60, 170));
-  const rows = Math.round(cols * 1.35); // portrait-ish, matches phone screens
-  return { cols, rows };
+  const side = Math.round(clamp(168 * Math.sqrt(n / 6), 180, 510));
+  return { cols: side, rows: side };
+};
+
+/** The arena circle in world px. Everything outside it is the wall. */
+export const arenaCircle = (cols: number, rows: number) => ({
+  cx: (cols * CELL) / 2,
+  cy: (rows * CELL) / 2,
+  r: (Math.min(cols, rows) * CELL) / 2,
+});
+
+const maskCache = new Map<string, { mask: Uint8Array; count: number }>();
+/**
+ * 1 for every cell whose centre is inside the arena circle. Cached per size,
+ * since every capture and every coverage tally asks.
+ */
+export const arenaMask = (cols: number, rows: number) => {
+  const key = `${cols}x${rows}`;
+  let hit = maskCache.get(key);
+  if (!hit) {
+    const { cx, cy, r } = arenaCircle(cols, rows);
+    const mask = new Uint8Array(cols * rows);
+    let count = 0;
+    for (let y = 0; y < rows; y++)
+      for (let x = 0; x < cols; x++) {
+        const dx = (x + 0.5) * CELL - cx, dy = (y + 0.5) * CELL - cy;
+        if (dx * dx + dy * dy <= r * r) { mask[y * cols + x] = 1; count++; }
+      }
+    hit = { mask, count };
+    maskCache.set(key, hit);
+  }
+  return hit;
+};
+
+/** Cells a player can actually own — the denominator for every percentage. */
+export const arenaCellCount = (cols: number, rows: number) => arenaMask(cols, rows).count;
+
+/** Is world point (x, y) inside the arena, `inset` px in from the rim? */
+export const insideArena = (x: number, y: number, cols: number, rows: number, inset = 0) => {
+  const { cx, cy, r } = arenaCircle(cols, rows);
+  return Math.hypot(x - cx, y - cy) <= r - inset;
+};
+
+/** Pull a point that left the circle back onto its rim (`inset` px inside). */
+export const clampToArena = (x: number, y: number, cols: number, rows: number, inset = 0.5) => {
+  const { cx, cy, r } = arenaCircle(cols, rows);
+  const dx = x - cx, dy = y - cy, d = Math.hypot(dx, dy), max = r - inset;
+  return d <= max || d === 0 ? { x, y } : { x: cx + (dx / d) * max, y: cy + (dy / d) * max };
+};
+
+/** A random spawn-cell centre comfortably inside the circle. */
+export const randomSpawnCell = (cols: number, rows: number, rnd: () => number = Math.random) => {
+  const { cx, cy, r } = arenaCircle(cols, rows);
+  const a = rnd() * Math.PI * 2;
+  const d = Math.sqrt(rnd()) * (r - (SPAWN_RADIUS + 3) * CELL);
+  return { cx: Math.floor((cx + Math.cos(a) * d) / CELL), cy: Math.floor((cy + Math.sin(a) * d) / CELL) };
 };
 
 export const cellIndex = (cx: number, cy: number, cols: number) => cy * cols + cx;
@@ -135,13 +193,18 @@ export const cellsUnderDisc = (x: number, y: number, radius: number, cols: numbe
   return out;
 };
 
-/** The (2*SPAWN_HALF+1)² block of cells around a spawn point. */
+/** The round patch of cells a player starts on, around a spawn cell. Clipped
+ *  to the arena, so a spawn near the rim never owns wall. */
 export const spawnBlock = (cx: number, cy: number, cols: number, rows: number): number[] => {
   const out: number[] = [];
-  for (let y = cy - SPAWN_HALF; y <= cy + SPAWN_HALF; y++) {
-    for (let x = cx - SPAWN_HALF; x <= cx + SPAWN_HALF; x++) {
+  const { mask } = arenaMask(cols, rows);
+  const r2 = (SPAWN_RADIUS + 0.5) ** 2;
+  for (let y = cy - SPAWN_RADIUS; y <= cy + SPAWN_RADIUS; y++) {
+    for (let x = cx - SPAWN_RADIUS; x <= cx + SPAWN_RADIUS; x++) {
       if (x < 0 || y < 0 || x >= cols || y >= rows) continue;
-      out.push(cellIndex(x, y, cols));
+      if ((x - cx) ** 2 + (y - cy) ** 2 > r2) continue;
+      const idx = cellIndex(x, y, cols);
+      if (mask[idx]) out.push(idx);
     }
   }
   return out;
@@ -333,10 +396,15 @@ export const captureFill = (
   const w = maxX - minX + 1, h = maxY - minY + 1;
   const outside = new Uint8Array(w * h);
   const stack: number[] = [];
+  const { mask } = arenaMask(cols, rows);
   const push = (lx: number, ly: number) => {
     const k = ly * w + lx;
     if (outside[k]) return;
-    if (claimed.has((ly + minY) * cols + (lx + minX))) return;
+    const idx = (ly + minY) * cols + (lx + minX);
+    // Beyond the circle is wall: the flood can't travel through it, which is
+    // what makes a bay sealed against the rim a capture.
+    if (!mask[idx]) return;
+    if (claimed.has(idx)) return;
     outside[k] = 1;
     stack.push(k);
   };
@@ -364,7 +432,7 @@ export const captureFill = (
     for (let lx = 0; lx < w; lx++) {
       if (outside[ly * w + lx]) continue;
       const idx = (ly + minY) * cols + (lx + minX);
-      if (mine.has(idx)) continue;
+      if (mine.has(idx) || !mask[idx]) continue;
       gained.push(idx);
     }
   }

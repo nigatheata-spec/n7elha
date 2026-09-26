@@ -8,15 +8,16 @@ import PaintJoystick, { type JoystickVector } from "@/components/game/PaintJoyst
 import { useFloatingRewards } from "@/components/game/GameFeedback";
 import { playCorrect, playWrong } from "@/lib/sound";
 import {
-  CELL, TANK, PLAYER_SPEED, TURN_RATE, TRAIL_RADIUS, RESPAWN_MS, SPAWN_HALF,
+  CELL, TANK, PLAYER_SPEED, TURN_RATE, TRAIL_RADIUS, RESPAWN_MS,
   PIXELS_PER_WORLD_UNIT, FLUSH_INTERVAL_MS, BROADCAST_INTERVAL_MS, PEER_TIMEOUT_MS,
   emptyTerritory, applyStroke, claimCells, wipePlayer, cellsOf, coverageOf,
-  captureFill, cellOfXY, spawnBlock, Trail,
+  captureFill, cellOfXY, spawnBlock, Trail, arenaCellCount, clampToArena, randomSpawnCell,
   type Stroke, type Territory, type CoverageRow,
 } from "@/lib/paintFight";
 import {
   resizeCanvas, drawArena, drawTerritories, drawTrail, drawPlayer, drawName,
-  computeCamera, drawMinimap, TerritoryPaths, PaintFx, hueFill, hueDeep, PF,
+  computeCamera, drawMinimap, TerritoryPaths, PaintFx, hueFill, hueDeep, PF, avatarFor,
+  type PlayerAvatar,
 } from "@/lib/paintFightRender";
 import { readSettings } from "@/lib/sessionSettings";
 
@@ -40,11 +41,12 @@ type Phase = "waiting" | "playing" | "done";
 type Peer = {
   id: string; name: string; x: number; y: number; angle: number; hue: number;
   alive: boolean; trail: { x: number; y: number }[]; t: number;
+  face: number | null; avatar: PlayerAvatar;
 };
 
 interface Props { sessionId: string; studentId: string; }
 
-const PLAYER_SIZE = 22;      // world px
+const PLAYER_SIZE = 30;      // world px
 const TRAIL_W = TRAIL_RADIUS * 2;
 
 /** One colour per answer slot — the four a class recognises from the arena. */
@@ -90,7 +92,7 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
   const trailResetRef = useRef(true);
   // `moving` is false until the stick is first touched. Movement is otherwise
   // constant (that is the mode), which would mean a student who opens the app
-  // and doesn't touch anything drives straight into the wall and dies before
+  // and doesn't touch anything drives off before
   // they have read the screen.
   const pRef = useRef({ x: 0, y: 0, angle: 0, tank: TANK.start, alive: true, moving: false, respawnAt: 0, best: 0, kills: 0 });
   const chanRef    = useRef<ReturnType<typeof supabase.channel> | null>(null);
@@ -98,6 +100,10 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
   const rowsRef    = useRef(0);
   const hueRef     = useRef(0);
   const nameRef    = useRef("");
+  // The lobby face pick (game_students.avatar_face), broadcast with every
+  // position so peers draw us with the same face as the roster.
+  const faceIdxRef   = useRef<number | null>(null);
+  const myAvatarRef  = useRef<PlayerAvatar | null>(null);
   const flushingRef = useRef(false);
   const pickedRef  = useRef<number | null>(null);
   const questionsRef = useRef<Q[]>([]);
@@ -197,10 +203,13 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
         const trail = payload.reset || !prev ? [] : prev.trail;
         for (const [x, y] of (payload.pts ?? [])) trail.push({ x, y });
         if (trail.length > 400) trail.splice(0, trail.length - 400);
+        const name: string = payload.name ?? "";
+        const face: number | null = payload.af ?? null;
+        const avatar = prev && prev.name === name && prev.face === face ? prev.avatar : avatarFor(name, face);
         peersRef.current[payload.id] = {
-          id: payload.id, name: payload.name ?? "", x: payload.x, y: payload.y,
+          id: payload.id, name, x: payload.x, y: payload.y,
           angle: payload.angle ?? 0, hue: payload.hue ?? 0, alive: payload.alive !== false,
-          trail, t: Date.now(),
+          trail, t: Date.now(), face, avatar,
         };
       })
       .on("broadcast", { event: "kill" }, ({ payload }: any) => {
@@ -244,6 +253,8 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
         setMe(m);
         hueRef.current = m.fight_hue ?? 0;
         nameRef.current = m.name ?? "";
+        faceIdxRef.current = m.avatar_face ?? null;
+        myAvatarRef.current = avatarFor(nameRef.current, m.avatar_face);
         pRef.current.kills = m.fight_kills ?? 0;
       }
 
@@ -281,14 +292,12 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
   /** Drop a fresh home block somewhere clear and publish it. */
   const spawnHome = () => {
     const cols = colsRef.current, rows = rowsRef.current;
-    const margin = SPAWN_HALF + 2;
     let cx = 0, cy = 0;
     // A handful of tries is plenty: prefer bare floor, but never loop forever
     // on a nearly-full arena — landing on someone's turf just means the block
     // takes it, which is a legal capture anyway.
     for (let attempt = 0; attempt < 24; attempt++) {
-      cx = margin + Math.floor(Math.random() * (cols - margin * 2));
-      cy = margin + Math.floor(Math.random() * (rows - margin * 2));
+      ({ cx, cy } = randomSpawnCell(cols, rows));
       if (!boardRef.current.owner.has(cy * cols + cx)) break;
     }
     const block = spawnBlock(cx, cy, cols, rows);
@@ -389,7 +398,7 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
       fxRef.current.splash(p.x, p.y, hueRef.current, 0.6);
       if (gained.length >= 12) fxRef.current.punch(Math.min(0.07, 0.025 + gained.length / 4000));
       for (const idx of gained) pendingRef.current.add(idx);
-      p.best = Math.max(p.best, (cellsOf(boardRef.current, studentId).size / (cols() * rows())) * 100);
+      p.best = Math.max(p.best, (cellsOf(boardRef.current, studentId).size / arenaCellCount(cols(), rows())) * 100);
     };
 
     const physics = (dt: number) => {
@@ -417,18 +426,13 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
       const x0 = p.x, y0 = p.y;
       const nx = x0 + Math.cos(p.angle) * PLAYER_SPEED * dt;
       const ny = y0 + Math.sin(p.angle) * PLAYER_SPEED * dt;
-      const worldW = cols() * CELL, worldH = rows() * CELL;
-      const hitWall = nx <= 0 || ny <= 0 || nx >= worldW || ny >= worldH;
-      p.x = Math.max(0.5, Math.min(worldW - 0.5, nx));
-      p.y = Math.max(0.5, Math.min(worldH - 0.5, ny));
+      // The rim is solid, never lethal: a move that would leave the circle is
+      // pulled back onto it, so you slide along the edge until you steer away.
+      ({ x: p.x, y: p.y } = clampToArena(nx, ny, cols(), rows()));
       p.tank = Math.max(0, p.tank - TANK.drainPerSec * dt);
 
       const cell = cellOfXY(p.x, p.y, cols(), rows()).index;
       const onOwn = boardRef.current.owner.get(cell)?.studentId === studentId;
-
-      // The wall is a wall. Inside your own ground it just stops you; outside,
-      // there is nowhere to close your loop from, so it is a death.
-      if (hitWall && !onOwn) { die("اصطدمت بالحافة", "You hit the edge"); return; }
 
       if (onOwn) {
         if (trailRef.current.size > 0) capture();   // loop closed
@@ -484,14 +488,14 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
         if (peer.t < cutoff) { delete peersRef.current[id]; continue; }
         if (!peer.alive) continue;
         drawTrail(ctx, peer.trail, peer.hue, offX, offY, scale, TRAIL_W);
-        drawPlayer(ctx, sx(peer.x), sy(peer.y), peer.angle, peer.hue, PLAYER_SIZE * scale);
+        drawPlayer(ctx, sx(peer.x), sy(peer.y), peer.angle, peer.hue, PLAYER_SIZE * scale, { avatar: peer.avatar });
         drawName(ctx, sx(peer.x), sy(peer.y) - PLAYER_SIZE * scale * 0.85, peer.name, peer.hue, 13);
         dots.push({ x: peer.x, y: peer.y, hue: peer.hue });
       }
 
       if (p.alive) {
         drawTrail(ctx, [...trailRef.current.points, { x: p.x, y: p.y }], hueRef.current, offX, offY, scale, TRAIL_W);
-        drawPlayer(ctx, sx(p.x), sy(p.y), p.angle, hueRef.current, PLAYER_SIZE * scale, { frozen: p.tank <= 0 });
+        drawPlayer(ctx, sx(p.x), sy(p.y), p.angle, hueRef.current, PLAYER_SIZE * scale, { frozen: p.tank <= 0, avatar: myAvatarRef.current ?? undefined });
         drawName(ctx, sx(p.x), sy(p.y) - PLAYER_SIZE * scale * 0.85, nameRef.current, hueRef.current, 13);
       }
       fx.drawOver(ctx, offX, offY, scale, now);
@@ -518,8 +522,7 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
 
       if (hudAcc >= 0.2) {
         hudAcc = 0;
-        const total = cols() * rows();
-        const rowsOut = coverageOf(boardRef.current, total);
+        const rowsOut = coverageOf(boardRef.current, arenaCellCount(cols(), rows()));
         const p = pRef.current;
         const mine = rowsOut.find(r => r.studentId === studentId);
         p.best = Math.max(p.best, mine?.pct ?? 0);
@@ -536,6 +539,7 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
           type: "broadcast", event: "pos",
           payload: {
             id: studentId, name: nameRef.current, hue: hueRef.current, alive: p.alive,
+            af: faceIdxRef.current,
             x: Math.round(p.x), y: Math.round(p.y), angle: Number(p.angle.toFixed(2)),
             reset: trailResetRef.current,
             pts: trailRef.current.pending.map(q => [q.x, q.y]),

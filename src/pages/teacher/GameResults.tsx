@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Download, Trophy, Check, Clock, Users, Target } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Seo } from "@/components/Seo";
-import { computeCoverage, type CoverageRow, type Stroke } from "@/lib/paintFight";
+import { computeCoverage, arenaCellCount, type CoverageRow, type Stroke } from "@/lib/paintFight";
 import { Avatar } from "@/components/Avatar";
 import { readSettings } from "@/lib/sessionSettings";
 import { rankStudents } from "@/lib/results";
@@ -54,7 +54,7 @@ const GameResults = () => {
       if (cfg.mode === "paintfight") {
         const { data: strokes } = await supabase.from("paint_fight_strokes")
           .select("student_id,hue,cell_indices,op").eq("session_id", sessionId).order("created_at", { ascending: true });
-        const totalCells = (cfg.arenaCols ?? 0) * (cfg.arenaRows ?? 0);
+        const totalCells = cfg.arenaCols && cfg.arenaRows ? arenaCellCount(cfg.arenaCols, cfg.arenaRows) : 0;
         setPaintCoverage(computeCoverage((strokes ?? []) as Stroke[], totalCells));
       }
       setPhase(justEnded ? "cinematic" : "results");
