@@ -10,7 +10,7 @@ import {
 } from "@/lib/paintFight";
 import {
   resizeCanvas, drawArena, drawTerritories, drawTrail, drawPlayer, drawName,
-  TerritoryPaths, hueFill, PF,
+  TerritoryPaths, PaintFx, hueFill, hueDeep, PF,
 } from "@/lib/paintFightRender";
 import { useConfirmDialog } from "@/hooks/use-confirm-dialog";
 
@@ -46,6 +46,7 @@ const PaintFightMonitor = ({ session, sessionId }: Props) => {
   const [coverage, setCoverage] = useState<CoverageRow[]>([]);
   const [claimedPct, setClaimedPct] = useState(0);
   const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
+  const [feed, setFeed] = useState<{ id: number; text: string; hue: number }[]>([]);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const boardRef  = useRef<Territory>(emptyTerritory());
@@ -54,6 +55,9 @@ const PaintFightMonitor = ({ session, sessionId }: Props) => {
   const colsRef   = useRef(cols);
   const rowsRef   = useRef(rows);
   const endedRef  = useRef(false);
+  const fxRef     = useRef(new PaintFx());
+  const arRef     = useRef(ar);
+  arRef.current = ar;
 
   colsRef.current = cols;
   rowsRef.current = rows;
@@ -74,6 +78,19 @@ const PaintFightMonitor = ({ session, sessionId }: Props) => {
     const apply = (row: Stroke) => {
       pathsRef.current.invalidate(applyStroke(boardRef.current, row, colsRef.current * rowsRef.current));
     };
+    // Live captures (not history) shine outward from where the loop closed.
+    const shine = (row: Stroke) => {
+      if ((row.op ?? "claim") !== "claim" || row.cell_indices.length < 16) return;
+      const c = colsRef.current;
+      const peer = peersRef.current[row.student_id];
+      let x = 0, y = 0;
+      if (peer) { x = peer.x; y = peer.y; }
+      else {
+        for (const idx of row.cell_indices) { x += idx % c; y += Math.floor(idx / c); }
+        x = (x / row.cell_indices.length + 0.5) * CELL; y = (y / row.cell_indices.length + 0.5) * CELL;
+      }
+      fxRef.current.wave(x, y, row.cell_indices, c);
+    };
 
     const refreshStudents = async () => {
       const { data } = await supabase.from("game_students").select("*").eq("session_id", sessionId);
@@ -83,10 +100,14 @@ const PaintFightMonitor = ({ session, sessionId }: Props) => {
     const ch = supabase.channel(`pf-${sessionId}`, { config: { broadcast: { self: false } } })
       .on("postgres_changes", { event: "*", schema: "public", table: "game_students", filter: `session_id=eq.${sessionId}` }, refreshStudents)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "paint_fight_strokes", filter: `session_id=eq.${sessionId}` },
-        (p: any) => { const row = p.new as Stroke; if (historyApplied) apply(row); else buffer.push(row); })
+        (p: any) => { const row = p.new as Stroke; if (historyApplied) { apply(row); shine(row); } else buffer.push(row); })
       .on("broadcast", { event: "pos" }, ({ payload }: any) => {
         if (!payload?.id) return;
         const prev = peersRef.current[payload.id];
+        if (prev?.alive && payload.alive === false) {
+          fxRef.current.splash(prev.x, prev.y, prev.hue, 1.6);
+          fxRef.current.stain(prev.x, prev.y, prev.hue);
+        }
         const trail = payload.reset || !prev ? [] : prev.trail;
         for (const [x, y] of (payload.pts ?? [])) trail.push({ x, y });
         if (trail.length > 400) trail.splice(0, trail.length - 400);
@@ -95,6 +116,15 @@ const PaintFightMonitor = ({ session, sessionId }: Props) => {
           angle: payload.angle ?? 0, hue: payload.hue ?? 0, alive: payload.alive !== false,
           trail, t: Date.now(),
         };
+      })
+      .on("broadcast", { event: "kill" }, ({ payload }: any) => {
+        if (!payload) return;
+        const by = payload.byName ?? peersRef.current[payload.by]?.name ?? "?";
+        const victim = payload.victimName ?? "?";
+        const id = Date.now() + Math.random();
+        const text = arRef.current ? `${by} لوّن فوق ${victim}` : `${by} painted over ${victim}`;
+        setFeed(f => [...f.slice(-3), { id, text, hue: payload.byHue ?? 0 }]);
+        setTimeout(() => setFeed(f => f.filter(e => e.id !== id)), 5000);
       })
       .subscribe();
 
@@ -138,7 +168,9 @@ const PaintFightMonitor = ({ session, sessionId }: Props) => {
       const scale = Math.min(cssW / worldW, cssH / worldH);
       const offX = (cssW - worldW * scale) / 2, offY = (cssH - worldH * scale) / 2;
 
+      const now = performance.now();
       drawArena(ctx, cssW, cssH, offX, offY, scale, worldW, worldH);
+      fxRef.current.drawUnder(ctx, offX, offY, scale, now);
       drawTerritories(ctx, boardRef.current, pathsRef.current, offX, offY, scale);
 
       const cutoff = Date.now() - PEER_TIMEOUT_MS;
@@ -148,9 +180,10 @@ const PaintFightMonitor = ({ session, sessionId }: Props) => {
         if (!p.alive) continue;
         drawTrail(ctx, p.trail, p.hue, offX, offY, scale, 9);
         const x = offX + p.x * scale, y = offY + p.y * scale;
-        drawPlayer(ctx, x, y, p.angle, p.hue, Math.max(12, 17 * scale));
+        drawPlayer(ctx, x, y, p.angle, p.hue, Math.max(16, 22 * scale));
         drawName(ctx, x, y - Math.max(12, 17 * scale) * 0.9, p.name, p.hue, Math.max(11, 13 * scale));
       }
+      fxRef.current.drawOver(ctx, offX, offY, scale, now);
     };
     raf = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(raf);
@@ -229,8 +262,17 @@ const PaintFightMonitor = ({ session, sessionId }: Props) => {
         </div>
 
         <div className="flex-1 grid grid-cols-[1fr_320px] gap-4 min-h-0">
-          <div className="overflow-hidden min-h-0 rounded-3xl" style={{ background: PF.void }}>
+          <div className="relative overflow-hidden min-h-0 rounded-3xl" style={{ background: PF.void }}>
             <canvas ref={canvasRef} className="h-full w-full block" />
+            <div className="absolute left-4 bottom-4 flex flex-col items-start gap-1.5 pointer-events-none">
+              {feed.map(e => (
+                <div key={e.id} dir={ar ? "rtl" : "ltr"}
+                  className="px-3.5 py-1.5 rounded-full text-sm font-extrabold text-white shadow-md animate-fade-up"
+                  style={{ background: hueDeep(e.hue, 0.94) }}>
+                  {e.text}
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Standings, as the reference's colored pills rather than a table —

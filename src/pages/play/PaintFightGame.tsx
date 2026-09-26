@@ -16,7 +16,7 @@ import {
 } from "@/lib/paintFight";
 import {
   resizeCanvas, drawArena, drawTerritories, drawTrail, drawPlayer, drawName,
-  computeCamera, drawMinimap, TerritoryPaths, hueFill, hueDeep, PF,
+  computeCamera, drawMinimap, TerritoryPaths, PaintFx, hueFill, hueDeep, PF,
 } from "@/lib/paintFightRender";
 import { readSettings } from "@/lib/sessionSettings";
 
@@ -44,7 +44,7 @@ type Peer = {
 
 interface Props { sessionId: string; studentId: string; }
 
-const PLAYER_SIZE = 17;      // world px
+const PLAYER_SIZE = 22;      // world px
 const TRAIL_W = TRAIL_RADIUS * 2;
 
 /** One colour per answer slot — the four a class recognises from the arena. */
@@ -73,6 +73,7 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
   const [hud, setHud] = useState({ tank: TANK.start, pct: 0, best: 0, kills: 0, alive: true });
   const [board, setBoard]       = useState<CoverageRow[]>([]);
   const [toast, setToast]       = useState<{ text: string; bad: boolean } | null>(null);
+  const [feed, setFeed]         = useState<{ id: number; text: string; hue: number }[]>([]);
 
   const reward = useFloatingRewards();
 
@@ -102,12 +103,24 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
   const questionsRef = useRef<Q[]>([]);
   const lastQIdRef = useRef<string | null>(null);
   const localWriteAtRef = useRef(0);
+  const fxRef = useRef(new PaintFx());
 
   const settings = session?.settings ?? {};
   const ar = (settings.lang ?? i18n.language) === "ar";
+  const arRef = useRef(ar);
+  arRef.current = ar;
   const myHue: number = me?.fight_hue ?? 0;
   const myColor = hueFill(myHue);
   const myInk = hueDeep(myHue);
+
+  /** "Sara painted over Ahmed" — the last three, each gone after a few seconds. */
+  const pushFeed = (text: string, hue: number) => {
+    const id = Date.now() + Math.random();
+    setFeed(f => [...f.slice(-2), { id, text, hue }]);
+    setTimeout(() => setFeed(f => f.filter(e => e.id !== id)), 3800);
+  };
+  const feedLine = (by: string, victim: string, isAr: boolean) =>
+    isAr ? `${by} لوّن فوق ${victim}` : `${by} painted over ${victim}`;
 
   const say = (text: string, bad: boolean) => {
     setToast({ text, bad });
@@ -151,7 +164,23 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
           // instant we captured, so a live echo is pure waste — but an echo
           // replayed from HISTORY is how a reconnecting player gets their own
           // territory back, so those must still go through.
-          if (historyApplied) { if (row.student_id !== studentId) apply(row); }
+          if (historyApplied) {
+            if (row.student_id === studentId) return;
+            apply(row);
+            // A sizeable capture by someone else gets the same wet shine ours
+            // does, starting from where they closed the loop.
+            if ((row.op ?? "claim") === "claim" && row.cell_indices.length >= 16) {
+              const peer = peersRef.current[row.student_id];
+              const cols = colsRef.current;
+              let x = 0, y = 0;
+              if (peer) { x = peer.x; y = peer.y; }
+              else {
+                for (const idx of row.cell_indices) { x += idx % cols; y += Math.floor(idx / cols); }
+                x = (x / row.cell_indices.length + 0.5) * CELL; y = (y / row.cell_indices.length + 0.5) * CELL;
+              }
+              fxRef.current.wave(x, y, row.cell_indices, cols);
+            }
+          }
           else buffer.push(row);
         })
       .on("broadcast", { event: "pos" }, ({ payload }: any) => {
@@ -161,6 +190,10 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
         // never cost anybody a cell or a life.
         if (!payload?.id || payload.id === studentId) return;
         const prev = peersRef.current[payload.id];
+        if (prev?.alive && payload.alive === false) {
+          fxRef.current.splash(prev.x, prev.y, prev.hue, 1.4);
+          fxRef.current.stain(prev.x, prev.y, prev.hue);
+        }
         const trail = payload.reset || !prev ? [] : prev.trail;
         for (const [x, y] of (payload.pts ?? [])) trail.push({ x, y });
         if (trail.length > 400) trail.splice(0, trail.length - 400);
@@ -174,7 +207,11 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
         // The victim tells us we cut them off; we are the only client that
         // writes our own kill counter. A dropped broadcast loses a tally mark
         // and nothing else — territory and deaths are never decided here.
-        if (payload?.by !== studentId) return;
+        if (!payload) return;
+        const isAr = arRef.current;
+        const byName = payload.by === studentId ? nameRef.current : (payload.byName ?? peersRef.current[payload.by]?.name ?? "?");
+        pushFeed(feedLine(byName, payload.victimName ?? "?", isAr), payload.byHue ?? 0);
+        if (payload.by !== studentId) return;
         pRef.current.kills++;
         say(ar ? "أقصيت لاعبًا!" : "You cut someone off!", false);
         localWriteAtRef.current = Date.now();
@@ -330,6 +367,8 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
     const die = (reasonAr: string, reasonEn: string) => {
       const p = pRef.current;
       if (!p.alive) return;
+      fxRef.current.splash(p.x, p.y, hueRef.current, 1.6);
+      fxRef.current.stain(p.x, p.y, hueRef.current);
       p.alive = false;
       p.respawnAt = Date.now() + RESPAWN_MS;
       pendingRef.current.clear();       // unsent claims died with us
@@ -346,6 +385,9 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
       clearTrail();
       if (gained.length === 0) return;
       pathsRef.current.invalidate(claimCells(boardRef.current, studentId, hueRef.current, gained, cols() * rows()));
+      fxRef.current.wave(p.x, p.y, gained, cols());
+      fxRef.current.splash(p.x, p.y, hueRef.current, 0.6);
+      if (gained.length >= 12) fxRef.current.punch(Math.min(0.07, 0.025 + gained.length / 4000));
       for (const idx of gained) pendingRef.current.add(idx);
       p.best = Math.max(p.best, (cellsOf(boardRef.current, studentId).size / (cols() * rows())) * 100);
     };
@@ -409,7 +451,11 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
         const peer = peersRef.current[id];
         if (peer.t < cutoff || !peer.alive) continue;
         if (!trailRef.current.covers(peer.x, peer.y, cols(), rows())) continue;
-        chanRef.current?.send({ type: "broadcast", event: "kill", payload: { by: id, victim: studentId } });
+        chanRef.current?.send({
+          type: "broadcast", event: "kill",
+          payload: { by: id, victim: studentId, victimName: nameRef.current, byName: peer.name, byHue: peer.hue },
+        });
+        pushFeed(feedLine(peer.name, nameRef.current, arRef.current), peer.hue);
         die("قطع أحدهم أثرك", "Someone cut your trail");
         return;
       }
@@ -419,13 +465,16 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
       const { cssW, cssH } = resizeCanvas(canvas, ctx);
       if (cssW <= 0 || cssH <= 0) return;
       const worldW = cols() * CELL, worldH = rows() * CELL;
-      const scale = PIXELS_PER_WORLD_UNIT;
+      const now = performance.now();
+      const fx = fxRef.current;
+      const scale = PIXELS_PER_WORLD_UNIT * fx.zoom(now);
       const p = pRef.current;
       const cam = computeCamera(p.x, p.y, cssW, cssH, scale, worldW, worldH);
       const offX = -(cam.x - cam.halfW) * scale, offY = -(cam.y - cam.halfH) * scale;
       const sx = (wx: number) => offX + wx * scale, sy = (wy: number) => offY + wy * scale;
 
       drawArena(ctx, cssW, cssH, offX, offY, scale, worldW, worldH);
+      fx.drawUnder(ctx, offX, offY, scale, now);
       drawTerritories(ctx, boardRef.current, pathsRef.current, offX, offY, scale);
 
       const cutoff = Date.now() - PEER_TIMEOUT_MS;
@@ -445,6 +494,7 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
         drawPlayer(ctx, sx(p.x), sy(p.y), p.angle, hueRef.current, PLAYER_SIZE * scale, { frozen: p.tank <= 0 });
         drawName(ctx, sx(p.x), sy(p.y) - PLAYER_SIZE * scale * 0.85, nameRef.current, hueRef.current, 13);
       }
+      fx.drawOver(ctx, offX, offY, scale, now);
 
       const r = 46;
       drawMinimap(ctx, boardRef.current, pathsRef.current, cam, worldW, worldH, dots,
@@ -562,7 +612,7 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
   if (phase === "waiting") {
     return (
       <div className="fixed inset-0 flex flex-col items-center justify-center gap-5 px-6 text-center"
-        style={{ background: "#E7F6F0", color: "#123A33" }}>
+        style={{ background: PF.floor, color: "#123A33" }}>
         <div className="h-16 w-16 rounded-[22%] rotate-12" style={{ background: myColor, border: `4px solid ${myInk}` }} />
         <div>
           <div className="text-[10px] tracking-[0.35em] uppercase mb-1 opacity-50">
@@ -586,7 +636,7 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
   if (phase === "done") {
     return (
       <div className="fixed inset-0 flex flex-col items-center justify-center gap-5 px-6 text-center"
-        style={{ background: "#E7F6F0", color: "#123A33" }}>
+        style={{ background: PF.floor, color: "#123A33" }}>
         <Trophy className="h-16 w-16" style={{ color: "#8FC44A" }} />
         <div className="text-2xl font-extrabold">{ar ? "انتهت المعركة" : "Fight Over"}</div>
         <div className="flex gap-2.5">
@@ -612,7 +662,7 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
 
   // ── Playing ─────────────────────────────────────────────────────────────
   return (
-    <div className="fixed inset-0 overflow-hidden select-none" style={{ background: "#D8EDE6", touchAction: "none" }}>
+    <div className="fixed inset-0 overflow-hidden select-none" style={{ background: PF.void, touchAction: "none" }}>
       <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" />
       {!showQuiz && <PaintJoystick vectorRef={vectorRef} />}
 
@@ -646,6 +696,19 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
           ))}
         </div>
       </div>
+
+      {feed.length > 0 && (
+        <div className="absolute inset-x-0 flex flex-col items-center gap-1 pointer-events-none px-24"
+          style={{ top: "max(0.75rem, env(safe-area-inset-top))" }}>
+          {feed.map(e => (
+            <div key={e.id} dir={ar ? "rtl" : "ltr"}
+              className="max-w-full truncate px-3 py-1 rounded-full text-[11px] font-extrabold text-white shadow-sm animate-fade-up"
+              style={{ background: hueDeep(e.hue, 0.92) }}>
+              {e.text}
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* The colour tank — the only thing the quiz feeds, so it gets the bottom
           of the screen where a thumb already is. */}

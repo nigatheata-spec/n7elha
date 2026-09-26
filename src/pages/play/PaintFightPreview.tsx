@@ -23,7 +23,7 @@ import {
 } from "@/lib/paintFight";
 import {
   resizeCanvas, drawArena, drawTerritories, drawTrail, drawPlayer, drawName,
-  computeCamera, drawMinimap, TerritoryPaths, hueFill, hueDeep, PF,
+  computeCamera, drawMinimap, TerritoryPaths, PaintFx, hueFill, hueDeep, PF,
 } from "@/lib/paintFightRender";
 
 type Actor = {
@@ -33,7 +33,7 @@ type Actor = {
   turnAt: number;
 };
 
-const PLAYER_SIZE = 17;
+const PLAYER_SIZE = 22;
 
 const ANSWER_HUES = [352, 145, 268, 40];
 const BLOBS = [
@@ -67,6 +67,7 @@ const PaintFightPreview = () => {
   const boardRef = useRef<Territory>(emptyTerritory());
   const pathsRef = useRef(new TerritoryPaths(cols));
   const actorsRef = useRef<Actor[]>([]);
+  const fxRef = useRef(new PaintFx());
 
   useEffect(() => {
     const board = emptyTerritory();
@@ -108,6 +109,8 @@ const PaintFightPreview = () => {
     const total = cols * rows;
 
     const kill = (a: Actor, why: string) => {
+      fxRef.current.splash(a.x, a.y, a.hue, 1.6);
+      fxRef.current.stain(a.x, a.y, a.hue);
       pathsRef.current.invalidate(wipePlayer(boardRef.current, a.id));
       a.trail.clear();
       const cx = 4 + Math.floor(Math.random() * (cols - 8));
@@ -172,6 +175,11 @@ const PaintFightPreview = () => {
           if (a.trail.size > 0) {
             const gained = captureFill(cellsOf(boardRef.current, a.id), a.trail.cells.keys(), cols, rows);
             pathsRef.current.invalidate(claimCells(boardRef.current, a.id, a.hue, gained, total));
+            fxRef.current.wave(a.x, a.y, gained, cols);
+            if (!a.bot) {
+              fxRef.current.splash(a.x, a.y, a.hue, 0.6);
+              if (gained.length >= 12) fxRef.current.punch(Math.min(0.07, 0.025 + gained.length / 4000));
+            }
             a.trail.clear();
             if (!a.bot) setNote(`Captured ${gained.length} cells`);
           }
@@ -196,13 +204,16 @@ const PaintFightPreview = () => {
       const { cssW, cssH } = resizeCanvas(canvas, ctx);
       if (cssW <= 0 || cssH <= 0) return;
       const worldW = cols * CELL, worldH = rows * CELL;
-      const scale = PIXELS_PER_WORLD_UNIT;
+      const now = performance.now();
+      const fx = fxRef.current;
+      const scale = PIXELS_PER_WORLD_UNIT * fx.zoom(now);
       const me = actorsRef.current[0];
       if (!me) return;
       const cam = computeCamera(me.x, me.y, cssW, cssH, scale, worldW, worldH);
       const offX = -(cam.x - cam.halfW) * scale, offY = -(cam.y - cam.halfH) * scale;
 
       drawArena(ctx, cssW, cssH, offX, offY, scale, worldW, worldH);
+      fx.drawUnder(ctx, offX, offY, scale, now);
       drawTerritories(ctx, boardRef.current, pathsRef.current, offX, offY, scale);
       for (const a of actorsRef.current) {
         drawTrail(ctx, [...a.trail.points, { x: a.x, y: a.y }], a.hue, offX, offY, scale, TRAIL_RADIUS * 2);
@@ -210,6 +221,7 @@ const PaintFightPreview = () => {
         drawPlayer(ctx, x, y, a.angle, a.hue, PLAYER_SIZE * scale);
         drawName(ctx, x, y - PLAYER_SIZE * scale * 0.85, a.name, a.hue, 13);
       }
+      fx.drawOver(ctx, offX, offY, scale, now);
       const r = 46;
       drawMinimap(ctx, boardRef.current, pathsRef.current, cam, worldW, worldH,
         actorsRef.current.map(a => ({ x: a.x, y: a.y, hue: a.hue })), cssW - r - 16, cssH - r - 140, r);
@@ -251,7 +263,7 @@ const PaintFightPreview = () => {
   };
 
   return (
-    <div className="fixed inset-0 overflow-hidden" style={{ background: "#D8EDE6" }}>
+    <div className="fixed inset-0 overflow-hidden" style={{ background: PF.void }}>
       <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" />
       <div dir="ltr" className="absolute inset-x-0 top-0 p-3 flex items-start justify-between gap-3 pointer-events-none">
         <div className="flex flex-col items-start gap-1.5">
