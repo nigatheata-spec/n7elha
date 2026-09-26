@@ -82,7 +82,7 @@ const MODES: { id: GameMode; icon: React.ReactNode; label: string; labelAr: stri
     icon: <PaintRollerIcon className="h-6 w-6" strokeWidth={2} />,
     label: "Paint Fight",
     labelAr: "معركة الطلاء",
-    desc: "Capture ground by looping around it — answers fill your colour tank",
+    desc: "Capture ground by looping around it — answers fill your color tank",
     descAr: "احتلّ الأرض بالدوران حولها — الإجابات تملأ خزان اللون",
     accent: "#c2410c",
     num: "06",
@@ -576,11 +576,11 @@ const HostGame = () => {
                   <p className="text-black/65 leading-relaxed">
                     {ar
                       ? "كل طالب يملك قطعة أرض. اخرج منها وارسم دائرة وعُد إليها، فيصبح كل ما أحطت به لك — حتى لو كان لغيرك. لكنك مكشوف طوال وجودك خارج أرضك: من يلمس أثرك يقصيك وتخسر كل شيء، ومن تلمس أثره يخسر هو. التحرك يستهلك اللون، والإجابة الصحيحة هي الطريقة الوحيدة لتعبئة الخزان. صاحب أكبر مساحة عند انتهاء الوقت يفوز."
-                      : "Every student owns a patch of ground. Drive out of it, loop around, and come back: everything you enclosed becomes yours, whoever held it before. You are exposed the whole time you are outside your own ground — anyone who touches your trail cuts you off and you lose the lot, and the same goes for them. Moving spends colour, and the only way to refill your tank is a correct answer. Most ground held when time runs out wins."}
+                      : "Every student owns a patch of ground. Drive out of it, loop around, and come back: everything you enclosed becomes yours, whoever held it before. You are exposed the whole time you are outside your own ground — anyone who touches your trail cuts you off and you lose the lot, and the same goes for them. Moving spends color, and the only way to refill your tank is a correct answer. Most ground held when time runs out wins."}
                   </p>
                   <div className="flex items-center gap-2 text-black/45">
                     <PaintRollerIcon className="h-4 w-4 shrink-0" style={{ color: selectedAccent }} />
-                    <span>{ar ? "أجب لتملأ خزان اللون" : "Answer to fill your colour tank"}</span>
+                    <span>{ar ? "أجب لتملأ خزان اللون" : "Answer to fill your color tank"}</span>
                   </div>
                 </>
               )}

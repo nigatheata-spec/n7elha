@@ -9,7 +9,7 @@
 // anyone touches your trail you die and lose the lot; if you touch your own
 // trail, same thing. Crossing somebody else's trail kills them.
 //
-// The quiz fills your colour tank. Moving spends it, a correct answer refills
+// The quiz fills your color tank. Moving spends it, a correct answer refills
 // it, and at empty you stop dead — which, if you stopped halfway around a big
 // loop, is exactly where you least want to be standing.
 //
@@ -44,7 +44,7 @@ const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v
 /** Logical world px per grid cell. */
 export const CELL = 10;
 
-/** The colour tank. Movement is the only thing that spends it, and a correct
+/** The color tank. Movement is the only thing that spends it, and a correct
  *  answer is the only thing that refills it. */
 export const TANK = {
   start: 100,
@@ -462,9 +462,10 @@ export const computeCoverage = (strokes: Stroke[], totalCells: number): Coverage
   coverageOf(replayStrokes(strokes, totalCells), totalCells);
 
 // ── Golden paint drops ──────────────────────────────────────────────────────
-// Something on the map worth driving to, that still runs through the quiz: a
-// golden drop doesn't give paint, it makes your NEXT CORRECT ANSWER fill the
-// tank twice over. The questions stay the only source of colour.
+// Something on the map worth driving to: grabbing one is a SPEED BOOST — you
+// move faster for a few seconds, and since the tank drains per second, not per
+// pixel, the same paint takes you further. It never adds paint: the questions
+// stay the only source of color.
 //
 // No server decides where they are. Time is cut into fixed slots and each
 // slot's drops are a pure function of (session id, slot number), so every
@@ -475,6 +476,11 @@ export const computeCoverage = (strokes: Stroke[], totalCells: number): Coverage
 // keep it, which is harmless.
 
 export const DROP_SLOT_MS = 12_000;
+
+/** What a golden drop does: this much faster, for this long. Turning speeds up
+ *  by the same factor so the turn radius — and therefore how tight a loop you
+ *  can draw and how fast a hairpin cuts you off — doesn't change. */
+export const SPEED_BOOST = { mult: 1.65, ms: 6000 };
 export const DROP_LIFE_MS = 10_000;
 /** Reach, in world px, from a player's centre to a drop's centre that grabs it. */
 export const DROP_GRAB_RADIUS = 22;

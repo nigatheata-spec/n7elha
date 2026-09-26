@@ -78,7 +78,7 @@ describe("SQUARE_TYPES", () => {
     expect(Object.keys(SQUARE_TYPES).map(Number).sort((a, b) => a - b)).toEqual([1, 2, 3, 4, 5, 6]);
   });
 
-  it("labels every square in both languages and gives it a colour", () => {
+  it("labels every square in both languages and gives it a color", () => {
     for (const sq of Object.values(SQUARE_TYPES)) {
       expect(sq.label_ar).toBeTruthy();
       expect(sq.label_en).toBeTruthy();

@@ -19,7 +19,7 @@ import {
   CELL, TANK, PLAYER_SPEED, TURN_RATE, TRAIL_RADIUS, PIXELS_PER_WORLD_UNIT,
   emptyTerritory, claimCells, wipePlayer, cellsOf, coverageOf, captureFill,
   cellOfXY, spawnBlock, hueForJoinIndex, computeArenaSize, Trail,
-  arenaCellCount, insideArena, clampToArena, randomSpawnCell, goldenDropsAt, DROP_GRAB_RADIUS,
+  arenaCellCount, insideArena, clampToArena, randomSpawnCell, goldenDropsAt, DROP_GRAB_RADIUS, SPEED_BOOST,
   type Territory, type CoverageRow,
 } from "@/lib/paintFight";
 import {
@@ -62,10 +62,11 @@ const PaintFightPreview = () => {
   const [showQuiz, setShowQuiz] = useState(false);
   const [qIndex, setQIndex] = useState(0);
   const [picked, setPicked] = useState<number | null>(null);
-  const [golden, setGolden] = useState(false);
   const [gallery, setGallery] = useState(false);
-  const goldenRef = useRef(false);
   const takenRef = useRef(new Set<string>());
+  const boostUntilRef = useRef(0);
+  const showQuizRef = useRef(false);
+  useEffect(() => { showQuizRef.current = showQuiz; }, [showQuiz]);
 
   const params = new URLSearchParams(window.location.search);
   const botCount = Math.max(0, Math.min(6, Number(params.get("bots") ?? 3)));
@@ -151,6 +152,8 @@ const PaintFightPreview = () => {
         // Bots top themselves up; the player answers for it, same as a match.
         if (a.bot && a.tank <= 0) a.tank = TANK.start;
         if (a.tank <= 0) continue;                    // out of tank: dead stop
+        if (!a.bot && showQuizRef.current) continue;  // answering: stand still
+        const boostMult = !a.bot && Date.now() < boostUntilRef.current ? SPEED_BOOST.mult : 1;
         let want: number | null = null;
         if (a.bot) {
           // Wander with occasional turns; the point is to see loops close, not
@@ -173,13 +176,13 @@ const PaintFightPreview = () => {
           let d = want - a.angle;
           while (d > Math.PI) d -= Math.PI * 2;
           while (d < -Math.PI) d += Math.PI * 2;
-          const max = TURN_RATE * dt;
+          const max = TURN_RATE * boostMult * dt;
           a.angle += Math.max(-max, Math.min(max, d));
         }
 
         const x0 = a.x, y0 = a.y;
-        const nx = x0 + Math.cos(a.angle) * PLAYER_SPEED * dt;
-        const ny = y0 + Math.sin(a.angle) * PLAYER_SPEED * dt;
+        const nx = x0 + Math.cos(a.angle) * PLAYER_SPEED * boostMult * dt;
+        const ny = y0 + Math.sin(a.angle) * PLAYER_SPEED * boostMult * dt;
         const hitWall = !insideArena(nx, ny, cols, rows);
         ({ x: a.x, y: a.y } = clampToArena(nx, ny, cols, rows));
         a.tank = Math.max(0, a.tank - TANK.drainPerSec * dt);
@@ -187,10 +190,9 @@ const PaintFightPreview = () => {
           for (const d of goldenDropsAt("preview", Date.now(), cols, rows)) {
             if (takenRef.current.has(d.id) || Math.hypot(d.x - a.x, d.y - a.y) > DROP_GRAB_RADIUS) continue;
             takenRef.current.add(d.id);
-            goldenRef.current = true;
-            setGolden(true);
+            boostUntilRef.current = Date.now() + SPEED_BOOST.ms;
             fxRef.current.splash(d.x, d.y, 45, 1.3);
-            setNote("Golden paint! Next correct answer x2");
+            setNote("Speed boost!");
           }
         }
 
@@ -249,7 +251,7 @@ const PaintFightPreview = () => {
         const x = offX + a.x * scale, y = offY + a.y * scale;
         const n = actorsRef.current.indexOf(a);
         const avatar = useFaces && FACES.length ? avatarFor(a.name, (n * 5) % FACES.length) : undefined;
-        drawPlayer(ctx, x, y, a.angle, a.hue, PLAYER_SIZE * scale, { avatar, frozen: a.tank <= 0 });
+        drawPlayer(ctx, x, y, a.angle, a.hue, PLAYER_SIZE * scale, { avatar, frozen: a.tank <= 0, boost: !a.bot && Date.now() < boostUntilRef.current });
         drawName(ctx, x, y - PLAYER_SIZE * scale * 0.85, a.name, a.hue, 13);
       }
       fx.drawOver(ctx, offX, offY, scale, now);
@@ -288,9 +290,7 @@ const PaintFightPreview = () => {
     setPicked(i);
     if (i === q.correct) {
       const a = actorsRef.current[0];
-      const gain = TANK.rewardPerCorrect * (goldenRef.current ? 2 : 1);
-      goldenRef.current = false; setGolden(false);
-      if (a) { a.tank = Math.min(TANK.start, a.tank + gain); setTank(a.tank); }
+      if (a) { a.tank = Math.min(TANK.start, a.tank + TANK.rewardPerCorrect); setTank(a.tank); }
     }
     setTimeout(() => { setPicked(null); setQIndex(n => n + 1); }, 850);
   };
@@ -336,7 +336,7 @@ const PaintFightPreview = () => {
         <div className="absolute inset-x-0 top-[52%] flex justify-center pointer-events-none">
           <div className="flex items-center gap-2 px-4 py-2 rounded-full text-[13px] font-extrabold text-white animate-pulse"
             style={{ background: empty ? "#dc2626" : "#e0812a" }}>
-            <Droplet className="h-4 w-4" />{empty ? "OUT OF COLOUR" : "LOW COLOUR"}
+            <Droplet className="h-4 w-4" />{empty ? "OUT OF COLOR" : "LOW COLOR"}
           </div>
         </div>
       )}
@@ -370,7 +370,7 @@ const PaintFightPreview = () => {
                 <span className="text-sm font-black tabular-nums">{Math.round(tank)}</span>
               </div>
               <span className="text-xs font-bold truncate" style={{ color: PF.inkSoft }}>
-                {golden ? `x2 · +${TANK.rewardPerCorrect * 2} next correct` : `+${TANK.rewardPerCorrect} per correct`}
+                +{TANK.rewardPerCorrect} per correct
               </span>
             </div>
             <button onClick={() => setShowQuiz(false)} disabled={empty}

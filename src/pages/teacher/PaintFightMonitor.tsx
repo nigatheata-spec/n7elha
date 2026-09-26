@@ -31,7 +31,7 @@ import { useConfirmDialog } from "@/hooks/use-confirm-dialog";
 type Peer = {
   id: string; name: string; x: number; y: number; angle: number; hue: number;
   alive: boolean; trail: { x: number; y: number }[]; t: number;
-  face: number | null; avatar: PlayerAvatar;
+  face: number | null; avatar: PlayerAvatar; boost: boolean;
 };
 
 interface Props { session: any; sessionId: string; }
@@ -123,7 +123,7 @@ const PaintFightMonitor = ({ session, sessionId }: Props) => {
         peersRef.current[payload.id] = {
           id: payload.id, name, x: payload.x, y: payload.y,
           angle: payload.angle ?? 0, hue: payload.hue ?? 0, alive: payload.alive !== false,
-          trail, t: Date.now(), face, avatar,
+          trail, t: Date.now(), face, avatar, boost: !!payload.boost,
         };
       })
       .on("broadcast", { event: "kill" }, ({ payload }: any) => {
@@ -140,7 +140,7 @@ const PaintFightMonitor = ({ session, sessionId }: Props) => {
         takenRef.current.add(payload.id);
         if (typeof payload.x === "number") fxRef.current.splash(payload.x, payload.y, 45, 1.2);
         const id = Date.now() + Math.random();
-        const text = arRef.current ? `${payload.name ?? "?"} التقط الطلاء الذهبي` : `${payload.name ?? "?"} grabbed golden paint`;
+        const text = arRef.current ? `${payload.name ?? "?"} حصل على دفعة سرعة` : `${payload.name ?? "?"} grabbed a speed boost`;
         setFeed(f => [...f.slice(-3), { id, text, hue: 45 }]);
         setTimeout(() => setFeed(f => f.filter(e => e.id !== id)), 5000);
       })
@@ -201,7 +201,7 @@ const PaintFightMonitor = ({ session, sessionId }: Props) => {
         if (!p.alive) continue;
         drawTrail(ctx, p.trail, p.hue, offX, offY, scale, 9);
         const x = offX + p.x * scale, y = offY + p.y * scale;
-        drawPlayer(ctx, x, y, p.angle, p.hue, Math.max(22, 30 * scale), { avatar: p.avatar });
+        drawPlayer(ctx, x, y, p.angle, p.hue, Math.max(22, 30 * scale), { avatar: p.avatar, boost: p.boost });
         drawName(ctx, x, y - Math.max(22, 30 * scale) * 0.85, p.name, p.hue, Math.max(11, 13 * scale));
       }
       fxRef.current.drawOver(ctx, offX, offY, scale, now);

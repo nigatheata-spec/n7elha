@@ -25,9 +25,9 @@ export const FACES: string[] = Object.keys(modules)
   .map((k) => modules[k] as string);
 
 // FNV-1a plus a murmur3 finaliser. The plain `h * 31` hash used elsewhere in the
-// app leaves its low bits correlated, which visibly clumps the colours once you
+// app leaves its low bits correlated, which visibly clumps the colors once you
 // take it modulo 7 — the avalanche step is what spreads them evenly. Two seeds so
-// colour and face are drawn independently of each other.
+// color and face are drawn independently of each other.
 const hash = (name: string, seed: number) => {
   let h = seed;
   for (let i = 0; i < name.length; i++) h = Math.imul(h ^ name.charCodeAt(i), 16777619);

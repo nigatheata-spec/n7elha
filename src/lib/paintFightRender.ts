@@ -28,7 +28,7 @@ import { resolveFace } from "./avatarIdentity";
 
 // An art-room table: a sheet of paper taped down on a wooden desk. The paper
 // is the arena; the grain and the pencil dot grid are there so movement reads
-// even over bare floor — a flat colour gives no sense of speed at all.
+// even over bare floor — a flat color gives no sense of speed at all.
 export const PF = {
   void:   "#B98E5F",  // the desk beyond the sheet
   floor:  "#FBF7EE",  // unclaimed paper
@@ -329,16 +329,17 @@ export type PlayerAvatar = { face: HTMLImageElement };
 /** A player's lobby avatar face — the one they picked on the join screen and
  *  see in every other mode. Falls back to the name hash when nothing was
  *  stored, exactly like the <Avatar> component. The circle behind it is their
- *  PAINT colour, not their lobby circle colour: the avatar has to read as the
- *  same colour as the ground it owns. */
+ *  PAINT color, not their lobby circle color: the avatar has to read as the
+ *  same color as the ground it owns. */
 export const avatarFor = (name: string, faceIndex?: number | null): PlayerAvatar => ({
   face: faceImage(resolveFace(name, faceIndex)),
 });
 
 export const drawPlayer = (
   ctx: CanvasRenderingContext2D, x: number, y: number, angle: number, hue: number, size: number,
-  opts: { frozen?: boolean; alpha?: number; avatar?: PlayerAvatar } = {},
+  opts: { frozen?: boolean; alpha?: number; avatar?: PlayerAvatar; boost?: boolean } = {},
 ) => {
+  if (opts.boost) drawBoost(ctx, x, y, angle, size);
   if (opts.avatar) { drawAvatarPlayer(ctx, x, y, angle, hue, size, opts.avatar, opts); return; }
   const s = size / 2;
   const alpha = opts.alpha ?? 1;
@@ -398,9 +399,37 @@ export const drawPlayer = (
   ctx.restore();
 };
 
+/** A speed-boosted player: a pulsing gold halo and streaks flying off behind. */
+const drawBoost = (ctx: CanvasRenderingContext2D, x: number, y: number, angle: number, size: number) => {
+  const now = performance.now();
+  const r = size * 0.75 + Math.sin(now / 90) * size * 0.05;
+  ctx.save();
+  const glow = ctx.createRadialGradient(x, y, size * 0.3, x, y, r * 1.6);
+  glow.addColorStop(0, "rgba(255,210,70,0.55)");
+  glow.addColorStop(1, "rgba(255,210,70,0)");
+  ctx.fillStyle = glow;
+  ctx.beginPath(); ctx.arc(x, y, r * 1.6, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = "rgba(247,197,49,0.9)";
+  ctx.lineCap = "round";
+  ctx.lineWidth = Math.max(1.5, size * 0.07);
+  const bx = -Math.cos(angle), by = -Math.sin(angle);
+  const px = -by, py = bx;
+  for (let i = -1; i <= 1; i++) {
+    const phase = ((now / 160 + i * 0.33) % 1 + 1) % 1;
+    const start = size * (0.75 + phase * 0.5), len = size * (0.35 + 0.2 * (1 - phase));
+    const off = i * size * 0.28;
+    ctx.globalAlpha = 1 - phase;
+    ctx.beginPath();
+    ctx.moveTo(x + bx * start + px * off, y + by * start + py * off);
+    ctx.lineTo(x + bx * (start + len) + px * off, y + by * (start + len) + py * off);
+    ctx.stroke();
+  }
+  ctx.restore();
+};
+
 /**
  * The player as their lobby avatar: the circle with their face, exactly as the
- * roster draws it, wrapped in a ring of their paint colour with a drop-shaped
+ * roster draws it, wrapped in a ring of their paint color with a drop-shaped
  * tail of paint streaming behind the heading. The avatar says WHO it is (same
  * "them" as every other mode); the ring and tail say which territory is theirs
  * and which way they are going. An empty tank greys the circle out.
@@ -423,7 +452,7 @@ const drawAvatarPlayer = (
   ctx.save();
   ctx.globalAlpha = alpha;
 
-  // Paint tail + ring, one teardrop in the paint colour.
+  // Paint tail + ring, one teardrop in the paint color.
   const ring = r * 1.22;
   const tip = ring * 1.75;
   const phi = Math.acos(ring / tip);
@@ -442,7 +471,7 @@ const drawAvatarPlayer = (
   ctx.stroke();
   ctx.restore();
 
-  // The avatar circle: dark rim, a light tint of their paint colour (light so
+  // The avatar circle: dark rim, a light tint of their paint color (light so
   // the black face ink stays legible, like the lobby's pastel circles), their
   // face overscanned and clipped the same way <Avatar> does it.
   ctx.beginPath();
@@ -611,7 +640,7 @@ export class PaintFx {
     this.splashes.push({ x, y, hue, t0: performance.now(), parts });
   }
 
-  /** A player's burst leaves their colour on the paper for a while. */
+  /** A player's burst leaves their color on the paper for a while. */
   stain(x: number, y: number, hue: number) {
     const blobs = [{ dx: 0, dy: 0, r: 13 + Math.random() * 5 }];
     for (let i = 0; i < 9; i++) {

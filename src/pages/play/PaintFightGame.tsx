@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { X, Skull, Droplet } from "lucide-react";
+import { X, Skull, Droplet, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import PaintJoystick, { type JoystickVector } from "@/components/game/PaintJoystick";
@@ -12,7 +12,7 @@ import {
   PIXELS_PER_WORLD_UNIT, FLUSH_INTERVAL_MS, BROADCAST_INTERVAL_MS, PEER_TIMEOUT_MS,
   emptyTerritory, applyStroke, claimCells, wipePlayer, cellsOf, coverageOf,
   captureFill, cellOfXY, spawnBlock, Trail,
-  arenaCellCount, clampToArena, randomSpawnCell, goldenDropsAt, DROP_GRAB_RADIUS,
+  arenaCellCount, clampToArena, randomSpawnCell, goldenDropsAt, DROP_GRAB_RADIUS, SPEED_BOOST,
   type Stroke, type Territory, type CoverageRow,
 } from "@/lib/paintFight";
 import {
@@ -43,7 +43,7 @@ type Phase = "waiting" | "playing" | "done";
 type Peer = {
   id: string; name: string; x: number; y: number; angle: number; hue: number;
   alive: boolean; trail: { x: number; y: number }[]; t: number;
-  face: number | null; avatar: PlayerAvatar;
+  face: number | null; avatar: PlayerAvatar; boost: boolean;
 };
 
 interface Props { sessionId: string; studentId: string; }
@@ -54,7 +54,7 @@ const TRAIL_W = TRAIL_RADIUS * 2;
 /** Hue the effects use for golden paint. */
 const GOLD_HUE = 45;
 
-/** One colour per answer slot — the four a class recognises from the arena. */
+/** One color per answer slot — the four a class recognises from the arena. */
 const ANSWER_HUES = [352, 145, 268, 40];
 
 /** Background territory on the question screen. Fixed rather than random so the
@@ -77,15 +77,14 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
   const [showQuiz, setShowQuiz] = useState(false);
   const [currentQ, setCurrentQ] = useState<Q | null>(null);
   const [picked, setPicked]     = useState<number | null>(null);
-  const [hud, setHud] = useState({ tank: TANK.start, pct: 0, best: 0, kills: 0, alive: true });
+  const [hud, setHud] = useState({ tank: TANK.start, pct: 0, best: 0, kills: 0, alive: true, boost: 0 });
   const [board, setBoard]       = useState<CoverageRow[]>([]);
   const [toast, setToast]       = useState<{ text: string; bad: boolean } | null>(null);
   const [feed, setFeed]         = useState<{ id: number; text: string; hue: number }[]>([]);
-  // A golden drop grabbed and not yet cashed in: the next correct answer
-  // fills the tank twice over. Ref for the answer handler, state for the HUD.
-  const [golden, setGolden]     = useState(false);
-  const goldenRef = useRef(false);
   const takenRef  = useRef<Set<string>>(new Set());
+  // The loop reads this to hold the player still while the quiz is up — you
+  // can't steer with the question in front of you, so you shouldn't be moving.
+  const showQuizRef = useRef(false);
 
   const reward = useFloatingRewards();
 
@@ -104,7 +103,7 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
   // constant (that is the mode), which would mean a student who opens the app
   // and doesn't touch anything drives off before
   // they have read the screen.
-  const pRef = useRef({ x: 0, y: 0, angle: 0, tank: TANK.start, alive: true, moving: false, respawnAt: 0, best: 0, kills: 0 });
+  const pRef = useRef({ x: 0, y: 0, angle: 0, tank: TANK.start, alive: true, moving: false, respawnAt: 0, best: 0, kills: 0, boostUntil: 0 });
   const chanRef    = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const colsRef    = useRef(0);
   const rowsRef    = useRef(0);
@@ -219,7 +218,7 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
         peersRef.current[payload.id] = {
           id: payload.id, name, x: payload.x, y: payload.y,
           angle: payload.angle ?? 0, hue: payload.hue ?? 0, alive: payload.alive !== false,
-          trail, t: Date.now(), face, avatar,
+          trail, t: Date.now(), face, avatar, boost: !!payload.boost,
         };
       })
       .on("broadcast", { event: "kill" }, ({ payload }: any) => {
@@ -240,7 +239,7 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
         if (!payload?.id || takenRef.current.has(payload.id)) return;
         takenRef.current.add(payload.id);
         if (typeof payload.x === "number") fxRef.current.splash(payload.x, payload.y, GOLD_HUE, 1);
-        pushFeed(arRef.current ? `${payload.name ?? "?"} التقط الطلاء الذهبي` : `${payload.name ?? "?"} grabbed golden paint`, GOLD_HUE);
+        pushFeed(arRef.current ? `${payload.name ?? "?"} حصل على دفعة سرعة` : `${payload.name ?? "?"} grabbed a speed boost`, GOLD_HUE);
       })
       .subscribe();
     chanRef.current = ch;
@@ -423,11 +422,13 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
         if (Date.now() >= p.respawnAt) { spawnHomeRef.current(); p.tank = Math.max(p.tank, TANK.rewardPerCorrect); }
         return;
       }
+      if (showQuizRef.current) return;               // answering: stand still, no paint spent
       if (p.tank <= 0) return;                       // tank empty: dead stop, still killable
 
       // The stick steers; speed is constant. Turning is rate-limited so a
       // flick of the thumb can't fold you back onto your own trail.
       const vec = vectorRef.current;
+      const boostMult = Date.now() < p.boostUntil ? SPEED_BOOST.mult : 1;
       if (vec.magnitude > 0) p.moving = true;
       if (!p.moving) return;
       if (vec.magnitude > 0) {
@@ -435,13 +436,13 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
         let d = want - p.angle;
         while (d > Math.PI) d -= Math.PI * 2;
         while (d < -Math.PI) d += Math.PI * 2;
-        const max = TURN_RATE * dt;
+        const max = TURN_RATE * boostMult * dt;
         p.angle += Math.max(-max, Math.min(max, d));
       }
 
       const x0 = p.x, y0 = p.y;
-      const nx = x0 + Math.cos(p.angle) * PLAYER_SPEED * dt;
-      const ny = y0 + Math.sin(p.angle) * PLAYER_SPEED * dt;
+      const nx = x0 + Math.cos(p.angle) * PLAYER_SPEED * boostMult * dt;
+      const ny = y0 + Math.sin(p.angle) * PLAYER_SPEED * boostMult * dt;
       // The rim is solid, never lethal: a move that would leave the circle is
       // pulled back onto it, so you slide along the edge until you steer away.
       ({ x: p.x, y: p.y } = clampToArena(nx, ny, cols(), rows()));
@@ -451,10 +452,9 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
         if (takenRef.current.has(d.id)) continue;
         if (Math.hypot(d.x - p.x, d.y - p.y) > DROP_GRAB_RADIUS) continue;
         takenRef.current.add(d.id);
-        goldenRef.current = true;
-        setGolden(true);
+        p.boostUntil = Date.now() + SPEED_BOOST.ms;
         fxRef.current.splash(d.x, d.y, GOLD_HUE, 1.3);
-        say(arRef.current ? "طلاء ذهبي! إجابتك الصحيحة القادمة ×٢" : "Golden paint! Next correct answer x2", false);
+        say(arRef.current ? "دفعة سرعة!" : "Speed boost!", false);
         chanRef.current?.send({ type: "broadcast", event: "grab", payload: { id: d.id, by: studentId, name: nameRef.current, x: d.x, y: d.y } });
       }
 
@@ -517,14 +517,14 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
         if (peer.t < cutoff) { delete peersRef.current[id]; continue; }
         if (!peer.alive) continue;
         drawTrail(ctx, peer.trail, peer.hue, offX, offY, scale, TRAIL_W);
-        drawPlayer(ctx, sx(peer.x), sy(peer.y), peer.angle, peer.hue, PLAYER_SIZE * scale, { avatar: peer.avatar });
+        drawPlayer(ctx, sx(peer.x), sy(peer.y), peer.angle, peer.hue, PLAYER_SIZE * scale, { avatar: peer.avatar, boost: peer.boost });
         drawName(ctx, sx(peer.x), sy(peer.y) - PLAYER_SIZE * scale * 0.85, peer.name, peer.hue, 13);
         dots.push({ x: peer.x, y: peer.y, hue: peer.hue });
       }
 
       if (p.alive) {
         drawTrail(ctx, [...trailRef.current.points, { x: p.x, y: p.y }], hueRef.current, offX, offY, scale, TRAIL_W);
-        drawPlayer(ctx, sx(p.x), sy(p.y), p.angle, hueRef.current, PLAYER_SIZE * scale, { frozen: p.tank <= 0, avatar: myAvatarRef.current ?? undefined });
+        drawPlayer(ctx, sx(p.x), sy(p.y), p.angle, hueRef.current, PLAYER_SIZE * scale, { frozen: p.tank <= 0, avatar: myAvatarRef.current ?? undefined, boost: Date.now() < p.boostUntil });
         drawName(ctx, sx(p.x), sy(p.y) - PLAYER_SIZE * scale * 0.85, nameRef.current, hueRef.current, 13);
       }
       fx.drawOver(ctx, offX, offY, scale, now);
@@ -555,7 +555,10 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
         const p = pRef.current;
         const mine = rowsOut.find(r => r.studentId === studentId);
         p.best = Math.max(p.best, mine?.pct ?? 0);
-        setHud({ tank: p.tank, pct: mine?.pct ?? 0, best: p.best, kills: p.kills, alive: p.alive });
+        setHud({
+          tank: p.tank, pct: mine?.pct ?? 0, best: p.best, kills: p.kills, alive: p.alive,
+          boost: Math.max(0, (p.boostUntil - Date.now()) / SPEED_BOOST.ms),
+        });
         setBoard(rowsOut.slice(0, 5));
       }
       if (netAcc >= BROADCAST_INTERVAL_MS / 1000) {
@@ -568,7 +571,7 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
           type: "broadcast", event: "pos",
           payload: {
             id: studentId, name: nameRef.current, hue: hueRef.current, alive: p.alive,
-            af: faceIdxRef.current,
+            af: faceIdxRef.current, boost: Date.now() < p.boostUntil,
             x: Math.round(p.x), y: Math.round(p.y), angle: Number(p.angle.toFixed(2)),
             reset: trailResetRef.current,
             pts: trailRef.current.pending.map(q => [q.x, q.y]),
@@ -599,6 +602,7 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
   };
 
   const openQuiz = () => { nextQuestion(); setShowQuiz(true); };
+  useEffect(() => { showQuizRef.current = showQuiz; }, [showQuiz]);
 
   // An empty tank is a dead stop and you are still killable standing there, so
   // put the quiz up without being asked.
@@ -613,12 +617,10 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
     const correct = idx === currentQ.correct_index;
 
     if (correct) {
-      const gain = TANK.rewardPerCorrect * (goldenRef.current ? 2 : 1);
-      if (goldenRef.current) { goldenRef.current = false; setGolden(false); }
-      pRef.current.tank = Math.min(TANK.start, pRef.current.tank + gain);
+      pRef.current.tank = Math.min(TANK.start, pRef.current.tank + TANK.rewardPerCorrect);
       setHud(h => ({ ...h, tank: pRef.current.tank }));
       playCorrect();
-      reward.fire(`+${gain}`, gain > TANK.rewardPerCorrect ? "#D9A21B" : myColor);
+      reward.fire(`+${TANK.rewardPerCorrect}`, myColor);
     } else {
       playWrong();  // the button turning red is feedback enough
     }
@@ -658,7 +660,7 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
         <p className="text-sm max-w-xs leading-relaxed font-semibold opacity-75">
           {ar
             ? "اخرج من أرضك، ارسم دائرة، وعُد إليها — كل ما أحطت به يصبح لك. لا تلمس أثرك ولا يلمسه أحد، وإلا خسرت كل شيء. الحركة تستهلك اللون، والإجابة الصحيحة تملأ الخزان."
-            : "Leave your ground, loop around, come back — everything you enclose becomes yours. Let anyone touch your trail and you lose the lot. Moving spends colour; a correct answer refills the tank."}
+            : "Leave your ground, loop around, come back — everything you enclose becomes yours. Let anyone touch your trail and you lose the lot. Moving spends color; a correct answer refills the tank."}
         </p>
         <div className="text-xs font-bold animate-pulse opacity-70">
           {ar ? "بانتظار المعلّم..." : "Waiting for the teacher..."}
@@ -752,7 +754,20 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
         </div>
       )}
 
-      {/* The colour tank — the only thing the quiz feeds, so it gets the bottom
+      {hud.boost > 0 && !showQuiz && (
+        <div className="absolute inset-x-0 flex justify-center pointer-events-none"
+          style={{ bottom: "calc(env(safe-area-inset-bottom) + 6.1rem)" }}>
+          <div className="flex items-center gap-2 px-3 py-1 rounded-full shadow-sm" style={{ background: "#F7C531", color: "#5A3F00" }}>
+            <Zap className="h-3.5 w-3.5" fill="currentColor" />
+            <span className="text-[11px] font-black tracking-wide">{ar ? "سرعة" : "SPEED"}</span>
+            <div className="w-16 h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(90,63,0,0.2)" }}>
+              <div className="h-full rounded-full" style={{ width: `${hud.boost * 100}%`, background: "#5A3F00" }} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* The color tank — the only thing the quiz feeds, so it gets the bottom
           of the screen where a thumb already is. */}
       <div className="absolute inset-x-0 flex justify-center px-6 pointer-events-none"
         style={{ bottom: "calc(env(safe-area-inset-bottom) + 4.6rem)" }}>
@@ -776,7 +791,7 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
           <div className="flex items-center gap-2 px-4 py-2 rounded-full text-[13px] font-extrabold text-white animate-pulse"
             style={{ background: empty ? "#dc2626" : "#e0812a" }}>
             <Droplet className="h-4 w-4" />
-            {empty ? (ar ? "نفد اللون" : "OUT OF COLOUR") : (ar ? "اللون على وشك النفاد" : "LOW COLOUR")}
+            {empty ? (ar ? "نفد اللون" : "OUT OF COLOR") : (ar ? "اللون على وشك النفاد" : "LOW COLOR")}
           </div>
         </div>
       )}
@@ -789,17 +804,13 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
           )}
           style={{ background: empty ? "#dc2626" : "#123A33", bottom: "calc(env(safe-area-inset-bottom) + 1rem)" }}>
           {ar ? "أجب لتملأ الخزان" : "Fill the tank"}
-          {golden && (
-            <span className="absolute -top-2 -end-2 px-2 py-0.5 rounded-full text-[11px] font-black shadow"
-              style={{ background: "#F7C531", color: "#5A3F00" }}>x2</span>
-          )}
         </button>
       )}
 
       {/* ── The question screen ──────────────────────────────────────────
           Same visual language as the arena, because it IS the arena's other
-          half: the mint ground, flat rounded blobs of claimed colour behind
-          the card, and four answers as four players' colours. A dark panel
+          half: the mint ground, flat rounded blobs of claimed color behind
+          the card, and four answers as four players' colors. A dark panel
           here read as a different game bolted onto this one. */}
       {showQuiz && (
         <div dir={ar ? "rtl" : "ltr"} className="absolute inset-0 z-40 flex flex-col overflow-hidden"
@@ -826,15 +837,9 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
                 <Droplet className="h-3.5 w-3.5 shrink-0" />
                 <span className="text-sm font-black tabular-nums">{Math.round(hud.tank)}</span>
               </div>
-              {golden ? (
-                <span className="px-2 py-0.5 rounded-full text-xs font-black truncate" style={{ background: "#F7C531", color: "#5A3F00" }}>
-                  x2 · +{TANK.rewardPerCorrect * 2} {ar ? "للإجابة الصحيحة القادمة" : "next correct"}
-                </span>
-              ) : (
-                <span className="text-xs font-bold truncate" style={{ color: PF.inkSoft }}>
-                  +{TANK.rewardPerCorrect} {ar ? "لكل إجابة صحيحة" : "per correct"}
-                </span>
-              )}
+              <span className="text-xs font-bold truncate" style={{ color: PF.inkSoft }}>
+                +{TANK.rewardPerCorrect} {ar ? "لكل إجابة صحيحة" : "per correct"}
+              </span>
               <reward.Layer />
             </div>
             <button onClick={() => setShowQuiz(false)} disabled={empty}
@@ -867,7 +872,7 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
                   const isCorrect = i === currentQ.correct_index;
                   const isPicked = picked === i;
                   const show = picked !== null;
-                  // Each answer is a different player's colour, so the screen
+                  // Each answer is a different player's color, so the screen
                   // reads as the same world as the arena rather than a form.
                   const hue = ANSWER_HUES[i % ANSWER_HUES.length];
                   let bg = hueFill(hue), col = "#ffffff", ring = hueDeep(hue), scale = "";

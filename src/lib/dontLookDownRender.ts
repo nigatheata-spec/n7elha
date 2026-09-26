@@ -87,7 +87,7 @@ const C = {
   star: "#ffffff", starDim: "#9fb0d8",
 };
 
-/** 4×4 ordered dither — the classic way to blend two flat colours on a grid. */
+/** 4×4 ordered dither — the classic way to blend two flat colors on a grid. */
 const BAYER = [
   [0, 8, 2, 10],
   [12, 4, 14, 6],
@@ -105,7 +105,7 @@ const hexMix = (a: string, b: string, t: number) => {
 // ── Sky ─────────────────────────────────────────────────────────────────────
 /**
  * A banded, dithered sky. Instead of a smooth CSS gradient (which produces
- * thousands of colours and instantly breaks the pixel look) the ramp is drawn
+ * thousands of colors and instantly breaks the pixel look) the ramp is drawn
  * as a handful of flat bands with a dithered seam between each pair.
  */
 export const drawSky = (
