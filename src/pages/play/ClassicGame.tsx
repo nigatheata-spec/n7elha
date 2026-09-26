@@ -16,6 +16,7 @@ import keyDoodle from "@/assets/doodles/key.png";
 import notebookDoodle from "@/assets/doodles/notebook.png";
 import catDoodle from "@/assets/doodles/cool-cat.png";
 import { Avatar } from "@/components/Avatar";
+import MissedReview from "@/components/game/MissedReview";
 
 type Q = { id: string; text: string; options: string[]; correct_index: number; position: number; image_url?: string };
 type Phase = "waiting" | "question" | "answered" | "done";
@@ -388,6 +389,7 @@ const ClassicGame = ({ sessionId, studentId }: Props) => {
                 )}
               </div>
 
+              <MissedReview sessionId={sessionId} studentId={studentId} ar={ar} className="self-center mt-auto" />
               <button
                 onClick={() => navigate("/join")}
                 className={cn("mt-auto py-3 rounded-2xl font-bold text-sm bg-[#3F5A63] text-white", NB, "shadow-[4px_4px_0_0_hsl(var(--nb-border))] hover:translate-x-px hover:translate-y-px hover:shadow-[2px_2px_0_0_hsl(var(--nb-border))] transition-all")}

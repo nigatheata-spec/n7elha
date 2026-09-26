@@ -22,6 +22,7 @@ import {
 } from "@/lib/paintFightRender";
 import { readSettings } from "@/lib/sessionSettings";
 import PaintFightGallery from "@/components/game/PaintFightGallery";
+import MissedReview from "@/components/game/MissedReview";
 
 // ── Paint Fight, student view ───────────────────────────────────────────────
 // Drive out of your territory, come back, and everything your loop encloses is
@@ -635,7 +636,7 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
     supabase.from("game_students").update(updates).eq("id", me.id).then(undefined, () => {});
     supabase.from("question_responses").insert({
       session_id: sessionId, student_id: me.id, question_id: currentQ.id,
-      question_index: 0, answer_index: idx, is_correct: correct,
+      question_index: me.total_answers ?? 0, answer_index: idx, is_correct: correct,
     }).then(undefined, () => {});
 
     setTimeout(() => nextQuestion(), 850);
@@ -695,6 +696,7 @@ const PaintFightGame = ({ sessionId, studentId }: Props) => {
             ))}
           </div>
         </PaintFightGallery>
+        <MissedReview sessionId={sessionId} studentId={studentId} ar={ar} />
         <button onClick={() => navigate("/join")}
           className="mt-1 px-8 py-3 rounded-full font-extrabold text-sm text-white active:scale-95 transition-transform"
           style={{ background: "#123A33" }}>

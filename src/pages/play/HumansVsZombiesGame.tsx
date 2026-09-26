@@ -9,6 +9,7 @@ import { useFloatingRewards } from "@/components/game/GameFeedback";
 import { playCorrect, playWrong } from "@/lib/sound";
 import { resizeCanvas, faceImage } from "@/lib/paintFightRender";
 import { resolveColor, resolveFace, FACES, CIRCLE_COLORS } from "@/lib/avatarIdentity";
+import MissedReview from "@/components/game/MissedReview";
 import {
   TILE, PLAYER_R, HUMAN_SPEED, ZOMBIE_SPEED, SPRINT, STUN_MS, TURNING_MS, HEAD_START_MS, SHIELD_GRACE_MS,
   BULLET, AMMO, CHARGES, PERK_STREAK, SENSE_MS, VISION, TAG_DIST, POINTS, BROADCAST_MS, PEER_TIMEOUT_MS,
@@ -917,7 +918,7 @@ const HumansVsZombiesGame = ({ sessionId, studentId, preview = false }: Props) =
     if (!preview) {
       supabase.from("question_responses").insert({
         session_id: sessionId, student_id: me.id, question_id: currentQ.id,
-        question_index: 0, answer_index: idx, is_correct: correct,
+        question_index: me.total_answers ?? 0, answer_index: idx, is_correct: correct,
       }).then(undefined, () => {});
     }
     setTimeout(() => nextQuestion(), 850);
@@ -978,6 +979,7 @@ const HumansVsZombiesGame = ({ sessionId, studentId, preview = false }: Props) =
             </div>
           ))}
         </div>
+        {!preview && <MissedReview sessionId={sessionId} studentId={studentId} ar={ar} tone="dark" />}
         <button onClick={() => navigate("/join")}
           className="px-8 py-3 rounded-full font-extrabold text-sm active:scale-95 transition-transform"
           style={{ background: "#FFFFFF", color: HVZ.void }}>

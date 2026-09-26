@@ -10,6 +10,7 @@ import { Trophy, Zap, Check, X as XIcon } from "lucide-react";
 import logoLight from "@/assets/logo-light.png";
 import { playSelect, playCorrect, playWrong, playExplode, playGameOver, primeAudio } from "@/lib/sound";
 import { Avatar } from "@/components/Avatar";
+import MissedReview from "@/components/game/MissedReview";
 
 type Q = { id: string; text: string; options: string[]; correct_index: number; image_url?: string };
 type Phase = "waiting" | "question" | "answered" | "passing" | "exploded" | "done";
@@ -510,6 +511,7 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
                   )}
                 </div>
 
+                <MissedReview sessionId={sessionId} studentId={studentId} ar={ar} tone="dark" className="self-center mt-2" />
                 <Button
                   onClick={() => navigate("/join")}
                   className="mt-2 tracking-widest font-black"

@@ -18,6 +18,7 @@ import HumansVsZombiesGame from "./HumansVsZombiesGame";
 import DontLookDownGame from "./DontLookDownGame";
 import PaintFightGame from "./PaintFightGame";
 import { playSelect, playCorrect, playWrong, playHackAlert, playGameOver, primeAudio } from "@/lib/sound";
+import MissedReview from "@/components/game/MissedReview";
 
 type Q = { id: string; text: string; options: string[]; correct_index: number; position: number };
 
@@ -507,6 +508,9 @@ const Game = () => {
                 </div>
               </div>
 
+              {sessionId && studentId && (
+                <MissedReview sessionId={sessionId} studentId={studentId} ar={ar} tone="dark" className="self-center mt-auto" />
+              )}
               <button
                 onClick={() => navigate("/join")}
                 className="mt-auto py-3 text-sm font-bold"

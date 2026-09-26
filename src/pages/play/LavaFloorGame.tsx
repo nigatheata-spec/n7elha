@@ -12,6 +12,7 @@ import { PixelRockCeiling } from "@/components/PixelRockCeiling";
 import logoLight from "@/assets/logo-light.png";
 import { playSelect, playCorrect, playWrong, playBrick, playGameOver, primeAudio } from "@/lib/sound";
 import { useFloatingRewards } from "@/components/game/GameFeedback";
+import MissedReview from "@/components/game/MissedReview";
 import {
   BLOCK_TYPES, BLOCK_BY_KEY, BLOCK_SPRITES, spriteRuns,
   INCOME_TIERS, STREAK_TIERS, streakMultiplier, type BlockKey,
@@ -939,6 +940,7 @@ const LavaFloorGame = ({ sessionId, studentId }: Props) => {
                   </div>
                 )}
 
+                <MissedReview sessionId={sessionId} studentId={studentId} ar={ar} tone="dark" className="mx-auto mt-2" />
                 <button
                   onClick={() => navigate("/join")}
                   className="pixel-button mt-2 px-6 py-3"

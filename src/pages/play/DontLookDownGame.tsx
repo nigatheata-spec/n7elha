@@ -21,6 +21,7 @@ import {
 import { PX, themeBlendAt, themeIndexAt, starAlphaAt, THEMES, STARRY_FROM } from "@/lib/dldLevel";
 import { artH } from "@/lib/dldArt";
 import { readSettings } from "@/lib/sessionSettings";
+import MissedReview from "@/components/game/MissedReview";
 
 type Q = { id: string; text: string; options: string[]; correct_index: number; image_url?: string };
 type Phase = "waiting" | "playing" | "done";
@@ -531,7 +532,7 @@ const DontLookDownGame = ({ sessionId, studentId }: Props) => {
     }).then(undefined, () => {});
     supabase.from("question_responses").insert({
       session_id: sessionId, student_id: me.id, question_id: currentQ.id,
-      question_index: 0, answer_index: idx, is_correct: correct,
+      question_index: me.total_answers ?? 0, answer_index: idx, is_correct: correct,
     }).then(undefined, () => {});
 
     setTimeout(() => setQSeed(s => s + 1), 900);
@@ -633,6 +634,7 @@ const DontLookDownGame = ({ sessionId, studentId }: Props) => {
             </div>
           ))}
         </div>
+        <MissedReview sessionId={sessionId} studentId={studentId} ar={ar} className="mt-2 bg-white/90" />
         <button onClick={() => navigate("/join")}
           className="mt-3 px-7 py-3 text-sm font-black active:translate-y-[3px] transition-transform"
           style={{ ...CTRL, background: GOLD, color: "#3b2606", borderTopColor: "#ffe9a8" }}>
