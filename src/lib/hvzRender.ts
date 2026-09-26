@@ -9,7 +9,7 @@
 // Everything is drawn in CSS px through a world → screen transform:
 // screen = off + world * scale.
 
-import { TILE, PLAYER_R, FLOOR, WALL, PROP, tileAt, type HvzMap } from "@/lib/humansVsZombies";
+import { TILE, PLAYER_R, FLOOR, WALL, SECRET, tileAt, type HvzMap, type Prop } from "@/lib/humansVsZombies";
 
 export const HVZ = {
   void: "#0B0F16",
@@ -36,8 +36,12 @@ const rr = (ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: n
   if (ctx.roundRect) ctx.roundRect(x, y, w, h, r); else ctx.rect(x, y, w, h);
 };
 
-/** Floor, furniture and walls for the part of the building on screen. */
-export const drawBuilding = (ctx: CanvasRenderingContext2D, m: HvzMap, v: View, ar: boolean) => {
+/**
+ * Floor, furniture and walls for the part of the building on screen.
+ * `seesHatches` is false for zombies: the safe room and its hatches are drawn
+ * as solid wall, so even the dim map under the darkness gives nothing away.
+ */
+export const drawBuilding = (ctx: CanvasRenderingContext2D, m: HvzMap, v: View, ar: boolean, seesHatches: boolean) => {
   const { offX, offY, scale, cssW, cssH } = v;
   ctx.fillStyle = HVZ.void;
   ctx.fillRect(0, 0, cssW, cssH);
@@ -45,12 +49,20 @@ export const drawBuilding = (ctx: CanvasRenderingContext2D, m: HvzMap, v: View, 
   const tx0 = Math.max(0, Math.floor(-offX / t) - 1), ty0 = Math.max(0, Math.floor(-offY / t) - 1);
   const tx1 = Math.min(m.cols - 1, Math.ceil((cssW - offX) / t) + 1), ty1 = Math.min(m.rows - 1, Math.ceil((cssH - offY) / t) + 1);
   const X = (tx: number) => offX + tx * t, Y = (ty: number) => offY + ty * t;
+  const hidden = (i: number) => !seesHatches && (m.tiles[i] === SECRET || (m.safe >= 0 && m.roomOf[i] === m.safe));
+  const isWall = (tx: number, ty: number) => {
+    if (tx < 0 || ty < 0 || tx >= m.cols || ty >= m.rows) return true;
+    const i = ty * m.cols + tx;
+    return m.tiles[i] === WALL || hidden(i);
+  };
+  const inView = (x: number, y: number, w: number, h: number) =>
+    x + w >= tx0 && x <= tx1 && y + h >= ty0 && y <= ty1;
 
   // Floor, checkered per room so a room reads as one place.
   for (let ty = ty0; ty <= ty1; ty++) for (let tx = tx0; tx <= tx1; tx++) {
-    const k = m.tiles[ty * m.cols + tx];
-    if (k === WALL) continue;
-    const room = m.roomOf[ty * m.cols + tx];
+    const i = ty * m.cols + tx;
+    if (isWall(tx, ty)) continue;
+    const room = m.roomOf[i];
     const alt = (tx + ty) & 1;
     ctx.fillStyle = room >= 0 ? (alt ? m.rooms[room].kind.tile : m.rooms[room].kind.floor) : (alt ? HVZ.hallAlt : HVZ.hall);
     ctx.fillRect(X(tx), Y(ty), t + 0.6, t + 0.6);
@@ -67,59 +79,58 @@ export const drawBuilding = (ctx: CanvasRenderingContext2D, m: HvzMap, v: View, 
     if (vv && tileAt(m, tx + 2, ty) !== FLOOR && ty % 2 === 0) ctx.fillRect(X(tx + 1) + t * 0.46, Y(ty) + t * 0.2, t * 0.08, t * 0.6);
   }
 
+  // Rugs.
+  m.rooms.forEach((r, idx) => {
+    if (!r.kind.rug || (idx === m.safe && !seesHatches) || !inView(r.x, r.y, r.w, r.h)) return;
+    const x = X(r.x + 1.6), y = Y(r.y + 2.2), w = (r.w - 3.2) * t, h = (r.h - 3.6) * t;
+    ctx.fillStyle = r.kind.rug;
+    rr(ctx, x, y, w, h, t * 0.25); ctx.fill();
+    ctx.strokeStyle = "rgba(255,255,255,0.18)";
+    ctx.lineWidth = Math.max(1, t * 0.06);
+    rr(ctx, x + t * 0.25, y + t * 0.25, w - t * 0.5, h - t * 0.5, t * 0.15); ctx.stroke();
+  });
+
   // Room names painted on the floor.
   ctx.save();
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.font = `900 ${Math.round(t * 0.62)}px 'Almarai', system-ui, sans-serif`;
-  ctx.fillStyle = "rgba(255,255,255,0.10)";
-  for (const r of m.rooms) {
+  m.rooms.forEach((r, idx) => {
+    if (idx === m.safe && !seesHatches) return;
     const cx = X(r.x + r.w / 2), cy = Y(r.y + 1.1);
-    if (cx < -200 || cx > cssW + 200 || cy < -60 || cy > cssH + 60) continue;
+    if (cx < -200 || cx > cssW + 200 || cy < -60 || cy > cssH + 60) return;
+    ctx.fillStyle = idx === m.safe ? "rgba(140,220,255,0.35)" : "rgba(255,255,255,0.10)";
     ctx.fillText(ar ? r.kind.ar : r.kind.en, cx, cy);
-  }
+  });
   ctx.restore();
 
-  // Furniture.
-  for (let ty = ty0; ty <= ty1; ty++) for (let tx = tx0; tx <= tx1; tx++) {
-    const i = ty * m.cols + tx;
-    if (m.tiles[i] !== PROP) continue;
-    const x = X(tx), y = Y(ty), kind = m.propKind[i];
-    const p = t * 0.08;
-    ctx.fillStyle = "rgba(0,0,0,0.25)";
-    rr(ctx, x + p + t * 0.06, y + p + t * 0.1, t - p * 2, t - p * 2, t * 0.12); ctx.fill();
-    if (kind === 0) {           // crate
-      ctx.fillStyle = "#A0713F"; rr(ctx, x + p, y + p, t - p * 2, t - p * 2, t * 0.08); ctx.fill();
-      ctx.strokeStyle = "#6E4A24"; ctx.lineWidth = Math.max(1, t * 0.06);
-      ctx.beginPath(); ctx.moveTo(x + p * 2, y + p * 2); ctx.lineTo(x + t - p * 2, y + t - p * 2);
-      ctx.moveTo(x + t - p * 2, y + p * 2); ctx.lineTo(x + p * 2, y + t - p * 2); ctx.stroke();
-      ctx.strokeRect(x + p * 1.5, y + p * 1.5, t - p * 3, t - p * 3);
-    } else if (kind === 1) {    // table
-      ctx.fillStyle = "#D9D4C7"; rr(ctx, x + p, y + p, t - p * 2, t - p * 2, t * 0.18); ctx.fill();
-      ctx.fillStyle = "rgba(0,0,0,0.08)"; rr(ctx, x + p * 2.5, y + p * 2.5, t - p * 5, t - p * 5, t * 0.12); ctx.fill();
-    } else if (kind === 2) {    // plant
-      ctx.fillStyle = "#8A5A3A"; ctx.beginPath(); ctx.arc(x + t / 2, y + t / 2, t * 0.3, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = "#3F8F45";
-      for (let k = 0; k < 5; k++) {
-        const a = k * 1.256 + 0.3;
-        ctx.beginPath(); ctx.arc(x + t / 2 + Math.cos(a) * t * 0.16, y + t / 2 + Math.sin(a) * t * 0.16, t * 0.2, 0, Math.PI * 2); ctx.fill();
-      }
-    } else {                    // shelf
-      ctx.fillStyle = "#4A5568"; rr(ctx, x + p, y + p, t - p * 2, t - p * 2, t * 0.06); ctx.fill();
-      const cols = ["#E07A5F", "#F2CC8F", "#81B29A", "#8AB6D6"];
-      for (let k = 0; k < 4; k++) {
-        ctx.fillStyle = cols[(tx + ty + k) % 4];
-        ctx.fillRect(x + p * 1.6 + k * (t - p * 3.2) / 4, y + p * 1.8, (t - p * 3.2) / 4 - 1, t - p * 3.6);
-      }
+  // Furniture, mats first so they sit under everything else.
+  const pieces = m.props.filter(p => inView(p.x, p.y, p.w, p.h) && (seesHatches || m.roomOf[p.y * m.cols + p.x] !== m.safe));
+  for (const p of pieces) if (p.kind === "mat") drawProp(ctx, p, X(p.x), Y(p.y), t);
+  for (const p of pieces) if (p.kind !== "mat") drawProp(ctx, p, X(p.x), Y(p.y), t);
+
+  // Hatches: a vent grate with a glow, only for those who can use them.
+  if (seesHatches) {
+    const glow = 0.55 + Math.sin(performance.now() * 0.004) * 0.2;
+    for (let ty = ty0; ty <= ty1; ty++) for (let tx = tx0; tx <= tx1; tx++) {
+      if (m.tiles[ty * m.cols + tx] !== SECRET) continue;
+      const x = X(tx), y = Y(ty);
+      ctx.fillStyle = "#26303D";
+      ctx.fillRect(x, y, t + 0.6, t + 0.6);
+      ctx.fillStyle = "#3B4A5C";
+      for (let k = 0; k < 4; k++) ctx.fillRect(x + t * 0.12, y + t * (0.14 + k * 0.2), t * 0.76, t * 0.1);
+      ctx.strokeStyle = `rgba(120,220,255,${glow})`;
+      ctx.lineWidth = Math.max(1.5, t * 0.07);
+      ctx.strokeRect(x + t * 0.05, y + t * 0.05, t * 0.9, t * 0.9);
     }
   }
 
   // Walls: a top everywhere, and a front face where the wall looks into a room.
   const face = t * 0.5;
   for (let ty = ty0; ty <= ty1; ty++) for (let tx = tx0; tx <= tx1; tx++) {
-    if (m.tiles[ty * m.cols + tx] !== WALL) continue;
+    if (!isWall(tx, ty)) continue;
     const x = X(tx), y = Y(ty);
-    const open = tileAt(m, tx, ty + 1) !== WALL;
+    const open = !isWall(tx, ty + 1);
     ctx.fillStyle = HVZ.wallTop;
     ctx.fillRect(x, y, t + 0.6, (open ? t - face : t) + 0.6);
     if (open) {
@@ -136,13 +147,160 @@ export const drawBuilding = (ctx: CanvasRenderingContext2D, m: HvzMap, v: View, 
   ctx.lineWidth = Math.max(1, t * 0.05);
   ctx.beginPath();
   for (let ty = ty0; ty <= ty1; ty++) for (let tx = tx0; tx <= tx1; tx++) {
-    if (m.tiles[ty * m.cols + tx] !== WALL) continue;
+    if (!isWall(tx, ty)) continue;
     const x = X(tx), y = Y(ty);
-    if (tileAt(m, tx, ty - 1) !== WALL) { ctx.moveTo(x, y); ctx.lineTo(x + t, y); }
-    if (tileAt(m, tx - 1, ty) !== WALL) { ctx.moveTo(x, y); ctx.lineTo(x, y + t); }
-    if (tileAt(m, tx + 1, ty) !== WALL) { ctx.moveTo(x + t, y); ctx.lineTo(x + t, y + t); }
+    if (!isWall(tx, ty - 1)) { ctx.moveTo(x, y); ctx.lineTo(x + t, y); }
+    if (!isWall(tx - 1, ty)) { ctx.moveTo(x, y); ctx.lineTo(x, y + t); }
+    if (!isWall(tx + 1, ty)) { ctx.moveTo(x + t, y); ctx.lineTo(x + t, y + t); }
   }
   ctx.stroke();
+};
+
+const BOOKS = ["#E07A5F", "#F2CC8F", "#81B29A", "#8AB6D6", "#C08BD6", "#E8E1CF"];
+
+/** One piece of furniture over its whole footprint, at screen (x, y); t is a tile in px. */
+const drawProp = (ctx: CanvasRenderingContext2D, p: Prop, x: number, y: number, t: number) => {
+  const W = p.w * t, H = p.h * t, pad = t * 0.08;
+  const each = (fn: (cx: number, cy: number) => void) => {
+    for (let j = 0; j < p.h; j++) for (let i = 0; i < p.w; i++) fn(x + i * t, y + j * t);
+  };
+  if (p.kind !== "mat") {
+    ctx.fillStyle = "rgba(0,0,0,0.28)";
+    rr(ctx, x + pad + t * 0.07, y + pad + t * 0.12, W - pad * 2, H - pad * 2, t * 0.14); ctx.fill();
+  }
+  const vertical = p.h > p.w;
+  switch (p.kind) {
+    case "crate":
+      each((cx, cy) => {
+        ctx.fillStyle = "#A0713F"; rr(ctx, cx + pad, cy + pad, t - pad * 2, t - pad * 2, t * 0.06); ctx.fill();
+        ctx.strokeStyle = "#6E4A24"; ctx.lineWidth = Math.max(1, t * 0.06);
+        ctx.strokeRect(cx + pad * 1.8, cy + pad * 1.8, t - pad * 3.6, t - pad * 3.6);
+        ctx.beginPath(); ctx.moveTo(cx + pad * 1.8, cy + pad * 1.8); ctx.lineTo(cx + t - pad * 1.8, cy + t - pad * 1.8); ctx.stroke();
+      });
+      break;
+    case "barrel":
+      each((cx, cy) => {
+        ctx.fillStyle = p.seed % 2 ? "#3D6FA3" : "#B0463A";
+        ctx.beginPath(); ctx.arc(cx + t / 2, cy + t / 2, t * 0.4, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = "rgba(0,0,0,0.35)"; ctx.lineWidth = Math.max(1, t * 0.06);
+        ctx.beginPath(); ctx.arc(cx + t / 2, cy + t / 2, t * 0.27, 0, Math.PI * 2); ctx.stroke();
+        ctx.fillStyle = "rgba(255,255,255,0.35)";
+        ctx.beginPath(); ctx.arc(cx + t * 0.4, cy + t * 0.38, t * 0.07, 0, Math.PI * 2); ctx.fill();
+      });
+      break;
+    case "table": {
+      // Chairs tucked around it, then the top.
+      ctx.fillStyle = "#6B5A48";
+      const seats = Math.max(2, (p.w + p.h) * 2 - 2);
+      for (let k = 0; k < seats; k++) {
+        const a = (k / seats) * Math.PI * 2;
+        ctx.beginPath();
+        ctx.arc(x + W / 2 + Math.cos(a) * (W / 2 - t * 0.05), y + H / 2 + Math.sin(a) * (H / 2 - t * 0.05), t * 0.13, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.fillStyle = "#E4DFD2"; rr(ctx, x + pad * 2, y + pad * 2, W - pad * 4, H - pad * 4, t * 0.2); ctx.fill();
+      ctx.fillStyle = BOOKS[p.seed % BOOKS.length];
+      ctx.beginPath(); ctx.arc(x + W * 0.35, y + H * 0.45, t * 0.1, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#FFFFFF";
+      ctx.beginPath(); ctx.arc(x + W * 0.62, y + H * 0.55, t * 0.12, 0, Math.PI * 2); ctx.fill();
+      break;
+    }
+    case "plant":
+      each((cx, cy) => {
+        ctx.fillStyle = "#8A5A3A"; ctx.beginPath(); ctx.arc(cx + t / 2, cy + t / 2, t * 0.28, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = p.seed % 2 ? "#3F8F45" : "#4FA35A";
+        for (let k = 0; k < 6; k++) {
+          const a = k * 1.047 + p.seed;
+          ctx.beginPath(); ctx.arc(cx + t / 2 + Math.cos(a) * t * 0.17, cy + t / 2 + Math.sin(a) * t * 0.17, t * 0.19, 0, Math.PI * 2); ctx.fill();
+        }
+      });
+      break;
+    case "shelf": {
+      ctx.fillStyle = "#5A4332"; rr(ctx, x + pad, y + pad, W - pad * 2, H - pad * 2, t * 0.05); ctx.fill();
+      const n = Math.round((vertical ? H : W) / (t * 0.2));
+      for (let k = 0; k < n; k++) {
+        ctx.fillStyle = BOOKS[(p.seed + k * 7) % BOOKS.length];
+        if (vertical) ctx.fillRect(x + pad * 1.8, y + pad * 1.8 + k * ((H - pad * 3.6) / n), W - pad * 3.6, (H - pad * 3.6) / n - 1);
+        else ctx.fillRect(x + pad * 1.8 + k * ((W - pad * 3.6) / n), y + pad * 1.8, (W - pad * 3.6) / n - 1, H - pad * 3.6);
+      }
+      break;
+    }
+    case "desk":
+      ctx.fillStyle = "#B08556"; rr(ctx, x + pad, y + pad * 1.5, W - pad * 2, H - pad * 3, t * 0.08); ctx.fill();
+      ctx.fillStyle = "#F4F1EA"; ctx.fillRect(x + W * 0.18, y + H * 0.3, t * 0.3, t * 0.36);
+      if (p.w > 1) {
+        ctx.fillStyle = "#1F2633"; rr(ctx, x + W * 0.55, y + H * 0.22, t * 0.62, t * 0.4, t * 0.05); ctx.fill();
+        ctx.fillStyle = "#5AB0E0"; ctx.fillRect(x + W * 0.55 + t * 0.05, y + H * 0.22 + t * 0.05, t * 0.52, t * 0.3);
+      }
+      break;
+    case "bed":
+      ctx.fillStyle = "#EDEFF3"; rr(ctx, x + pad, y + pad, W - pad * 2, H - pad * 2, t * 0.12); ctx.fill();
+      ctx.fillStyle = "#FFFFFF"; rr(ctx, x + pad * 2, y + pad * 2, W - pad * 4, t * 0.38, t * 0.1); ctx.fill();
+      ctx.fillStyle = ["#7FB3C4", "#A99BE0", "#F08A8A"][p.seed % 3];
+      rr(ctx, x + pad, y + H * 0.42, W - pad * 2, H * 0.58 - pad, t * 0.1); ctx.fill();
+      break;
+    case "couch": {
+      const c = ["#8A4F7D", "#4F7D8A", "#7D6A4F"][p.seed % 3];
+      ctx.fillStyle = c; rr(ctx, x + pad, y + pad, W - pad * 2, H - pad * 2, t * 0.2); ctx.fill();
+      ctx.fillStyle = "rgba(255,255,255,0.14)";
+      const n = Math.max(p.w, p.h);
+      for (let k = 0; k < n; k++) {
+        if (vertical) { rr(ctx, x + t * 0.3, y + t * (0.2 + k), W - t * 0.45, t * 0.62, t * 0.12); ctx.fill(); }
+        else { rr(ctx, x + t * (0.2 + k), y + t * 0.3, t * 0.62, H - t * 0.45, t * 0.12); ctx.fill(); }
+      }
+      break;
+    }
+    case "locker":
+      each((cx, cy) => {
+        ctx.fillStyle = "#5C7A99"; rr(ctx, cx + pad, cy + pad, t - pad * 2, t - pad * 2, t * 0.04); ctx.fill();
+        ctx.fillStyle = "rgba(0,0,0,0.3)";
+        for (let k = 0; k < 3; k++) ctx.fillRect(cx + t * 0.28, cy + t * (0.22 + k * 0.1), t * 0.44, t * 0.04);
+        ctx.fillStyle = "#D8DEE6"; ctx.fillRect(cx + t * 0.7, cy + t * 0.55, t * 0.08, t * 0.14);
+      });
+      break;
+    case "rack":
+      ctx.fillStyle = "#151A22"; rr(ctx, x + pad, y + pad, W - pad * 2, H - pad * 2, t * 0.05); ctx.fill();
+      each((cx, cy) => {
+        for (let k = 0; k < 4; k++) {
+          ctx.fillStyle = "#2A3240"; ctx.fillRect(cx + t * 0.16, cy + t * (0.14 + k * 0.19), t * 0.68, t * 0.12);
+          const on = Math.sin(performance.now() * 0.004 + p.seed + k * 1.7 + cx) > 0;
+          ctx.fillStyle = on ? "#5CE08A" : "#2E6B45";
+          ctx.fillRect(cx + t * 0.7, cy + t * (0.16 + k * 0.19), t * 0.08, t * 0.08);
+        }
+      });
+      break;
+    case "bench": {
+      ctx.fillStyle = "#C9CED6"; rr(ctx, x + pad, y + pad, W - pad * 2, H - pad * 2, t * 0.08); ctx.fill();
+      const tubes = ["#6CC04A", "#E05D5D", "#5AB0E0", "#E0A93A"];
+      each((cx, cy) => {
+        for (let k = 0; k < 2; k++) {
+          ctx.fillStyle = tubes[(p.seed + k + Math.round(cx)) % 4];
+          ctx.beginPath(); ctx.arc(cx + t * (0.32 + k * 0.36), cy + t * 0.5, t * 0.12, 0, Math.PI * 2); ctx.fill();
+        }
+      });
+      break;
+    }
+    case "piano":
+      ctx.fillStyle = "#15171C"; rr(ctx, x + pad, y + pad, W - pad * 2, H - pad * 2, t * 0.1); ctx.fill();
+      ctx.fillStyle = "#F4F1EA"; ctx.fillRect(x + pad * 2, y + H - pad * 2 - t * 0.28, W - pad * 4, t * 0.28);
+      ctx.fillStyle = "#15171C";
+      for (let k = 1; k < 12; k++) if (k % 3) ctx.fillRect(x + pad * 2 + k * ((W - pad * 4) / 12) - 1, y + H - pad * 2 - t * 0.28, 2, t * 0.16);
+      break;
+    case "easel":
+      ctx.strokeStyle = "#7A5230"; ctx.lineWidth = Math.max(1.5, t * 0.07);
+      ctx.beginPath(); ctx.moveTo(x + t * 0.2, y + t * 0.9); ctx.lineTo(x + t * 0.5, y + t * 0.1); ctx.lineTo(x + t * 0.8, y + t * 0.9); ctx.stroke();
+      ctx.fillStyle = "#FFFFFF"; ctx.fillRect(x + t * 0.22, y + t * 0.22, t * 0.56, t * 0.44);
+      ctx.fillStyle = BOOKS[p.seed % BOOKS.length];
+      ctx.beginPath(); ctx.arc(x + t * 0.45, y + t * 0.42, t * 0.12, 0, Math.PI * 2); ctx.fill();
+      break;
+    case "mat":
+      ctx.fillStyle = "#2F6FB0"; rr(ctx, x + pad, y + pad, W - pad * 2, H - pad * 2, t * 0.12); ctx.fill();
+      ctx.strokeStyle = "rgba(255,255,255,0.3)"; ctx.lineWidth = Math.max(1, t * 0.04);
+      ctx.setLineDash([t * 0.12, t * 0.1]);
+      rr(ctx, x + pad * 2.5, y + pad * 2.5, W - pad * 5, H - pad * 5, t * 0.08); ctx.stroke();
+      ctx.setLineDash([]);
+      break;
+  }
 };
 
 let darkCanvas: HTMLCanvasElement | null = null;
@@ -194,6 +352,10 @@ export type AgentLook = {
   shield?: boolean;
   sprint?: boolean;
   turning?: boolean;
+  /** Caught in a Freeze: an ice block around the body. */
+  frozen?: boolean;
+  /** Caught in a Scream: green sound rings. */
+  slowed?: boolean;
   alpha?: number;
 };
 
@@ -296,6 +458,29 @@ export const drawAgent = (ctx: CanvasRenderingContext2D, x: number, y: number, r
       const sx = x + Math.cos(a) * r * 0.9, sy = by - r * 1.15 + Math.sin(a) * r * 0.3;
       star(ctx, sx, sy, r * 0.22);
     }
+  }
+
+  if (look.frozen) {
+    ctx.fillStyle = "rgba(190,235,255,0.55)";
+    rr(ctx, x - r * 1.25, by - r * 1.25, r * 2.5, r * 2.5, r * 0.45); ctx.fill();
+    ctx.strokeStyle = "rgba(255,255,255,0.9)";
+    ctx.lineWidth = Math.max(1.5, r * 0.1);
+    rr(ctx, x - r * 1.25, by - r * 1.25, r * 2.5, r * 2.5, r * 0.45); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x - r * 0.9, by - r * 0.6); ctx.lineTo(x - r * 0.4, by - r * 1.0);
+    ctx.moveTo(x + r * 0.5, by + r * 0.9); ctx.lineTo(x + r * 0.95, by + r * 0.4);
+    ctx.stroke();
+  }
+
+  if (look.slowed) {
+    ctx.strokeStyle = "rgba(108,192,74,0.7)";
+    ctx.lineWidth = Math.max(1.5, r * 0.1);
+    for (let k = 0; k < 2; k++) {
+      const ph = ((t * 0.002 + k * 0.5) % 1);
+      ctx.globalAlpha = (look.alpha ?? 1) * (1 - ph);
+      ctx.beginPath(); ctx.arc(x, by, r * (1.1 + ph * 0.9), 0, Math.PI * 2); ctx.stroke();
+    }
+    ctx.globalAlpha = look.alpha ?? 1;
   }
 
   if (look.turning) {
@@ -408,29 +593,34 @@ export class HvzFx {
   }
 }
 
-const miniCache = new WeakMap<HvzMap, HTMLCanvasElement>();
+const miniCache = new WeakMap<HvzMap, { human?: HTMLCanvasElement; zombie?: HTMLCanvasElement }>();
 
 /** Overview of the whole building (rooms, halls) with you and, when sensing, the humans. */
 export const drawMinimap = (
   ctx: CanvasRenderingContext2D, m: HvzMap, x: number, y: number, w: number,
   me: { x: number; y: number; zombie: boolean }, marks: { x: number; y: number; color: string }[],
 ) => {
-  let img = miniCache.get(m);
+  const cache = miniCache.get(m) ?? {};
+  miniCache.set(m, cache);
+  const key = me.zombie ? "zombie" : "human";
+  let img = cache[key];
   if (!img) {
     img = document.createElement("canvas");
     img.width = m.cols; img.height = m.rows;
     const c = img.getContext("2d")!;
     const data = c.createImageData(m.cols, m.rows);
     for (let i = 0; i < m.tiles.length; i++) {
-      const open = m.tiles[i] !== WALL;
+      const safe = m.safe >= 0 && (m.roomOf[i] === m.safe || m.tiles[i] === SECRET);
+      const open = m.tiles[i] !== WALL && !(safe && me.zombie);
       const room = m.roomOf[i] >= 0;
-      data.data[i * 4 + 0] = open ? (room ? 150 : 110) : 0;
-      data.data[i * 4 + 1] = open ? (room ? 165 : 120) : 0;
-      data.data[i * 4 + 2] = open ? (room ? 180 : 135) : 0;
+      const [r, g, b] = safe ? [110, 200, 240] : room ? [150, 165, 180] : [110, 120, 135];
+      data.data[i * 4 + 0] = r;
+      data.data[i * 4 + 1] = g;
+      data.data[i * 4 + 2] = b;
       data.data[i * 4 + 3] = open ? 255 : 0;
     }
     c.putImageData(data, 0, 0);
-    miniCache.set(m, img);
+    cache[key] = img;
   }
   const s = w / m.cols, h = m.rows * s;
   ctx.save();
@@ -474,5 +664,33 @@ export const drawEdgeArrow = (ctx: CanvasRenderingContext2D, v: View, wx: number
   ctx.textAlign = "center";
   ctx.lineWidth = 3; ctx.strokeStyle = HVZ.ink; ctx.strokeText(label, x - Math.cos(a) * 26, y - Math.sin(a) * 26 + 4);
   ctx.fillStyle = color; ctx.fillText(label, x - Math.cos(a) * 26, y - Math.sin(a) * 26 + 4);
+  ctx.restore();
+};
+
+/** A power-up box on the floor: a glowing, bobbing crate with a bolt on it. */
+export const drawPowerBox = (ctx: CanvasRenderingContext2D, x: number, y: number, size: number, t: number) => {
+  const bob = Math.sin(t * 0.004) * size * 0.12;
+  const h = size;
+  ctx.save();
+  ctx.fillStyle = "rgba(0,0,0,0.3)";
+  ctx.beginPath(); ctx.ellipse(x, y + h * 0.55, h * 0.5, h * 0.18, 0, 0, Math.PI * 2); ctx.fill();
+  const g = ctx.createRadialGradient(x, y + bob, 0, x, y + bob, h * 1.3);
+  g.addColorStop(0, "rgba(255,224,102,0.55)");
+  g.addColorStop(1, "rgba(255,224,102,0)");
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.arc(x, y + bob, h * 1.3, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = "#7C4DDB";
+  rr(ctx, x - h / 2, y - h / 2 + bob, h, h, h * 0.2); ctx.fill();
+  ctx.strokeStyle = "#FFFFFF"; ctx.lineWidth = Math.max(1.5, h * 0.08);
+  rr(ctx, x - h / 2, y - h / 2 + bob, h, h, h * 0.2); ctx.stroke();
+  ctx.fillStyle = "#FFE066";
+  ctx.beginPath();
+  ctx.moveTo(x + h * 0.08, y - h * 0.34 + bob);
+  ctx.lineTo(x - h * 0.2, y + h * 0.06 + bob);
+  ctx.lineTo(x - h * 0.01, y + h * 0.06 + bob);
+  ctx.lineTo(x - h * 0.08, y + h * 0.34 + bob);
+  ctx.lineTo(x + h * 0.2, y - h * 0.06 + bob);
+  ctx.lineTo(x + h * 0.01, y - h * 0.06 + bob);
+  ctx.closePath(); ctx.fill();
   ctx.restore();
 };

@@ -23,7 +23,7 @@ const HvzPreview = () => {
     { id: 1, by: "Sara", victim: "Adam", kind: "infect" },
     { id: 2, by: "Lina", victim: "Omar", kind: "stun" },
     { id: 3, by: "Omar", victim: "Khalid", kind: "infect" },
-    { id: 4, by: "Noor", victim: "Sara", kind: "stun" },
+    { id: 4, by: "Noor", victim: "Sara", kind: "ko" },
   ];
   const session = {
     id: "demo", code: "K7QX", status: "running", started_at: new Date(Date.now() - 60_000).toISOString(),

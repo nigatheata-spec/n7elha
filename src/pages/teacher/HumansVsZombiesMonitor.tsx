@@ -21,7 +21,7 @@ import { HVZ } from "@/lib/hvzRender";
 // survivor gets the survival bonus.
 
 export type Row = { id: string; name: string; team: string | null; crypto: number | null; avatar_color: number | null; avatar_face: number | null };
-export type Feed = { id: number; by: string; victim: string; kind: "infect" | "stun" };
+export type Feed = { id: number; by: string; victim: string; kind: "infect" | "stun" | "ko" | "bite" };
 
 /** `demo` fills the board with made-up players for the dev preview; nothing is read or written. */
 interface Props { session: any; sessionId: string; demo?: { students: Row[]; feed: Feed[] } }
@@ -50,12 +50,14 @@ const HumansVsZombiesMonitor = ({ session, sessionId, demo }: Props) => {
     refresh();
     const push = (kind: Feed["kind"]) => ({ payload }: any) => {
       if (!payload) return;
-      setFeed(f => [{ id: Date.now() + Math.random(), by: payload.byName ?? "?", victim: payload.victimName ?? "?", kind }, ...f].slice(0, 7));
+      const k: Feed["kind"] = kind === "stun" && payload.ko ? "ko" : kind;
+      setFeed(f => [{ id: Date.now() + Math.random(), by: payload.byName ?? "?", victim: payload.victimName ?? "?", kind: k }, ...f].slice(0, 7));
     };
     const ch = supabase.channel(`hvz-${sessionId}`, { config: { broadcast: { self: false } } })
       .on("postgres_changes", { event: "*", schema: "public", table: "game_students", filter: `session_id=eq.${sessionId}` }, refresh)
       .on("broadcast", { event: "infect" }, push("infect"))
       .on("broadcast", { event: "stun" }, push("stun"))
+      .on("broadcast", { event: "bite" }, push("bite"))
       .subscribe();
     const tick = setInterval(() => setNow(Date.now()), 500);
     return () => { supabase.removeChannel(ch); clearInterval(tick); };
@@ -191,9 +193,9 @@ const HumansVsZombiesMonitor = ({ session, sessionId, demo }: Props) => {
             )}
             {feed.map(e => (
               <div key={e.id} dir={ar ? "rtl" : "ltr"} className="px-4 py-2.5 rounded-2xl text-base font-extrabold animate-fade-up"
-                style={{ background: e.kind === "infect" ? "rgba(108,192,74,0.18)" : "rgba(78,163,242,0.18)" }}>
-                <span style={{ color: e.kind === "infect" ? HVZ.zombie : HVZ.human }}>{e.by}</span>
-                <span className="opacity-70">{e.kind === "infect" ? (ar ? " عدى " : " infected ") : (ar ? " شلّ " : " stunned ")}</span>
+                style={{ background: e.kind === "infect" || e.kind === "bite" ? "rgba(108,192,74,0.18)" : "rgba(78,163,242,0.18)" }}>
+                <span style={{ color: e.kind === "infect" || e.kind === "bite" ? HVZ.zombie : HVZ.human }}>{e.by}</span>
+                <span className="opacity-70">{e.kind === "infect" ? (ar ? " عدى " : " infected ") : e.kind === "bite" ? (ar ? " عضّ " : " bit ") : e.kind === "ko" ? (ar ? " أسقط " : " knocked out ") : (ar ? " شلّ " : " stunned ")}</span>
                 <span>{e.victim}</span>
               </div>
             ))}

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { X, Zap, Crosshair, Shield, Radar, Biohazard, Users, Timer } from "lucide-react";
+import { X, Zap, Crosshair, Shield, Radar, Biohazard, Users, Timer, BatteryMedium, Lock, DoorOpen, Snowflake, Megaphone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import PaintJoystick, { type JoystickVector } from "@/components/game/PaintJoystick";
@@ -12,11 +12,13 @@ import { resolveColor, resolveFace, FACES, CIRCLE_COLORS } from "@/lib/avatarIde
 import {
   TILE, PLAYER_R, HUMAN_SPEED, ZOMBIE_SPEED, SPRINT, STUN_MS, TURNING_MS, HEAD_START_MS, SHIELD_GRACE_MS,
   BULLET, AMMO, CHARGES, PERK_STREAK, SENSE_MS, VISION, TAG_DIST, POINTS, BROADCAST_MS, PEER_TIMEOUT_MS,
-  buildMap, moveCircle, lineOfSight, visibilityPolygon, spawnFor, solidAt, distanceField, headingDown, roomsFor,
+  ENERGY, ZOMBIE_LIVES, KO_ANSWERS, SAFE_ROOM, HUMAN_LIVES, BITE_GRACE_MS, BITE_KNOCKBACK, POWER, powerBoxesAt,
+  buildMap, moveCircle, lineOfSight, visibilityPolygon, spawnFor, spawnIn, solidAt, distanceField, headingDown, roomsFor,
+  inSafeRoom, touchesHatch,
   type HvzMap, type Team,
 } from "@/lib/humansVsZombies";
 import {
-  HVZ, makeView, drawBuilding, drawDarkness, drawAgent, drawTag, drawBullets, drawMinimap, drawEdgeArrow, HvzFx,
+  HVZ, makeView, drawBuilding, drawDarkness, drawAgent, drawTag, drawBullets, drawMinimap, drawEdgeArrow, drawPowerBox, HvzFx,
   type Bullet,
 } from "@/lib/hvzRender";
 
@@ -39,7 +41,11 @@ type Peer = {
   x: number; y: number; tx: number; ty: number; angle: number;
   face: HTMLImageElement; color: string;
   stunUntil: number; turningUntil: number; shield: boolean; sprint: boolean; moving: boolean; t: number;
-  bot?: { next: number; goal: { x: number; y: number } | null; field: Int32Array | null; fieldAt: number; shotAt: number };
+  /** Knocked out: back in the lab, answering its way up. Can't tag or be shot. */
+  ko: boolean; lives: number;
+  /** Frozen by a human's Freeze / slowed by a zombie's Scream / blinking after a bite. */
+  frozenUntil: number; slowUntil: number; graceUntil: number;
+  bot?: { next: number; goal: { x: number; y: number } | null; field: Int32Array | null; fieldAt: number; shotAt: number; koUntil: number };
 };
 type Feed = { id: number; text: string; zombie: boolean };
 
@@ -71,7 +77,8 @@ const HumansVsZombiesGame = ({ sessionId, studentId, preview = false }: Props) =
   const [hud, setHud] = useState({
     team: "human" as Team, ammo: AMMO.start, charges: CHARGES.start, streak: 0, points: 0,
     shield: false, sense: 0, stunned: 0, turning: 0, sprint: 0, humans: 0, zombies: 0, secsLeft: null as number | null, releaseIn: 0,
-    stuns: 0, infects: 0,
+    stuns: 0, infects: 0, energy: ENERGY.start as number, lives: ZOMBIE_LIVES as number, ko: 0, safeLeft: 0, safeLock: 0,
+    power: null as null | "freeze" | "scream", frozen: 0, slowed: 0,
   });
 
   const reward = useFloatingRewards();
@@ -87,6 +94,11 @@ const HumansVsZombiesGame = ({ sessionId, studentId, preview = false }: Props) =
     stunUntil: 0, sprintUntil: 0, turningUntil: 0, senseUntil: 0, graceUntil: 0, shield: false,
     ammo: AMMO.start, charges: CHARGES.start, streak: 0, points: 0, stuns: 0, infects: 0, shots: 0,
     aimTarget: null as string | null,
+    energy: ENERGY.start as number, lives: ZOMBIE_LIVES as number,
+    /** Correct answers still needed to get up from a knockout; 0 = on your feet. */
+    koLeft: 0,
+    safeSince: 0, safeLockedUntil: 0,
+    power: null as null | "freeze" | "scream", frozenUntil: 0, slowUntil: 0,
   });
   const chanRef       = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const nameRef       = useRef("");
@@ -102,6 +114,9 @@ const HumansVsZombiesGame = ({ sessionId, studentId, preview = false }: Props) =
   const startedAtRef  = useRef(0);
   const endsAtRef     = useRef<number | null>(null);
   const keysRef       = useRef(new Set<string>());
+  /** Power-up boxes already grabbed (by anyone). */
+  const takenRef      = useRef(new Set<string>());
+  const kbDrivingRef  = useRef(false);
 
   const settings = session?.settings ?? {};
   const ar = (settings.lang ?? i18n.language) === "ar";
@@ -132,13 +147,17 @@ const HumansVsZombiesGame = ({ sessionId, studentId, preview = false }: Props) =
 
   // ── What happens to us / because of us. Shared by the network handlers and
   //    the preview's bots, so both paths run the exact same rules. ──────────
-  const onStunned = (by: string, byName: string, victimName: string) => {
+  const onStunned = (by: string, byName: string, victimName: string, ko = false) => {
     const isAr = arRef.current;
-    pushFeed(isAr ? `${byName} شلّ ${victimName}` : `${byName} stunned ${victimName}`, false);
+    pushFeed(ko
+      ? (isAr ? `${byName} أسقط ${victimName}` : `${byName} knocked out ${victimName}`)
+      : (isAr ? `${byName} شلّ ${victimName}` : `${byName} stunned ${victimName}`), false);
     if (by !== studentId) return;
     const p = pRef.current;
-    p.points += POINTS.stun; p.stuns++;
-    say(isAr ? `أصبت ${victimName}!` : `You stunned ${victimName}!`, false);
+    p.points += POINTS.stun + (ko ? POINTS.knockout : 0); p.stuns++;
+    say(ko
+      ? (isAr ? `أسقطت ${victimName}! عاد إلى المختبر` : `You knocked out ${victimName}! Back to the lab`)
+      : (isAr ? `أصبت ${victimName}!` : `You stunned ${victimName}!`), false);
     writeRow({ crypto: p.points });
   };
   const onInfected = (by: string, byName: string, victimName: string) => {
@@ -151,6 +170,39 @@ const HumansVsZombiesGame = ({ sessionId, studentId, preview = false }: Props) =
     say(isAr ? `حوّلت ${victimName} إلى زومبي!` : `You turned ${victimName}!`, false);
     writeRow({ crypto: p.points });
   };
+  const onBitten = (by: string, byName: string, victimName: string, left: number) => {
+    const isAr = arRef.current;
+    pushFeed(isAr ? `${byName} عضّ ${victimName} (بقي ${left})` : `${byName} bit ${victimName} (${left} left)`, true);
+    if (by !== studentId) return;
+    const p = pRef.current;
+    p.points += POINTS.bite;
+    say(isAr ? `عضضت ${victimName}!` : `You bit ${victimName}!`, false);
+    writeRow({ crypto: p.points });
+  };
+  /** A Freeze or Scream went off at (x, y): apply it to us if we're in range. */
+  const onPower = (kind: "freeze" | "scream", x: number, y: number, byName: string) => {
+    const p = pRef.current, now = Date.now(), isAr = arRef.current;
+    fxRef.current.ring(x, y, kind === "freeze" ? "#9FE3FF" : HVZ.zombie, POWER.radius);
+    fxRef.current.burst(x, y, kind === "freeze" ? "#DFF6FF" : "#A6E88A", 30, 320);
+    const inRange = Math.hypot(p.x - x, p.y - y) <= POWER.radius;
+    for (const q of Object.values(peersRef.current)) {
+      if (Math.hypot(q.x - x, q.y - y) > POWER.radius) continue;
+      if (kind === "freeze" && q.team === "zombie") q.frozenUntil = now + POWER.freezeMs;
+      if (kind === "scream" && q.team === "human") q.slowUntil = now + POWER.screamMs;
+    }
+    if (!inRange) return;
+    if (kind === "freeze" && p.team === "zombie" && p.koLeft === 0) {
+      p.frozenUntil = now + POWER.freezeMs; p.sprintUntil = 0;
+      say(isAr ? `${byName} جمّدك!` : `${byName} froze you!`, true);
+    }
+    if (kind === "scream" && p.team === "human") {
+      p.slowUntil = now + POWER.screamMs;
+      fxRef.current.shake(12, 500);
+      say(isAr ? `صرخة ${byName}! أنت بطيء` : `${byName} screamed! You're slowed`, true);
+    }
+  };
+  const onBittenRef = useRef(onBitten); onBittenRef.current = onBitten;
+  const onPowerRef = useRef(onPower); onPowerRef.current = onPower;
   const onStunnedRef = useRef(onStunned); onStunnedRef.current = onStunned;
   const onInfectedRef = useRef(onInfected); onInfectedRef.current = onInfected;
 
@@ -166,6 +218,8 @@ const HumansVsZombiesGame = ({ sessionId, studentId, preview = false }: Props) =
       face, color,
       stunUntil: now + (d.st ?? 0), turningUntil: now + (d.tu ?? 0),
       shield: !!d.sh, sprint: !!d.sp, moving: !!d.mv, t: now,
+      ko: !!d.ko, lives: d.lv ?? ZOMBIE_LIVES,
+      frozenUntil: now + (d.fz ?? 0), slowUntil: now + (d.sl ?? 0), graceUntil: now + (d.gr ?? 0),
     };
   };
 
@@ -197,11 +251,13 @@ const HumansVsZombiesGame = ({ sessionId, studentId, preview = false }: Props) =
           id: `bot${i}`, name, team: bt, x: pos.x, y: pos.y, tx: pos.x, ty: pos.y, angle: 0,
           face: faceImage(FACES[(i * 5 + 2) % FACES.length]), color: CIRCLE_COLORS[i % CIRCLE_COLORS.length],
           stunUntil: 0, turningUntil: 0, shield: false, sprint: false, moving: false, t: Date.now(),
-          bot: { next: 0, goal: null, field: null, fieldAt: 0, shotAt: 0 },
+          ko: false, lives: bt === "zombie" ? ZOMBIE_LIVES : HUMAN_LIVES,
+          frozenUntil: 0, slowUntil: 0, graceUntil: 0,
+          bot: { next: 0, goal: null, field: null, fieldAt: 0, shotAt: 0, koUntil: 0 },
         };
       }
       // Handle for poking at the match from devtools (teleporting, forcing a team).
-      (window as any).__hvz = { p: pRef.current, peers: peersRef.current };
+      (window as any).__hvz = { p: pRef.current, peers: peersRef.current, map: mapRef.current };
       setReady(true);
       return;
     }
@@ -230,8 +286,11 @@ const HumansVsZombiesGame = ({ sessionId, studentId, preview = false }: Props) =
       .on("broadcast", { event: "stun" }, ({ payload }: any) => {
         if (!payload) return;
         const v = peersRef.current[payload.victim];
-        if (v) { v.stunUntil = Date.now() + STUN_MS; fxRef.current.burst(v.x, v.y, "#8CC8FF", 12); }
-        onStunnedRef.current(payload.by, payload.byName ?? "?", payload.victimName ?? "?");
+        if (v) {
+          v.stunUntil = Date.now() + STUN_MS; v.ko = !!payload.ko;
+          fxRef.current.burst(v.x, v.y, "#8CC8FF", payload.ko ? 24 : 12);
+        }
+        onStunnedRef.current(payload.by, payload.byName ?? "?", payload.victimName ?? "?", !!payload.ko);
       })
       .on("broadcast", { event: "infect" }, ({ payload }: any) => {
         if (!payload) return;
@@ -242,6 +301,17 @@ const HumansVsZombiesGame = ({ sessionId, studentId, preview = false }: Props) =
           fxRef.current.ring(v.x, v.y, HVZ.zombie, 90);
         }
         onInfectedRef.current(payload.by, payload.byName ?? "?", payload.victimName ?? "?");
+      })
+      .on("broadcast", { event: "bite" }, ({ payload }: any) => {
+        if (!payload) return;
+        const v = peersRef.current[payload.victim];
+        if (v) { v.lives = payload.left; v.graceUntil = Date.now() + BITE_GRACE_MS; fxRef.current.burst(v.x, v.y, "#E05D5D", 14); }
+        onBittenRef.current(payload.by, payload.byName ?? "?", payload.victimName ?? "?", payload.left ?? 0);
+      })
+      .on("broadcast", { event: "grab" }, ({ payload }: any) => { if (payload?.id) takenRef.current.add(payload.id); })
+      .on("broadcast", { event: "power" }, ({ payload }: any) => {
+        if (!payload) return;
+        onPowerRef.current(payload.kind === "scream" ? "scream" : "freeze", payload.x, payload.y, payload.byName ?? "?");
       })
       .on("broadcast", { event: "shield" }, ({ payload }: any) => {
         const v = payload && peersRef.current[payload.victim];
@@ -288,11 +358,13 @@ const HumansVsZombiesGame = ({ sessionId, studentId, preview = false }: Props) =
     const pos = spawnFor(mapRef.current, p.team);
     p.x = pos.x; p.y = pos.y; p.placed = true;
     if (p.team === "zombie") { p.ammo = 0; p.charges = CHARGES.start; }
+    p.energy = ENERGY.start; p.lives = p.team === "zombie" ? ZOMBIE_LIVES : HUMAN_LIVES; p.koLeft = 0;
   };
 
   const becomeZombieQuietly = () => {
     const p = pRef.current;
     p.team = "zombie"; p.ammo = 0; p.charges = CHARGES.start; p.shield = false; p.streak = 0;
+    p.lives = ZOMBIE_LIVES; p.koLeft = 0; p.safeSince = 0;
     const map = mapRef.current;
     if (map) { const pos = spawnFor(map, "zombie"); p.x = pos.x; p.y = pos.y; }
   };
@@ -311,7 +383,7 @@ const HumansVsZombiesGame = ({ sessionId, studentId, preview = false }: Props) =
   // ── Actions ─────────────────────────────────────────────────────────────
   const frozenNow = () => {
     const p = pRef.current, now = Date.now();
-    return showQuizRef.current || now < p.stunUntil || now < p.turningUntil
+    return showQuizRef.current || now < p.stunUntil || now < p.turningUntil || now < p.frozenUntil || p.koLeft > 0
       || (p.team === "zombie" && now < startedAtRef.current + HEAD_START_MS);
   };
 
@@ -336,6 +408,18 @@ const HumansVsZombiesGame = ({ sessionId, studentId, preview = false }: Props) =
   };
   const actRef = useRef(act); actRef.current = act;
 
+  const firePower = () => {
+    const p = pRef.current;
+    if (!p.power || frozenNow()) return;
+    const kind = p.power;
+    p.power = null;
+    setHud(h => ({ ...h, power: null }));
+    send("power", { kind, x: Math.round(p.x), y: Math.round(p.y), by: studentId, byName: nameRef.current });
+    onPowerRef.current(kind, p.x, p.y, nameRef.current);
+    fxRef.current.shake(6);
+  };
+  const firePowerRef = useRef(firePower); firePowerRef.current = firePower;
+
   // ── The game loop ───────────────────────────────────────────────────────
   useEffect(() => {
     if (phase !== "playing" || !ready) return;
@@ -350,6 +434,8 @@ const HumansVsZombiesGame = ({ sessionId, studentId, preview = false }: Props) =
       const p = pRef.current, now = Date.now();
       p.team = "zombie"; p.turningUntil = now + TURNING_MS;
       p.ammo = 0; p.charges = CHARGES.start; p.streak = 0; p.shield = false; p.sprintUntil = 0;
+      p.lives = ZOMBIE_LIVES; p.koLeft = 0; p.safeSince = 0; p.slowUntil = 0;
+      if (p.power === "freeze") p.power = null;
       fxRef.current.burst(p.x, p.y, HVZ.zombie, 26, 240);
       fxRef.current.ring(p.x, p.y, HVZ.zombie, 100);
       fxRef.current.shake(16, 450);
@@ -362,13 +448,25 @@ const HumansVsZombiesGame = ({ sessionId, studentId, preview = false }: Props) =
 
     const stunMe = (b: Bullet) => {
       const p = pRef.current, now = Date.now();
-      p.stunUntil = now + STUN_MS; p.sprintUntil = 0;
-      fxRef.current.burst(p.x, p.y, "#8CC8FF", 16);
-      fxRef.current.shake(7);
+      p.sprintUntil = 0;
+      p.lives = Math.max(0, p.lives - 1);
+      const ko = p.lives === 0;
+      fxRef.current.burst(p.x, p.y, "#8CC8FF", ko ? 28 : 16);
+      fxRef.current.shake(ko ? 14 : 7);
       const shooter = peersRef.current[b.by];
-      say(arRef.current ? "أصبت! مشلول لثلاث ثوانٍ" : "Stunned for 3 seconds!", true);
-      send("stun", { victim: studentId, by: b.by, byName: shooter?.name ?? "?", victimName: nameRef.current });
-      onStunnedRef.current(b.by, shooter?.name ?? "?", nameRef.current);
+      if (ko) {
+        // Out of lives: back to the lab, and up again only by answering.
+        p.koLeft = KO_ANSWERS;
+        const pos = spawnIn(mapRef.current!, 0);
+        p.x = pos.x; p.y = pos.y;
+        say(arRef.current ? `سقطت! أجب ${KO_ANSWERS} أسئلة لتعود` : `Knocked out! Answer ${KO_ANSWERS} to get back up`, true);
+        openQuizRef.current();
+      } else {
+        p.stunUntil = now + STUN_MS;
+        say(arRef.current ? `أصبت! بقي لك ${p.lives}` : `Stunned! ${p.lives} ${p.lives === 1 ? "life" : "lives"} left`, true);
+      }
+      send("stun", { victim: studentId, by: b.by, byName: shooter?.name ?? "?", victimName: nameRef.current, ko });
+      onStunnedRef.current(b.by, shooter?.name ?? "?", nameRef.current, ko);
     };
 
     /** Preview only: bots do what their phones would. */
@@ -386,7 +484,8 @@ const HumansVsZombiesGame = ({ sessionId, studentId, preview = false }: Props) =
         const s = b.bot!;
         b.t = now;
         b.sprint = false;
-        const frozen = now < b.stunUntil || now < b.turningUntil || (b.team === "zombie" && !released);
+        if (b.ko && now > s.koUntil) { b.ko = false; b.lives = ZOMBIE_LIVES; }
+        const frozen = b.ko || now < b.stunUntil || now < b.turningUntil || now < b.frozenUntil || (b.team === "zombie" && !released);
         b.moving = false;
         if (frozen) continue;
         let heading: number | null = null;
@@ -407,7 +506,7 @@ const HumansVsZombiesGame = ({ sessionId, studentId, preview = false }: Props) =
             heading = Math.atan2(b.y - threat.y, b.x - threat.x) + Math.sin(now * 0.002 + b.x) * 0.6;
             if (now - s.shotAt > 1600 && released) {
               const zRef = zombies.find(z => z === threat);
-              if (zRef && !(zRef.ref && now < zRef.ref.stunUntil)) {
+              if (zRef && !(zRef.ref && (now < zRef.ref.stunUntil || zRef.ref.ko))) {
                 s.shotAt = now;
                 const a = Math.atan2(threat.y - b.y, threat.x - b.x);
                 bulletsRef.current.push({ id: `${b.id}-${now}`, by: b.id, x: b.x + Math.cos(a) * 22, y: b.y + Math.sin(a) * 22, vx: Math.cos(a) * BULLET.speed, vy: Math.sin(a) * BULLET.speed, travelled: 0 });
@@ -426,7 +525,7 @@ const HumansVsZombiesGame = ({ sessionId, studentId, preview = false }: Props) =
           }
         }
         if (heading === null) continue;
-        const speed = (b.team === "zombie" ? ZOMBIE_SPEED * 0.9 : HUMAN_SPEED * 0.85) * dt;
+        const speed = (b.team === "zombie" ? ZOMBIE_SPEED * 0.9 : HUMAN_SPEED * 0.85) * (now < b.slowUntil ? POWER.slowMult : 1) * dt;
         const moved = moveCircle(map, b.x, b.y, Math.cos(heading) * speed, Math.sin(heading) * speed);
         b.x = b.tx = moved.x; b.y = b.ty = moved.y;
         if (b.team === "human" || !b.moving) b.angle = heading;
@@ -434,13 +533,20 @@ const HumansVsZombiesGame = ({ sessionId, studentId, preview = false }: Props) =
       }
       // Bot humans decide their own tagging, like a phone would.
       for (const h of bots) {
-        if (h.team !== "human" || !released) continue;
+        if (h.team !== "human" || !released || now < h.graceUntil) continue;
         const touch = (zx: number, zy: number) => Math.hypot(zx - h.x, zy - h.y) < TAG_DIST;
         let by: { id: string; name: string } | null = null;
-        if (p.team === "zombie" && now >= p.stunUntil && now >= p.turningUntil && touch(p.x, p.y)) by = { id: studentId, name: nameRef.current };
-        for (const z of bots) if (!by && z.team === "zombie" && now >= z.stunUntil && now >= z.turningUntil && touch(z.x, z.y)) by = { id: z.id, name: z.name };
+        if (p.team === "zombie" && p.koLeft === 0 && now >= p.stunUntil && now >= p.frozenUntil && now >= p.turningUntil && touch(p.x, p.y)) by = { id: studentId, name: nameRef.current };
+        for (const z of bots) if (!by && z.team === "zombie" && !z.ko && now >= z.stunUntil && now >= z.frozenUntil && now >= z.turningUntil && touch(z.x, z.y)) by = { id: z.id, name: z.name };
         if (!by) continue;
-        h.team = "zombie"; h.turningUntil = now + TURNING_MS;
+        h.lives--;
+        if (h.lives > 0) {
+          h.graceUntil = now + BITE_GRACE_MS;
+          fxRef.current.burst(h.x, h.y, "#E05D5D", 14);
+          onBittenRef.current(by.id, by.name, h.name, h.lives);
+          continue;
+        }
+        h.team = "zombie"; h.turningUntil = now + TURNING_MS; h.lives = ZOMBIE_LIVES;
         fxRef.current.burst(h.x, h.y, HVZ.zombie, 22, 220);
         fxRef.current.ring(h.x, h.y, HVZ.zombie, 90);
         onInfectedRef.current(by.id, by.name, h.name);
@@ -458,18 +564,45 @@ const HumansVsZombiesGame = ({ sessionId, studentId, preview = false }: Props) =
         const k = keysRef.current;
         const dx = (k.has("arrowright") || k.has("d") ? 1 : 0) - (k.has("arrowleft") || k.has("a") ? 1 : 0);
         const dy = (k.has("arrowdown") || k.has("s") ? 1 : 0) - (k.has("arrowup") || k.has("w") ? 1 : 0);
-        if (dx || dy) { const l = Math.hypot(dx, dy); vectorRef.current = { dx: dx / l, dy: dy / l, magnitude: 1 }; }
-        else if (k.size || vectorRef.current.magnitude) vectorRef.current = { dx: 0, dy: 0, magnitude: 0 };
+        // Only touch the vector while the keyboard is driving, or the stick
+        // (which writes the same ref) gets zeroed every frame on a phone.
+        const v = vectorRef.current;
+        if (dx || dy) { const l = Math.hypot(dx, dy); v.dx = dx / l; v.dy = dy / l; v.magnitude = 1; kbDrivingRef.current = true; }
+        else if (kbDrivingRef.current) { v.dx = 0; v.dy = 0; v.magnitude = 0; kbDrivingRef.current = false; }
       }
 
       const frozen = frozenNow();
       const vec = vectorRef.current;
-      p.moving = !frozen && vec.magnitude > 0;
+      // Out of energy is a dead stop: the quiz is the only way to move again.
+      p.moving = !frozen && p.energy > 0 && vec.magnitude > 0;
       if (p.moving) {
         p.angle = Math.atan2(vec.dy, vec.dx);
         const base = zombie ? ZOMBIE_SPEED : HUMAN_SPEED;
-        const speed = base * (now < p.sprintUntil ? SPRINT.mult : 1) * Math.min(1, 0.35 + vec.magnitude);
-        ({ x: p.x, y: p.y } = moveCircle(map, p.x, p.y, Math.cos(p.angle) * speed * dt, Math.sin(p.angle) * speed * dt));
+        const speed = base * (now < p.sprintUntil ? SPRINT.mult : 1) * (now < p.slowUntil ? POWER.slowMult : 1) * Math.min(1, 0.35 + vec.magnitude);
+        const hatches = !zombie && now >= p.safeLockedUntil;
+        ({ x: p.x, y: p.y } = moveCircle(map, p.x, p.y, Math.cos(p.angle) * speed * dt, Math.sin(p.angle) * speed * dt, hatches));
+        p.energy = Math.max(0, p.energy - ENERGY.drainPerSec * dt);
+      }
+
+      // The safe room: a minute inside, then out, and the hatches stay shut to
+      // you for a minute. Leaving early starts the lock too, so it can't be
+      // reset by stepping out and back in.
+      if (!zombie && map.safe >= 0) {
+        if (inSafeRoom(map, p.x, p.y)) {
+          if (!p.safeSince) {
+            p.safeSince = now;
+            say(arRef.current ? "أنت في الغرفة الآمنة — دقيقة واحدة" : "Safe room — you have one minute", false);
+          } else if (now - p.safeSince > SAFE_ROOM.stayMs && map.safeExits.length) {
+            const exit = map.safeExits[Math.floor(Math.random() * map.safeExits.length)];
+            p.x = exit.x; p.y = exit.y;
+            p.safeSince = 0; p.safeLockedUntil = now + SAFE_ROOM.lockMs;
+            setShowQuiz(false);
+            fxRef.current.ring(p.x, p.y, "#78DCFF", 60);
+            say(arRef.current ? "انتهى وقتك في الغرفة الآمنة!" : "Time's up — you're out of the safe room!", true);
+          }
+        } else if (p.safeSince && !touchesHatch(map, p.x, p.y)) {
+          p.safeSince = 0; p.safeLockedUntil = now + SAFE_ROOM.lockMs;
+        }
       }
 
       // Peers glide to their last broadcast position.
@@ -484,7 +617,7 @@ const HumansVsZombiesGame = ({ sessionId, studentId, preview = false }: Props) =
       if (!zombie) {
         let best = Infinity; p.aim = p.angle; p.aimTarget = null;
         for (const peer of Object.values(peersRef.current)) {
-          if (peer.team !== "zombie" || now < peer.stunUntil) continue;
+          if (peer.team !== "zombie" || peer.ko || now < peer.stunUntil) continue;
           const d = Math.hypot(peer.x - p.x, peer.y - p.y);
           if (d < BULLET.range && d < best && lineOfSight(map, p.x, p.y, peer.x, peer.y)) { best = d; p.aim = Math.atan2(peer.y - p.y, peer.x - p.x); p.aimTarget = peer.id; }
         }
@@ -498,17 +631,23 @@ const HumansVsZombiesGame = ({ sessionId, studentId, preview = false }: Props) =
         b.x += sx; b.y += sy; b.travelled += Math.hypot(sx, sy);
         if (b.travelled > BULLET.range || solidAt(map, b.x, b.y)) { fxRef.current.burst(b.x, b.y, HVZ.bullet, 4, 70); continue; }
         let hit = false;
-        if (zombie && b.by !== studentId && now >= p.stunUntil && now >= p.turningUntil
+        if (zombie && b.by !== studentId && p.koLeft === 0 && now >= p.stunUntil && now >= p.turningUntil
           && Math.hypot(b.x - p.x, b.y - p.y) < PLAYER_R + BULLET.radius) { stunMe(b); hit = true; }
         for (const peer of Object.values(peersRef.current)) {
-          if (hit || peer.team !== "zombie" || peer.id === b.by || now < peer.stunUntil) continue;
+          if (hit || peer.team !== "zombie" || peer.ko || peer.id === b.by || now < peer.stunUntil) continue;
           if (Math.hypot(b.x - peer.x, b.y - peer.y) >= PLAYER_R + BULLET.radius) continue;
           hit = true;
           if (peer.bot) {
-            peer.stunUntil = now + STUN_MS;
-            fxRef.current.burst(peer.x, peer.y, "#8CC8FF", 12);
+            peer.lives--;
+            const ko = peer.lives <= 0;
+            fxRef.current.burst(peer.x, peer.y, "#8CC8FF", ko ? 24 : 12);
+            if (ko) {
+              peer.ko = true; peer.bot.koUntil = now + 8000;
+              const pos = spawnIn(map, 0);
+              peer.x = peer.tx = pos.x; peer.y = peer.ty = pos.y;
+            } else peer.stunUntil = now + STUN_MS;
             const shooter = b.by === studentId ? nameRef.current : peersRef.current[b.by]?.name ?? "?";
-            onStunnedRef.current(b.by, shooter, peer.name);
+            onStunnedRef.current(b.by, shooter, peer.name, ko);
           }
         }
         if (!hit) keep.push(b);
@@ -518,7 +657,7 @@ const HumansVsZombiesGame = ({ sessionId, studentId, preview = false }: Props) =
       // Tagged? Judged against our exact position and their broadcast one.
       if (!zombie && now >= startedAtRef.current + HEAD_START_MS && now >= p.graceUntil) {
         for (const peer of Object.values(peersRef.current)) {
-          if (peer.team !== "zombie" || now < peer.stunUntil || now < peer.turningUntil) continue;
+          if (peer.team !== "zombie" || peer.ko || now < peer.stunUntil || now < peer.frozenUntil || now < peer.turningUntil) continue;
           if (now - peer.t > 1500) continue;
           if (Math.hypot(peer.x - p.x, peer.y - p.y) >= TAG_DIST) continue;
           if (p.shield) {
@@ -527,7 +666,34 @@ const HumansVsZombiesGame = ({ sessionId, studentId, preview = false }: Props) =
             fxRef.current.burst(p.x, p.y, "#78DCFF", 14);
             say(arRef.current ? "الدرع أنقذك!" : "Your shield saved you!", false);
             send("shield", { victim: studentId });
+          } else if (p.lives > 1) {
+            // A bite: one life gone, a shove clear of the zombie, and a moment
+            // where nobody can touch you so one zombie can't take all three.
+            p.lives--;
+            p.graceUntil = now + BITE_GRACE_MS;
+            const a = Math.atan2(p.y - peer.y, p.x - peer.x);
+            ({ x: p.x, y: p.y } = moveCircle(map, p.x, p.y, Math.cos(a) * BITE_KNOCKBACK, Math.sin(a) * BITE_KNOCKBACK, now >= p.safeLockedUntil));
+            fxRef.current.burst(p.x, p.y, "#E05D5D", 18);
+            fxRef.current.shake(12, 400);
+            say(arRef.current ? `عضّك ${peer.name}! بقي لك ${p.lives}` : `${peer.name} bit you! ${p.lives} ${p.lives === 1 ? "life" : "lives"} left`, true);
+            send("bite", { victim: studentId, by: peer.id, byName: peer.name, victimName: nameRef.current, left: p.lives });
+            onBittenRef.current(peer.id, peer.name, nameRef.current, p.lives);
           } else infectMe(peer);
+          break;
+        }
+      }
+      // Power-up boxes: walk over one to pick up your team's power (one at a time).
+      if (!p.power && p.koLeft === 0) {
+        for (const box of powerBoxesAt(sessionId, now, map)) {
+          if (takenRef.current.has(box.id) || Math.hypot(box.x - p.x, box.y - p.y) > POWER.grabR) continue;
+          takenRef.current.add(box.id);
+          p.power = zombie ? "scream" : "freeze";
+          fxRef.current.burst(box.x, box.y, zombie ? HVZ.zombie : "#9FE3FF", 18);
+          say(zombie
+            ? (arRef.current ? "حصلت على صرخة! تبطئ البشر حولك" : "Scream! Slows every human near you")
+            : (arRef.current ? "حصلت على تجميد! يجمّد الزومبي حولك" : "Freeze! Freezes every zombie near you"), false);
+          send("grab", { id: box.id });
+          setHud(h => ({ ...h, power: p.power }));
           break;
         }
       }
@@ -550,7 +716,11 @@ const HumansVsZombiesGame = ({ sessionId, studentId, preview = false }: Props) =
       const vision = zombie ? VISION.zombie : VISION.human;
       const sensing = zombie && now < p.senseUntil;
 
-      drawBuilding(ctx, map, v, arRef.current);
+      drawBuilding(ctx, map, v, arRef.current, !zombie);
+      for (const box of powerBoxesAt(sessionId, now, map)) {
+        if (takenRef.current.has(box.id)) continue;
+        drawPowerBox(ctx, v.offX + box.x * scale, v.offY + box.y * scale, 26 * scale, nowP);
+      }
       drawBullets(ctx, bulletsRef.current, v);
 
       const cutoff = now - PEER_TIMEOUT_MS;
@@ -568,12 +738,16 @@ const HumansVsZombiesGame = ({ sessionId, studentId, preview = false }: Props) =
           const q = d.peer;
           drawAgent(ctx, v.offX + q.x * scale, v.offY + q.y * scale, R, {
             face: q.face, color: q.color, zombie: q.team === "zombie", angle: q.angle, moving: q.moving,
-            stunned: now < q.stunUntil, shield: q.shield, sprint: q.sprint, turning: now < q.turningUntil,
+            stunned: now < q.stunUntil || q.ko, shield: q.shield, sprint: q.sprint, turning: now < q.turningUntil,
+            frozen: now < q.frozenUntil, slowed: now < q.slowUntil,
+            alpha: q.ko ? 0.45 : now < q.graceUntil && Math.floor(nowP / 120) % 2 ? 0.35 : 1,
           }, nowP);
         } else {
           drawAgent(ctx, v.offX + p.x * scale, v.offY + p.y * scale, R, {
             face: faceRef.current ?? undefined, color: colorRef.current, zombie, angle: zombie ? p.angle : p.aim, moving: p.moving,
-            stunned: now < p.stunUntil, shield: p.shield, sprint: now < p.sprintUntil, turning: now < p.turningUntil,
+            stunned: now < p.stunUntil || p.koLeft > 0, shield: p.shield, sprint: now < p.sprintUntil, turning: now < p.turningUntil,
+            frozen: now < p.frozenUntil, slowed: now < p.slowUntil,
+            alpha: p.koLeft > 0 ? 0.55 : now < p.graceUntil && Math.floor(nowP / 120) % 2 ? 0.35 : 1,
           }, nowP);
         }
       }
@@ -642,7 +816,10 @@ const HumansVsZombiesGame = ({ sessionId, studentId, preview = false }: Props) =
           turning: Math.max(0, p.turningUntil - now), sprint: Math.max(0, p.sprintUntil - now),
           humans, zombies, secsLeft: ends ? Math.max(0, Math.ceil((ends - now) / 1000)) : null,
           releaseIn: Math.max(0, Math.ceil((startedAtRef.current + HEAD_START_MS - now) / 1000)),
-          stuns: p.stuns, infects: p.infects,
+          stuns: p.stuns, infects: p.infects, energy: p.energy, lives: p.lives, ko: p.koLeft,
+          safeLeft: p.safeSince ? Math.max(0, SAFE_ROOM.stayMs - (now - p.safeSince)) : 0,
+          safeLock: Math.max(0, p.safeLockedUntil - now),
+          power: p.power, frozen: Math.max(0, p.frozenUntil - now), slowed: Math.max(0, p.slowUntil - now),
         });
       }
       if (netAcc >= BROADCAST_MS / 1000) {
@@ -651,7 +828,8 @@ const HumansVsZombiesGame = ({ sessionId, studentId, preview = false }: Props) =
           id: studentId, name: nameRef.current, team: p.team, af: faceIdxRef.current, ac: colorIdxRef.current,
           x: Math.round(p.x), y: Math.round(p.y), a: Number((p.team === "zombie" ? p.angle : p.aim).toFixed(2)),
           st: Math.max(0, p.stunUntil - now), tu: Math.max(0, p.turningUntil - now),
-          sh: p.shield, sp: now < p.sprintUntil, mv: p.moving,
+          sh: p.shield, sp: now < p.sprintUntil, mv: p.moving, ko: p.koLeft > 0, lv: p.lives,
+          fz: Math.max(0, p.frozenUntil - now), sl: Math.max(0, p.slowUntil - now), gr: Math.max(0, p.graceUntil - now),
         });
       }
     };
@@ -666,6 +844,7 @@ const HumansVsZombiesGame = ({ sessionId, studentId, preview = false }: Props) =
       const k = e.key.toLowerCase();
       if (k === " ") { e.preventDefault(); actRef.current(); return; }
       if (k === "e") { openQuizRef.current(); return; }
+      if (k === "q") { firePowerRef.current(); return; }
       keysRef.current.add(k);
     };
     const up = (e: KeyboardEvent) => keysRef.current.delete(e.key.toLowerCase());
@@ -689,6 +868,12 @@ const HumansVsZombiesGame = ({ sessionId, studentId, preview = false }: Props) =
   const openQuizRef = useRef(openQuiz); openQuizRef.current = openQuiz;
   useEffect(() => { showQuizRef.current = showQuiz; }, [showQuiz]);
 
+  // Out of energy or knocked out: the question is the only way forward, so
+  // put it up without being asked.
+  useEffect(() => {
+    if (phase === "playing" && (hud.energy <= 0 || hud.ko > 0) && !showQuiz) openQuiz();
+  }, [hud.energy, hud.ko, phase, showQuiz]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const answer = (idx: number) => {
     if (!currentQ || !me || pickedRef.current !== null) return;
     pickedRef.current = idx;
@@ -699,13 +884,21 @@ const HumansVsZombiesGame = ({ sessionId, studentId, preview = false }: Props) =
     if (correct) {
       p.streak++;
       p.points += POINTS.correct;
+      p.energy = Math.min(ENERGY.max, p.energy + ENERGY.perCorrect);
       playCorrect();
+      if (p.koLeft > 0) {
+        p.koLeft--;
+        if (p.koLeft === 0) {
+          p.lives = ZOMBIE_LIVES;
+          say(isAr ? "عدت إلى الصيد!" : "Back on your feet!", false);
+        }
+      }
       if (p.team === "human") {
         p.ammo = Math.min(AMMO.max, p.ammo + AMMO.perCorrect);
-        reward.fire(isAr ? `+${AMMO.perCorrect} ذخيرة` : `+${AMMO.perCorrect} ammo`, HVZ.bullet);
+        reward.fire(isAr ? `+${ENERGY.perCorrect} طاقة  +${AMMO.perCorrect} ذخيرة` : `+${ENERGY.perCorrect} energy  +${AMMO.perCorrect} ammo`, HVZ.bullet);
       } else {
         p.charges = Math.min(CHARGES.max, p.charges + CHARGES.perCorrect);
-        reward.fire(isAr ? "+1 انطلاقة" : "+1 sprint", HVZ.zombie);
+        reward.fire(isAr ? `+${ENERGY.perCorrect} طاقة  +1 انطلاقة` : `+${ENERGY.perCorrect} energy  +1 sprint`, HVZ.zombie);
       }
       if (p.streak % PERK_STREAK === 0) {
         if (p.team === "human") { p.shield = true; say(isAr ? "درع! يصدّ لمسة زومبي واحدة" : "Shield! Blocks one zombie touch", false); }
@@ -715,7 +908,7 @@ const HumansVsZombiesGame = ({ sessionId, studentId, preview = false }: Props) =
       p.streak = 0;
       playWrong();
     }
-    setHud(h => ({ ...h, ammo: p.ammo, charges: p.charges, streak: p.streak, points: p.points, shield: p.shield }));
+    setHud(h => ({ ...h, ammo: p.ammo, charges: p.charges, streak: p.streak, points: p.points, shield: p.shield, energy: p.energy, ko: p.koLeft, lives: p.lives }));
 
     const updates: { total_answers: number; crypto: number; correct_answers?: number } = { total_answers: (me.total_answers ?? 0) + 1, crypto: p.points };
     if (correct) updates.correct_answers = (me.correct_answers ?? 0) + 1;
@@ -796,11 +989,17 @@ const HumansVsZombiesGame = ({ sessionId, studentId, preview = false }: Props) =
 
   // ── Playing ─────────────────────────────────────────────────────────────
   const frozenReason =
-    hud.turning > 0 ? (ar ? "تتحول إلى زومبي..." : "Turning...")
+    hud.ko > 0 ? (ar ? `سقطت — أجب ${hud.ko} لتعود` : `Knocked out — answer ${hud.ko} to get up`)
+    : hud.turning > 0 ? (ar ? "تتحول إلى زومبي..." : "Turning...")
+    : hud.frozen > 0 ? (ar ? "متجمّد!" : "FROZEN")
     : hud.stunned > 0 ? (ar ? "مشلول" : "STUNNED")
     : zombie && hud.releaseIn > 0 ? (ar ? `الصيد يبدأ بعد ${hud.releaseIn}` : `Hunt starts in ${hud.releaseIn}`)
     : null;
   const actionCount = zombie ? hud.charges : hud.ammo;
+  const energyPct = Math.max(0, Math.min(100, (hud.energy / ENERGY.max) * 100));
+  const energyEmpty = hud.energy <= 0;
+  const energyColor = energyEmpty ? "#dc2626" : hud.energy <= ENERGY.low ? "#e0812a" : teamColor;
+  const mustAnswer = energyEmpty || hud.ko > 0;
 
   return (
     <div dir={ar ? "rtl" : "ltr"} className="fixed inset-0 overflow-hidden select-none text-white" style={{ background: HVZ.void, touchAction: "none" }}>
@@ -815,6 +1014,13 @@ const HumansVsZombiesGame = ({ sessionId, studentId, preview = false }: Props) =
             style={{ background: teamColor, color: HVZ.void }}>
             {zombie ? <Biohazard className="h-4 w-4" /> : <Users className="h-4 w-4" />}
             {zombie ? (ar ? "زومبي" : "ZOMBIE") : (ar ? "إنسان" : "HUMAN")}
+            {(
+              <span className="flex gap-0.5 ms-1">
+                {Array.from({ length: zombie ? ZOMBIE_LIVES : HUMAN_LIVES }, (_, i) => (
+                  <span key={i} className="h-2 w-2 rounded-full" style={{ background: i < hud.lives && hud.ko === 0 ? HVZ.void : "rgba(11,15,22,0.25)" }} />
+                ))}
+              </span>
+            )}
           </div>
           <div className="px-2.5 py-0.5 rounded-full text-[12px] font-extrabold tabular-nums" style={{ background: "rgba(11,15,22,0.7)", color: "#FFE066" }}>
             {hud.points} {ar ? "نقطة" : "pts"}
@@ -822,6 +1028,21 @@ const HumansVsZombiesGame = ({ sessionId, studentId, preview = false }: Props) =
           {hud.shield && (
             <div className="flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-black" style={{ background: "#78DCFF", color: HVZ.void }}>
               <Shield className="h-3.5 w-3.5" />{ar ? "درع" : "SHIELD"}
+            </div>
+          )}
+          {!zombie && hud.safeLeft > 0 && (
+            <div className="flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-black tabular-nums" style={{ background: "#78DCFF", color: HVZ.void }}>
+              <DoorOpen className="h-3.5 w-3.5" />{ar ? "آمن" : "SAFE"} {Math.ceil(hud.safeLeft / 1000)}s
+            </div>
+          )}
+          {!zombie && hud.safeLock > 0 && (
+            <div className="flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-black tabular-nums" style={{ background: "rgba(11,15,22,0.75)", color: "#9AA6B8" }}>
+              <Lock className="h-3.5 w-3.5" />{Math.ceil(hud.safeLock / 1000)}s
+            </div>
+          )}
+          {hud.slowed > 0 && (
+            <div className="flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-black tabular-nums" style={{ background: HVZ.zombie, color: HVZ.void }}>
+              <Megaphone className="h-3.5 w-3.5" />{ar ? "بطيء" : "SLOWED"} {Math.ceil(hud.slowed / 1000)}s
             </div>
           )}
           {hud.sense > 0 && (
@@ -861,7 +1082,7 @@ const HumansVsZombiesGame = ({ sessionId, studentId, preview = false }: Props) =
       {frozenReason && !showQuiz && (
         <div className="absolute inset-x-0 top-[40%] flex justify-center pointer-events-none">
           <div className="px-5 py-2.5 rounded-full text-base font-black animate-pulse"
-            style={{ background: hud.stunned > 0 ? "#8CC8FF" : HVZ.zombie, color: HVZ.void }}>
+            style={{ background: hud.stunned > 0 || hud.ko > 0 || hud.frozen > 0 ? "#8CC8FF" : HVZ.zombie, color: HVZ.void }}>
             {frozenReason}
           </div>
         </div>
@@ -876,16 +1097,40 @@ const HumansVsZombiesGame = ({ sessionId, studentId, preview = false }: Props) =
         </div>
       )}
 
+      {/* Energy: walking burns it, only answers refill it. */}
+      {!showQuiz && (
+        <div dir="ltr" className="absolute left-4 right-28 flex items-center gap-2 pointer-events-none"
+          style={{ bottom: "calc(env(safe-area-inset-bottom) + 4.6rem)" }}>
+          <BatteryMedium className="h-4 w-4 shrink-0" style={{ color: energyColor }} />
+          <div className="flex-1 h-2.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.14)" }}>
+            <div className={cn("h-full rounded-full transition-[width] duration-150", energyEmpty && "animate-pulse")}
+              style={{ width: `${energyPct}%`, background: energyColor }} />
+          </div>
+        </div>
+      )}
+
       {/* Bottom controls: answer on the left, the team's action on the right. */}
       {!showQuiz && (
         <div dir="ltr" className="absolute inset-x-0 flex items-end justify-between px-4 pointer-events-none"
           style={{ bottom: "calc(env(safe-area-inset-bottom) + 1rem)" }}>
           <button onClick={openQuiz}
             className={cn("pointer-events-auto z-10 px-5 py-3 rounded-full text-sm font-extrabold shadow-lg active:scale-95 transition-transform",
-              actionCount === 0 && "animate-pulse")}
-            style={{ background: "#FFFFFF", color: HVZ.void }}>
-            {zombie ? (ar ? "أجب: +1 انطلاقة" : "Answer: +1 sprint") : (ar ? `أجب: +${AMMO.perCorrect} ذخيرة` : `Answer: +${AMMO.perCorrect} ammo`)}
+              (actionCount === 0 || hud.energy <= ENERGY.low) && "animate-pulse")}
+            style={{ background: energyEmpty ? "#dc2626" : "#FFFFFF", color: energyEmpty ? "#FFFFFF" : HVZ.void }}>
+            {ar ? "أجب لتحصل على طاقة" : "Answer for energy"}
           </button>
+          <div className="flex flex-col items-center gap-3">
+          {hud.power && (
+            <button
+              onPointerDown={e => { e.stopPropagation(); firePower(); }}
+              className="pointer-events-auto z-10 h-14 w-14 rounded-full flex flex-col items-center justify-center font-black shadow-xl active:scale-90 transition-transform animate-pulse"
+              style={{ background: hud.power === "freeze" ? "#9FE3FF" : "#A6E88A", color: HVZ.void, border: "3px solid #FFFFFF" }}>
+              {hud.power === "freeze" ? <Snowflake className="h-6 w-6" /> : <Megaphone className="h-6 w-6" />}
+              <span className="text-[8px] leading-none mt-0.5">
+                {hud.power === "freeze" ? (ar ? "تجميد" : "FREEZE") : (ar ? "صرخة" : "SCREAM")}
+              </span>
+            </button>
+          )}
           <button
             onPointerDown={e => { e.stopPropagation(); act(); }}
             className="pointer-events-auto z-10 relative h-20 w-20 rounded-full flex flex-col items-center justify-center font-black shadow-xl active:scale-90 transition-transform"
@@ -900,6 +1145,7 @@ const HumansVsZombiesGame = ({ sessionId, studentId, preview = false }: Props) =
               {actionCount}
             </span>
           </button>
+          </div>
         </div>
       )}
 
@@ -908,23 +1154,33 @@ const HumansVsZombiesGame = ({ sessionId, studentId, preview = false }: Props) =
         <div dir={ar ? "rtl" : "ltr"} className="absolute inset-0 z-40 flex flex-col" style={{ background: "rgba(11,15,22,0.94)" }}>
           <div className="flex items-center justify-between gap-3 px-4 py-3 shrink-0" style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}>
             <div className="relative flex items-center gap-2 min-w-0">
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full shadow-sm" style={{ background: teamColor, color: HVZ.void }}>
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full shadow-sm" style={{ background: energyColor, color: HVZ.void }}>
+                <BatteryMedium className="h-3.5 w-3.5" />
+                <span className="text-sm font-black tabular-nums">{Math.round(hud.energy)}</span>
+              </div>
+              <div className="flex items-center gap-1 px-2.5 py-1.5 rounded-full" style={{ background: "rgba(255,255,255,0.1)" }}>
                 {zombie ? <Zap className="h-3.5 w-3.5" /> : <Crosshair className="h-3.5 w-3.5" />}
                 <span className="text-sm font-black tabular-nums">{actionCount}</span>
               </div>
               <span className="text-xs font-bold truncate opacity-70">
-                {ar ? `${hud.streak % PERK_STREAK}/${PERK_STREAK} للـ${zombie ? "حاسة" : "درع"}` : `${hud.streak % PERK_STREAK}/${PERK_STREAK} to ${zombie ? "sense" : "shield"}`}
+                {hud.ko > 0
+                  ? (ar ? `${hud.ko} للعودة` : `${hud.ko} to get up`)
+                  : ar ? `${hud.streak % PERK_STREAK}/${PERK_STREAK} للـ${zombie ? "حاسة" : "درع"}` : `${hud.streak % PERK_STREAK}/${PERK_STREAK} to ${zombie ? "sense" : "shield"}`}
               </span>
               <reward.Layer />
             </div>
-            <button onClick={() => setShowQuiz(false)}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-black active:scale-95 transition-transform"
+            <button onClick={() => setShowQuiz(false)} disabled={mustAnswer}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-black active:scale-95 transition-transform disabled:opacity-30"
               style={{ background: "#FFFFFF", color: HVZ.void }}>
               <X className="h-3.5 w-3.5" />{ar ? "عودة" : "BACK"}
             </button>
           </div>
           <div className="px-4 text-[11px] font-bold text-center opacity-60 shrink-0">
-            {ar ? "أنت واقف مكانك — انتبه لمن يقترب" : "You're standing still — watch your back"}
+            {hud.ko > 0
+              ? (ar ? "سقطت — أجب لتعود إلى الصيد" : "You're down — answer to get back in the hunt")
+              : energyEmpty
+                ? (ar ? "نفدت طاقتك — أجب لتتحرك" : "Out of energy — answer to move again")
+                : (ar ? "أنت واقف مكانك — انتبه لمن يقترب" : "You're standing still — watch your back")}
           </div>
           {currentQ ? (
             <div className="flex-1 flex flex-col justify-center gap-4 p-4 min-h-0 overflow-y-auto">
