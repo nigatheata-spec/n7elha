@@ -1,250 +1,107 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { toast } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { Square, Maximize, Users, Biohazard } from "lucide-react";
-import { PixelShield } from "@/components/PixelIcons";
-import { BATTLE_ACTIONS, START_HEALTH, HEALTH_DRAIN_PER_SEC, DAY_CYCLE_MS, WIN_DAYS, type Team, type BattleActionKey } from "@/lib/humansVsZombies";
-import { drawBattle, type Fighter } from "@/lib/hvzBattleRender";
-import battlefieldUrl from "@/assets/hvz/battlefield.jpg";
+import { Square, Maximize, Users, Biohazard, Timer } from "lucide-react";
+import { Avatar } from "@/components/Avatar";
 import { useConfirmDialog } from "@/hooks/use-confirm-dialog";
-import knightUrl from "@/assets/hvz/knight.png";
-import zombieUrl from "@/assets/hvz/zombie.png";
+import { HEAD_START_MS, POINTS } from "@/lib/humansVsZombies";
+import { HVZ } from "@/lib/hvzRender";
 
-type EffectPayload = {
-  damage?: { targetTeam: Team; amount: number };
-  steal?: { targetTeam: Team; pct: number; ms: number; beneficiaryId: string; beneficiaryTeam: Team };
-  incomeDebuff?: { targetTeam: Team; tiers: number; ms: number };
-  drainBoost?: { targetTeam: Team; extraRate: number; ms: number };
-};
-type ActionRow = {
-  id: string; student_id: string; student_name: string; team: Team; action_key: BattleActionKey;
-  health_delta: number; max_health_delta: number; effect: EffectPayload; cost: number; created_at: string;
-};
-type DrainBoostEvent = { team: Team; startMs: number; extraRate: number; ms: number };
+// ── Humans vs Zombies, projector ────────────────────────────────────────────
+// No map up here on purpose: the game is on the phones. The board is the
+// score of the outbreak — who's still human, who's turned, and a live feed of
+// every infection and stun, read off the same broadcast channel the phones
+// use. Team counts come from game_students.team, which each phone flips for
+// itself when it's tagged.
+//
+// This screen also referees the end: zombies win the moment nobody is human,
+// humans win if anyone is still human when the clock runs out, and every
+// survivor gets the survival bonus.
 
-const TEAM_COLOR: Record<Team, string> = { human: "hsl(210 70% 55%)", zombie: "hsl(100 55% 45%)" };
-const zero = (): Record<Team, number> => ({ human: 0, zombie: 0 });
+export type Row = { id: string; name: string; team: string | null; crypto: number | null; avatar_color: number | null; avatar_face: number | null };
+export type Feed = { id: number; by: string; victim: string; kind: "infect" | "stun" };
 
+/** `demo` fills the board with made-up players for the dev preview; nothing is read or written. */
+interface Props { session: any; sessionId: string; demo?: { students: Row[]; feed: Feed[] } }
 
-
-/**
- * The battlefield. Health drives the front line, so the picture and the bars
- * always agree — the teacher can read the match from across the room.
- *
- * Health is passed through a ref rather than as a prop the loop closes over:
- * the render loop is started once on mount, and reading props directly would
- * pin it to whatever the values were on that first frame.
- */
-const BattleScene = ({ humans, zombies, humanPct, zombiePct }: {
-  humans: Fighter[]; zombies: Fighter[]; humanPct: number; zombiePct: number;
-}) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const stateRef = useRef({ humans, zombies, humanPct, zombiePct });
-  stateRef.current = { humans, zombies, humanPct, zombiePct };
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    const load = (src: string) => { const i = new Image(); i.src = src; return i; };
-    const sprites = { field: load(battlefieldUrl), knight: load(knightUrl), zombie: load(zombieUrl) };
-
-    let raf = 0;
-    const frame = (t: number) => {
-      const dpr = window.devicePixelRatio || 1;
-      const cssW = canvas.clientWidth, cssH = canvas.clientHeight;
-      if (cssW && cssH) {
-        if (canvas.width !== cssW * dpr || canvas.height !== cssH * dpr) {
-          canvas.width = cssW * dpr; canvas.height = cssH * dpr;
-        }
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        drawBattle(ctx, cssW, cssH, sprites, { ...stateRef.current, t });
-      }
-      raf = requestAnimationFrame(frame);
-    };
-    raf = requestAnimationFrame(frame);
-    return () => cancelAnimationFrame(raf);
-  }, []);
-
-  return <canvas ref={canvasRef} className="h-full w-full block" />;
-};
-
-interface Props { session: any; sessionId: string; }
-
-const HumansVsZombiesMonitor = ({ session, sessionId }: Props) => {
+const HumansVsZombiesMonitor = ({ session, sessionId, demo }: Props) => {
   const nav = useNavigate();
   const { confirm, ConfirmDialog } = useConfirmDialog();
   const { i18n } = useTranslation();
   const ar = (session?.settings?.lang ?? i18n.language) === "ar";
-  const [students, setStudents] = useState<any[]>([]);
+  const [students, setStudents] = useState<Row[]>(demo?.students ?? []);
+  const [feed, setFeed] = useState<Feed[]>(demo?.feed ?? []);
   const [now, setNow] = useState(Date.now());
-  const [ending, setEnding] = useState(false);
-  const [recentActions, setRecentActions] = useState<ActionRow[]>([]);
-  const [healthDeltaSum, setHealthDeltaSum]       = useState<Record<Team, number>>(zero());
-  const [maxHealthDeltaSum, setMaxHealthDeltaSum] = useState<Record<Team, number>>(zero());
-  const [drainBoosts, setDrainBoosts]             = useState<DrainBoostEvent[]>([]);
-  // One soldier per purchase, not one per registered player — the roster is
-  // who's on the team, the army on the field is what they've actually funded.
-  const [soldierCount, setSoldierCount] = useState<Record<Team, number>>(zero());
-
+  const endingRef = useRef(false);
+  const studentsRef = useRef<Row[]>([]);
+  studentsRef.current = students;
   const settingsRef = useRef<any>({});
-  const healthDeltaRef = useRef<Record<Team, number>>(zero());
-  const maxHealthDeltaRef = useRef<Record<Team, number>>(zero());
-  const drainBoostsRef = useRef<DrainBoostEvent[]>([]);
-  const soldierCountRef = useRef<Record<Team, number>>(zero());
-  const dayInitRef = useRef(false);
-  const settings = session?.settings ?? {};
-  settingsRef.current = settings;
+  settingsRef.current = session?.settings ?? {};
 
-  const daysSurvived = settings.daysSurvived ?? 1;
-  const dayCycleEndsAt = settings.dayCycleEndsAt ? new Date(settings.dayCycleEndsAt).getTime() : 0;
-  const daySecsLeft = dayCycleEndsAt ? Math.max(0, Math.ceil((dayCycleEndsAt - now) / 1000)) : DAY_CYCLE_MS / 1000;
-
-  const startedAtMs = session?.started_at ? new Date(session.started_at).getTime() : 0;
-  const elapsedSec  = startedAtMs ? Math.max(0, (now - startedAtMs) / 1000) : 0;
-  const extraDrainFor = (t: Team) => drainBoosts.filter(b => b.team === t)
-    .reduce((sum, b) => sum + b.extraRate * Math.max(0, Math.min(now, b.startMs + b.ms) - b.startMs) / 1000, 0);
-  const drain: Record<Team, number> = {
-    human:  elapsedSec * HEALTH_DRAIN_PER_SEC + extraDrainFor("human"),
-    zombie: elapsedSec * HEALTH_DRAIN_PER_SEC + extraDrainFor("zombie"),
-  };
-  const maxHealth: Record<Team, number> = { human: START_HEALTH + maxHealthDeltaSum.human, zombie: START_HEALTH + maxHealthDeltaSum.zombie };
-  const health: Record<Team, number> = {
-    human:  Math.max(0, Math.min(maxHealth.human,  START_HEALTH - drain.human + healthDeltaSum.human)),
-    zombie: Math.max(0, Math.min(maxHealth.zombie, START_HEALTH - drain.zombie + healthDeltaSum.zombie)),
-  };
-
-  // ── Load students + actions, subscribe to realtime ────────────────────────
   useEffect(() => {
-    if (!sessionId) return;
+    if (!sessionId || demo) return;
     const refresh = async () => {
-      const { data: ss } = await supabase.from("game_students").select("*")
-        .eq("session_id", sessionId).order("crypto", { ascending: false });
-      setStudents(ss ?? []);
+      const { data } = await supabase.from("game_students")
+        .select("id,name,team,crypto,avatar_color,avatar_face").eq("session_id", sessionId);
+      setStudents((data ?? []) as Row[]);
     };
     refresh();
-
-    const loadActions = async () => {
-      const { data } = await supabase.from("hvz_actions").select("*")
-        .eq("session_id", sessionId).order("created_at", { ascending: true });
-      const rows = (data ?? []) as ActionRow[];
-      const hSum = zero(), mSum = zero(), counts = zero();
-      const boosts: DrainBoostEvent[] = [];
-      for (const r of rows) {
-        hSum[r.team] += r.health_delta;
-        mSum[r.team] += r.max_health_delta;
-        counts[r.team] += 1;
-        const eff = r.effect || {};
-        if (eff.damage) hSum[eff.damage.targetTeam] -= eff.damage.amount;
-        if (eff.drainBoost) boosts.push({ team: eff.drainBoost.targetTeam, startMs: new Date(r.created_at).getTime(), extraRate: eff.drainBoost.extraRate, ms: eff.drainBoost.ms });
-      }
-      healthDeltaRef.current = hSum; maxHealthDeltaRef.current = mSum; drainBoostsRef.current = boosts; soldierCountRef.current = counts;
-      setHealthDeltaSum(hSum); setMaxHealthDeltaSum(mSum); setDrainBoosts(boosts); setSoldierCount(counts);
-      setRecentActions(rows.slice(-8).reverse());
+    const push = (kind: Feed["kind"]) => ({ payload }: any) => {
+      if (!payload) return;
+      setFeed(f => [{ id: Date.now() + Math.random(), by: payload.byName ?? "?", victim: payload.victimName ?? "?", kind }, ...f].slice(0, 7));
     };
-    loadActions();
-
-    const ch = supabase.channel(`hvz-monitor-${sessionId}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "game_sessions", filter: `id=eq.${sessionId}` }, refresh)
+    const ch = supabase.channel(`hvz-${sessionId}`, { config: { broadcast: { self: false } } })
       .on("postgres_changes", { event: "*", schema: "public", table: "game_students", filter: `session_id=eq.${sessionId}` }, refresh)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "hvz_actions", filter: `session_id=eq.${sessionId}` },
-        (p: any) => {
-          const row = p.new as ActionRow;
-          healthDeltaRef.current = { ...healthDeltaRef.current, [row.team]: healthDeltaRef.current[row.team] + row.health_delta };
-          maxHealthDeltaRef.current = { ...maxHealthDeltaRef.current, [row.team]: maxHealthDeltaRef.current[row.team] + row.max_health_delta };
-          soldierCountRef.current = { ...soldierCountRef.current, [row.team]: soldierCountRef.current[row.team] + 1 };
-          const eff = row.effect || {};
-          if (eff.damage) healthDeltaRef.current = { ...healthDeltaRef.current, [eff.damage.targetTeam]: healthDeltaRef.current[eff.damage.targetTeam] - eff.damage.amount };
-          if (eff.drainBoost) drainBoostsRef.current = [...drainBoostsRef.current, { team: eff.drainBoost.targetTeam, startMs: new Date(row.created_at).getTime(), extraRate: eff.drainBoost.extraRate, ms: eff.drainBoost.ms }];
-          setHealthDeltaSum(healthDeltaRef.current);
-          setMaxHealthDeltaSum(maxHealthDeltaRef.current);
-          setDrainBoosts(drainBoostsRef.current);
-          setSoldierCount(soldierCountRef.current);
-          setRecentActions(list => [row, ...list].slice(0, 8));
-          const action = BATTLE_ACTIONS.find(a => a.key === row.action_key && a.team === row.team);
-          if (action) toast(`${row.student_name}: ${action.nameEn}`);
-        })
+      .on("broadcast", { event: "infect" }, push("infect"))
+      .on("broadcast", { event: "stun" }, push("stun"))
       .subscribe();
     const tick = setInterval(() => setNow(Date.now()), 500);
     return () => { supabase.removeChannel(ch); clearInterval(tick); };
-  }, [sessionId]);
+  }, [sessionId, demo]);
 
-  // ── Initialize the day cycle clock once the game starts running ───────────
-  useEffect(() => {
-    if (dayInitRef.current) return;
-    if (session?.status !== "running") return;
-    dayInitRef.current = true;
-    if (!settings.dayCycleEndsAt) {
-      supabase.from("game_sessions").update({
-        settings: { ...settingsRef.current, dayCycleEndsAt: new Date(Date.now() + DAY_CYCLE_MS).toISOString(), daysSurvived: 1 },
-      }).eq("id", sessionId).then(undefined, () => {});
+  const startedAt = session?.started_at ? new Date(session.started_at).getTime() : 0;
+  const minutes = Number(session?.settings?.minutes);
+  const endsAt = startedAt && Number.isFinite(minutes) && minutes > 0 ? startedAt + minutes * 60_000 : null;
+  const secsLeft = endsAt ? Math.max(0, Math.ceil((endsAt - now) / 1000)) : null;
+  const releaseIn = startedAt ? Math.max(0, Math.ceil((startedAt + HEAD_START_MS - now) / 1000)) : 0;
+
+  const finish = async (winner: "humans" | "zombies") => {
+    if (endingRef.current) return;
+    endingRef.current = true;
+    if (winner === "humans") {
+      // The survival bonus, paid by the referee so it lands even for a phone
+      // that's asleep when the clock runs out.
+      await Promise.all(studentsRef.current.filter(s => s.team === "human").map(s =>
+        supabase.from("game_students").update({ crypto: (s.crypto ?? 0) + POINTS.survive }).eq("id", s.id)));
     }
-  }, [session?.status, settings.dayCycleEndsAt, sessionId]);
-
-  // ── Day cycle tick + both win conditions ───────────────────────────────────
-  useEffect(() => {
-    if (session?.status !== "running" || ending) return;
-    const t = setInterval(() => {
-      const hp = healthDeltaRef.current, mp = maxHealthDeltaRef.current;
-      const startedAt = session?.started_at ? new Date(session.started_at).getTime() : 0;
-      const nowMs = Date.now();
-      const elapsed = startedAt ? Math.max(0, (nowMs - startedAt) / 1000) : 0;
-      const extraDrain = (t: Team) => drainBoostsRef.current.filter(b => b.team === t)
-        .reduce((sum, b) => sum + b.extraRate * Math.max(0, Math.min(nowMs, b.startMs + b.ms) - b.startMs) / 1000, 0);
-      const dHuman = elapsed * HEALTH_DRAIN_PER_SEC + extraDrain("human");
-      const dZombie = elapsed * HEALTH_DRAIN_PER_SEC + extraDrain("zombie");
-      const humanHp  = Math.max(0, Math.min(START_HEALTH + mp.human,  START_HEALTH - dHuman + hp.human));
-      const zombieHp = Math.max(0, Math.min(START_HEALTH + mp.zombie, START_HEALTH - dZombie + hp.zombie));
-
-      if ((humanHp <= 0 || zombieHp <= 0) && !ending) {
-        setEnding(true);
-        const winner = humanHp <= 0 ? "zombies" : "humans";
-        supabase.from("game_sessions").update({
-          status: "finished", ended_at: new Date().toISOString(),
-          settings: { ...settingsRef.current, winner },
-        }).eq("id", sessionId).then(undefined, () => {});
-        return;
-      }
-
-      const endsAt = settingsRef.current.dayCycleEndsAt ? new Date(settingsRef.current.dayCycleEndsAt).getTime() : 0;
-      if (endsAt && Date.now() >= endsAt) {
-        const nextDay = (settingsRef.current.daysSurvived ?? 1) + 1;
-        if (nextDay > WIN_DAYS) {
-          setEnding(true);
-          const winner = humanHp >= zombieHp ? "humans" : "zombies";
-          supabase.from("game_sessions").update({
-            status: "finished", ended_at: new Date().toISOString(),
-            settings: { ...settingsRef.current, daysSurvived: WIN_DAYS, winner },
-          }).eq("id", sessionId).then(undefined, () => {});
-        } else {
-          supabase.from("game_sessions").update({
-            settings: { ...settingsRef.current, daysSurvived: nextDay, dayCycleEndsAt: new Date(Date.now() + DAY_CYCLE_MS).toISOString() },
-          }).eq("id", sessionId).then(undefined, () => {});
-        }
-      }
-    }, 500);
-    return () => clearInterval(t);
-  }, [session?.status, session?.started_at, ending, sessionId]);
-
-  // ── Navigate to results once finished ──────────────────────────────────────
-  useEffect(() => {
-    if (session?.status === "finished") nav(`/app/games/${session.id}/results`, { replace: true, state: { justEnded: true } });
-  }, [session?.status]);
-
-  const endNow = async () => {
-    if (!session || !(await confirm(ar ? "إنهاء اللعبة الآن؟" : "End the game now?"))) return;
-    const winner = health.human >= health.zombie ? "humans" : "zombies";
     await supabase.from("game_sessions").update({
       status: "finished", ended_at: new Date().toISOString(),
       settings: { ...settingsRef.current, winner },
     }).eq("id", sessionId);
-    nav(`/app/games/${session.id}/results`, { state: { justEnded: true } });
+  };
+
+  // Referee.
+  useEffect(() => {
+    if (session?.status !== "running" || !startedAt || demo) return;
+    const t = setInterval(() => {
+      const list = studentsRef.current;
+      if (list.length === 0) return;
+      const humans = list.filter(s => s.team !== "zombie").length;
+      if (humans === 0 && Date.now() > startedAt + 3000) { finish("zombies"); return; }
+      if (endsAt && Date.now() >= endsAt) finish(humans > 0 ? "humans" : "zombies");
+    }, 500);
+    return () => clearInterval(t);
+  }, [session?.status, startedAt, endsAt]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (session?.status === "finished") nav(`/app/games/${session.id}/results`, { replace: true, state: { justEnded: true } });
+  }, [session?.status]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const endNow = async () => {
+    if (!session || !(await confirm(ar ? "إنهاء اللعبة الآن؟" : "End the game now?"))) return;
+    await finish(humans.length > 0 ? "humans" : "zombies");
   };
 
   const goFullscreen = () => {
@@ -252,52 +109,38 @@ const HumansVsZombiesMonitor = ({ session, sessionId }: Props) => {
     (el.requestFullscreen || el.webkitRequestFullscreen)?.call(el);
   };
 
-  const humans  = students.filter(s => s.team === "human").sort((a, b) => (b.crypto ?? 0) - (a.crypto ?? 0));
-  const zombies = students.filter(s => s.team === "zombie").sort((a, b) => (b.crypto ?? 0) - (a.crypto ?? 0));
+  const byPoints = (a: Row, b: Row) => (b.crypto ?? 0) - (a.crypto ?? 0);
+  const humans = students.filter(s => s.team !== "zombie").sort(byPoints);
+  const zombies = students.filter(s => s.team === "zombie").sort(byPoints);
+  const total = Math.max(1, students.length);
+  const fmt = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 
-  // The army on the field is what a team has actually funded, not who's
-  // registered — a soldier only marches out once a purchase raises them.
-  // Ids are index-based and stable, so the render loop's once-per-id march
-  // animation only ever fires for the newly-added soldier at the end.
-  const fightersFor = (team: Team): Fighter[] =>
-    Array.from({ length: soldierCount[team] }, (_, i) => ({ id: `${team}-${i}`, name: "" }));
-
-  const Roster = ({ team, list }: { team: Team; list: any[] }) => (
-    <div className="flex flex-col gap-2 min-h-0">
-      <div className="flex items-center gap-1.5 text-xs font-black tracking-widest uppercase shrink-0" style={{ color: TEAM_COLOR[team] }}>
-        {team === "human" ? <Users className="h-4 w-4" /> : <Biohazard className="h-4 w-4" />}
-        {team === "human" ? (ar ? "البشر" : "Humans") : (ar ? "الزومبي" : "Zombies")} ({list.length})
+  const Player = ({ s, zombie }: { s: Row; zombie: boolean }) => (
+    <div className="flex flex-col items-center gap-1.5 w-[5.5rem] animate-scale-in">
+      <div className="relative rounded-full" style={{ boxShadow: `0 0 0 4px ${zombie ? HVZ.zombieDeep : "#FFFFFF"}` }}>
+        <Avatar name={s.name} size={64} colorIndex={s.avatar_color} faceIndex={s.avatar_face} />
+        {zombie && <div className="absolute inset-0 rounded-full mix-blend-multiply" style={{ background: "rgba(120,200,90,0.8)" }} />}
       </div>
-      <div className="space-y-1.5 overflow-y-auto">
-        {list.map((s, i) => (
-          <div key={s.id} className="pixel-panel flex items-center gap-2.5 px-3 py-2"
-            style={{ borderColor: `${TEAM_COLOR[team]}55`, background: `${TEAM_COLOR[team]}0d` }}>
-            <span className="font-black text-sm w-5 tabular-nums text-center text-muted-foreground/60 shrink-0">{i + 1}</span>
-            <span className="flex-1 min-w-0 text-sm font-bold break-words">{s.name}</span>
-            <div className="flex items-center gap-1 font-black tabular-nums text-sm shrink-0" style={{ color: TEAM_COLOR[team] }}>
-              <PixelShield className="h-3.5 w-3.5" color="currentColor" />${s.crypto ?? 0}
-            </div>
-          </div>
-        ))}
-      </div>
+      <div className="max-w-full truncate text-sm font-extrabold">{s.name}</div>
+      <div className="text-xs font-black tabular-nums" style={{ color: "#FFE066" }}>{s.crypto ?? 0}</div>
     </div>
   );
 
   return (
-    <div className="theme-hvz fixed inset-0 text-foreground overflow-hidden font-mono" style={{ background: "#0A0F0A" }}>
+    <div className="fixed inset-0 overflow-hidden text-white" style={{ background: HVZ.void }}>
       {ConfirmDialog}
-      <div className="h-full flex flex-col p-4 gap-3">
-        {/* Top bar */}
-        <div className="flex items-center justify-between text-xs gap-3 shrink-0">
-          <div className="text-muted-foreground">
-            {ar ? "الرمز" : "CODE"} <span className="text-primary text-base font-black tracking-widest">{session?.code}</span>
-            <span className="mx-3 text-muted-foreground/30">|</span>
-            {ar ? "اليوم" : "DAY"} <span className="font-bold text-foreground">{daysSurvived}/{WIN_DAYS}</span>
-            <span className="mx-3 text-muted-foreground/30">|</span>
-            <span className="font-bold">{daySecsLeft}{ar ? "ث" : "s"}</span>
+      <div className="h-full flex flex-col p-5 gap-4">
+        <div dir="ltr" className="flex items-center justify-between gap-3 shrink-0">
+          <div className="text-sm font-bold opacity-70">
+            {ar ? "الرمز" : "CODE"} <span className="text-xl font-black tracking-widest opacity-100 text-white">{session?.code}</span>
           </div>
+          {secsLeft !== null && (
+            <div className="flex items-center gap-2 text-4xl font-black tabular-nums">
+              <Timer className="h-8 w-8 opacity-60" />{fmt(secsLeft)}
+            </div>
+          )}
           <div className="flex gap-2">
-            <Button size="sm" variant="ghost" onClick={goFullscreen} className="text-primary hover:text-primary hover:bg-primary/10">
+            <Button size="sm" variant="ghost" onClick={goFullscreen} className="text-white hover:bg-white/10 hover:text-white">
               <Maximize className="h-4 w-4" />
             </Button>
             <Button size="sm" onClick={endNow} className="bg-destructive hover:bg-destructive/90 text-white font-bold">
@@ -306,74 +149,61 @@ const HumansVsZombiesMonitor = ({ session, sessionId }: Props) => {
           </div>
         </div>
 
-        {/* Dual health bars */}
-        <div className="shrink-0 pixel-panel p-3 space-y-2" style={{ borderColor: "hsl(150 20% 25%)" }}>
-          {(["human", "zombie"] as Team[]).map(t => (
-            <div key={t} className="flex items-center gap-3">
-              <div className="flex items-center gap-1.5 w-24 shrink-0 text-xs font-black tracking-widest" style={{ color: TEAM_COLOR[t] }}>
-                {t === "human" ? <Users className="h-4 w-4" /> : <Biohazard className="h-4 w-4" />}
-                {t === "human" ? (ar ? "البشر" : "HUMAN") : (ar ? "الزومبي" : "ZOMBIE")}
-              </div>
-              <div className="relative h-4 flex-1 overflow-hidden rounded" style={{ background: "hsl(0 0% 10%)" }}>
-                <div className={cn("absolute inset-y-0 left-0 transition-all duration-500", health[t] < maxHealth[t] * 0.25 && "animate-pulse")}
-                  style={{ width: `${Math.min(100, (health[t] / maxHealth[t]) * 100)}%`, background: TEAM_COLOR[t] }} />
-              </div>
-              <span className="text-xs font-black tabular-nums w-20 text-end shrink-0" style={{ color: TEAM_COLOR[t] }}>
-                {Math.round(health[t])}/{Math.round(maxHealth[t])}%
-              </span>
+        {/* The outbreak in one bar. */}
+        <div className="shrink-0">
+          <div dir="ltr" className="flex items-end justify-between mb-2">
+            <div className="flex items-center gap-3" style={{ color: HVZ.human }}>
+              <Users className="h-10 w-10" />
+              <span className="text-6xl font-black tabular-nums">{humans.length}</span>
+              <span className="text-xl font-black tracking-widest">{ar ? "بشر" : "HUMANS"}</span>
             </div>
-          ))}
+            <div className="flex items-center gap-3" style={{ color: HVZ.zombie }}>
+              <span className="text-xl font-black tracking-widest">{ar ? "زومبي" : "ZOMBIES"}</span>
+              <span className="text-6xl font-black tabular-nums">{zombies.length}</span>
+              <Biohazard className="h-10 w-10" />
+            </div>
+          </div>
+          <div dir="ltr" className="h-5 rounded-full overflow-hidden flex" style={{ background: "rgba(255,255,255,0.08)" }}>
+            <div className="h-full transition-all duration-700" style={{ width: `${(humans.length / total) * 100}%`, background: HVZ.human }} />
+            <div className="h-full flex-1 transition-all duration-700" style={{ background: HVZ.zombie }} />
+          </div>
         </div>
 
-        {/* Action feed */}
-        {recentActions.length > 0 && (
-          <div className="shrink-0 pixel-panel px-3 py-2 flex items-center gap-2 overflow-x-auto" style={{ borderColor: "hsl(150 20% 22%)" }}>
-            {recentActions.map(a => {
-              const action = BATTLE_ACTIONS.find(x => x.key === a.action_key && x.team === a.team);
-              return (
-                <div key={a.id} className="flex items-center gap-1.5 shrink-0 px-2 py-1 rounded" style={{ background: `${TEAM_COLOR[a.team]}1a` }}>
-                  <span className="text-xs font-bold" style={{ color: TEAM_COLOR[a.team] }}>{a.student_name}</span>
-                  <span className="text-xs text-muted-foreground">{action ? action.nameEn : a.action_key}</span>
-                </div>
-              );
-            })}
+        {releaseIn > 0 && (
+          <div className="shrink-0 text-center text-2xl font-black animate-pulse" style={{ color: HVZ.zombie }}>
+            {ar ? `الزومبي يخرجون من المختبر بعد ${releaseIn}` : `Zombies break out of the lab in ${releaseIn}`}
           </div>
         )}
 
-        {/* Battlefield row — rosters live in the side columns instead of a
-            strip under the field, so the letterbox space either side of the
-            plate's fixed 1407:768 aspect actually earns its keep instead of
-            sitting empty at wide projector ratios. */}
-        <div className="flex-1 min-h-0 flex items-stretch gap-3">
-          {students.length === 0 ? (
-            <div className="flex-1 flex items-center justify-center text-primary text-xl animate-pulse">
-              {ar ? "> في انتظار اللاعبين..." : "> WAITING FOR PLAYERS..."}
+        <div dir="ltr" className="flex-1 min-h-0 grid grid-cols-[1fr_minmax(16rem,22rem)_1fr] gap-6">
+          <div className="min-h-0 overflow-y-auto">
+            <div className="flex flex-wrap content-start gap-4">
+              {humans.map(s => <Player key={s.id} s={s} zombie={false} />)}
             </div>
-          ) : (
-            <>
-              <div className="w-52 shrink-0 min-h-0 overflow-y-auto pixel-panel p-2.5"
-                style={{ borderColor: "hsl(150 20% 25%)" }}>
-                <Roster team="human" list={humans} />
-              </div>
+          </div>
 
-              <div className="flex-1 min-w-0 flex items-center justify-center">
-                <div className="pixel-panel overflow-hidden max-h-full"
-                  style={{ borderColor: "hsl(150 20% 25%)", aspectRatio: "1407 / 768", width: "min(100%, calc((100vh - 10rem) * 1.832))" }}>
-                  <BattleScene
-                    humans={fightersFor("human")}
-                    zombies={fightersFor("zombie")}
-                    humanPct={maxHealth.human ? health.human / maxHealth.human : 0}
-                    zombiePct={maxHealth.zombie ? health.zombie / maxHealth.zombie : 0}
-                  />
-                </div>
+          <div className="min-h-0 flex flex-col gap-2">
+            <div className="text-xs font-black tracking-[0.3em] opacity-50 text-center">{ar ? "ما يحدث الآن" : "LIVE"}</div>
+            {feed.length === 0 && (
+              <div className="text-center text-sm font-bold opacity-40 mt-6">
+                {ar ? "لم يُصب أحد بعد" : "Nobody has been caught yet"}
               </div>
+            )}
+            {feed.map(e => (
+              <div key={e.id} dir={ar ? "rtl" : "ltr"} className="px-4 py-2.5 rounded-2xl text-base font-extrabold animate-fade-up"
+                style={{ background: e.kind === "infect" ? "rgba(108,192,74,0.18)" : "rgba(78,163,242,0.18)" }}>
+                <span style={{ color: e.kind === "infect" ? HVZ.zombie : HVZ.human }}>{e.by}</span>
+                <span className="opacity-70">{e.kind === "infect" ? (ar ? " عدى " : " infected ") : (ar ? " شلّ " : " stunned ")}</span>
+                <span>{e.victim}</span>
+              </div>
+            ))}
+          </div>
 
-              <div className="w-52 shrink-0 min-h-0 overflow-y-auto pixel-panel p-2.5"
-                style={{ borderColor: "hsl(150 20% 25%)" }}>
-                <Roster team="zombie" list={zombies} />
-              </div>
-            </>
-          )}
+          <div className="min-h-0 overflow-y-auto">
+            <div className="flex flex-wrap content-start justify-end gap-4">
+              {zombies.map(s => <Player key={s.id} s={s} zombie />)}
+            </div>
+          </div>
         </div>
       </div>
     </div>

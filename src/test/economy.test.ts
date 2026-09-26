@@ -1,12 +1,10 @@
 import { describe, it, expect } from "vitest";
-import * as hvz from "@/lib/humansVsZombies";
 import * as lava from "@/lib/lavaFloorBlocks";
 import * as dld from "@/lib/dontLookDown";
 
-/* The three income-tier economies share a shape, so they share the invariants
+/* The income-tier economies share a shape, so they share the invariants
    that make an upgrade ladder worth climbing: paying more must buy more. */
 const ladders: [string, { level: number; cost: number; payout: number }[]][] = [
-  ["humans vs zombies", hvz.INCOME_TIERS],
   ["lava floor", lava.INCOME_TIERS],
   ["don't look down", dld.INCOME_TIERS],
 ];
@@ -38,7 +36,6 @@ describe.each(ladders)("%s income tiers", (_name, tiers) => {
 
 describe("streak multipliers", () => {
   it.each([
-    ["humans vs zombies", hvz.streakMultiplier],
     ["don't look down", dld.streakMultiplier],
   ])("%s steps at 2, 5 and 8", (_name, fn) => {
     expect(fn(0)).toBe(1);
@@ -52,7 +49,6 @@ describe("streak multipliers", () => {
   });
 
   it("never rewards a negative streak", () => {
-    expect(hvz.streakMultiplier(-1)).toBe(1);
     expect(dld.streakMultiplier(-5)).toBe(1);
   });
 });
@@ -99,26 +95,5 @@ describe("lava floor blocks", () => {
 
   it("has a sprite for every block", () => {
     for (const b of lava.BLOCK_TYPES) expect(lava.spriteRuns(b.key).length).toBeGreaterThan(0);
-  });
-});
-
-describe("humans vs zombies protection tiers", () => {
-  it("drops less streak the more you pay", () => {
-    const t = hvz.STREAK_DRAIN_TIERS;
-    expect(t[0].dropBy).toBeNull(); // level 1 is a full reset
-    for (let i = 2; i < t.length; i++) expect(t[i].dropBy!).toBeLessThan(t[i - 1].dropBy!);
-  });
-
-  it("loses less cash the more you pay", () => {
-    const t = hvz.CASH_INSURANCE_TIERS;
-    for (let i = 1; i < t.length; i++) expect(t[i].lossPct).toBeLessThan(t[i - 1].lossPct);
-  });
-
-  it("names every income level for zombies too", () => {
-    for (const tier of hvz.INCOME_TIERS) expect(hvz.ZOMBIE_INCOME_NAMES[tier.level]).toBeDefined();
-  });
-
-  it("gives each team the same number of battle actions", () => {
-    expect(hvz.battleActionsForTeam("human")).toHaveLength(hvz.battleActionsForTeam("zombie").length);
   });
 });

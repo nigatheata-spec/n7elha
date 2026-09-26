@@ -1,824 +1,966 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { toast } from "@/components/ui/sonner";
-import { Store, Syringe, Wind, Zap, Users, Biohazard, Snowflake, TrendingUp, Lock, ArrowUpCircle, Crosshair, Coins, CloudFog } from "lucide-react";
+import { X, Zap, Crosshair, Shield, Radar, Biohazard, Users, Timer } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
-import { PixelShield, PixelFlame, PixelSkull } from "@/components/PixelIcons";
+import PaintJoystick, { type JoystickVector } from "@/components/game/PaintJoystick";
+import { useFloatingRewards } from "@/components/game/GameFeedback";
+import { playCorrect, playWrong } from "@/lib/sound";
+import { resizeCanvas, faceImage } from "@/lib/paintFightRender";
+import { resolveColor, resolveFace, FACES, CIRCLE_COLORS } from "@/lib/avatarIdentity";
 import {
-  INCOME_TIERS, ZOMBIE_INCOME_NAMES, STREAK_DRAIN_TIERS, CASH_INSURANCE_TIERS,
-  BATTLE_ACTIONS, battleActionsForTeam, streakMultiplier, START_HEALTH, HEALTH_DRAIN_PER_SEC, WIN_DAYS,
-  type Team, type BattleActionKey,
+  TILE, PLAYER_R, HUMAN_SPEED, ZOMBIE_SPEED, SPRINT, STUN_MS, TURNING_MS, HEAD_START_MS, SHIELD_GRACE_MS,
+  BULLET, AMMO, CHARGES, PERK_STREAK, SENSE_MS, VISION, TAG_DIST, POINTS, BROADCAST_MS, PEER_TIMEOUT_MS,
+  buildMap, moveCircle, lineOfSight, visibilityPolygon, spawnFor, solidAt, distanceField, headingDown, roomsFor,
+  type HvzMap, type Team,
 } from "@/lib/humansVsZombies";
+import {
+  HVZ, makeView, drawBuilding, drawDarkness, drawAgent, drawTag, drawBullets, drawMinimap, drawEdgeArrow, HvzFx,
+  type Bullet,
+} from "@/lib/hvzRender";
+
+// ── Humans vs Zombies, student view ─────────────────────────────────────────
+// A top-down building on every phone, camera on you, and you only see what's
+// in your line of sight. See src/lib/humansVsZombies.ts for the rules and for
+// who decides what: this client decides whether IT was tagged or stunned and
+// nothing else, and writes nothing but its own row.
+//
+// Everything that changes per frame lives in refs, driven by one
+// requestAnimationFrame loop started once per match (same shape as Paint Fight).
+//
+// `preview` swaps Supabase for a handful of local bots and a stand-in quiz, so
+// the whole mode can be played at /join/hvz-preview without hosting a session.
 
 type Q = { id: string; text: string; options: string[]; correct_index: number; image_url?: string };
-type Phase = "waiting" | "question" | "answered" | "done";
-type EffectPayload = {
-  damage?: { targetTeam: Team; amount: number };
-  steal?: { targetTeam: Team; pct: number; ms: number; beneficiaryId: string; beneficiaryTeam: Team };
-  incomeDebuff?: { targetTeam: Team; tiers: number; ms: number };
-  drainBoost?: { targetTeam: Team; extraRate: number; ms: number };
+type Phase = "waiting" | "playing" | "done";
+type Peer = {
+  id: string; name: string; team: Team;
+  x: number; y: number; tx: number; ty: number; angle: number;
+  face: HTMLImageElement; color: string;
+  stunUntil: number; turningUntil: number; shield: boolean; sprint: boolean; moving: boolean; t: number;
+  bot?: { next: number; goal: { x: number; y: number } | null; field: Int32Array | null; fieldAt: number; shotAt: number };
 };
-type ActionRow = {
-  id: string; student_id: string; student_name: string; team: Team; action_key: BattleActionKey;
-  health_delta: number; max_health_delta: number;
-  freeze_target_team: Team | null; freeze_ms: number | null;
-  blur_target_team: Team | null; blur_ms: number | null;
-  buff_type: "cash_mult" | "streak_lock" | null; buff_team: Team | null; buff_ms: number | null;
-  effect: EffectPayload; cost: number; created_at: string;
-};
-type ShopTab = "upgrades" | "battle";
-type DrainBoostEvent = { team: Team; startMs: number; extraRate: number; ms: number };
-type StealEvent = { targetTeam: Team; pct: number; startMs: number; ms: number; beneficiaryId: string };
+type Feed = { id: number; text: string; zombie: boolean };
 
-const ACTION_ICON: Record<BattleActionKey, React.ComponentType<any>> = {
-  vaccine_dose: Syringe, fortified_wall: PixelShield, expand_outpost: ArrowUpCircle, emp_blast: Zap, vaccine_surge: Snowflake,
-  biological_strike: Crosshair, multiplier_thief: Coins, health_decay: CloudFog,
-  airborne_strain: Wind, horde_rush: Biohazard, apex_evolution: ArrowUpCircle, smoke_grenade: Wind, alpha_mutation: PixelSkull,
-  horde_breach: Crosshair, resource_sabotage: Coins, toxic_cloud: CloudFog,
-  cash_multiplier: TrendingUp, streak_lock: Lock,
-};
+interface Props { sessionId: string; studentId: string; preview?: boolean }
 
-const TEAM_COLOR: Record<Team, string> = { human: "hsl(210 70% 55%)", zombie: "hsl(100 55% 45%)" };
-const zero = (): Record<Team, number> => ({ human: 0, zombie: 0 });
+const SAMPLE_QUESTIONS: Q[] = [
+  { id: "s1", text: "What is 7 x 8?", options: ["54", "56", "48", "64"], correct_index: 1 },
+  { id: "s2", text: "Which planet is closest to the Sun?", options: ["Venus", "Mars", "Mercury", "Earth"], correct_index: 2 },
+  { id: "s3", text: "How many sides does a hexagon have?", options: ["5", "6", "7", "8"], correct_index: 1 },
+  { id: "s4", text: "What gas do plants take in?", options: ["Oxygen", "Carbon dioxide", "Helium", "Nitrogen"], correct_index: 1 },
+];
+const BOT_NAMES = ["Sara", "Omar", "Lina", "Yousef", "Maha", "Adam", "Noor", "Khalid", "Reem"];
 
-const av = (name: string, team?: Team) => {
-  let h = 0;
-  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xffffffff;
-  const bg = team ? TEAM_COLOR[team] : ["#2563eb","#16a34a","#b45309","#dc2626","#7c3aed"][Math.abs(h) % 5];
-  return { bg, letter: (name.charAt(0) || "?").toUpperCase() };
-};
-const Avatar = ({ name, team, size = "md" }: { name: string; team?: Team; size?: "sm" | "md" | "xl" }) => {
-  const { bg, letter } = av(name, team);
-  const cls = size === "xl" ? "h-16 w-16 text-2xl" : size === "md" ? "h-9 w-9 text-sm" : "h-7 w-7 text-xs";
-  return (
-    <div style={{ background: bg, borderColor: bg }}
-      className={cn("pixel-avatar flex items-center justify-center font-black text-white select-none shrink-0", cls)}>
-      {letter}
-    </div>
-  );
-};
+const ANSWER_COLORS = ["#E05D5D", "#3FA56B", "#7C62D6", "#E0A93A"];
 
-interface Props { sessionId: string; studentId: string; }
-
-const HumansVsZombiesGame = ({ sessionId, studentId }: Props) => {
+const HumansVsZombiesGame = ({ sessionId, studentId, preview = false }: Props) => {
   const navigate = useNavigate();
   const { i18n } = useTranslation();
-  const [session, setSession]     = useState<any>(null);
-  const [questions, setQuestions] = useState<Q[]>([]);
-  const [me, setMe]               = useState<any>(null);
-  const [students, setStudents]   = useState<any[]>([]);
-  const [phase, setPhase]         = useState<Phase>("waiting");
-  const [currentQ, setCurrentQ]   = useState<Q | null>(null);
-  const [picked, setPicked]       = useState<number | null>(null);
-  const [timeLeft, setTimeLeft]   = useState(20);
-  const [qSeed, setQSeed]         = useState(0);
-  const [showShop, setShowShop]   = useState(false);
-  const [shopTab, setShopTab]     = useState<ShopTab>("battle");
-  const [now, setNow]             = useState(Date.now());
-  const [recentActions, setRecentActions] = useState<ActionRow[]>([]);
 
-  // Running aggregates derived from the hvz_actions log, seeded on mount then
-  // kept in sync via realtime INSERTs — same pattern as Lava Floor's tower height.
-  const [healthDeltaSum, setHealthDeltaSum]       = useState<Record<Team, number>>(zero());
-  const [maxHealthDeltaSum, setMaxHealthDeltaSum] = useState<Record<Team, number>>(zero());
-  const [freezeUntil, setFreezeUntil]             = useState<Record<Team, number>>(zero());
-  const [blurUntil, setBlurUntil]                 = useState<Record<Team, number>>(zero());
-  const [cashMultUntil, setCashMultUntil]         = useState<Record<Team, number>>(zero());
-  const [streakLockUntil, setStreakLockUntil]     = useState<Record<Team, number>>(zero());
-  const [drainBoosts, setDrainBoosts]             = useState<DrainBoostEvent[]>([]);
-  const [incomeDebuffs, setIncomeDebuffs]         = useState<{ team: Team; tiers: number; until: number }[]>([]);
-  const [stealActive, setStealActive]             = useState<StealEvent[]>([]);
+  const [session, setSession]   = useState<any>(null);
+  const [me, setMe]             = useState<any>(null);
+  const [phase, setPhase]       = useState<Phase>("waiting");
+  const [ready, setReady]       = useState(false);
+  const [showQuiz, setShowQuiz] = useState(false);
+  const [currentQ, setCurrentQ] = useState<Q | null>(null);
+  const [picked, setPicked]     = useState<number | null>(null);
+  const [toast, setToast]       = useState<{ text: string; bad: boolean } | null>(null);
+  const [feed, setFeed]         = useState<Feed[]>([]);
+  const [hud, setHud] = useState({
+    team: "human" as Team, ammo: AMMO.start, charges: CHARGES.start, streak: 0, points: 0,
+    shield: false, sense: 0, stunned: 0, turning: 0, sprint: 0, humans: 0, zombies: 0, secsLeft: null as number | null, releaseIn: 0,
+    stuns: 0, infects: 0,
+  });
 
-  const qStartRef  = useRef(Date.now());
-  const askedRef   = useRef(0);
-  const pickedRef  = useRef<number | null>(null);
-  const buyingRef  = useRef(false);
+  const reward = useFloatingRewards();
+
+  const canvasRef  = useRef<HTMLCanvasElement | null>(null);
+  const mapRef     = useRef<HvzMap | null>(null);
+  const vectorRef  = useRef<JoystickVector>({ dx: 0, dy: 0, magnitude: 0 });
+  const peersRef   = useRef<Record<string, Peer>>({});
+  const bulletsRef = useRef<Bullet[]>([]);
+  const fxRef      = useRef(new HvzFx());
+  const pRef = useRef({
+    x: 0, y: 0, angle: -Math.PI / 2, aim: -Math.PI / 2, team: "human" as Team, moving: false, placed: false,
+    stunUntil: 0, sprintUntil: 0, turningUntil: 0, senseUntil: 0, graceUntil: 0, shield: false,
+    ammo: AMMO.start, charges: CHARGES.start, streak: 0, points: 0, stuns: 0, infects: 0, shots: 0,
+    aimTarget: null as string | null,
+  });
+  const chanRef       = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const nameRef       = useRef("");
+  const faceRef       = useRef<HTMLImageElement | null>(null);
+  const colorRef      = useRef("#4EA3F2");
+  const faceIdxRef    = useRef<number | null>(null);
+  const colorIdxRef   = useRef<number | null>(null);
+  const questionsRef  = useRef<Q[]>([]);
+  const lastQIdRef    = useRef<string | null>(null);
+  const pickedRef     = useRef<number | null>(null);
+  const showQuizRef   = useRef(false);
   const localWriteAtRef = useRef(0);
+  const startedAtRef  = useRef(0);
+  const endsAtRef     = useRef<number | null>(null);
+  const keysRef       = useRef(new Set<string>());
 
   const settings = session?.settings ?? {};
-  const ar    = (settings.lang ?? i18n.language) === "ar";
-  const cash  = me?.crypto ?? 0;
-  const team  = (me?.team ?? "human") as Team;
-  const enemyTeam: Team = team === "human" ? "zombie" : "human";
-  const isFrozen  = now < freezeUntil[team];
-  const isBlurred = now < blurUntil[team];
-  const cashMultActive   = now < cashMultUntil[team];
-  const streakLockActive = now < streakLockUntil[team];
+  const ar = (settings.lang ?? i18n.language) === "ar";
+  const arRef = useRef(ar);
+  arRef.current = ar;
 
-  // ── Health: passive drain is a pure function of elapsed time, no writes needed ──
-  const startedAtMs = session?.started_at ? new Date(session.started_at).getTime() : 0;
-  const elapsedSec  = startedAtMs ? Math.max(0, (now - startedAtMs) / 1000) : 0;
-  const extraDrainFor = (t: Team) => drainBoosts.filter(b => b.team === t)
-    .reduce((sum, b) => sum + b.extraRate * Math.max(0, Math.min(now, b.startMs + b.ms) - b.startMs) / 1000, 0);
-  const drain: Record<Team, number> = {
-    human:  elapsedSec * HEALTH_DRAIN_PER_SEC + extraDrainFor("human"),
-    zombie: elapsedSec * HEALTH_DRAIN_PER_SEC + extraDrainFor("zombie"),
+  const say = (text: string, bad: boolean) => {
+    setToast({ text, bad });
+    setTimeout(() => setToast(t => (t?.text === text ? null : t)), 2000);
   };
-  const maxHealth: Record<Team, number> = { human: START_HEALTH + maxHealthDeltaSum.human, zombie: START_HEALTH + maxHealthDeltaSum.zombie };
-  const health: Record<Team, number> = {
-    human:  Math.max(0, Math.min(maxHealth.human,  START_HEALTH - drain.human + healthDeltaSum.human)),
-    zombie: Math.max(0, Math.min(maxHealth.zombie, START_HEALTH - drain.zombie + healthDeltaSum.zombie)),
+  const pushFeed = (text: string, zombie: boolean) => {
+    const id = Date.now() + Math.random();
+    setFeed(f => [...f.slice(-2), { id, text, zombie }]);
+    setTimeout(() => setFeed(f => f.filter(e => e.id !== id)), 4000);
   };
-  const incomeDebuffActive = incomeDebuffs.filter(d => d.team === team && now < d.until).reduce((max, d) => Math.max(max, d.tiers), 0);
-  const activeStealOnMyTeam = stealActive.find(s => s.targetTeam === team && now < s.startMs + s.ms);
 
-  // ── Initial load ─────────────────────────────────────────────────────────
+  /** Broadcast to everyone else; the preview has nobody to tell. */
+  const send = (event: string, payload: Record<string, unknown>) => {
+    if (preview) return;
+    chanRef.current?.send({ type: "broadcast", event, payload });
+  };
+
+  const writeRow = (patch: { team?: Team; crypto?: number; total_answers?: number; correct_answers?: number }) => {
+    if (preview) return;
+    localWriteAtRef.current = Date.now();
+    supabase.from("game_students").update(patch).eq("id", studentId).then(undefined, () => {});
+  };
+
+  // ── What happens to us / because of us. Shared by the network handlers and
+  //    the preview's bots, so both paths run the exact same rules. ──────────
+  const onStunned = (by: string, byName: string, victimName: string) => {
+    const isAr = arRef.current;
+    pushFeed(isAr ? `${byName} شلّ ${victimName}` : `${byName} stunned ${victimName}`, false);
+    if (by !== studentId) return;
+    const p = pRef.current;
+    p.points += POINTS.stun; p.stuns++;
+    say(isAr ? `أصبت ${victimName}!` : `You stunned ${victimName}!`, false);
+    writeRow({ crypto: p.points });
+  };
+  const onInfected = (by: string, byName: string, victimName: string) => {
+    const isAr = arRef.current;
+    pushFeed(isAr ? `${byName} عدى ${victimName}` : `${byName} infected ${victimName}`, true);
+    if (by !== studentId) return;
+    const p = pRef.current;
+    p.points += POINTS.infect; p.infects++;
+    fxRef.current.shake(10);
+    say(isAr ? `حوّلت ${victimName} إلى زومبي!` : `You turned ${victimName}!`, false);
+    writeRow({ crypto: p.points });
+  };
+  const onStunnedRef = useRef(onStunned); onStunnedRef.current = onStunned;
+  const onInfectedRef = useRef(onInfected); onInfectedRef.current = onInfected;
+
+  const upsertPeer = (id: string, d: any) => {
+    const prev = peersRef.current[id];
+    const name: string = d.name ?? prev?.name ?? "";
+    const face = prev && prev.name === name ? prev.face : faceImage(resolveFace(name, d.af ?? null));
+    const color = resolveColor(name, d.ac ?? null);
+    const now = Date.now();
+    peersRef.current[id] = {
+      id, name, team: d.team === "zombie" ? "zombie" : "human",
+      x: prev ? prev.x : d.x, y: prev ? prev.y : d.y, tx: d.x, ty: d.y, angle: d.a ?? 0,
+      face, color,
+      stunUntil: now + (d.st ?? 0), turningUntil: now + (d.tu ?? 0),
+      shield: !!d.sh, sprint: !!d.sp, moving: !!d.mv, t: now,
+    };
+  };
+
+  // ── Data + realtime ─────────────────────────────────────────────────────
   useEffect(() => {
+    let cancelled = false;
+
+    if (preview) {
+      const params = new URLSearchParams(window.location.search);
+      const team: Team = params.get("team") === "zombie" ? "zombie" : "human";
+      const lang = params.get("lang") === "ar" ? "ar" : "en";
+      const s = {
+        id: sessionId, status: "running",
+        started_at: new Date(Date.now() - HEAD_START_MS + 3000).toISOString(),
+        settings: { mode: "humansvszombies", minutes: 5, hvzRooms: roomsFor(Number(params.get("players") ?? 8)), lang },
+      };
+      const m = { id: studentId, name: "You", team, avatar_face: 4, avatar_color: 1, correct_answers: 0, total_answers: 0 };
+      setSession(s); setMe(m);
+      questionsRef.current = SAMPLE_QUESTIONS;
+      setup(s, m);
+      // Bots: a mixed crowd, two zombies unless you are one.
+      const map = mapRef.current!;
+      const nBots = Math.max(1, Math.min(9, Number(params.get("bots") ?? 7)));
+      for (let i = 0; i < nBots; i++) {
+        const bt: Team = i < (team === "zombie" ? 1 : 2) ? "zombie" : "human";
+        const pos = spawnFor(map, bt);
+        const name = BOT_NAMES[i % BOT_NAMES.length];
+        peersRef.current[`bot${i}`] = {
+          id: `bot${i}`, name, team: bt, x: pos.x, y: pos.y, tx: pos.x, ty: pos.y, angle: 0,
+          face: faceImage(FACES[(i * 5 + 2) % FACES.length]), color: CIRCLE_COLORS[i % CIRCLE_COLORS.length],
+          stunUntil: 0, turningUntil: 0, shield: false, sprint: false, moving: false, t: Date.now(),
+          bot: { next: 0, goal: null, field: null, fieldAt: 0, shotAt: 0 },
+        };
+      }
+      // Handle for poking at the match from devtools (teleporting, forcing a team).
+      (window as any).__hvz = { p: pRef.current, peers: peersRef.current };
+      setReady(true);
+      return;
+    }
+
+    const ch = supabase.channel(`hvz-${sessionId}`, { config: { broadcast: { self: false } } })
+      .on("postgres_changes", { event: "*", schema: "public", table: "game_sessions", filter: `id=eq.${sessionId}` },
+        (p: any) => setSession((prev: any) => ({ ...prev, ...p.new })))
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "game_students", filter: `id=eq.${studentId}` },
+        (p: any) => {
+          if (Date.now() - localWriteAtRef.current < 2000) return;
+          setMe((prev: any) => ({ ...prev, ...p.new }));
+          // The teacher's Start can make us a zombie after we loaded.
+          if (p.new?.team === "zombie" && pRef.current.team === "human") becomeZombieQuietly();
+        })
+      .on("broadcast", { event: "pos" }, ({ payload }: any) => {
+        if (!payload?.id || payload.id === studentId) return;
+        upsertPeer(payload.id, payload);
+      })
+      .on("broadcast", { event: "shot" }, ({ payload }: any) => {
+        if (!payload?.id) return;
+        bulletsRef.current.push({
+          id: payload.id, by: payload.by, x: payload.x, y: payload.y,
+          vx: Math.cos(payload.a) * BULLET.speed, vy: Math.sin(payload.a) * BULLET.speed, travelled: 0,
+        });
+      })
+      .on("broadcast", { event: "stun" }, ({ payload }: any) => {
+        if (!payload) return;
+        const v = peersRef.current[payload.victim];
+        if (v) { v.stunUntil = Date.now() + STUN_MS; fxRef.current.burst(v.x, v.y, "#8CC8FF", 12); }
+        onStunnedRef.current(payload.by, payload.byName ?? "?", payload.victimName ?? "?");
+      })
+      .on("broadcast", { event: "infect" }, ({ payload }: any) => {
+        if (!payload) return;
+        const v = peersRef.current[payload.victim];
+        if (v) {
+          v.team = "zombie"; v.turningUntil = Date.now() + TURNING_MS;
+          fxRef.current.burst(v.x, v.y, HVZ.zombie, 22, 220);
+          fxRef.current.ring(v.x, v.y, HVZ.zombie, 90);
+        }
+        onInfectedRef.current(payload.by, payload.byName ?? "?", payload.victimName ?? "?");
+      })
+      .on("broadcast", { event: "shield" }, ({ payload }: any) => {
+        const v = payload && peersRef.current[payload.victim];
+        if (v) { v.shield = false; fxRef.current.ring(v.x, v.y, "#78DCFF", 60); }
+      })
+      .subscribe();
+    chanRef.current = ch;
+
     (async () => {
-      const { data: s } = await supabase.from("game_sessions").select("*, quizzes(id,title)").eq("id", sessionId).maybeSingle();
+      const { data: s } = await supabase.from("game_sessions").select("*").eq("id", sessionId).maybeSingle();
+      if (cancelled) return;
       setSession(s);
       if (s?.quiz_id) {
         const { data: qs } = await supabase.from("questions").select("*").eq("quiz_id", s.quiz_id).order("position");
-        setQuestions((qs ?? []).map((q: any) => ({ ...q, options: Array.isArray(q.options) ? q.options : [] })));
+        if (cancelled) return;
+        questionsRef.current = (qs ?? []).map((q: any) => ({ ...q, options: Array.isArray(q.options) ? q.options : [] })) as Q[];
       }
-      const { data: ss } = await supabase.from("game_students").select("*").eq("session_id", sessionId);
-      const sorted = (ss ?? []).sort((a: any, b: any) => (b.crypto ?? 0) - (a.crypto ?? 0));
-      setStudents(sorted);
-      setMe(sorted.find((x: any) => x.id === studentId) ?? null);
-
-      const { data: actions } = await supabase.from("hvz_actions").select("*")
-        .eq("session_id", sessionId).order("created_at", { ascending: true });
-      applyActions((actions ?? []) as ActionRow[]);
-      setRecentActions(((actions ?? []) as ActionRow[]).slice(-8).reverse());
+      const { data: m } = await supabase.from("game_students").select("*").eq("id", studentId).maybeSingle();
+      if (cancelled) return;
+      if (m) setMe(m);
+      setup(s, m);
+      setReady(true);
     })();
-  }, [sessionId, studentId]);
 
-  const applyActions = (rows: ActionRow[]) => {
-    const hSum = zero(), mSum = zero(), fUntil = zero(), bUntil = zero(), cUntil = zero(), sUntil = zero();
-    const boosts: DrainBoostEvent[] = [], debuffs: { team: Team; tiers: number; until: number }[] = [], steals: StealEvent[] = [];
-    const created = new Date().getTime();
-    for (const r of rows) {
-      hSum[r.team] += r.health_delta;
-      mSum[r.team] += r.max_health_delta;
-      if (r.freeze_target_team && r.freeze_ms) fUntil[r.freeze_target_team] = Math.max(fUntil[r.freeze_target_team], new Date(r.created_at).getTime() + r.freeze_ms);
-      if (r.blur_target_team && r.blur_ms) bUntil[r.blur_target_team] = Math.max(bUntil[r.blur_target_team], new Date(r.created_at).getTime() + r.blur_ms);
-      if (r.buff_type === "cash_mult" && r.buff_team && r.buff_ms) cUntil[r.buff_team] = Math.max(cUntil[r.buff_team], new Date(r.created_at).getTime() + r.buff_ms);
-      if (r.buff_type === "streak_lock" && r.buff_team && r.buff_ms) sUntil[r.buff_team] = Math.max(sUntil[r.buff_team], new Date(r.created_at).getTime() + r.buff_ms);
-      const eff = r.effect || {};
-      if (eff.damage) hSum[eff.damage.targetTeam] -= eff.damage.amount;
-      if (eff.drainBoost) {
-        // Kept forever, not just while active: the piecewise formula naturally caps
-        // extra drain at the full window once it's passed, same as a permanent health_delta.
-        boosts.push({ team: eff.drainBoost.targetTeam, startMs: new Date(r.created_at).getTime(), extraRate: eff.drainBoost.extraRate, ms: eff.drainBoost.ms });
-      }
-      if (eff.incomeDebuff) {
-        const end = new Date(r.created_at).getTime() + eff.incomeDebuff.ms;
-        if (end > created) debuffs.push({ team: eff.incomeDebuff.targetTeam, tiers: eff.incomeDebuff.tiers, until: end });
-      }
-      if (eff.steal) {
-        const end = new Date(r.created_at).getTime() + eff.steal.ms;
-        if (end > created) steals.push({ targetTeam: eff.steal.targetTeam, pct: eff.steal.pct, startMs: new Date(r.created_at).getTime(), ms: eff.steal.ms, beneficiaryId: eff.steal.beneficiaryId });
-      }
-    }
-    setHealthDeltaSum(hSum); setMaxHealthDeltaSum(mSum);
-    setFreezeUntil(fUntil); setBlurUntil(bUntil);
-    setCashMultUntil(cUntil); setStreakLockUntil(sUntil);
-    setDrainBoosts(boosts); setIncomeDebuffs(debuffs); setStealActive(steals);
+    return () => {
+      cancelled = true;
+      supabase.removeChannel(ch);
+      chanRef.current = null;
+    };
+  }, [sessionId, studentId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /** Build the building and put us in it. */
+  const setup = (s: any, m: any) => {
+    const [rw, rh] = Array.isArray(s?.settings?.hvzRooms) ? s.settings.hvzRooms : [3, 3];
+    mapRef.current = buildMap(sessionId, rw, rh);
+    const p = pRef.current;
+    nameRef.current = m?.name ?? "";
+    faceIdxRef.current = m?.avatar_face ?? null;
+    colorIdxRef.current = m?.avatar_color ?? null;
+    faceRef.current = faceImage(resolveFace(nameRef.current, faceIdxRef.current));
+    colorRef.current = resolveColor(nameRef.current, colorIdxRef.current);
+    p.team = m?.team === "zombie" ? "zombie" : "human";
+    p.points = m?.crypto ?? 0;
+    const pos = spawnFor(mapRef.current, p.team);
+    p.x = pos.x; p.y = pos.y; p.placed = true;
+    if (p.team === "zombie") { p.ammo = 0; p.charges = CHARGES.start; }
   };
 
-  // ── Realtime ──────────────────────────────────────────────────────────────
-  useEffect(() => {
-    const ch = supabase.channel(`hvz-game-${sessionId}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "game_sessions", filter: `id=eq.${sessionId}` },
-        (p: any) => setSession((prev: any) => ({ ...prev, ...p.new })))
-      .on("postgres_changes", { event: "*", schema: "public", table: "game_students", filter: `session_id=eq.${sessionId}` },
-        async () => {
-          const { data: ss } = await supabase.from("game_students").select("*").eq("session_id", sessionId);
-          const sorted = (ss ?? []).sort((a: any, b: any) => (b.crypto ?? 0) - (a.crypto ?? 0));
-          setStudents(sorted);
-          if (Date.now() - localWriteAtRef.current < 2000) return;
-          const m = sorted.find((x: any) => x.id === studentId);
-          if (m) setMe(m);
-        })
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "hvz_actions", filter: `session_id=eq.${sessionId}` },
-        (p: any) => {
-          const row = p.new as ActionRow;
-          setHealthDeltaSum(prev => ({ ...prev, [row.team]: prev[row.team] + row.health_delta }));
-          setMaxHealthDeltaSum(prev => ({ ...prev, [row.team]: prev[row.team] + row.max_health_delta }));
-          if (row.freeze_target_team && row.freeze_ms) {
-            const end = new Date(row.created_at).getTime() + row.freeze_ms;
-            setFreezeUntil(prev => ({ ...prev, [row.freeze_target_team as Team]: Math.max(prev[row.freeze_target_team as Team], end) }));
-          }
-          if (row.blur_target_team && row.blur_ms) {
-            const end = new Date(row.created_at).getTime() + row.blur_ms;
-            setBlurUntil(prev => ({ ...prev, [row.blur_target_team as Team]: Math.max(prev[row.blur_target_team as Team], end) }));
-          }
-          if (row.buff_type === "cash_mult" && row.buff_team && row.buff_ms) {
-            const end = new Date(row.created_at).getTime() + row.buff_ms;
-            setCashMultUntil(prev => ({ ...prev, [row.buff_team as Team]: Math.max(prev[row.buff_team as Team], end) }));
-          }
-          if (row.buff_type === "streak_lock" && row.buff_team && row.buff_ms) {
-            const end = new Date(row.created_at).getTime() + row.buff_ms;
-            setStreakLockUntil(prev => ({ ...prev, [row.buff_team as Team]: Math.max(prev[row.buff_team as Team], end) }));
-          }
-          const eff = row.effect || {};
-          if (eff.damage) {
-            setHealthDeltaSum(prev => ({ ...prev, [eff.damage!.targetTeam]: prev[eff.damage!.targetTeam] - eff.damage!.amount }));
-          }
-          if (eff.drainBoost) {
-            const b = eff.drainBoost;
-            setDrainBoosts(prev => [...prev, { team: b.targetTeam, startMs: new Date(row.created_at).getTime(), extraRate: b.extraRate, ms: b.ms }]);
-          }
-          if (eff.incomeDebuff) {
-            const d = eff.incomeDebuff;
-            const end = new Date(row.created_at).getTime() + d.ms;
-            setIncomeDebuffs(prev => [...prev, { team: d.targetTeam, tiers: d.tiers, until: end }]);
-          }
-          if (eff.steal) {
-            const s = eff.steal;
-            setStealActive(prev => [...prev, { targetTeam: s.targetTeam, pct: s.pct, startMs: new Date(row.created_at).getTime(), ms: s.ms, beneficiaryId: s.beneficiaryId }]);
-          }
-          setRecentActions(list => [row, ...list].slice(0, 8));
-          const action = BATTLE_ACTIONS.find(a => a.key === row.action_key && a.team === row.team);
-          if (action) toast(`${row.student_name}: ${ar ? action.nameAr : action.nameEn}`);
-        })
-      .subscribe();
-    return () => { supabase.removeChannel(ch); };
-  }, [sessionId, studentId, ar]);
+  const becomeZombieQuietly = () => {
+    const p = pRef.current;
+    p.team = "zombie"; p.ammo = 0; p.charges = CHARGES.start; p.shield = false; p.streak = 0;
+    const map = mapRef.current;
+    if (map) { const pos = spawnFor(map, "zombie"); p.x = pos.x; p.y = pos.y; }
+  };
 
-  // ── Fast local clock — drives health drain, freeze/blur/buff countdowns ───
-  useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), 250);
-    return () => clearInterval(t);
-  }, []);
-
-  // ── Status sync ───────────────────────────────────────────────────────────
+  // ── Session → phase, clock ──────────────────────────────────────────────
   useEffect(() => {
     if (!session) return;
-    if (session.status === "lobby")          setPhase("waiting");
-    else if (session.status === "finished")  setPhase("done");
-    else if (session.status === "running")
-      setPhase(prev => prev === "waiting" ? "question" : prev);
-    else if (session.status === "cancelled") {
-      toast.error(ar ? "أغلق المعلّم الردهة" : "The teacher closed the lobby");
-      navigate("/join");
-    }
-  }, [session?.status]);
+    if (session.status === "lobby") setPhase("waiting");
+    else if (session.status === "running") setPhase("playing");
+    else if (session.status === "finished") setPhase("done");
+    startedAtRef.current = session.started_at ? new Date(session.started_at).getTime() : Date.now();
+    const minutes = Number(session.settings?.minutes);
+    endsAtRef.current = Number.isFinite(minutes) && minutes > 0 ? startedAtRef.current + minutes * 60_000 : null;
+  }, [session?.status, session?.started_at, session?.settings?.minutes]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Pick question ─────────────────────────────────────────────────────────
+  // ── Actions ─────────────────────────────────────────────────────────────
+  const frozenNow = () => {
+    const p = pRef.current, now = Date.now();
+    return showQuizRef.current || now < p.stunUntil || now < p.turningUntil
+      || (p.team === "zombie" && now < startedAtRef.current + HEAD_START_MS);
+  };
+
+  const act = () => {
+    const p = pRef.current, now = Date.now();
+    if (frozenNow()) return;
+    if (p.team === "human") {
+      if (p.ammo <= 0) { say(arRef.current ? "لا ذخيرة — أجب لتحصل عليها" : "No ammo — answer to reload", true); return; }
+      p.ammo--;
+      const id = `${studentId}-${++p.shots}`;
+      const x = p.x + Math.cos(p.aim) * (PLAYER_R + 8), y = p.y + Math.sin(p.aim) * (PLAYER_R + 8);
+      bulletsRef.current.push({ id, by: studentId, x, y, vx: Math.cos(p.aim) * BULLET.speed, vy: Math.sin(p.aim) * BULLET.speed, travelled: 0 });
+      fxRef.current.burst(x, y, HVZ.bullet, 5, 90);
+      send("shot", { id, by: studentId, x: Math.round(x), y: Math.round(y), a: Number(p.aim.toFixed(3)) });
+    } else {
+      if (p.charges <= 0) { say(arRef.current ? "لا طاقة — أجب لتحصل عليها" : "No sprint left — answer to charge", true); return; }
+      p.charges--;
+      p.sprintUntil = now + SPRINT.ms;
+      fxRef.current.ring(p.x, p.y, HVZ.zombie, 50);
+    }
+    setHud(h => ({ ...h, ammo: p.ammo, charges: p.charges }));
+  };
+  const actRef = useRef(act); actRef.current = act;
+
+  // ── The game loop ───────────────────────────────────────────────────────
   useEffect(() => {
-    if (phase !== "question" || questions.length === 0) return;
-    const next = questions[Math.floor(Math.random() * questions.length)];
-    setCurrentQ(next);
+    if (phase !== "playing" || !ready) return;
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext("2d");
+    if (!canvas || !ctx) return;
+
+    let raf = 0, last = performance.now(), acc = 0, hudAcc = 0, netAcc = 0;
+    const STEP = 1 / 60;
+
+    const infectMe = (by: Peer) => {
+      const p = pRef.current, now = Date.now();
+      p.team = "zombie"; p.turningUntil = now + TURNING_MS;
+      p.ammo = 0; p.charges = CHARGES.start; p.streak = 0; p.shield = false; p.sprintUntil = 0;
+      fxRef.current.burst(p.x, p.y, HVZ.zombie, 26, 240);
+      fxRef.current.ring(p.x, p.y, HVZ.zombie, 100);
+      fxRef.current.shake(16, 450);
+      setShowQuiz(false);
+      say(arRef.current ? `${by.name} حوّلك إلى زومبي!` : `${by.name} got you! You're a zombie now`, true);
+      writeRow({ team: "zombie" });
+      send("infect", { victim: studentId, by: by.id, byName: by.name, victimName: nameRef.current });
+      onInfectedRef.current(by.id, by.name, nameRef.current);
+    };
+
+    const stunMe = (b: Bullet) => {
+      const p = pRef.current, now = Date.now();
+      p.stunUntil = now + STUN_MS; p.sprintUntil = 0;
+      fxRef.current.burst(p.x, p.y, "#8CC8FF", 16);
+      fxRef.current.shake(7);
+      const shooter = peersRef.current[b.by];
+      say(arRef.current ? "أصبت! مشلول لثلاث ثوانٍ" : "Stunned for 3 seconds!", true);
+      send("stun", { victim: studentId, by: b.by, byName: shooter?.name ?? "?", victimName: nameRef.current });
+      onStunnedRef.current(b.by, shooter?.name ?? "?", nameRef.current);
+    };
+
+    /** Preview only: bots do what their phones would. */
+    const stepBots = (dt: number) => {
+      const map = mapRef.current!;
+      const now = Date.now();
+      const p = pRef.current;
+      const released = now >= startedAtRef.current + HEAD_START_MS;
+      const bots = Object.values(peersRef.current).filter(b => b.bot);
+      const humans = [...bots.filter(b => b.team === "human").map(b => ({ x: b.x, y: b.y, ref: b as Peer | null })),
+        ...(p.team === "human" ? [{ x: p.x, y: p.y, ref: null }] : [])];
+      const zombies = [...bots.filter(b => b.team === "zombie").map(b => ({ x: b.x, y: b.y, ref: b as Peer | null })),
+        ...(p.team === "zombie" ? [{ x: p.x, y: p.y, ref: null }] : [])];
+      for (const b of bots) {
+        const s = b.bot!;
+        b.t = now;
+        b.sprint = false;
+        const frozen = now < b.stunUntil || now < b.turningUntil || (b.team === "zombie" && !released);
+        b.moving = false;
+        if (frozen) continue;
+        let heading: number | null = null;
+        if (b.team === "zombie") {
+          let best: { x: number; y: number } | null = null, bd = Infinity;
+          for (const h of humans) { const d = Math.hypot(h.x - b.x, h.y - b.y); if (d < bd) { bd = d; best = h; } }
+          if (best) {
+            if (bd < 220 && lineOfSight(map, b.x, b.y, best.x, best.y)) heading = Math.atan2(best.y - b.y, best.x - b.x);
+            else {
+              if (!s.field || now - s.fieldAt > 700) { s.field = distanceField(map, Math.floor(best.x / TILE), Math.floor(best.y / TILE)); s.fieldAt = now; }
+              heading = headingDown(map, s.field, b.x, b.y);
+            }
+          }
+        } else {
+          let threat: { x: number; y: number } | null = null, td = Infinity;
+          for (const z of zombies) { const d = Math.hypot(z.x - b.x, z.y - b.y); if (d < td) { td = d; threat = z; } }
+          if (threat && td < 240 && lineOfSight(map, b.x, b.y, threat.x, threat.y)) {
+            heading = Math.atan2(b.y - threat.y, b.x - threat.x) + Math.sin(now * 0.002 + b.x) * 0.6;
+            if (now - s.shotAt > 1600 && released) {
+              const zRef = zombies.find(z => z === threat);
+              if (zRef && !(zRef.ref && now < zRef.ref.stunUntil)) {
+                s.shotAt = now;
+                const a = Math.atan2(threat.y - b.y, threat.x - b.x);
+                bulletsRef.current.push({ id: `${b.id}-${now}`, by: b.id, x: b.x + Math.cos(a) * 22, y: b.y + Math.sin(a) * 22, vx: Math.cos(a) * BULLET.speed, vy: Math.sin(a) * BULLET.speed, travelled: 0 });
+                b.angle = a;
+              }
+            }
+          } else {
+            if (!s.goal || now > s.next) {
+              const r = map.rooms[Math.floor(Math.random() * map.rooms.length)];
+              s.goal = { x: (r.cx + 0.5) * TILE, y: (r.cy + 0.5) * TILE };
+              s.field = distanceField(map, r.cx, r.cy);
+              s.next = now + 9000;
+            }
+            heading = s.field ? headingDown(map, s.field, b.x, b.y) : null;
+            if (heading === null) s.next = 0;
+          }
+        }
+        if (heading === null) continue;
+        const speed = (b.team === "zombie" ? ZOMBIE_SPEED * 0.9 : HUMAN_SPEED * 0.85) * dt;
+        const moved = moveCircle(map, b.x, b.y, Math.cos(heading) * speed, Math.sin(heading) * speed);
+        b.x = b.tx = moved.x; b.y = b.ty = moved.y;
+        if (b.team === "human" || !b.moving) b.angle = heading;
+        b.moving = true;
+      }
+      // Bot humans decide their own tagging, like a phone would.
+      for (const h of bots) {
+        if (h.team !== "human" || !released) continue;
+        const touch = (zx: number, zy: number) => Math.hypot(zx - h.x, zy - h.y) < TAG_DIST;
+        let by: { id: string; name: string } | null = null;
+        if (p.team === "zombie" && now >= p.stunUntil && now >= p.turningUntil && touch(p.x, p.y)) by = { id: studentId, name: nameRef.current };
+        for (const z of bots) if (!by && z.team === "zombie" && now >= z.stunUntil && now >= z.turningUntil && touch(z.x, z.y)) by = { id: z.id, name: z.name };
+        if (!by) continue;
+        h.team = "zombie"; h.turningUntil = now + TURNING_MS;
+        fxRef.current.burst(h.x, h.y, HVZ.zombie, 22, 220);
+        fxRef.current.ring(h.x, h.y, HVZ.zombie, 90);
+        onInfectedRef.current(by.id, by.name, h.name);
+      }
+    };
+
+    const physics = (dt: number) => {
+      const map = mapRef.current;
+      if (!map) return;
+      const p = pRef.current, now = Date.now();
+      const zombie = p.team === "zombie";
+
+      // Preview keyboard feeds the same vector the joystick does.
+      if (preview) {
+        const k = keysRef.current;
+        const dx = (k.has("arrowright") || k.has("d") ? 1 : 0) - (k.has("arrowleft") || k.has("a") ? 1 : 0);
+        const dy = (k.has("arrowdown") || k.has("s") ? 1 : 0) - (k.has("arrowup") || k.has("w") ? 1 : 0);
+        if (dx || dy) { const l = Math.hypot(dx, dy); vectorRef.current = { dx: dx / l, dy: dy / l, magnitude: 1 }; }
+        else if (k.size || vectorRef.current.magnitude) vectorRef.current = { dx: 0, dy: 0, magnitude: 0 };
+      }
+
+      const frozen = frozenNow();
+      const vec = vectorRef.current;
+      p.moving = !frozen && vec.magnitude > 0;
+      if (p.moving) {
+        p.angle = Math.atan2(vec.dy, vec.dx);
+        const base = zombie ? ZOMBIE_SPEED : HUMAN_SPEED;
+        const speed = base * (now < p.sprintUntil ? SPRINT.mult : 1) * Math.min(1, 0.35 + vec.magnitude);
+        ({ x: p.x, y: p.y } = moveCircle(map, p.x, p.y, Math.cos(p.angle) * speed * dt, Math.sin(p.angle) * speed * dt));
+      }
+
+      // Peers glide to their last broadcast position.
+      const k = Math.min(1, dt * 14);
+      for (const peer of Object.values(peersRef.current)) {
+        if (peer.bot) continue;
+        peer.x += (peer.tx - peer.x) * k; peer.y += (peer.ty - peer.y) * k;
+      }
+      if (preview) stepBots(dt);
+
+      // Humans aim at the nearest zombie they can see; otherwise straight ahead.
+      if (!zombie) {
+        let best = Infinity; p.aim = p.angle; p.aimTarget = null;
+        for (const peer of Object.values(peersRef.current)) {
+          if (peer.team !== "zombie" || now < peer.stunUntil) continue;
+          const d = Math.hypot(peer.x - p.x, peer.y - p.y);
+          if (d < BULLET.range && d < best && lineOfSight(map, p.x, p.y, peer.x, peer.y)) { best = d; p.aim = Math.atan2(peer.y - p.y, peer.x - p.x); p.aimTarget = peer.id; }
+        }
+      }
+
+      // Bullets: walls stop them; a zombie stops them (visually); only the
+      // zombie that was hit decides it was stunned.
+      const keep: Bullet[] = [];
+      for (const b of bulletsRef.current) {
+        const sx = b.vx * dt, sy = b.vy * dt;
+        b.x += sx; b.y += sy; b.travelled += Math.hypot(sx, sy);
+        if (b.travelled > BULLET.range || solidAt(map, b.x, b.y)) { fxRef.current.burst(b.x, b.y, HVZ.bullet, 4, 70); continue; }
+        let hit = false;
+        if (zombie && b.by !== studentId && now >= p.stunUntil && now >= p.turningUntil
+          && Math.hypot(b.x - p.x, b.y - p.y) < PLAYER_R + BULLET.radius) { stunMe(b); hit = true; }
+        for (const peer of Object.values(peersRef.current)) {
+          if (hit || peer.team !== "zombie" || peer.id === b.by || now < peer.stunUntil) continue;
+          if (Math.hypot(b.x - peer.x, b.y - peer.y) >= PLAYER_R + BULLET.radius) continue;
+          hit = true;
+          if (peer.bot) {
+            peer.stunUntil = now + STUN_MS;
+            fxRef.current.burst(peer.x, peer.y, "#8CC8FF", 12);
+            const shooter = b.by === studentId ? nameRef.current : peersRef.current[b.by]?.name ?? "?";
+            onStunnedRef.current(b.by, shooter, peer.name);
+          }
+        }
+        if (!hit) keep.push(b);
+      }
+      bulletsRef.current = keep;
+
+      // Tagged? Judged against our exact position and their broadcast one.
+      if (!zombie && now >= startedAtRef.current + HEAD_START_MS && now >= p.graceUntil) {
+        for (const peer of Object.values(peersRef.current)) {
+          if (peer.team !== "zombie" || now < peer.stunUntil || now < peer.turningUntil) continue;
+          if (now - peer.t > 1500) continue;
+          if (Math.hypot(peer.x - p.x, peer.y - p.y) >= TAG_DIST) continue;
+          if (p.shield) {
+            p.shield = false; p.graceUntil = now + SHIELD_GRACE_MS;
+            fxRef.current.ring(p.x, p.y, "#78DCFF", 70);
+            fxRef.current.burst(p.x, p.y, "#78DCFF", 14);
+            say(arRef.current ? "الدرع أنقذك!" : "Your shield saved you!", false);
+            send("shield", { victim: studentId });
+          } else infectMe(peer);
+          break;
+        }
+      }
+      fxRef.current.step(dt);
+    };
+
+    const draw = () => {
+      const map = mapRef.current;
+      if (!map) return;
+      const { cssW, cssH } = resizeCanvas(canvas, ctx);
+      if (cssW <= 0 || cssH <= 0) return;
+      const nowP = performance.now(), now = Date.now();
+      const p = pRef.current;
+      const zombie = p.team === "zombie";
+      // About eight tiles across a phone: close enough that faces read, far
+      // enough that you see a zombie coming before it's on you.
+      const scale = Math.max(0.8, Math.min(1.5, Math.min(cssW, cssH * 0.7) / 340));
+      const sh = fxRef.current.offset(nowP);
+      const v = makeView(p.x + sh.x, p.y + sh.y, cssW, cssH, scale);
+      const vision = zombie ? VISION.zombie : VISION.human;
+      const sensing = zombie && now < p.senseUntil;
+
+      drawBuilding(ctx, map, v, arRef.current);
+      drawBullets(ctx, bulletsRef.current, v);
+
+      const cutoff = now - PEER_TIMEOUT_MS;
+      const seen: Peer[] = [];
+      for (const id of Object.keys(peersRef.current)) {
+        const peer = peersRef.current[id];
+        if (peer.t < cutoff) { delete peersRef.current[id]; continue; }
+        const d = Math.hypot(peer.x - p.x, peer.y - p.y);
+        if (d < vision + PLAYER_R && lineOfSight(map, p.x, p.y, peer.x, peer.y)) seen.push(peer);
+      }
+      const R = PLAYER_R * scale;
+      const drawn = [...seen.map(s => ({ y: s.y, peer: s })), { y: p.y, peer: null as Peer | null }].sort((a, b) => a.y - b.y);
+      for (const d of drawn) {
+        if (d.peer) {
+          const q = d.peer;
+          drawAgent(ctx, v.offX + q.x * scale, v.offY + q.y * scale, R, {
+            face: q.face, color: q.color, zombie: q.team === "zombie", angle: q.angle, moving: q.moving,
+            stunned: now < q.stunUntil, shield: q.shield, sprint: q.sprint, turning: now < q.turningUntil,
+          }, nowP);
+        } else {
+          drawAgent(ctx, v.offX + p.x * scale, v.offY + p.y * scale, R, {
+            face: faceRef.current ?? undefined, color: colorRef.current, zombie, angle: zombie ? p.angle : p.aim, moving: p.moving,
+            stunned: now < p.stunUntil, shield: p.shield, sprint: now < p.sprintUntil, turning: now < p.turningUntil,
+          }, nowP);
+        }
+      }
+      fxRef.current.draw(ctx, v, nowP);
+
+      drawDarkness(ctx, v, visibilityPolygon(map, p.x, p.y, vision), p.x, p.y, vision,
+        zombie ? "rgba(6,14,6,0.9)" : "rgba(5,8,14,0.9)");
+
+      // Reticle on whoever the gun is tracking.
+      if (!zombie) {
+        const target = seen.find(s => s.id === p.aimTarget);
+        if (target) {
+          const tx = v.offX + target.x * scale, ty = v.offY + target.y * scale;
+          ctx.save();
+          ctx.strokeStyle = p.ammo > 0 ? "#FFE066" : "rgba(255,255,255,0.4)";
+          ctx.lineWidth = 2;
+          ctx.setLineDash([6, 5]); ctx.lineDashOffset = -nowP * 0.03;
+          ctx.beginPath(); ctx.arc(tx, ty, R * 1.6, 0, Math.PI * 2); ctx.stroke();
+          ctx.restore();
+        }
+      }
+
+      for (const s of seen) drawTag(ctx, v.offX + s.x * scale, v.offY + s.y * scale - R * 1.45, s.name, s.team === "zombie", false);
+      drawTag(ctx, v.offX + p.x * scale, v.offY + p.y * scale - R * 1.45, arRef.current ? "أنت" : "YOU", zombie, true);
+
+      // Sense: every human, through walls, for a few seconds.
+      const marks: { x: number; y: number; color: string }[] = [];
+      if (sensing) {
+        const humans = Object.values(peersRef.current).filter(q => q.team === "human")
+          .sort((a, b) => Math.hypot(a.x - p.x, a.y - p.y) - Math.hypot(b.x - p.x, b.y - p.y));
+        for (const h of humans) {
+          marks.push({ x: h.x, y: h.y, color: "#FF6B6B" });
+          ctx.save();
+          ctx.globalAlpha = 0.55 + Math.sin(nowP * 0.01) * 0.2;
+          ctx.strokeStyle = "#FF6B6B"; ctx.lineWidth = 2.5;
+          ctx.beginPath(); ctx.arc(v.offX + h.x * scale, v.offY + h.y * scale, R * 1.3, 0, Math.PI * 2); ctx.stroke();
+          ctx.restore();
+        }
+        for (const h of humans.slice(0, 3)) drawEdgeArrow(ctx, v, h.x, h.y, "#FF6B6B", `${Math.round(Math.hypot(h.x - p.x, h.y - p.y) / TILE)}m`);
+      }
+
+      const mw = Math.min(96, cssW * 0.24);
+      drawMinimap(ctx, map, cssW - mw - 14, 118, mw, { x: p.x, y: p.y, zombie }, marks);
+    };
+
+    const frame = (t: number) => {
+      raf = requestAnimationFrame(frame);
+      let dt = (t - last) / 1000;
+      last = t;
+      if (dt > 0.25) dt = 0.25;
+      acc += dt; hudAcc += dt; netAcc += dt;
+      let steps = 0;
+      while (acc >= STEP && steps < 8) { physics(STEP); acc -= STEP; steps++; }
+      if (acc > STEP) acc = 0;
+      draw();
+
+      const p = pRef.current, now = Date.now();
+      if (hudAcc >= 0.2) {
+        hudAcc = 0;
+        let humans = p.team === "human" ? 1 : 0, zombies = p.team === "zombie" ? 1 : 0;
+        for (const q of Object.values(peersRef.current)) { if (q.team === "human") humans++; else zombies++; }
+        const ends = endsAtRef.current;
+        setHud({
+          team: p.team, ammo: p.ammo, charges: p.charges, streak: p.streak, points: p.points, shield: p.shield,
+          sense: Math.max(0, p.senseUntil - now), stunned: Math.max(0, p.stunUntil - now),
+          turning: Math.max(0, p.turningUntil - now), sprint: Math.max(0, p.sprintUntil - now),
+          humans, zombies, secsLeft: ends ? Math.max(0, Math.ceil((ends - now) / 1000)) : null,
+          releaseIn: Math.max(0, Math.ceil((startedAtRef.current + HEAD_START_MS - now) / 1000)),
+          stuns: p.stuns, infects: p.infects,
+        });
+      }
+      if (netAcc >= BROADCAST_MS / 1000) {
+        netAcc = 0;
+        send("pos", {
+          id: studentId, name: nameRef.current, team: p.team, af: faceIdxRef.current, ac: colorIdxRef.current,
+          x: Math.round(p.x), y: Math.round(p.y), a: Number((p.team === "zombie" ? p.angle : p.aim).toFixed(2)),
+          st: Math.max(0, p.stunUntil - now), tu: Math.max(0, p.turningUntil - now),
+          sh: p.shield, sp: now < p.sprintUntil, mv: p.moving,
+        });
+      }
+    };
+    raf = requestAnimationFrame(frame);
+    return () => cancelAnimationFrame(raf);
+  }, [phase, ready, studentId, sessionId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Preview: keyboard. Space = action, E = quiz.
+  useEffect(() => {
+    if (!preview) return;
+    const down = (e: KeyboardEvent) => {
+      const k = e.key.toLowerCase();
+      if (k === " ") { e.preventDefault(); actRef.current(); return; }
+      if (k === "e") { openQuizRef.current(); return; }
+      keysRef.current.add(k);
+    };
+    const up = (e: KeyboardEvent) => keysRef.current.delete(e.key.toLowerCase());
+    window.addEventListener("keydown", down);
+    window.addEventListener("keyup", up);
+    return () => { window.removeEventListener("keydown", down); window.removeEventListener("keyup", up); };
+  }, [preview]);
+
+  // ── Questions ───────────────────────────────────────────────────────────
+  const nextQuestion = () => {
+    const list = questionsRef.current;
+    if (list.length === 0) { setCurrentQ(null); return; }
+    let q = list[Math.floor(Math.random() * list.length)];
+    if (list.length > 1 && q.id === lastQIdRef.current) q = list[(list.indexOf(q) + 1) % list.length];
+    lastQIdRef.current = q.id;
+    setCurrentQ(q);
     setPicked(null);
     pickedRef.current = null;
-    askedRef.current += 1;
-    qStartRef.current = Date.now();
-  }, [phase, qSeed, questions.length]);
+  };
+  const openQuiz = () => { nextQuestion(); setShowQuiz(true); };
+  const openQuizRef = useRef(openQuiz); openQuizRef.current = openQuiz;
+  useEffect(() => { showQuizRef.current = showQuiz; }, [showQuiz]);
 
-  // ── Countdown ─────────────────────────────────────────────────────────────
-  // Opt-in per session (HostGame): absent/null timePerQ means no countdown runs
-  // and a question never expires on its own.
-  const timerEnabled = typeof settings.timePerQ === "number" && settings.timePerQ > 0;
-  const duration = settings.timePerQ ?? 20;
-  useEffect(() => {
-    if (!timerEnabled || phase !== "question" || !currentQ) return;
-    const t = setInterval(() => {
-      const elapsed = (Date.now() - qStartRef.current) / 1000;
-      const left = Math.max(0, Math.ceil(duration - elapsed));
-      setTimeLeft(left);
-      if (left <= 0 && pickedRef.current === null) { clearInterval(t); handleAnswer(-1); }
-    }, 200);
-    return () => clearInterval(t);
-  }, [timerEnabled, phase, currentQ, duration]);
-
-  // ── Auto-advance after answered ───────────────────────────────────────────
-  useEffect(() => {
-    if (phase !== "answered") return;
-    const t = setTimeout(() => { setQSeed(s => s + 1); setPhase("question"); }, 1500);
-    return () => clearTimeout(t);
-  }, [phase]);
-
-  // ── Answer handler ────────────────────────────────────────────────────────
-  const handleAnswer = useCallback((idx: number) => {
-    if (!currentQ || !me) return;
-    if (pickedRef.current !== null) return;
+  const answer = (idx: number) => {
+    if (!currentQ || !me || pickedRef.current !== null) return;
     pickedRef.current = idx;
-    const correct = idx === currentQ.correct_index;
     setPicked(idx);
-    setTimeout(() => setPhase("answered"), 700);
-
-    const rawIncomeTier = INCOME_TIERS.find(t => t.level === (me.income_tier ?? 1)) ?? INCOME_TIERS[0];
-    const effectiveLevel = Math.max(1, rawIncomeTier.level - incomeDebuffActive);
-    const incomeTier = INCOME_TIERS.find(t => t.level === effectiveLevel) ?? rawIncomeTier;
-    const drainTier   = STREAK_DRAIN_TIERS.find(t => t.level === (me.streak_drain_tier ?? 1)) ?? STREAK_DRAIN_TIERS[0];
-    const insuranceTier = CASH_INSURANCE_TIERS.find(t => t.level === (me.cash_insurance_tier ?? 1)) ?? CASH_INSURANCE_TIERS[0];
-
-    // Predicted streak/cash for the toast + optimistic local UI only — the
-    // actual write is atomic server-side (see hvz_apply_answer migration) so
-    // a stale `me` here can't clobber a concurrent shop purchase or steal
-    // credit landing on the same row.
-    let newStreak: number;
-    let newCash: number;
-    let stolen = 0;
-    let cashDelta = 0;
+    const correct = idx === currentQ.correct_index;
+    const p = pRef.current;
+    const isAr = arRef.current;
     if (correct) {
-      newStreak = (me.streak ?? 0) + 1;
-      let payout = incomeTier.payout * streakMultiplier(newStreak) * (cashMultActive ? 2 : 1);
-      if (activeStealOnMyTeam) {
-        stolen = Math.floor(payout * activeStealOnMyTeam.pct / 100);
-        payout -= stolen;
+      p.streak++;
+      p.points += POINTS.correct;
+      playCorrect();
+      if (p.team === "human") {
+        p.ammo = Math.min(AMMO.max, p.ammo + AMMO.perCorrect);
+        reward.fire(isAr ? `+${AMMO.perCorrect} ذخيرة` : `+${AMMO.perCorrect} ammo`, HVZ.bullet);
+      } else {
+        p.charges = Math.min(CHARGES.max, p.charges + CHARGES.perCorrect);
+        reward.fire(isAr ? "+1 انطلاقة" : "+1 sprint", HVZ.zombie);
       }
-      cashDelta = payout;
-      newCash = (me.crypto ?? 0) + payout;
-    } else if (streakLockActive) {
-      newStreak = me.streak ?? 0; // team buff — no streak loss on wrong answer
-      newCash = Math.floor((me.crypto ?? 0) * (1 - insuranceTier.lossPct / 100));
+      if (p.streak % PERK_STREAK === 0) {
+        if (p.team === "human") { p.shield = true; say(isAr ? "درع! يصدّ لمسة زومبي واحدة" : "Shield! Blocks one zombie touch", false); }
+        else { p.senseUntil = Date.now() + SENSE_MS; say(isAr ? "حاسة الشم! ترى كل البشر" : "Sense! You can see every human", false); }
+      }
     } else {
-      const curStreak = me.streak ?? 0;
-      newStreak = drainTier.dropBy === null ? 0 : Math.max(0, curStreak - drainTier.dropBy);
-      newCash = Math.floor((me.crypto ?? 0) * (1 - insuranceTier.lossPct / 100));
+      p.streak = 0;
+      playWrong();
     }
+    setHud(h => ({ ...h, ammo: p.ammo, charges: p.charges, streak: p.streak, points: p.points, shield: p.shield }));
 
-    const updates: any = { total_answers: (me.total_answers ?? 0) + 1, streak: newStreak, crypto: newCash };
+    const updates: { total_answers: number; crypto: number; correct_answers?: number } = { total_answers: (me.total_answers ?? 0) + 1, crypto: p.points };
     if (correct) updates.correct_answers = (me.correct_answers ?? 0) + 1;
-
-    localWriteAtRef.current = Date.now();
     setMe((prev: any) => ({ ...prev, ...updates }));
-    if (correct) {
-      const mult = streakMultiplier(newStreak) * (cashMultActive ? 2 : 1);
-      const payout = incomeTier.payout * mult - stolen;
-      const stolenNote = stolen > 0 ? ` (${ar ? `سُرق $${stolen}` : `$${stolen} stolen`})` : "";
-      toast.success(mult > 1 ? `+$${payout}  (×${mult}${cashMultActive ? " " + (ar ? "مضاعف" : "boosted") : ""})${stolenNote}` : `+$${payout}${stolenNote}`);
-    } else {
-      const lost = (me.crypto ?? 0) - newCash;
-      const msg = lost > 0 ? (ar ? `-$${lost} من المحفظة` : `-$${lost} from wallet`) : (ar ? "إجابة خاطئة" : "Wrong answer");
-      toast.error(streakLockActive ? `${msg} (${ar ? "السلسلة محمية" : "streak protected"})` : msg);
+    writeRow(updates);
+    if (!preview) {
+      supabase.from("question_responses").insert({
+        session_id: sessionId, student_id: me.id, question_id: currentQ.id,
+        question_index: 0, answer_index: idx, is_correct: correct,
+      }).then(undefined, () => {});
     }
-    supabase.rpc("hvz_apply_answer", {
-      p_student_id: me.id, p_correct: correct, p_streak_protected: streakLockActive,
-      p_drop_by: drainTier.dropBy, p_cash_delta: cashDelta, p_loss_pct: insuranceTier.lossPct,
-    }).then(undefined, () => {});
-    if (stolen > 0 && activeStealOnMyTeam) {
-      supabase.rpc("hvz_credit_cash", { p_student_id: activeStealOnMyTeam.beneficiaryId, p_amount: stolen }).then(undefined, () => {});
-    }
-    supabase.from("question_responses").insert({
-      session_id: sessionId, student_id: me.id, question_id: currentQ.id,
-      question_index: askedRef.current, answer_index: idx, is_correct: correct,
-    }).then(undefined, () => {});
-  }, [currentQ, me, sessionId, ar, cashMultActive, streakLockActive, incomeDebuffActive, activeStealOnMyTeam]);
-
-  const submit = (idx: number) => {
-    if (pickedRef.current !== null || isFrozen) return;
-    handleAnswer(idx);
+    setTimeout(() => nextQuestion(), 850);
   };
 
-  // ── Upgrade purchases (income / streak-drain / cash-insurance) ────────────
-  const incomeTier     = INCOME_TIERS.find(t => t.level === (me?.income_tier ?? 1)) ?? INCOME_TIERS[0];
-  const drainTier      = STREAK_DRAIN_TIERS.find(t => t.level === (me?.streak_drain_tier ?? 1)) ?? STREAK_DRAIN_TIERS[0];
-  const insuranceTier  = CASH_INSURANCE_TIERS.find(t => t.level === (me?.cash_insurance_tier ?? 1)) ?? CASH_INSURANCE_TIERS[0];
-  const nextIncome     = INCOME_TIERS.find(t => t.level === incomeTier.level + 1);
-  const nextDrain      = STREAK_DRAIN_TIERS.find(t => t.level === drainTier.level + 1);
-  const nextInsurance  = CASH_INSURANCE_TIERS.find(t => t.level === insuranceTier.level + 1);
-  const streak = me?.streak ?? 0;
-  const mult   = streakMultiplier(streak) * (cashMultActive ? 2 : 1);
-  const incomeName = (t: typeof INCOME_TIERS[number]) =>
-    team === "zombie" ? (ar ? ZOMBIE_INCOME_NAMES[t.level].nameAr : ZOMBIE_INCOME_NAMES[t.level].nameEn) : (ar ? t.nameAr : t.nameEn);
+  const zombie = hud.team === "zombie";
+  const teamColor = zombie ? HVZ.zombie : HVZ.human;
+  const fmt = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 
-  const buyUpgrade = (kind: "income" | "drain" | "insurance") => {
-    const t = kind === "income" ? nextIncome : kind === "drain" ? nextDrain : nextInsurance;
-    if (!me || !t || cash < t.cost || buyingRef.current) return;
-    buyingRef.current = true;
-    const remaining = Math.max(0, cash - t.cost);
-    const patch = kind === "income" ? { crypto: remaining, income_tier: t.level }
-      : kind === "drain" ? { crypto: remaining, streak_drain_tier: t.level }
-      : { crypto: remaining, cash_insurance_tier: t.level };
-    localWriteAtRef.current = Date.now();
-    setMe((prev: any) => ({ ...prev, ...patch }));
-    toast.success(ar ? `تمت الترقية: ${t.nameAr}` : `Upgraded: ${t.nameEn}`);
-    // Atomic + affordability-checked server-side (hvz_spend_cash): the local
-    // `cash < t.cost` check above can pass on a stale balance (e.g. right
-    // after being stolen from), so the DB re-checks at write time and simply
-    // returns no rows if it's no longer affordable.
-    supabase.rpc("hvz_spend_cash", {
-      p_student_id: me.id, p_cost: t.cost,
-      p_income_tier: kind === "income" ? t.level : null,
-      p_streak_drain_tier: kind === "drain" ? t.level : null,
-      p_cash_insurance_tier: kind === "insurance" ? t.level : null,
-    }).then(({ data, error }: any) => {
-      if (!error && (!data || data.length === 0)) toast.error(ar ? "لم تعد تملك ما يكفي" : "No longer affordable");
-    }, () => {});
-    setTimeout(() => { buyingRef.current = false; }, 500);
-  };
+  // ── Waiting ─────────────────────────────────────────────────────────────
+  if (phase === "waiting") {
+    return (
+      <div className="fixed inset-0 flex flex-col items-center justify-center gap-5 px-6 text-center text-white" style={{ background: HVZ.void }}>
+        <div className="flex items-center gap-3">
+          <Users className="h-10 w-10" style={{ color: HVZ.human }} />
+          <span className="text-lg font-black opacity-40">vs</span>
+          <Biohazard className="h-10 w-10" style={{ color: HVZ.zombie }} />
+        </div>
+        <div>
+          <div className="text-[10px] tracking-[0.35em] uppercase mb-1 opacity-50">{ar ? "بشر ضد زومبي" : "HUMANS VS ZOMBIES"}</div>
+          <div className="text-2xl font-extrabold">{me?.name ?? "—"}</div>
+        </div>
+        <p className="text-sm max-w-xs leading-relaxed font-semibold opacity-75">
+          {ar
+            ? "بعضكم يبدأ زومبي. إذا لمسك زومبي تتحول إلى زومبي. البشر معهم مسدس يشلّ الزومبي لثوانٍ. أجب صح لتحصل على ذخيرة أو انطلاقة — لكنك تقف مكانك وأنت تجيب، فاختر مكانًا آمنًا."
+            : "A few of you start as zombies. Get touched and you turn. Humans carry a stun gun that freezes a zombie for a few seconds. Correct answers give ammo or sprints — but you stand still while you answer, so pick a safe spot."}
+        </p>
+        <div className="text-xs font-bold animate-pulse opacity-70">{ar ? "بانتظار المعلّم..." : "Waiting for the teacher..."}</div>
+      </div>
+    );
+  }
 
-  // ── Battle shop purchases ──────────────────────────────────────────────────
-  const myActions = battleActionsForTeam(team);
-  const buyBattleAction = (key: BattleActionKey) => {
-    const action = myActions.find(a => a.key === key);
-    if (!me || !action || cash < action.cost || buyingRef.current) return;
-    buyingRef.current = true;
-    const remaining = Math.max(0, cash - action.cost);
-    localWriteAtRef.current = Date.now();
-    setMe((prev: any) => ({ ...prev, crypto: remaining }));
-    supabase.rpc("hvz_spend_cash", { p_student_id: me.id, p_cost: action.cost }).then(({ data, error }: any) => {
-      if (!error && (!data || data.length === 0)) toast.error(ar ? "لم تعد تملك ما يكفي" : "No longer affordable");
-    }, () => {});
-    const effect: any = {};
-    if (action.damageAmount) effect.damage = { targetTeam: enemyTeam, amount: action.damageAmount };
-    if (action.stealPct) effect.steal = { targetTeam: enemyTeam, pct: action.stealPct, ms: action.stealMs, beneficiaryId: me.id, beneficiaryTeam: team };
-    if (action.incomeDebuffTiers) effect.incomeDebuff = { targetTeam: enemyTeam, tiers: action.incomeDebuffTiers, ms: action.incomeDebuffMs };
-    if (action.drainBoostMs) effect.drainBoost = { targetTeam: enemyTeam, extraRate: HEALTH_DRAIN_PER_SEC, ms: action.drainBoostMs };
-    supabase.from("hvz_actions").insert({
-      session_id: sessionId, student_id: me.id, student_name: me.name, team,
-      action_key: key, cost: action.cost,
-      health_delta: action.healthDelta ?? 0, max_health_delta: action.maxHealthDelta ?? 0,
-      freeze_target_team: action.freezeMs ? enemyTeam : null, freeze_ms: action.freezeMs ?? null,
-      blur_target_team: action.blurMs ? enemyTeam : null, blur_ms: action.blurMs ?? null,
-      buff_type: action.buffType ?? null, buff_team: action.buffType ? team : null, buff_ms: action.buffMs ?? null,
-      effect,
-    }).then(undefined, () => {});
-    toast.success(ar ? action.nameAr : action.nameEn);
-    setTimeout(() => { buyingRef.current = false; }, 500);
-  };
-
-  const timerFrac  = timeLeft / duration;
-  const timerColor = timerFrac > 0.5 ? "#e67e22" : timerFrac > 0.25 ? "#e74c3c" : "#ff3322";
-  const daysSurvived = settings.daysSurvived ?? 1;
-  const dayCycleEndsAt = settings.dayCycleEndsAt ? new Date(settings.dayCycleEndsAt).getTime() : 0;
-  const daySecsLeft = dayCycleEndsAt ? Math.max(0, Math.ceil((dayCycleEndsAt - now) / 1000)) : 60;
-  const winner = settings.winner as ("humans" | "zombies" | null | undefined);
-
-  const actionDetail = (a: typeof BATTLE_ACTIONS[number]) => {
-    const parts: string[] = [];
-    if (a.healthDelta) parts.push(`+${a.healthDelta}% ${ar ? "صحة" : "health"}`);
-    if (a.maxHealthDelta) parts.push(`+${a.maxHealthDelta}% ${ar ? "حد أقصى" : "max"}`);
-    if (a.freezeMs) parts.push(`${ar ? "تجميد" : "freeze"} ${a.freezeMs / 1000}s`);
-    if (a.blurMs) parts.push(`${ar ? "تشويش" : "blur"} ${a.blurMs / 1000}s`);
-    if (a.buffType === "cash_mult") parts.push(ar ? `مضاعف 2x للفريق (${a.buffMs! / 1000}ث)` : `team 2x cash (${a.buffMs! / 1000}s)`);
-    if (a.buffType === "streak_lock") parts.push(ar ? `حماية السلسلة للفريق (${a.buffMs! / 1000}ث)` : `team streak lock (${a.buffMs! / 1000}s)`);
-    if (a.damageAmount) parts.push(ar ? `-${a.damageAmount}% لصحة العدو فوراً` : `-${a.damageAmount}% enemy health instantly`);
-    if (a.stealPct) parts.push(ar ? `يسرق ${a.stealPct}% من أرباح العدو (${a.stealMs! / 1000}ث)` : `steals ${a.stealPct}% of enemy earnings (${a.stealMs! / 1000}s)`);
-    if (a.incomeDebuffTiers) parts.push(ar ? `يخفّض دخل العدو ${a.incomeDebuffTiers} مستويات (${a.incomeDebuffMs! / 1000}ث)` : `enemy income −${a.incomeDebuffTiers} tiers (${a.incomeDebuffMs! / 1000}s)`);
-    if (a.drainBoostMs) parts.push(ar ? `يضاعف استنزاف صحة العدو (${a.drainBoostMs / 1000}ث)` : `doubles enemy health drain (${a.drainBoostMs / 1000}s)`);
-    return parts.join(" · ");
-  };
-
-  return (
-    <div className="theme-hvz fixed inset-0 text-foreground overflow-hidden"
-      style={{ fontFamily: "'JetBrains Mono', monospace", background: "#0A0F0A" }}>
-
-      {/* ── BLUR OVERLAY — full viewport, driven by hvz_actions log ──────── */}
-      {isBlurred && (
-        <div className="pointer-events-none fixed inset-0 z-50" style={{ backdropFilter: "blur(9px)" }} />
-      )}
-
-      {/* ── SHOP TRIGGER ─────────────────────────────────────────────────── */}
-      {(phase === "question" || phase === "answered") && (
-        <button
-          onClick={() => setShowShop(true)}
-          className="fixed right-3 z-30 flex flex-col items-center gap-1 rounded-2xl px-3 py-2.5 transition-all active:scale-95"
-          style={{ top: "50%", transform: "translateY(-50%)", background: "hsl(150 30% 8%)", border: `2px solid ${TEAM_COLOR[team]}`, color: TEAM_COLOR[team], minWidth: 56 }}>
-          <Store className="h-5 w-5 shrink-0" />
-          <span className="text-[9px] font-black tracking-wide leading-none">{ar ? "متجر" : "SHOP"}</span>
-        </button>
-      )}
-
-      {/* ── SHOP PANEL ────────────────────────────────────────────────────── */}
-      {showShop && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center px-4"
-          style={{ background: "hsl(0 0% 0% / 0.75)", backdropFilter: "blur(4px)" }}
-          onClick={() => setShowShop(false)}>
-          <div className="pixel-panel w-full max-w-sm p-4 max-h-[85vh] overflow-y-auto"
-            style={{ background: "hsl(0 0% 6%)", borderColor: TEAM_COLOR[team] }}
-            onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-black tracking-widest" style={{ color: "hsl(90 10% 88%)" }}>
-                {ar ? "المتجر" : "SHOP"}
-              </span>
-              <div className="flex items-center gap-1.5">
-                <PixelShield className="h-4 w-4" color="hsl(45 76% 58%)" />
-                <span className="font-black tabular-nums text-sm" style={{ color: "hsl(45 76% 64%)" }}>${cash}</span>
-              </div>
-            </div>
-
-            <div className="flex gap-2 mb-3">
-              {(["battle", "upgrades"] as ShopTab[]).map(tab => (
-                <button key={tab} onClick={() => setShopTab(tab)}
-                  className="pixel-button flex-1 py-2 text-xs font-black transition-all"
-                  style={{
-                    background: shopTab === tab ? "hsl(150 25% 10%)" : "hsl(0 0% 5%)",
-                    borderColor: shopTab === tab ? TEAM_COLOR[team] : "hsl(0 0% 15%)",
-                    color: shopTab === tab ? "hsl(90 10% 88%)" : "hsl(90 6% 40%)",
-                  }}>
-                  {tab === "battle" ? (ar ? "المعركة" : "BATTLE") : (ar ? "الترقيات" : "UPGRADES")}
-                </button>
-              ))}
-            </div>
-
-            {/* BATTLE TAB */}
-            {shopTab === "battle" && (
-              <div className="space-y-2">
-                <div className="text-[10px] text-center pb-1" style={{ color: "hsl(90 8% 55%)" }}>
-                  {ar ? "اشترِ عافية لفريقك أو خرّب الفريق الآخر" : "Heal your team, or sabotage the other side"}
-                </div>
-                {myActions.map(a => {
-                  const Icon = ACTION_ICON[a.key];
-                  const affordable = cash >= a.cost;
-                  return (
-                    <button key={a.key} disabled={!affordable} onClick={() => buyBattleAction(a.key)}
-                      className="pixel-button w-full flex items-center gap-3 px-3 py-2.5 text-start transition-all"
-                      style={{
-                        background: affordable ? "hsl(150 25% 8%)" : "hsl(0 0% 5%)",
-                        borderColor: affordable ? TEAM_COLOR[team] : "hsl(0 0% 15%)",
-                        color: affordable ? "hsl(90 10% 88%)" : "hsl(90 6% 35%)",
-                      }}>
-                      <Icon className="h-6 w-6 shrink-0" color={affordable ? TEAM_COLOR[team] : "currentColor"} />
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-bold truncate">{ar ? a.nameAr : a.nameEn}</div>
-                        <div className="text-[10px] opacity-70">{actionDetail(a)}</div>
-                      </div>
-                      <div className="flex items-center gap-1 shrink-0 font-black tabular-nums text-sm">
-                        <PixelShield className="h-3.5 w-3.5" color="currentColor" />
-                        {a.cost}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* UPGRADES TAB */}
-            {shopTab === "upgrades" && (
-              <div className="space-y-3">
-                <div className="pixel-panel px-3 py-2.5 flex items-center gap-3"
-                  style={{ background: "hsl(150 20% 7%)", borderColor: TEAM_COLOR[team] }}>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[10px] tracking-widest uppercase" style={{ color: "hsl(90 8% 55%)" }}>
-                      {ar ? "دخلك لكل إجابة" : "your payout / answer"}
-                    </div>
-                    <div className="text-[11px] mt-0.5" style={{ color: "hsl(90 10% 75%)" }}>
-                      ${incomeTier.payout} × {mult} <span className="opacity-60">· {ar ? "سلسلة" : "streak"} {streak}</span>
-                    </div>
-                  </div>
-                  <div className="font-black tabular-nums text-xl" style={{ color: TEAM_COLOR[team] }}>${incomeTier.payout * mult}</div>
-                </div>
-
-                <UpgradeRow
-                  labelEn="INCOME" labelAr="الدخل" color={TEAM_COLOR[team]}
-                  currentName={incomeName(incomeTier)}
-                  next={nextIncome} nextName={nextIncome ? incomeName(nextIncome) : ""}
-                  detail={nextIncome ? `$${incomeTier.payout} → $${nextIncome.payout}` : ""}
-                  cash={cash} ar={ar} onBuy={() => buyUpgrade("income")}
-                />
-                <UpgradeRow
-                  labelEn="STREAK PROTECTION" labelAr="حماية السلسلة" color={TEAM_COLOR[team]}
-                  currentName={ar ? drainTier.nameAr : drainTier.nameEn}
-                  next={nextDrain} nextName={nextDrain ? (ar ? nextDrain.nameAr : nextDrain.nameEn) : ""}
-                  detail={nextDrain ? (ar ? `تفقد ${nextDrain.dropBy ?? "الكل"} فقط عند الخطأ` : `lose only ${nextDrain.dropBy} on a wrong answer`) : ""}
-                  cash={cash} ar={ar} onBuy={() => buyUpgrade("drain")}
-                />
-                <UpgradeRow
-                  labelEn="CASH INSURANCE" labelAr="تأمين المحفظة" color={TEAM_COLOR[team]}
-                  currentName={ar ? insuranceTier.nameAr : insuranceTier.nameEn}
-                  next={nextInsurance} nextName={nextInsurance ? (ar ? nextInsurance.nameAr : nextInsurance.nameEn) : ""}
-                  detail={nextInsurance ? (ar ? `تفقد ${nextInsurance.lossPct}% فقط عند الخطأ` : `lose only ${nextInsurance.lossPct}% on a wrong answer`) : ""}
-                  cash={cash} ar={ar} onBuy={() => buyUpgrade("insurance")}
-                />
-              </div>
-            )}
-
-            <button onClick={() => setShowShop(false)}
-              className="pixel-button w-full mt-3 py-2 text-xs font-bold"
-              style={{ background: "hsl(0 0% 8%)", borderColor: "hsl(0 0% 22%)", color: "hsl(90 8% 60%)" }}>
-              {ar ? "إغلاق" : "CLOSE"}
-            </button>
+  // ── Done ────────────────────────────────────────────────────────────────
+  if (phase === "done") {
+    const winner = settings.winner === "zombies" ? "zombie" : "human";
+    const won = winner === pRef.current.team;
+    return (
+      <div className="fixed inset-0 overflow-y-auto flex flex-col items-center justify-center gap-6 px-6 py-8 text-center text-white" style={{ background: HVZ.void }}>
+        {winner === "zombie" ? <Biohazard className="h-16 w-16" style={{ color: HVZ.zombie }} /> : <Users className="h-16 w-16" style={{ color: HVZ.human }} />}
+        <div>
+          <div className="text-3xl font-black" style={{ color: winner === "zombie" ? HVZ.zombie : HVZ.human }}>
+            {winner === "zombie" ? (ar ? "فاز الزومبي" : "ZOMBIES WIN") : (ar ? "نجا البشر" : "HUMANS SURVIVED")}
+          </div>
+          <div className="mt-1 text-sm font-bold opacity-60">
+            {won ? (ar ? "فريقك فاز!" : "Your team won!") : (ar ? "حظ أوفر المرة القادمة" : "Better luck next time")}
           </div>
         </div>
-      )}
-
-      {/* ── CONTENT LAYER ─────────────────────────────────────────────────── */}
-      <div className="absolute inset-0 flex flex-col" style={{ zIndex: 2 }}>
-
-        {/* HEADER */}
-        <header className="shrink-0 flex items-center justify-between px-4 py-2.5 safe-top gap-2"
-          style={{ borderBottom: `1px solid hsl(150 20% 20% / 0.5)`, background: "hsl(0 0% 4% / 0.9)", backdropFilter: "blur(10px)" }}>
-          <div className="flex items-center gap-2 min-w-0">
-            <Avatar name={me?.name ?? "?"} team={team} size="sm" />
-            <span className="text-sm font-bold truncate" style={{ color: "hsl(90 10% 82%)" }}>{me?.name ?? "—"}</span>
-          </div>
-
-          <div className="flex items-center gap-1 shrink-0" style={{ color: TEAM_COLOR[team] }}>
-            {team === "human" ? <Users className="h-3.5 w-3.5" /> : <Biohazard className="h-3.5 w-3.5" />}
-            <span className="text-[10px] font-black tracking-widest uppercase">
-              {ar ? (team === "human" ? "البشر" : "الزومبي") : team}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-3 shrink-0">
-            {(cashMultActive || streakLockActive) && (
-              <div className="flex items-center gap-1">
-                {cashMultActive && <TrendingUp className="h-3.5 w-3.5" style={{ color: "hsl(45 78% 60%)" }} />}
-                {streakLockActive && <Lock className="h-3.5 w-3.5" style={{ color: "hsl(200 70% 60%)" }} />}
-              </div>
-            )}
-            <div className="flex items-center gap-1 px-1.5 py-0.5 rounded"
-              style={{ color: streak >= 2 ? "hsl(45 78% 66%)" : "hsl(90 8% 45%)", background: streak >= 2 ? "hsl(45 72% 52% / 0.14)" : "transparent" }}>
-              <PixelFlame className="h-3.5 w-3.5" color="currentColor" />
-              <span className="font-black tabular-nums text-xs">{streak}</span>
-              <span className="font-black tabular-nums text-xs opacity-80">×{mult}</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <PixelShield className="h-3.5 w-3.5" color="hsl(45 76% 58%)" />
-              <span className="font-black tabular-nums text-sm" style={{ color: "hsl(45 76% 64%)" }}>${cash}</span>
-            </div>
-          </div>
-        </header>
-
-        {/* DUAL HEALTH BARS + DAY COUNTER */}
-        <div className="shrink-0 px-3 py-2 space-y-1.5" style={{ background: "hsl(0 0% 4% / 0.7)", borderBottom: "1px solid hsl(150 20% 18% / 0.4)" }}>
-          <div className="text-center text-[10px] font-black tracking-widest" style={{ color: "hsl(90 8% 55%)" }}>
-            {ar ? `يوم ${daysSurvived}/${WIN_DAYS} · ${daySecsLeft}ث` : `DAY ${daysSurvived}/${WIN_DAYS} · ${daySecsLeft}s`}
-          </div>
-          {(["human", "zombie"] as Team[]).map(t => (
-            <div key={t} className="flex items-center gap-2">
-              {t === "human" ? <Users className="h-3 w-3 shrink-0" style={{ color: TEAM_COLOR.human }} /> : <Biohazard className="h-3 w-3 shrink-0" style={{ color: TEAM_COLOR.zombie }} />}
-              <div className="relative h-2.5 flex-1 overflow-hidden rounded" style={{ background: "hsl(0 0% 10%)" }}>
-                <div className="absolute inset-y-0 left-0 transition-all duration-500" style={{ width: `${Math.min(100, (health[t] / maxHealth[t]) * 100)}%`, background: TEAM_COLOR[t] }} />
-              </div>
-              <span className="text-[9px] font-black tabular-nums w-16 text-end shrink-0" style={{ color: TEAM_COLOR[t] }}>
-                {Math.round(health[t])}/{Math.round(maxHealth[t])}%
-              </span>
+        <div dir="ltr" className="flex gap-2.5">
+          {[
+            { label: ar ? "نقاط" : "POINTS", value: String(hud.points), color: "#FFE066" },
+            { label: ar ? "شلل" : "STUNS", value: String(hud.stuns), color: HVZ.human },
+            { label: ar ? "عدوى" : "INFECTED", value: String(hud.infects), color: HVZ.zombie },
+            { label: ar ? "صحيح" : "CORRECT", value: String(me?.correct_answers ?? 0), color: "#FFFFFF" },
+          ].map(s => (
+            <div key={s.label} className="px-3.5 py-3 rounded-2xl" style={{ background: "rgba(255,255,255,0.07)" }}>
+              <div className="text-[9px] tracking-widest font-bold opacity-50">{s.label}</div>
+              <div className="text-2xl font-extrabold tabular-nums" style={{ color: s.color }}>{s.value}</div>
             </div>
           ))}
         </div>
+        <button onClick={() => navigate("/join")}
+          className="px-8 py-3 rounded-full font-extrabold text-sm active:scale-95 transition-transform"
+          style={{ background: "#FFFFFF", color: HVZ.void }}>
+          {ar ? "خروج" : "EXIT"}
+        </button>
+      </div>
+    );
+  }
 
-        {/* ACTION FEED */}
-        {recentActions.length > 0 && (
-          <div className="shrink-0 flex items-center gap-2 px-3 py-1 overflow-x-auto" style={{ background: "hsl(0 0% 4% / 0.7)", borderBottom: "1px solid hsl(150 20% 18% / 0.4)" }}>
-            {recentActions.slice(0, 6).map(a => {
-              const Icon = ACTION_ICON[a.action_key];
-              return (
-                <div key={a.id} className="flex items-center gap-1 shrink-0 px-1.5 py-0.5 rounded" style={{ background: "hsl(150 20% 15% / 0.4)" }}>
-                  <Icon className="h-3 w-3" color={TEAM_COLOR[a.team]} />
-                  <span className="text-[9px] font-bold truncate max-w-[64px]" style={{ color: "hsl(90 8% 70%)" }}>{a.student_name}</span>
-                </div>
-              );
-            })}
+  // ── Playing ─────────────────────────────────────────────────────────────
+  const frozenReason =
+    hud.turning > 0 ? (ar ? "تتحول إلى زومبي..." : "Turning...")
+    : hud.stunned > 0 ? (ar ? "مشلول" : "STUNNED")
+    : zombie && hud.releaseIn > 0 ? (ar ? `الصيد يبدأ بعد ${hud.releaseIn}` : `Hunt starts in ${hud.releaseIn}`)
+    : null;
+  const actionCount = zombie ? hud.charges : hud.ammo;
+
+  return (
+    <div dir={ar ? "rtl" : "ltr"} className="fixed inset-0 overflow-hidden select-none text-white" style={{ background: HVZ.void, touchAction: "none" }}>
+      <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" />
+      {!showQuiz && <PaintJoystick vectorRef={vectorRef} />}
+
+      {/* HUD — forced LTR so the corners don't swap in Arabic. */}
+      <div dir="ltr" className="absolute inset-x-0 top-0 p-3 pointer-events-none flex items-start justify-between gap-2"
+        style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}>
+        <div className="flex flex-col items-start gap-1.5">
+          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full text-[13px] font-black shadow-sm"
+            style={{ background: teamColor, color: HVZ.void }}>
+            {zombie ? <Biohazard className="h-4 w-4" /> : <Users className="h-4 w-4" />}
+            {zombie ? (ar ? "زومبي" : "ZOMBIE") : (ar ? "إنسان" : "HUMAN")}
           </div>
-        )}
-
-        {/* FROZEN BANNER */}
-        {isFrozen && (phase === "question" || phase === "answered") && (
-          <div className="shrink-0 flex items-center justify-center gap-2 px-3 py-2" style={{ background: "hsl(200 70% 15%)", color: "hsl(200 80% 75%)" }}>
-            <Snowflake className="h-4 w-4 animate-pulse" />
-            <span className="text-xs font-black tracking-widest">
-              {ar ? `مجمّد! ${Math.ceil((freezeUntil[team] - now) / 1000)}ث` : `FROZEN! ${Math.ceil((freezeUntil[team] - now) / 1000)}s`}
-            </span>
+          <div className="px-2.5 py-0.5 rounded-full text-[12px] font-extrabold tabular-nums" style={{ background: "rgba(11,15,22,0.7)", color: "#FFE066" }}>
+            {hud.points} {ar ? "نقطة" : "pts"}
           </div>
-        )}
-
-        {/* MAIN */}
-        <main className="flex-1 flex flex-col px-3 py-3 pb-safe overflow-hidden min-h-0">
-
-          {/* WAITING */}
-          {phase === "waiting" && (
-            <div className="max-w-3xl mx-auto w-full py-4 px-1 overflow-y-auto">
-              <div className="text-center mb-5">
-                <div className="text-[10px] tracking-[0.55em] uppercase mb-2" style={{ color: "hsl(90 8% 50%)" }}>
-                  {ar ? "البشر ضد الزومبي" : "HUMANS VS ZOMBIES"}
-                </div>
-                <Avatar name={me?.name ?? "?"} team={team} size="xl" />
-                <div className="font-black text-base tracking-tight mt-2" style={{ color: "hsl(90 10% 85%)" }}>{me?.name ?? "—"}</div>
-                <div className="text-xs mt-1 font-black tracking-widest" style={{ color: TEAM_COLOR[team] }}>
-                  {ar ? (team === "human" ? "أنت من البشر" : "أنت من الزومبي") : (team === "human" ? "YOU ARE HUMAN" : "YOU ARE ZOMBIE")}
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                {(["human", "zombie"] as Team[]).map(t => (
-                  <div key={t} className="pixel-panel p-2" style={{ borderColor: TEAM_COLOR[t] }}>
-                    <div className="flex items-center gap-1.5 mb-2 text-xs font-black tracking-widest" style={{ color: TEAM_COLOR[t] }}>
-                      {t === "human" ? <Users className="h-3.5 w-3.5" /> : <Biohazard className="h-3.5 w-3.5" />}
-                      {ar ? (t === "human" ? "البشر" : "الزومبي") : t.toUpperCase()}
-                    </div>
-                    <div className="space-y-1.5">
-                      {students.filter(s => s.team === t).map(s => (
-                        <div key={s.id} className="flex items-center gap-2">
-                          <Avatar name={s.name} team={t} size="sm" />
-                          <span className="text-xs font-bold truncate" style={{ color: s.id === studentId ? TEAM_COLOR[t] : "hsl(90 10% 75%)" }}>
-                            {s.name}{s.id === studentId && " ←"}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
+          {hud.shield && (
+            <div className="flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-black" style={{ background: "#78DCFF", color: HVZ.void }}>
+              <Shield className="h-3.5 w-3.5" />{ar ? "درع" : "SHIELD"}
             </div>
           )}
+          {hud.sense > 0 && (
+            <div className="flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-black" style={{ background: "#FF6B6B", color: HVZ.void }}>
+              <Radar className="h-3.5 w-3.5" />{Math.ceil(hud.sense / 1000)}s
+            </div>
+          )}
+        </div>
+        <div className="flex flex-col items-end gap-1.5">
+          <div className="flex items-center gap-2 px-3 py-1 rounded-full text-[13px] font-black tabular-nums" style={{ background: "rgba(11,15,22,0.75)" }}>
+            <span className="flex items-center gap-1" style={{ color: HVZ.human }}><Users className="h-3.5 w-3.5" />{hud.humans}</span>
+            <span className="flex items-center gap-1" style={{ color: HVZ.zombie }}><Biohazard className="h-3.5 w-3.5" />{hud.zombies}</span>
+            {hud.secsLeft !== null && <span className="flex items-center gap-1 opacity-90"><Timer className="h-3.5 w-3.5" />{fmt(hud.secsLeft)}</span>}
+          </div>
+        </div>
+      </div>
 
-          {/* DONE */}
-          {phase === "done" && (() => {
-            const myWon = (winner === "humans" && team === "human") || (winner === "zombies" && team === "zombie");
-            return (
-              <div className="max-w-md mx-auto w-full px-4 py-8 flex flex-col items-center gap-4">
-                {winner === "humans" ? <Users className="h-20 w-20" style={{ color: TEAM_COLOR.human }} /> : <Biohazard className="h-20 w-20" style={{ color: TEAM_COLOR.zombie }} />}
-                <div className="text-center">
-                  <div className="text-2xl md:text-3xl font-black tracking-tight" style={{ color: myWon ? "hsl(45 76% 56%)" : "hsl(90 10% 70%)" }}>
-                    {winner === "humans" ? (ar ? "فاز البشر! نجا العالم" : "Humans Win! You survived the apocalypse.")
-                      : (ar ? "فاز الزومبي! انتشرت العدوى بالكامل" : "Zombies Win! The infection took over.")}
-                  </div>
-                  <div className="text-xs mt-2 tracking-[0.3em]" style={{ color: TEAM_COLOR[team] }}>
-                    {myWon ? (ar ? "أنت من الفائزين" : "YOU WERE ON THE WINNING SIDE") : (ar ? "أنت من الخاسرين" : "YOU WERE ON THE LOSING SIDE")}
-                  </div>
-                </div>
-                <div className="pixel-panel p-4 flex items-center gap-4 w-full" style={{ borderColor: TEAM_COLOR[team] }}>
-                  <div className="flex-1 grid grid-cols-2 gap-3">
-                    <div>
-                      <div className="text-[9px] tracking-widest" style={{ color: "hsl(90 8% 55%)" }}>{ar ? "النقود" : "CASH"}</div>
-                      <div className="text-xl font-black tabular-nums" style={{ color: "hsl(45 76% 64%)" }}>${cash}</div>
-                    </div>
-                    <div>
-                      <div className="text-[9px] tracking-widest" style={{ color: "hsl(90 8% 55%)" }}>{ar ? "صحيح" : "CORRECT"}</div>
-                      <div className="text-xl font-black tabular-nums" style={{ color: "hsl(142 50% 62%)" }}>{me?.correct_answers ?? 0}</div>
-                    </div>
-                  </div>
-                </div>
-                <button onClick={() => navigate("/join")} className="pixel-button mt-2 px-6 py-3"
-                  style={{ background: `${TEAM_COLOR[team]}22`, borderColor: TEAM_COLOR[team], color: TEAM_COLOR[team] }}>
-                  {ar ? "خروج" : "EXIT"}
-                </button>
+      {feed.length > 0 && (
+        <div className="absolute inset-x-0 flex flex-col items-center gap-1 pointer-events-none px-4" style={{ top: "calc(max(0.75rem, env(safe-area-inset-top)) + 4.2rem)" }}>
+          {feed.map(e => (
+            <div key={e.id} dir={ar ? "rtl" : "ltr"} className="max-w-[70vw] truncate px-3 py-1 rounded-full text-[11px] font-extrabold shadow-sm animate-fade-up"
+              style={{ background: e.zombie ? "rgba(47,107,34,0.92)" : "rgba(30,70,120,0.92)" }}>
+              {e.text}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {!zombie && hud.releaseIn > 0 && !showQuiz && (
+        <div className="absolute inset-x-0 top-[30%] flex justify-center pointer-events-none">
+          <div className="px-4 py-2 rounded-full text-sm font-black" style={{ background: "rgba(11,15,22,0.8)", color: HVZ.zombie }}>
+            {ar ? `الزومبي يخرجون بعد ${hud.releaseIn} — اختبئ!` : `Zombies get out in ${hud.releaseIn} — hide!`}
+          </div>
+        </div>
+      )}
+
+      {frozenReason && !showQuiz && (
+        <div className="absolute inset-x-0 top-[40%] flex justify-center pointer-events-none">
+          <div className="px-5 py-2.5 rounded-full text-base font-black animate-pulse"
+            style={{ background: hud.stunned > 0 ? "#8CC8FF" : HVZ.zombie, color: HVZ.void }}>
+            {frozenReason}
+          </div>
+        </div>
+      )}
+
+      {toast && (
+        <div className="absolute inset-x-0 top-[50%] flex justify-center px-8 pointer-events-none">
+          <div className="px-5 py-2.5 rounded-full text-sm font-extrabold text-center shadow-lg"
+            style={{ background: toast.bad ? "#B4342F" : "#1E7A45" }}>
+            {toast.text}
+          </div>
+        </div>
+      )}
+
+      {/* Bottom controls: answer on the left, the team's action on the right. */}
+      {!showQuiz && (
+        <div dir="ltr" className="absolute inset-x-0 flex items-end justify-between px-4 pointer-events-none"
+          style={{ bottom: "calc(env(safe-area-inset-bottom) + 1rem)" }}>
+          <button onClick={openQuiz}
+            className={cn("pointer-events-auto z-10 px-5 py-3 rounded-full text-sm font-extrabold shadow-lg active:scale-95 transition-transform",
+              actionCount === 0 && "animate-pulse")}
+            style={{ background: "#FFFFFF", color: HVZ.void }}>
+            {zombie ? (ar ? "أجب: +1 انطلاقة" : "Answer: +1 sprint") : (ar ? `أجب: +${AMMO.perCorrect} ذخيرة` : `Answer: +${AMMO.perCorrect} ammo`)}
+          </button>
+          <button
+            onPointerDown={e => { e.stopPropagation(); act(); }}
+            className="pointer-events-auto z-10 relative h-20 w-20 rounded-full flex flex-col items-center justify-center font-black shadow-xl active:scale-90 transition-transform"
+            style={{
+              background: actionCount > 0 ? teamColor : "rgba(255,255,255,0.18)",
+              color: HVZ.void, border: "4px solid rgba(255,255,255,0.9)",
+            }}>
+            {zombie ? <Zap className="h-7 w-7" fill="currentColor" /> : <Crosshair className="h-7 w-7" />}
+            <span className="text-[11px] leading-none mt-0.5">{zombie ? (ar ? "انطلق" : "SPRINT") : (ar ? "أطلق" : "SHOOT")}</span>
+            <span className="absolute -top-1 -right-1 h-7 min-w-7 px-1.5 rounded-full flex items-center justify-center text-sm tabular-nums"
+              style={{ background: HVZ.void, color: "#FFFFFF", border: "2px solid #FFFFFF" }}>
+              {actionCount}
+            </span>
+          </button>
+        </div>
+      )}
+
+      {/* Question screen. You stand still under it, anyone can walk up. */}
+      {showQuiz && (
+        <div dir={ar ? "rtl" : "ltr"} className="absolute inset-0 z-40 flex flex-col" style={{ background: "rgba(11,15,22,0.94)" }}>
+          <div className="flex items-center justify-between gap-3 px-4 py-3 shrink-0" style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}>
+            <div className="relative flex items-center gap-2 min-w-0">
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full shadow-sm" style={{ background: teamColor, color: HVZ.void }}>
+                {zombie ? <Zap className="h-3.5 w-3.5" /> : <Crosshair className="h-3.5 w-3.5" />}
+                <span className="text-sm font-black tabular-nums">{actionCount}</span>
               </div>
-            );
-          })()}
-
-          {/* QUESTION */}
-          {(phase === "question" || phase === "answered") && currentQ && (
-            <div className="flex-1 flex flex-col gap-2.5 max-w-2xl mx-auto w-full min-h-0 pe-[72px] lg:pe-0">
-              <div className="pixel-panel shrink-0 px-4 py-4 relative" style={{ background: "hsl(0 0% 7%)", borderColor: TEAM_COLOR[team] }}>
-                {currentQ.image_url && (
-                  <img src={currentQ.image_url} alt="" className="mx-auto max-h-[24vh] w-auto object-contain mb-3 border-2 border-white/20" />
-                )}
-                <p className="text-base md:text-lg font-bold leading-snug text-center" style={{ color: "hsl(90 10% 88%)" }}>{currentQ.text}</p>
-                {timerEnabled && (
-                  <>
-                    <div className="pixel-progress mt-3 h-2" style={{ background: "hsl(0 0% 10%)", borderColor: timerColor }}>
-                      <div className="pixel-progress-fill" style={{ width: `${timerFrac * 100}%`, background: timerColor, transition: "width 0.2s linear, background 0.5s" }} />
-                    </div>
-                    <div className="mt-1.5 text-right text-[10px] font-black tabular-nums" style={{ color: timerColor }}>{timeLeft}s</div>
-                  </>
-                )}
+              <span className="text-xs font-bold truncate opacity-70">
+                {ar ? `${hud.streak % PERK_STREAK}/${PERK_STREAK} للـ${zombie ? "حاسة" : "درع"}` : `${hud.streak % PERK_STREAK}/${PERK_STREAK} to ${zombie ? "sense" : "shield"}`}
+              </span>
+              <reward.Layer />
+            </div>
+            <button onClick={() => setShowQuiz(false)}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-black active:scale-95 transition-transform"
+              style={{ background: "#FFFFFF", color: HVZ.void }}>
+              <X className="h-3.5 w-3.5" />{ar ? "عودة" : "BACK"}
+            </button>
+          </div>
+          <div className="px-4 text-[11px] font-bold text-center opacity-60 shrink-0">
+            {ar ? "أنت واقف مكانك — انتبه لمن يقترب" : "You're standing still — watch your back"}
+          </div>
+          {currentQ ? (
+            <div className="flex-1 flex flex-col justify-center gap-4 p-4 min-h-0 overflow-y-auto">
+              <div className="px-5 py-6 rounded-[28px] shrink-0" style={{ background: "#1B2230" }}>
+                {currentQ.image_url && <img src={currentQ.image_url} alt="" className="mx-auto max-h-[22vh] w-auto object-contain mb-4 rounded-2xl" />}
+                <p className="text-[17px] font-extrabold leading-snug text-center">{currentQ.text}</p>
               </div>
-
-              <div className="grid grid-cols-2 gap-2 flex-1 min-h-0">
+              <div className="grid grid-cols-2 gap-3 shrink-0">
                 {currentQ.options.map((opt, i) => {
                   const isCorrect = i === currentQ.correct_index;
-                  const isPicked  = picked === i;
-                  const show      = picked !== null;
-                  let bg = "hsl(0 0% 7%)", borderColor = "hsl(150 20% 18% / 0.6)", color = "hsl(90 10% 80%)";
-                  if (show && isCorrect)      { bg = "hsl(142 55% 9%)"; borderColor = "hsl(142 60% 38%)"; color = "hsl(142 80% 72%)"; }
-                  else if (show && isPicked)  { bg = "hsl(0 55% 10%)";  borderColor = "hsl(0 65% 48%)";   color = "hsl(0 80% 70%)"; }
-                  else if (show && !isCorrect){ bg = "hsl(0 0% 5%)";    borderColor = "hsl(0 0% 12%)";    color = "hsl(90 6% 35%)"; }
+                  const isPicked = picked === i;
+                  const show = picked !== null;
+                  let bg = ANSWER_COLORS[i % 4], col = "#FFFFFF";
+                  if (show && isCorrect) bg = "#22a35a";
+                  else if (show && isPicked) bg = "#d64545";
+                  else if (show) { bg = "rgba(255,255,255,0.06)"; col = "rgba(255,255,255,0.35)"; }
                   return (
-                    <button key={i} disabled={picked !== null || isFrozen} onClick={() => submit(i)}
-                      className="pixel-button relative flex items-center justify-center px-3 py-3 text-sm font-bold text-center transition-all duration-200"
-                      style={{ minHeight: "72px", background: bg, borderColor, color, opacity: isFrozen ? 0.4 : 1 }}>
-                      <span className="absolute top-2 left-2.5 text-[9px] font-black opacity-35 tracking-widest">{["A","B","C","D"][i]}</span>
+                    <button key={i} disabled={show} onClick={() => answer(i)}
+                      className={cn("min-h-[84px] px-3 py-4 rounded-[24px] text-[15px] font-extrabold text-center flex items-center justify-center transition-all duration-200 active:scale-95",
+                        show && isCorrect && "animate-answer-correct scale-[1.03]", show && isPicked && !isCorrect && "animate-answer-wrong")}
+                      style={{ background: bg, color: col, boxShadow: show ? "none" : "0 5px 0 0 rgba(0,0,0,0.35)" }}>
                       {opt}
                     </button>
                   );
                 })}
               </div>
             </div>
+          ) : (
+            <div className="flex-1 flex items-center justify-center text-sm font-bold px-6 text-center opacity-60">
+              {ar ? "لا توجد أسئلة في هذا الاختبار." : "This quiz has no questions."}
+            </div>
           )}
-        </main>
-      </div>
+        </div>
+      )}
     </div>
   );
 };
-
-const UpgradeRow = ({ labelEn, labelAr, color, currentName, next, nextName, detail, cash, ar, onBuy }: {
-  labelEn: string; labelAr: string; color: string; currentName: string;
-  next: { level: number; cost: number } | undefined; nextName: string; detail: string;
-  cash: number; ar: boolean; onBuy: () => void;
-}) => (
-  <div>
-    <div className="flex items-center justify-between px-1 pb-1.5 text-[10px] tracking-widest uppercase" style={{ color: "hsl(90 8% 50%)" }}>
-      <span>{ar ? labelAr : labelEn}</span>
-      <span style={{ color }}>{currentName}</span>
-    </div>
-    {next ? (
-      <button disabled={cash < next.cost} onClick={onBuy}
-        className="pixel-button w-full flex items-center gap-3 px-3 py-2.5 text-start transition-all"
-        style={{
-          background: cash >= next.cost ? "hsl(150 25% 8%)" : "hsl(0 0% 5%)",
-          borderColor: cash >= next.cost ? color : "hsl(0 0% 15%)",
-          color: cash >= next.cost ? "hsl(90 10% 88%)" : "hsl(90 6% 35%)",
-        }}>
-        <div className="flex-1 min-w-0">
-          <div className="text-sm font-bold truncate">{nextName}</div>
-          <div className="text-[10px] opacity-70">{detail}</div>
-        </div>
-        <div className="flex items-center gap-1 shrink-0 font-black tabular-nums text-sm">
-          <PixelShield className="h-3.5 w-3.5" color="currentColor" />
-          {next.cost}
-        </div>
-      </button>
-    ) : (
-      <div className="text-center text-xs py-2" style={{ color: "hsl(45 76% 56%)" }}>{ar ? "أقصى مستوى!" : "MAX LEVEL"}</div>
-    )}
-  </div>
-);
 
 export default HumansVsZombiesGame;

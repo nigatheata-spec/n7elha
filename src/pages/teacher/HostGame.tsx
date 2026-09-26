@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/auth";
 import { Copy, Play, Users, Trash2, Zap, Heart, Skull, Timer, Trophy, Flame, ChevronLeft, Check, Minus, Plus, ListChecks, Biohazard, ChevronUp, QrCode, BookOpen, Link2 } from "lucide-react";
 import { BitcoinIcon, LavaBucketIcon, DynamiteIcon, PaintRollerIcon } from "@/components/game/icons";
 import { computeArenaSize } from "@/lib/paintFight";
+import { roomsFor, zeroCount } from "@/lib/humansVsZombies";
 import { toast } from "@/components/ui/sonner";
 import { readSettings } from "@/lib/sessionSettings";
 
@@ -62,8 +63,8 @@ const MODES: { id: GameMode; icon: React.ReactNode; label: string; labelAr: stri
     icon: <Biohazard className="h-6 w-6" strokeWidth={2} />,
     label: "Humans vs Zombies",
     labelAr: "البشر ضد الزومبي",
-    desc: "Two teams, two health bars — heal, upgrade, sabotage, survive",
-    descAr: "فريقان، شريطا صحة — عالج، طوّر، خرّب، انجُ",
+    desc: "Run, hide, stun the horde — or join it",
+    descAr: "اهرب، اختبئ، أوقف الزومبي — أو انضم إليهم",
     accent: "#4a7a3a",
     num: "04",
   },
@@ -323,6 +324,18 @@ const HostGame = () => {
       const { cols, rows } = computeArenaSize(students.length);
       patch.settings = { ...readSettings(cur?.settings), arenaCols: cols, arenaRows: rows };
     }
+    if (mode === "humansvszombies") {
+      // The building is sized for the roster at Start, and the first zombies
+      // are picked here, before anyone's phone starts playing, so every phone
+      // loads already knowing which side it's on.
+      const { data: cur } = await supabase.from("game_sessions").select("settings").eq("id", sessionId).maybeSingle();
+      const { data: roster } = await supabase.from("game_students").select("id").eq("session_id", sessionId);
+      const ids = (roster ?? []).map(r => r.id).sort(() => Math.random() - 0.5);
+      const zeros = ids.slice(0, zeroCount(ids.length));
+      await supabase.from("game_students").update({ team: "human" }).eq("session_id", sessionId);
+      if (zeros.length) await supabase.from("game_students").update({ team: "zombie" }).in("id", zeros);
+      patch.settings = { ...readSettings(cur?.settings), hvzRooms: roomsFor(ids.length), winner: null };
+    }
     await supabase.from("game_sessions").update(patch).eq("id", sessionId);
     navigate(`/app/games/${sessionId}/monitor`);
   };
@@ -549,12 +562,12 @@ const HostGame = () => {
                 <>
                   <p className="text-black/65 leading-relaxed">
                     {ar
-                      ? "ينقسم الطلاب إلى فريقين، ولكل فريق شريط صحة ينخفض تلقائياً مع الوقت. الإجابات الصحيحة تكسب نقوداً لعلاج فريقك أو لتخريب الفريق الآخر. يفوز الفريق الذي يبقى شريط صحته فوق الصفر — أو صاحب الصحة الأعلى عند نهاية اليوم الخامس."
-                      : "Students split into two teams, each with a health bar that drains automatically over time. Correct answers earn cash to heal your own team or sabotage the other side. Whichever team's health survives — or is higher by the end of Day 5 — wins."}
+                      ? "كل طالب يتحرك بشخصيته في مبنى من الغرف والممرات على جهازه، ولا يرى إلا ما أمامه. بعضهم يبدأ زومبي، ومن يلمسه زومبي يتحول. البشر معهم مسدس يشلّ الزومبي لثوانٍ. الإجابة الصحيحة تعطي ذخيرة أو انطلاقة، لكن الطالب يقف مكانه وهو يجيب. ينجو البشر إن بقي أحدهم حتى نهاية الوقت."
+                      : "Every student moves their own character through a building of rooms and hallways on their phone, and only sees what's in front of them. A few start as zombies; anyone they touch turns. Humans carry a stun gun that freezes a zombie for a few seconds. Correct answers give ammo or sprints, but you stand still while answering. Humans win if anyone is still human when time runs out."}
                   </p>
                   <div className="flex items-center gap-2 text-black/45">
                     <Biohazard className="h-4 w-4 shrink-0" style={{ color: selectedAccent }} />
-                    <span>{ar ? "فريقان، نتيجة واحدة" : "Two teams, one outcome"}</span>
+                    <span>{ar ? "الخريطة على الهواتف، والنتيجة على الشاشة" : "The map is on the phones, the score on the board"}</span>
                   </div>
                 </>
               )}

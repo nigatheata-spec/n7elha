@@ -43,6 +43,8 @@ const Homework    = lazy(() => import("./pages/play/Homework"));
 const DldPreview  = lazy(() => import("./pages/play/DldPreview"));
 // Dev-only rules/art preview for Paint Fight (see the file header).
 const PfPreview   = lazy(() => import("./pages/play/PaintFightPreview"));
+// Dev-only playable preview for Humans vs Zombies, with bots (see the file header).
+const HvzPreview  = lazy(() => import("./pages/play/HvzPreview"));
 // Dev-only layout preview for the analytics page over synthetic data (see the file header).
 const AnalyticsPreview = lazy(() => import("./pages/teacher/AnalyticsPreview"));
 const NotFound    = lazy(() => import("./pages/NotFound"));
@@ -94,6 +96,7 @@ const AppContent = () => {
             <Route path="/join" element={<Join />} />
             {import.meta.env.DEV && <Route path="/join/dld-preview" element={<DldPreview />} />}
             {import.meta.env.DEV && <Route path="/join/pf-preview" element={<PfPreview />} />}
+            {import.meta.env.DEV && <Route path="/join/hvz-preview" element={<HvzPreview />} />}
             {import.meta.env.DEV && <Route path="/join/analytics-preview" element={<AnalyticsPreview />} />}
             <Route path="/join/:sessionId" element={<Game />} />
             <Route path="/scan/:kitId/:typeCode" element={<ScanSquare />} />

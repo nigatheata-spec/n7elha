@@ -29,8 +29,8 @@ export type SessionSettings = {
   lavaSnapshotAt?: string | null;
 
   /* Humans vs Zombies */
-  dayCycleEndsAt?: string | null;
-  daysSurvived?: number;
+  /** Room grid [across, down], fixed at Start from the roster. */
+  hvzRooms?: [number, number];
   winner?: string | null;
 
   /* Paint Fight */

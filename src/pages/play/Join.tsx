@@ -244,11 +244,8 @@ const Join = () => {
         avatar_color: avatarColorIdx, avatar_face: avatarFaceIdx,
       };
       if (sess.settings?.mode === "humansvszombies") {
-        const { data: existing } = await supabase.from("game_students").select("team").eq("session_id", sess.id) as any;
-        const humanCount  = (existing ?? []).filter((s: any) => s.team === "human").length;
-        const zombieCount = (existing ?? []).filter((s: any) => s.team === "zombie").length;
-        payload.team = humanCount === zombieCount ? (Math.random() < 0.5 ? "human" : "zombie")
-          : humanCount < zombieCount ? "human" : "zombie";
+        // Everyone joins human; the first zombies are drawn at Start.
+        payload.team = "human";
       }
       if (sess.settings?.mode === "paintfight") {
         const { count } = await supabase.from("game_students").select("id", { count: "exact", head: true }).eq("session_id", sess.id);
