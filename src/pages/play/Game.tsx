@@ -68,6 +68,27 @@ const Game = () => {
   const [qSeed, setQSeed] = useState(0);
   const studentId = sessionId ? (localStorage.getItem(`hash_student_${sessionId}`) ?? (isPreview ? "me" : null)) : null;
   const startedAtRef = useRef<number>(0);
+
+  // Removed or renamed by the teacher. This channel is set up for every mode
+  // (the mode components render below it), so it's the one place to notice.
+  // A kick arrives as `approved = false` just before the row is deleted.
+  const standingRef = useRef<{ seen: boolean; name: string | null }>({ seen: false, name: null });
+  const checkStanding = (m: any) => {
+    const st = standingRef.current;
+    const isAr = (sessionRef.current?.settings?.lang ?? i18n.language) === "ar";
+    if (m && m.approved !== false) {
+      if (st.seen && st.name && m.name !== st.name) toast(isAr ? `غيّر المعلّم اسمك إلى ${m.name}` : `Your teacher changed your name to ${m.name}`);
+      st.seen = true; st.name = m.name;
+      return;
+    }
+    if (!st.seen) return;
+    st.seen = false;
+    localStorage.removeItem(`hash_student_${sessionId}`);
+    toast.error(isAr ? "أخرجك المعلّم من اللعبة" : "Your teacher removed you from the game");
+    navigate("/join");
+  };
+  const sessionRef = useRef<any>(null);
+  sessionRef.current = session;
   const askedCount = useRef(0);
   // Keep a ref to students so hack_events callback can read current names
   // without causing the realtime channel to tear down on every score update.
@@ -125,6 +146,7 @@ const Game = () => {
       }
       const { data: ss } = await supabase.from("game_students").select("*").eq("session_id", sessionId).order("crypto", { ascending: false });
       setStudents(ss ?? []);
+      checkStanding((ss ?? []).find((x: any) => x.id === studentId));
       setMe((ss ?? []).find((x: any) => x.id === studentId) ?? null);
     })();
   }, [sessionId, studentId]);
@@ -145,6 +167,7 @@ const Game = () => {
           setStudents(ss ?? []);
           const m = (ss ?? []).find((x: any) => x.id === studentId);
           if (m) setMe(m);
+          checkStanding(m);
         })
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "hack_events", filter: `session_id=eq.${sessionId}` },
         (p: any) => {

@@ -3,12 +3,13 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
-import { Copy, Play, Users, Trash2, Zap, Heart, Skull, Timer, Trophy, Flame, ChevronLeft, Check, Minus, Plus, ListChecks, Biohazard, ChevronUp, QrCode, BookOpen, Link2 } from "lucide-react";
+import { Copy, Play, Users, Zap, Heart, Skull, Timer, Trophy, Flame, ChevronLeft, Check, Minus, Plus, ListChecks, Biohazard, ChevronUp, QrCode, BookOpen, Link2 } from "lucide-react";
 import { BitcoinIcon, LavaBucketIcon, DynamiteIcon, PaintRollerIcon } from "@/components/game/icons";
 import { computeArenaSize } from "@/lib/paintFight";
 import { roomsFor, zeroCount } from "@/lib/humansVsZombies";
 import { toast } from "@/components/ui/sonner";
 import { readSettings } from "@/lib/sessionSettings";
+import { PlayerRow } from "@/components/teacher/PlayerManager";
 
 const genCode = () => {
   const c = "0123456789";
@@ -391,10 +392,6 @@ const HostGame = () => {
     // panel collapsing back to "Open lobby" is the confirmation
   };
 
-  const removeStudent = async (id: string) => {
-    await supabase.from("game_students").delete().eq("id", id);
-  };
-
   const selectedMode = mode ? MODES.find(m => m.id === mode)! : null;
 
   // ── Mode picker ───────────────────────────────────────────────────────────
@@ -747,18 +744,7 @@ const HostGame = () => {
                     </div>
                   ) : (
                     <div className="space-y-1.5 max-h-56 overflow-auto">
-                      {students.map(s => (
-                        <div key={s.id}
-                          className="flex items-center justify-between rounded-lg px-3 py-2 text-sm group bg-white border border-black/[0.06]">
-                          <span className="font-medium text-[#3F5A63] truncate">{s.name}</span>
-                          <button
-                            onClick={() => removeStudent(s.id)}
-                            className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded text-red-400"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
-                        </div>
-                      ))}
+                      {students.map(s => <PlayerRow key={s.id} s={s} ar={ar} />)}
                     </div>
                   )}
                 </div>

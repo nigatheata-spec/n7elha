@@ -14,6 +14,7 @@ import HumansVsZombiesMonitor from "./HumansVsZombiesMonitor";
 import DontLookDownMonitor from "./DontLookDownMonitor";
 import PaintFightMonitor from "./PaintFightMonitor";
 import PhysicalMonitor from "./PhysicalMonitor";
+import { PlayersButton } from "@/components/teacher/PlayerManager";
 
 const fmt = (n: number) => n.toLocaleString();
 
@@ -135,12 +136,14 @@ const GameMonitor = () => {
 
   if (!session) return null;
 
-  if (session.settings?.mode === "hotpotato") return <HotPotatoMonitor session={session} sessionId={sessionId!} />;
-  if (session.settings?.mode === "lavafloor") return <LavaFloorMonitor session={session} sessionId={sessionId!} />;
-  if (session.settings?.mode === "classic") return <ClassicMonitor session={session} sessionId={sessionId!} />;
-  if (session.settings?.mode === "humansvszombies") return <HumansVsZombiesMonitor session={session} sessionId={sessionId!} />;
-  if (session.settings?.mode === "dontlookdown") return <DontLookDownMonitor session={session} sessionId={sessionId!} />;
-  if (session.settings?.mode === "paintfight") return <PaintFightMonitor session={session} sessionId={sessionId!} />;
+  // Rename / remove players, on every mode that has them.
+  const players = session.status === "running" ? <PlayersButton sessionId={sessionId!} ar={ar} /> : null;
+  if (session.settings?.mode === "hotpotato") return <><HotPotatoMonitor session={session} sessionId={sessionId!} />{players}</>;
+  if (session.settings?.mode === "lavafloor") return <><LavaFloorMonitor session={session} sessionId={sessionId!} />{players}</>;
+  if (session.settings?.mode === "classic") return <><ClassicMonitor session={session} sessionId={sessionId!} />{players}</>;
+  if (session.settings?.mode === "humansvszombies") return <><HumansVsZombiesMonitor session={session} sessionId={sessionId!} />{players}</>;
+  if (session.settings?.mode === "dontlookdown") return <><DontLookDownMonitor session={session} sessionId={sessionId!} />{players}</>;
+  if (session.settings?.mode === "paintfight") return <><PaintFightMonitor session={session} sessionId={sessionId!} />{players}</>;
   if (session.settings?.mode === "physical") return <PhysicalMonitor session={session} sessionId={sessionId!} />;
 
   const mm = left != null ? String(Math.floor(left / 60)).padStart(2, "0") : null;
@@ -151,6 +154,7 @@ const GameMonitor = () => {
       className="theme-game terminal-screen crt-flicker fixed inset-0 overflow-hidden font-mono flex flex-col"
       style={{ color: GREEN }}
     >
+      {players}
       {ConfirmDialog}
       <Seo
         path={`/app/games/${sessionId}/monitor`}
