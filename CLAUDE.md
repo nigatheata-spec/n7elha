@@ -35,11 +35,10 @@ npx supabase@latest secrets set KEY=value               # Set edge function secr
 
 ## What this app is
 
-**nefelha** is an Arabic-first classroom quiz game platform. Teachers create quizzes, host live sessions with a 4-char room code, and students join on their phones. Nine game modes (`session.settings.mode`, picked in `HostGame.tsx`):
+**nefelha** is an Arabic-first classroom quiz game platform. Teachers create quizzes, host live sessions with a 4-char room code, and students join on their phones. Game modes (`session.settings.mode`, picked in `HostGame.tsx`):
 
 - **Classic** (`classic`) — the original quiz race. Answer fast, earn more.
 - **Crypto Rush** (`crypto_rush`) — hacking/crypto theme. Correct answers earn crypto. Power-up lets players hack rivals to steal crypto.
-- **Dodgeball** (`dodgeball`) — wrong answers cost lives (start with 1). Teacher fires stop-the-clock "timer rounds"; closest tap to 10s wins a bonus life (keep or gift to another player). Last player standing wins.
 - **Hot Potato** (`hotpotato`) — a live bomb on a fuse gets passed between players; answer fast or get caught holding it when it blows.
 - **Lava Floor** (`lavafloor`) — co-op survival: correct answers earn currency, spent on blocks (`lavaFloorBlocks.ts`: plank/brick/staircase/house, increasing cost and height) to build above the rising lava.
 - **Humans vs Zombies** (`humansvszombies`) — two teams, two health bars. Correct answers fund team upgrades (`humansVsZombies.ts`: income tiers, streak-drain protection); heal, upgrade, sabotage, survive.
@@ -62,15 +61,15 @@ All state lives in Supabase — no separate backend. Everything is either a dire
 **Teacher (`/app/*`)** — requires auth, wrapped in `TeacherLayout` (fixed sidebar, `collapsible="none"`, 5.5rem wide, icon-above-label style):
 - `/app` → Dashboard
 - `/app/quizzes` → list; `/app/quizzes/new?ai=1` → AI builder; `/app/quizzes/:id/edit` → manual editor
-- `/app/host/:quizId` → mode picker (all 8 modes) then lobby config
-- `/app/games/:sessionId/monitor` → single route, `GameMonitor.tsx` — reads `session.settings.mode` and renders the matching `*Monitor` component (`ClassicMonitor`, `DodgeballMonitor`, `HotPotatoMonitor`, `LavaFloorMonitor`, `HumansVsZombiesMonitor`, `DontLookDownMonitor`, `PaintFightMonitor`; unmatched mode falls through to `GameMonitor`'s own Crypto Rush view)
+- `/app/host/:quizId` → mode picker then lobby config
+- `/app/games/:sessionId/monitor` → single route, `GameMonitor.tsx` — reads `session.settings.mode` and renders the matching `*Monitor` component (`ClassicMonitor`, `HotPotatoMonitor`, `LavaFloorMonitor`, `HumansVsZombiesMonitor`, `DontLookDownMonitor`, `PaintFightMonitor`; unmatched mode falls through to `GameMonitor`'s own Crypto Rush view)
 - `/app/games/:sessionId/results` → cinematic results screen
 - `/app/analytics` → `Analytics.tsx`, a view of `src/lib/analytics.ts` (pure, tested): per-session accuracy over time, hardest questions with the wrong option most students picked, quizzes by times hosted, and students to check on — folded by the *name they typed*, since students never log in. Fetches page through PostgREST's 1000-row cap with `.range()`.
 - `/app/settings` → account (display name, password) + language switcher
 
 **Student (`/play/*`)** — no auth, identity in `localStorage`:
 - `/play` → join with room code
-- `/play/:sessionId` → single route, `Game.tsx` — reads `session.settings.mode` and renders the matching `*Game` component (`ClassicGame`, `DodgeballGame`, `HotPotatoGame`, `LavaFloorGame`, `HumansVsZombiesGame`, `DontLookDownGame`, `PaintFightGame`; unmatched mode falls through to `Game.tsx`'s own Crypto Rush view)
+- `/play/:sessionId` → single route, `Game.tsx` — reads `session.settings.mode` and renders the matching `*Game` component (`ClassicGame`, `HotPotatoGame`, `LavaFloorGame`, `HumansVsZombiesGame`, `DontLookDownGame`, `PaintFightGame`; unmatched mode falls through to `Game.tsx`'s own Crypto Rush view)
 
 Adding a new mode means: a `settings.mode` string, a `*Game.tsx` + `*Monitor.tsx` pair, an entry in `HostGame.tsx`'s `MODES` array, the `if (mode === "...")` branch in both `Game.tsx` and `GameMonitor.tsx`, and usually a per-mode `src/lib/<mode>.ts` (+ a `<mode>Render.ts` for canvas-based modes) plus a migration adding its `game_students`/`game_sessions` columns.
 
@@ -81,11 +80,9 @@ Adding a new mode means: a `settings.mode` string, a `*Game.tsx` + `*Monitor.tsx
 - `game_sessions` — `code`, `status` (lobby→running→finished), `settings` jsonb:
   - shared: `mode`, `minutes`, `maxStudents`, `timePerQ`
   - Crypto Rush: `cryptoCap`
-  - Dodgeball: `timerActive`, `timerWinnerId`, `timerRoundId`, `timerStartedAt`
-- `game_students` — per-player per-session; shared: `correct_answers`, `total_answers`; Crypto Rush: `crypto`, `hacks_made`, `hacks_received`, `is_breached`, `password`; Dodgeball: `lives`, `eliminated`, `eliminated_at`; every other mode adds its own columns in its own migration (e.g. `fight_hue` for Paint Fight, energy/checkpoint columns for Don't Look Down) — check `supabase/migrations/` for the mode's migration file rather than assuming this list is exhaustive
+- `game_students` — per-player per-session; shared: `correct_answers`, `total_answers`; Crypto Rush: `crypto`, `hacks_made`, `hacks_received`, `is_breached`, `password`; every other mode adds its own columns in its own migration (e.g. `fight_hue` for Paint Fight, energy/checkpoint columns for Don't Look Down) — check `supabase/migrations/` for the mode's migration file rather than assuming this list is exhaustive
 - `hack_events` — Crypto Rush hack log
 - `question_responses` — per-student per-question answer records
-- `dodgeball_timer_taps` — one row per player per timer round: `elapsed_ms`, `timer_round_id` (unique constraint prevents duplicates)
 - `paint_fight_strokes` — Paint Fight's append-only log: one row per client flush carrying a batch of cell indices and an `op` (`claim` | `wipe`), see `paintFight.ts`'s header comment. (`paint_fight_powerups` is gone — the mode has had no power-ups for a while and the table was dropped with the territory rewrite.)
 - `kits` — Physical Games boards, `id` is the printed short code (e.g. `K4471`), `status` (active|disabled); manually seeded, no admin UI yet. `game_sessions.kit_id` links a session to its kit.
 - `physical_used_questions` — `(session_id, question_id)`, tracks which of a Physical Games session's own quiz questions have already been dispensed, cleared per-difficulty on exhaustion (see `physicalGames.ts`)
@@ -99,15 +96,6 @@ Adding a new mode means: a `settings.mode` string, a `*Game.tsx` + `*Monitor.tsx
 - Hack power-up → `hacking` phase: `HackingFlow` picks weighted random target, shows 5 password choices (1 real + 4 decoys)
 - If targeted → `breach` phase: `BreachModal` animation
 - `GameMonitor.tsx` auto-ends game: polls every 500ms, sets `status = "finished"` when time or crypto cap hit
-
-### Game loop: Dodgeball
-
-`DodgeballGame.tsx` phase machine: `waiting → question → answered → timer → tapped → life_gift → eliminated → revived → done`
-
-- Wrong answer → lose a life; 0 lives → `eliminated`
-- Teacher fires timer rounds from `DodgeballMonitor.tsx`; broadcast via `session.settings.timerActive/timerRoundId/timerStartedAt`
-- Timer winner gets +1 life → `life_gift` phase: keep or gift to any player (gifting eliminated player revives them)
-- **Critical implementation detail**: `handleAnswer` uses `pickedRef` (sync ref, not state) as a double-execution guard. Phase transition fires immediately via `setTimeout` — DB updates are fire-and-forget (`.catch(() => {})`). This pattern is required: awaiting DB before transitioning phase caused the game to freeze when Supabase was slow.
 
 ### Game loop: other modes
 
@@ -123,7 +111,7 @@ Briefer than the two above since they're less central, but real and shipped:
 
 ### Results page
 
-`GameResults.tsx`: `loading → cinematic → results`. Cinematic is pure CSS `@keyframes` (no framer-motion) with staggered `animation-delay`. Keyframes defined in `src/index.css`: `result-crash-in`, `result-scan`, `result-grow-x`, `result-fade-in`. Mode-aware sorting: Crypto Rush by `crypto` desc, Dodgeball by `!eliminated` then `eliminated_at` desc.
+`GameResults.tsx`: `loading → cinematic → results`. Cinematic is pure CSS `@keyframes` (no framer-motion) with staggered `animation-delay`. Keyframes defined in `src/index.css`: `result-crash-in`, `result-scan`, `result-grow-x`, `result-fade-in`. Mode-aware sorting: Crypto Rush by `crypto` desc.
 
 ### AI edge functions
 
@@ -148,7 +136,6 @@ A new teacher's empty states (dashboard, quiz list) offer `TryGameButton`: one t
 
 CSS variables and custom classes in `src/index.css`:
 - `theme-game` — dark teal/coral for Crypto Rush game views
-- `theme-dodgeball` — dark crimson/orange-red for Dodgeball views
 - `terminal-screen`, `terminal-scanlines`, `bg-grid` — projector/monitor screens
 
 **No emojis anywhere.** Use Lucide icons or the letter avatar system instead. Letter avatars use a deterministic color hash:
@@ -175,3 +162,7 @@ Edge function secrets:
 OPENROUTER_API_KEY   # generate-quiz
 GOOGLE_API_KEY       # generate-question-image
 ```
+
+## Removed modes
+
+Speed Challenge (`dodgeball`, a.k.a. Time Wizard) was removed. Its DB leftovers (`dodgeball_timer_taps`, `game_students.lives/eliminated/eliminated_at`, the `dodgeball_*` RPCs) are still in the database so old sessions' rows survive; `results.ts` and the analytics mode labels still know the mode so past games display correctly.

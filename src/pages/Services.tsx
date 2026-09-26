@@ -9,7 +9,6 @@ import {
   Users,
   Trophy,
   Swords,
-  ShieldAlert,
   Flame,
   Skull,
   Mountain,
@@ -43,12 +42,11 @@ const Services = () => {
         f4Desc: "اعرف من أتقن الدرس ومن يحتاج إلى مراجعة، عبر تقارير واضحة بعد كل جلسة تُظهر أداء كل طالب وكل سؤال على حدة.",
 
         modesKicker: "أنماط اللعب",
-        modesTitle: "تسعة أنماط، هدف واحد: الطالب يطلع وهو يحب المادة",
+        modesTitle: "ثمانية أنماط، هدف واحد: الطالب يطلع وهو يحب المادة",
         modesSub: "كل نمط يحوّل نفس الأسئلة إلى تجربة مختلفة — من سباق سريع إلى بقاء جماعي إلى لوح مطبوع بلا أجهزة إطلاقًا.",
 
         m1: "الوضع الكلاسيكي", m1d: "سباق الاختبار الأصلي — أجب بسرعة، اكسب أكثر.",
         m2: "سباق التشفير", m2d: "أجب بشكل صحيح لتكسب عملات، واستخدم قوة الاختراق لسرقة عملات المنافسين.",
-        m3: "الكرة النارية", m3d: "كل إجابة خاطئة تكلفك حياة. الفائز هو آخر لاعب صامد.",
         m4: "البطاطا الساخنة", m4d: "قنبلة حية تنتقل بين اللاعبين — أجب بسرعة أو ستنفجر بين يديك.",
         m5: "أرضية الحمم", m5d: "تعاوني بالكامل: اكسبوا عملة من الإجابات الصحيحة وابنوا فوق الحمم المرتفعة.",
         m6: "بشر ضد الزومبي", m6d: "فريقان، شريطا صحة. الإجابات الصحيحة تموّل ترقيات فريقك.",
@@ -87,12 +85,11 @@ const Services = () => {
         f4Desc: "Know who mastered the lesson and who needs a review, through clear reports after every session breaking down each student and each question.",
 
         modesKicker: "GAME MODES",
-        modesTitle: "Nine modes, one goal: students leave class loving the subject",
+        modesTitle: "Eight modes, one goal: students leave class loving the subject",
         modesSub: "Every mode turns the same question set into a different experience — from a fast-paced race to co-op survival to a printed board with no student devices at all.",
 
         m1: "Classic", m1d: "The original quiz race — answer fast, earn more.",
         m2: "Crypto Rush", m2d: "Correct answers earn crypto; a hack power-up lets you steal from rivals.",
-        m3: "Dodgeball", m3d: "Wrong answers cost lives. Last player standing wins.",
         m4: "Hot Potato", m4d: "A live bomb on a fuse passes between players — answer fast or get caught holding it.",
         m5: "Lava Floor", m5d: "Full co-op: earn currency from correct answers and build above the rising lava together.",
         m6: "Humans vs Zombies", m6d: "Two teams, two health bars. Correct answers fund your team's upgrades.",
@@ -127,13 +124,12 @@ const Services = () => {
   const modes: { n: string; icon: React.ReactNode; title: string; desc: string }[] = [
     { n: "00", icon: <Trophy className="h-4 w-4" />, title: t.m1, desc: t.m1d },
     { n: "01", icon: <Coins className="h-4 w-4" />, title: t.m2, desc: t.m2d },
-    { n: "02", icon: <ShieldAlert className="h-4 w-4" />, title: t.m3, desc: t.m3d },
-    { n: "03", icon: <Flame className="h-4 w-4" />, title: t.m4, desc: t.m4d },
-    { n: "04", icon: <Mountain className="h-4 w-4" />, title: t.m5, desc: t.m5d },
-    { n: "05", icon: <Skull className="h-4 w-4" />, title: t.m6, desc: t.m6d },
-    { n: "06", icon: <Swords className="h-4 w-4" />, title: t.m7, desc: t.m7d },
-    { n: "07", icon: <Palette className="h-4 w-4" />, title: t.m8, desc: t.m8d },
-    { n: "08", icon: <QrCode className="h-4 w-4" />, title: t.m9, desc: t.m9d },
+    { n: "02", icon: <Flame className="h-4 w-4" />, title: t.m4, desc: t.m4d },
+    { n: "03", icon: <Mountain className="h-4 w-4" />, title: t.m5, desc: t.m5d },
+    { n: "04", icon: <Skull className="h-4 w-4" />, title: t.m6, desc: t.m6d },
+    { n: "05", icon: <Swords className="h-4 w-4" />, title: t.m7, desc: t.m7d },
+    { n: "06", icon: <Palette className="h-4 w-4" />, title: t.m8, desc: t.m8d },
+    { n: "07", icon: <QrCode className="h-4 w-4" />, title: t.m9, desc: t.m9d },
   ];
 
   const steps = [
@@ -149,10 +145,10 @@ const Services = () => {
     >
       <Seo
         path="/services"
-        titleAr="تجربة تعليمية تفاعلية تخلي الطلاب يحبون التعلّم — تسعة أنماط لعب"
-        titleEn="Interactive Educational Experience That Makes Students Love Learning — Nine Play Modes"
-        descriptionAr="تجربة تفاعلية تخلي طلابك يحبون الحصة: توليد أسئلة بالذكاء الاصطناعي، بث مباشر برمز واحد، وتسعة أنماط لعب من سباق كلاسيكي إلى حرب الزومبي — كل ما يحتاجه معلم الفصل العربي."
-        descriptionEn="An interactive experience that makes students love learning: AI question generation, one-code live sessions, and nine play modes from Classic to Humans vs Zombies — everything an Arabic-classroom teacher needs."
+        titleAr="تجربة تعليمية تفاعلية تخلي الطلاب يحبون التعلّم — ثمانية أنماط لعب"
+        titleEn="Interactive Educational Experience That Makes Students Love Learning — Eight Play Modes"
+        descriptionAr="تجربة تفاعلية تخلي طلابك يحبون الحصة: توليد أسئلة بالذكاء الاصطناعي، بث مباشر برمز واحد، وثمانية أنماط لعب من سباق كلاسيكي إلى حرب الزومبي — كل ما يحتاجه معلم الفصل العربي."
+        descriptionEn="An interactive experience that makes students love learning: AI question generation, one-code live sessions, and eight play modes from Classic to Humans vs Zombies — everything an Arabic-classroom teacher needs."
       />
       <SiteNav />
 

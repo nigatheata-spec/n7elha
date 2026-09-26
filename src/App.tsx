@@ -14,7 +14,7 @@ import { PageLoader } from "@/components/PageLoader";
 // Every route is its own chunk instead of one monolith bundle: a first-time
 // visitor to the marketing site (the whole point of the SEO work — fast,
 // indexable, decent on Saudi mobile networks) used to download the quiz
-// editor, the teacher dashboard, and all nine game-mode canvases/physics
+// editor, the teacher dashboard, and all the game-mode canvases/physics
 // engines before ever seeing the landing page.
 const Landing     = lazy(() => import("./pages/Landing"));
 const Services    = lazy(() => import("./pages/Services"));

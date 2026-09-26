@@ -31,27 +31,6 @@ export const BitcoinIcon = ({ className, size, strokeWidth, style }: IconProps) 
   </svg>
 );
 
-// ── Stopwatch ─────────────────────────────────────────────────────
-// Time Wizard — circle face with crown stem, side button, and hand
-export const StopwatchIcon = ({ className, size, strokeWidth, style }: IconProps) => (
-  <svg className={cn(className)} style={style} {...baseProps(size, strokeWidth)}>
-    {/* crown stem */}
-    <path d="M10 2h4" />
-    <path d="M12 2v3" />
-    {/* side button (top-right) */}
-    <path d="M18 4l1.5 1.5" />
-    {/* face */}
-    <circle cx="12" cy="14" r="8" />
-    {/* tick marks */}
-    <path d="M12 8v1" />
-    <path d="M12 19v1" />
-    <path d="M6 14h1" />
-    <path d="M17 14h1" />
-    {/* hand pointing up-right */}
-    <path d="M12 14l3.5 -2.5" />
-  </svg>
-);
-
 // ── Volcano ───────────────────────────────────────────────────────
 // Lava Floor — cone with crater, lava dripping over sides, eruption sparks
 export const LavaBucketIcon = ({ className, size, strokeWidth, style }: IconProps) => (
@@ -117,7 +96,6 @@ export const PaintRollerIcon = ({ className, size, style }: IconProps) => (
 // ── Map mode key → icon (for shared lookup) ───────────────────────
 export const MODE_ICON = {
   crypto_rush: BitcoinIcon,
-  dodgeball: StopwatchIcon,
   hotpotato: DynamiteIcon,
   lavafloor: LavaBucketIcon,
   paintfight: PaintRollerIcon,

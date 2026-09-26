@@ -15,12 +15,6 @@ export type SessionSettings = {
   /* Crypto Rush */
   cryptoCap?: number;
 
-  /* Dodgeball */
-  timerActive?: boolean;
-  timerRoundId?: string | null;
-  timerStartedAt?: string | null;
-  timerWinnerId?: string | null;
-
   /* Hot Potato */
   bombHolderId?: string | null;
   bombExplodesAt?: string | null;

@@ -40,7 +40,7 @@ const About = () => {
         valuesTitle: "ثلاثة مبادئ لا نتنازل عنها",
         v1t: "العربية أولاً، لا استثناءً", v1d: "من اتجاه الواجهة إلى تحليل الإجابات، كل قرار تصميم يبدأ من اللغة العربية أولًا.",
         v2t: "بلا احتكاك", v2d: "لا تحميل تطبيقات، لا حسابات للطلاب. رمز قصير، وضغطة واحدة، وأنت داخل الجلسة.",
-        v3t: "مرونة في طريقة المراجعة", v3d: "نفس الأسئلة، تسعة أنماط مختلفة، لأن الفصل الذي يلعب يتذكر أكثر من الفصل الذي يُختبر فقط.",
+        v3t: "مرونة في طريقة المراجعة", v3d: "نفس الأسئلة، ثمانية أنماط مختلفة، لأن الفصل الذي يلعب يتذكر أكثر من الفصل الذي يُختبر فقط.",
 
         ctaLine: "جرّب نفلها مع فصلك، وشاهد الفرق من أول جلسة.",
         ctaLink: "استكشف الخدمات",
@@ -72,7 +72,7 @@ const About = () => {
         valuesTitle: "Three principles we don't compromise on",
         v1t: "Arabic first, not an afterthought", v1d: "From interface direction to answer analytics, every design decision starts from Arabic first.",
         v2t: "Zero friction", v2d: "No app downloads, no student accounts. A short code, one tap, and you're in the session.",
-        v3t: "Flexible review, not one format", v3d: "The same questions, nine different modes, because a classroom that plays remembers more than one that's only tested.",
+        v3t: "Flexible review, not one format", v3d: "The same questions, eight different modes, because a classroom that plays remembers more than one that's only tested.",
 
         ctaLine: "Try nefelha with your class and see the difference from the first session.",
         ctaLink: "Explore services",

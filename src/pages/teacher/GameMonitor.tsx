@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Seo } from "@/components/Seo";
 import { useConfirmDialog } from "@/hooks/use-confirm-dialog";
 import { colorForName } from "@/lib/avatarIdentity";
-import DodgeballMonitor from "./DodgeballMonitor";
 import HotPotatoMonitor from "./HotPotatoMonitor";
 import LavaFloorMonitor from "./LavaFloorMonitor";
 import ClassicMonitor from "./ClassicMonitor";
@@ -88,7 +87,7 @@ const GameMonitor = () => {
     const sess = sessionRef.current;
     if (!sess || sess.status !== "running") return;
     const mode = sess.settings?.mode;
-    if (mode === "hotpotato" || mode === "dodgeball" || mode === "lavafloor" || mode === "classic" || mode === "humansvszombies") return;
+    if (mode === "hotpotato" || mode === "lavafloor" || mode === "classic" || mode === "humansvszombies") return;
     const timeUp = minutes != null && left === 0;
     if (timeUp || reachedCap) {
       if (ending) return;
@@ -100,7 +99,7 @@ const GameMonitor = () => {
   useEffect(() => {
     if (!session) return;
     const mode = session.settings?.mode;
-    if (mode === "hotpotato" || mode === "dodgeball" || mode === "lavafloor" || mode === "classic" || mode === "humansvszombies") return;
+    if (mode === "hotpotato" || mode === "lavafloor" || mode === "classic" || mode === "humansvszombies") return;
     if (session.status === "finished") nav(`/app/games/${session.id}/results`, { replace: true, state: { justEnded: true } });
   }, [session?.status]);
 
@@ -136,7 +135,6 @@ const GameMonitor = () => {
 
   if (!session) return null;
 
-  if (session.settings?.mode === "dodgeball") return <DodgeballMonitor session={session} sessionId={sessionId!} />;
   if (session.settings?.mode === "hotpotato") return <HotPotatoMonitor session={session} sessionId={sessionId!} />;
   if (session.settings?.mode === "lavafloor") return <LavaFloorMonitor session={session} sessionId={sessionId!} />;
   if (session.settings?.mode === "classic") return <ClassicMonitor session={session} sessionId={sessionId!} />;

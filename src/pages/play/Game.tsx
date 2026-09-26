@@ -11,7 +11,6 @@ import { Seo } from "@/components/Seo";
 import { HackingFlow } from "@/components/game/HackingFlow";
 import { BreachModal } from "@/components/game/BreachModal";
 import { OutputCards, OutputResult } from "@/components/game/OutputCards";
-import DodgeballGame from "./DodgeballGame";
 import HotPotatoGame from "./HotPotatoGame";
 import LavaFloorGame from "./LavaFloorGame";
 import ClassicGame from "./ClassicGame";
@@ -300,9 +299,6 @@ const Game = () => {
   const ar = session.settings?.lang === "ar";
 
   // Route to mode-specific game
-  if (session.settings?.mode === "dodgeball" && studentId) {
-    return <DodgeballGame sessionId={sessionId!} studentId={studentId} />;
-  }
   if (session.settings?.mode === "hotpotato" && studentId) {
     return <HotPotatoGame sessionId={sessionId!} studentId={studentId} />;
   }

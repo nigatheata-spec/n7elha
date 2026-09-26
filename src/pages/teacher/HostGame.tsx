@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { Copy, Play, Users, Trash2, Zap, Heart, Skull, Timer, Trophy, Flame, ChevronLeft, Check, Minus, Plus, ListChecks, Biohazard, ChevronUp, QrCode, BookOpen, Link2 } from "lucide-react";
-import { BitcoinIcon, StopwatchIcon, LavaBucketIcon, DynamiteIcon, PaintRollerIcon } from "@/components/game/icons";
+import { BitcoinIcon, LavaBucketIcon, DynamiteIcon, PaintRollerIcon } from "@/components/game/icons";
 import { computeArenaSize } from "@/lib/paintFight";
 import { toast } from "@/components/ui/sonner";
 import { readSettings } from "@/lib/sessionSettings";
@@ -14,7 +14,7 @@ const genCode = () => {
   return Array.from({ length: 4 }, () => c[Math.floor(Math.random() * c.length)]).join("");
 };
 
-type GameMode = "crypto_rush" | "dodgeball" | "hotpotato" | "lavafloor" | "classic" | "humansvszombies" | "dontlookdown" | "paintfight" | "physical" | "homework";
+type GameMode = "crypto_rush" | "hotpotato" | "lavafloor" | "classic" | "humansvszombies" | "dontlookdown" | "paintfight" | "physical" | "homework";
 
 const MODES: { id: GameMode; icon: React.ReactNode; label: string; labelAr: string; desc: string; descAr: string; accent: string; num: string }[] = [
   {
@@ -38,16 +38,6 @@ const MODES: { id: GameMode; icon: React.ReactNode; label: string; labelAr: stri
     num: "01",
   },
   {
-    id: "dodgeball",
-    icon: <StopwatchIcon className="h-6 w-6" strokeWidth={2} />,
-    label: "Speed Challenge",
-    labelAr: "تحدي السرعة",
-    desc: "Answer fast or get eliminated — last student standing wins",
-    descAr: "أجب بسرعة وإلا ستُستبعد — آخر طالب يبقى يفوز",
-    accent: "#3F5A63",
-    num: "02",
-  },
-  {
     id: "hotpotato",
     icon: <DynamiteIcon className="h-6 w-6" strokeWidth={2} />,
     label: "Pass It",
@@ -55,7 +45,7 @@ const MODES: { id: GameMode; icon: React.ReactNode; label: string; labelAr: stri
     desc: "Live bomb on a fuse — pass it before it blows",
     descAr: "قنبلة موقوتة — مرّرها قبل أن تنفجر",
     accent: "#C8783A",
-    num: "03",
+    num: "02",
   },
   {
     id: "lavafloor",
@@ -65,7 +55,7 @@ const MODES: { id: GameMode; icon: React.ReactNode; label: string; labelAr: stri
     desc: "Survive together before the lava rises",
     descAr: "اصمدوا معاً قبل أن تبتلعكم الحمم",
     accent: "#8B4A3A",
-    num: "04",
+    num: "03",
   },
   {
     id: "humansvszombies",
@@ -75,7 +65,7 @@ const MODES: { id: GameMode; icon: React.ReactNode; label: string; labelAr: stri
     desc: "Two teams, two health bars — heal, upgrade, sabotage, survive",
     descAr: "فريقان، شريطا صحة — عالج، طوّر، خرّب، انجُ",
     accent: "#4a7a3a",
-    num: "05",
+    num: "04",
   },
   {
     id: "dontlookdown",
@@ -85,7 +75,7 @@ const MODES: { id: GameMode; icon: React.ReactNode; label: string; labelAr: stri
     desc: "Climb a tower — answers are the fuel for every jump",
     descAr: "تسلّق البرج — الإجابات هي وقود كل قفزة",
     accent: "#2f6f8f",
-    num: "06",
+    num: "05",
   },
   {
     id: "paintfight",
@@ -95,7 +85,7 @@ const MODES: { id: GameMode; icon: React.ReactNode; label: string; labelAr: stri
     desc: "Capture ground by looping around it — answers fill your colour tank",
     descAr: "احتلّ الأرض بالدوران حولها — الإجابات تملأ خزان اللون",
     accent: "#c2410c",
-    num: "07",
+    num: "06",
   },
   {
     id: "physical",
@@ -105,7 +95,7 @@ const MODES: { id: GameMode; icon: React.ReactNode; label: string; labelAr: stri
     desc: "Play on a printed board — scan squares for questions, no student devices needed",
     descAr: "العب على لوحة مطبوعة — امسح المربعات للحصول على أسئلة، بدون أجهزة للطلاب",
     accent: "#5b4636",
-    num: "08",
+    num: "07",
   },
   {
     id: "homework",
@@ -115,7 +105,7 @@ const MODES: { id: GameMode; icon: React.ReactNode; label: string; labelAr: stri
     desc: "Share a link instead of a code — students answer on their own time",
     descAr: "شارك رابطاً بدل الرمز — يحلّه الطلاب في وقتهم الخاص",
     accent: "#6b5bb5",
-    num: "09",
+    num: "08",
   },
 ];
 
@@ -293,14 +283,7 @@ const HostGame = () => {
     if (!user || !quizId || !mode) return;
     try {
       const settings: any = { mode, maxStudents };
-      if (mode === "dodgeball") {
-        settings.timerActive = false;
-        settings.timerRoundId = null;
-        settings.timerStartedAt = null;
-        settings.timerWinnerId = null;
-      } else {
-        settings.minutes = minutes;
-      }
+      settings.minutes = minutes;
       // Off unless the teacher turned it on — null, not a default number, so the
       // game views can tell "disabled" apart from "set to some duration".
       settings.timePerQ = secsPerQ;
@@ -533,19 +516,6 @@ const HostGame = () => {
                   <div className="flex items-center gap-2 text-black/45">
                     <Trophy className="h-4 w-4 shrink-0 text-[#C8783A]" />
                     <span>{ar ? "أعلى رصيد عند انتهاء الوقت يفوز" : "Highest balance when time runs out wins"}</span>
-                  </div>
-                </>
-              )}
-              {mode === "dodgeball" && (
-                <>
-                  <p className="text-black/65 leading-relaxed">
-                    {ar
-                      ? "كل طالب يدخل بحياة واحدة فقط. كل إجابة خاطئة تُحذفه من الميدان. المتبقون يواصلون حتى يبقى آخر واحد."
-                      : "Each student gets one life. A wrong answer knocks them out. Survivors keep going until only one remains standing."}
-                  </p>
-                  <div className="flex items-center gap-2 text-black/45">
-                    <Trophy className="h-4 w-4 shrink-0 text-[#C8783A]" />
-                    <span>{ar ? "آخر لاعب يبقى يفوز" : "Last player standing wins"}</span>
                   </div>
                 </>
               )}
