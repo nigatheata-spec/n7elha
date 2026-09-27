@@ -8,6 +8,11 @@ import { Square, Maximize, Trophy } from "lucide-react";
 import { BombIcon } from "@/components/BombIcon";
 import { useConfirmDialog } from "@/hooks/use-confirm-dialog";
 import { Avatar } from "@/components/Avatar";
+import { isPaused } from "@/components/teacher/GameControls";
+import {
+  initBombs, applyPass, resolveBlasts, topUpBombs, extendFuses, pushFeed, fuseBurn,
+  type Bomb, type FeedEvent, type PassRequest,
+} from "@/lib/passIt";
 
 const fmt = (n: number) => n.toLocaleString();
 
@@ -24,31 +29,24 @@ const PCB_GREEN = "hsl(71 48% 47%)";
 
 interface Props { session: any; sessionId: string; }
 
-const randomBombMs = () => 30_000 + Math.random() * 60_000;
-
 const HotPotatoMonitor = ({ session, sessionId }: Props) => {
   const nav = useNavigate();
   const { confirm, ConfirmDialog } = useConfirmDialog();
   const { i18n } = useTranslation();
   const ar = (session?.settings?.lang ?? i18n.language) === "ar";
   const [students, setStudents] = useState<any[]>([]);
-  const [explosionFeed, setExplosionFeed] = useState<{ name: string; at: string }[]>([]);
   const [now, setNow] = useState(Date.now());
   const [ending, setEnding] = useState(false);
 
-  const lastProcessedExplosionRef = useRef<string | null>(null);
-  const initializedRef = useRef(false);
   const studentsRef = useRef<any[]>([]);
   const sessionRef = useRef<any>(null);
   studentsRef.current = students;
   sessionRef.current = session;
 
   const settings        = session?.settings ?? {};
-  const maxExplosions   = settings.maxExplosions ?? 5;
   const minutes: number = settings.minutes ?? 5;
-  const explosionCount: number = settings.explosionCount ?? 0;
-  const bombHolderId: string | null = settings.bombHolderId ?? null;
-  const bombExplodesAt: string | null = settings.bombExplodesAt ?? null;
+  const savedBombs: Bomb[] = Array.isArray(settings.bombs) ? settings.bombs : [];
+  const savedFeed: FeedEvent[] = Array.isArray(settings.hpFeed) ? settings.hpFeed : [];
 
   const startedAt = session?.started_at ? new Date(session.started_at).getTime() : 0;
   const elapsed   = startedAt ? Math.floor((now - startedAt) / 1000) : 0;
@@ -74,59 +72,88 @@ const HotPotatoMonitor = ({ session, sessionId }: Props) => {
     return () => { supabase.removeChannel(ch); clearInterval(tick); };
   }, [sessionId]);
 
-  // ── Bomb initialization ───────────────────────────────────────────────────
+  // ── Referee ───────────────────────────────────────────────────────────────
+  // This screen is the only writer of the bombs (see passIt.ts). It works on a
+  // local copy so a pass and a blast landing together both stick, writes each
+  // change with a bumped `hpVer`, and ignores echoes older than what it has.
+  const stateRef = useRef<{ bombs: Bomb[]; feed: FeedEvent[]; ver: number; blastsOlder: number }>({ bombs: [], feed: [], ver: 0, blastsOlder: 0 });
+  const pausedSinceRef = useRef<number | null>(null);
   useEffect(() => {
-    if (initializedRef.current) return;
-    if (session?.status !== "running") return;
-    if (students.length === 0) return;
-    if (settings.bombHolderId) { initializedRef.current = true; return; }
-    initializedRef.current = true;
-    const holder = students[Math.floor(Math.random() * students.length)];
-    const expiresAt = new Date(Date.now() + randomBombMs()).toISOString();
+    const v = settings.hpVer ?? 0;
+    if (v >= stateRef.current.ver) stateRef.current = { bombs: savedBombs, feed: savedFeed, ver: v, blastsOlder: settings.hpBlastsOlder ?? 0 };
+  }, [settings.hpVer]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Draw from the local copy: this screen's own writes can land before its
+  // realtime subscription is up, and it shouldn't wait for an echo of itself.
+  const [, setDrawn] = useState(0);
+  const view = stateRef.current.ver >= (settings.hpVer ?? 0)
+    ? stateRef.current
+    : { bombs: savedBombs, feed: savedFeed, ver: settings.hpVer ?? 0, blastsOlder: settings.hpBlastsOlder ?? 0 };
+  const bombs = view.bombs;
+  const feed = view.feed;
+  const blastCount = feed.filter(e => e.kind === "boom").length + view.blastsOlder;
+
+  const commit = (next: Bomb[], nextFeed: FeedEvent[]) => {
+    const st = stateRef.current;
+    // Blasts that scroll off the feed still count toward the total.
+    const dropped = st.feed.filter(e => !nextFeed.some(n => n.id === e.id) && e.kind === "boom").length;
+    stateRef.current = { bombs: next, feed: nextFeed, ver: st.ver + 1, blastsOlder: st.blastsOlder + dropped };
+    setDrawn(n => n + 1);
+    const live = sessionRef.current?.settings ?? {};
     supabase.from("game_sessions").update({
-      settings: { ...settings, bombHolderId: holder.id, bombExplodesAt: expiresAt }
+      settings: { ...live, bombs: next, hpFeed: nextFeed, hpVer: stateRef.current.ver, hpBlastsOlder: stateRef.current.blastsOlder },
     }).eq("id", sessionId).then(undefined, () => {});
-  }, [session?.status, students.length]);
+  };
 
-  // ── Bomb explosion detection ──────────────────────────────────────────────
+  // Pass requests from the phones.
   useEffect(() => {
-    if (!bombExplodesAt || !bombHolderId) return;
-    if (session?.status !== "running") return;
-    if (new Date(bombExplodesAt).getTime() > Date.now()) return;
-    if (lastProcessedExplosionRef.current === bombExplodesAt) return;
-    lastProcessedExplosionRef.current = bombExplodesAt;
+    if (!sessionId) return;
+    const ch = supabase.channel(`passit-${sessionId}`)
+      .on("broadcast", { event: "pass" }, ({ payload }) => {
+        if (sessionRef.current?.status !== "running") return;
+        const req = payload as PassRequest;
+        const ids = studentsRef.current.map((x: any) => x.id);
+        const st = stateRef.current;
+        const r = applyPass(st.bombs, ids, req, Math.random);
+        if (!r) return;
+        commit(r.bombs, pushFeed(st.feed, { kind: "pass", from: req.from, to: r.to, at: new Date().toISOString() }, Math.random));
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [sessionId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    const triggerExplosion = async () => {
-      try {
-        const { data: fresh } = await supabase.from("game_sessions")
-          .select("settings").eq("id", sessionId).single();
-        const live = (fresh?.settings ?? settings) as Record<string, any>;
-        const victim = studentsRef.current.find((s: any) => s.id === bombHolderId);
-        if (!victim) return;
-        const newCount = (live.explosionCount ?? 0) + 1;
-        const ts = new Date().toISOString();
-        await supabase.from("game_students").update({ crypto: 0 }).eq("id", bombHolderId);
-        setExplosionFeed(prev => [{ name: victim.name, at: ts }, ...prev].slice(0, 8));
-        if (newCount >= (live.maxExplosions ?? maxExplosions) || left <= 0) {
-          await supabase.from("game_sessions").update({
-            status: "finished", ended_at: ts,
-            settings: { ...live, explosionCount: newCount, lastExplosionAt: ts, lastExplosionVictimId: bombHolderId },
-          }).eq("id", sessionId);
-          return;
-        }
-        const others = studentsRef.current.filter((s: any) => s.id !== bombHolderId);
-        const nextHolder = others.length > 0 ? others[Math.floor(Math.random() * others.length)] : victim;
-        const nextAt = new Date(Date.now() + randomBombMs()).toISOString();
-        await supabase.from("game_sessions").update({
-          settings: { ...live, bombHolderId: nextHolder.id, bombExplodesAt: nextAt, explosionCount: newCount, lastExplosionAt: ts, lastExplosionVictimId: bombHolderId },
-        }).eq("id", sessionId);
-      } catch (err) {
-        console.error("triggerExplosion:", err);
-        lastProcessedExplosionRef.current = null;
-      }
-    };
-    triggerExplosion();
-  }, [now, bombExplodesAt, bombHolderId]);
+  // Hand out bombs, blow up expired ones, add bombs as players join, and hold
+  // every fuse while the game is paused.
+  useEffect(() => {
+    const sess = sessionRef.current;
+    if (sess?.status !== "running") return;
+    const ids = studentsRef.current.map((x: any) => x.id);
+    if (!ids.length) return;
+    const t = Date.now();
+    const st = stateRef.current;
+    if (isPaused(sess)) { if (pausedSinceRef.current == null) pausedSinceRef.current = t; return; }
+    if (pausedSinceRef.current != null) {
+      const ms = t - pausedSinceRef.current;
+      pausedSinceRef.current = null;
+      if (st.bombs.length) { commit(extendFuses(st.bombs, ms), st.feed); return; }
+    }
+    if (!st.bombs.length && !(sess.settings?.hpVer)) {
+      const first = initBombs(ids, t, Math.random);
+      let f = st.feed;
+      for (const b of first) f = pushFeed(f, { kind: "spawn", from: null, to: b.holderId, at: new Date(t).toISOString() }, Math.random);
+      commit(first, f);
+      return;
+    }
+    const r = resolveBlasts(st.bombs, ids, t, Math.random);
+    let next = topUpBombs(r.bombs, ids, t, Math.random);
+    if (!r.blasts.length && !r.moved.length && next.length === st.bombs.length) return;
+    let f = st.feed;
+    const at = new Date(t).toISOString();
+    for (const b of r.blasts) f = pushFeed(f, { kind: "boom", from: null, to: b.victim, at }, Math.random);
+    for (const b of next.filter(x => !r.bombs.some(y => y.id === x.id))) f = pushFeed(f, { kind: "spawn", from: null, to: b.holderId, at }, Math.random);
+    next = next.filter(Boolean);
+    commit(next, f);
+  }, [now]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Auto-end: time up ─────────────────────────────────────────────────────
   useEffect(() => {
@@ -151,12 +178,8 @@ const HotPotatoMonitor = ({ session, sessionId }: Props) => {
     (el.requestFullscreen || el.webkitRequestFullscreen)?.call(el);
   };
 
-  const bombHolder   = students.find(s => s.id === bombHolderId);
-  const fuseMs       = bombExplodesAt ? Math.max(0, new Date(bombExplodesAt).getTime() - now) : 0;
-  const fusePct      = bombExplodesAt ? Math.min(100, (fuseMs / 90_000) * 100) : 100;
-  // PCB green → muted amber as the bomb ticks down
-  const fuseColor    = fuseMs > 30_000 ? PCB_GREEN : fuseMs > 12_000 ? "hsl(42 55% 58%)" : "hsl(32 62% 58%)";
-  const fuseCritical = fuseMs < 10_000 && fuseMs > 0;
+  const nameOf = (id: string | null) => students.find(x => x.id === id)?.name ?? "?";
+  const holderBurn = new Map(bombs.map(b => [b.holderId, fuseBurn(b.explodesAt, now)]));
 
   // ── GAME OVER ─────────────────────────────────────────────────────────────
   if (session?.status === "finished") {
@@ -224,8 +247,8 @@ const HotPotatoMonitor = ({ session, sessionId }: Props) => {
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-mono text-sm whitespace-nowrap"
             style={{ background: "hsl(71 48% 47% / 0.08)", border: "1px solid hsl(71 48% 47% / 0.3)" }}>
             <BombIcon className="h-3.5 w-3.5 shrink-0" style={{ color: PCB_GREEN }} />
-            <span className="font-bold tabular-nums" style={{ color: PCB_GREEN }}>{explosionCount}</span>
-            <span className="text-muted-foreground">/ {maxExplosions}</span>
+            <span className="font-bold tabular-nums" style={{ color: PCB_GREEN }}>{bombs.length}</span>
+            <span className="text-muted-foreground">{ar ? "قنابل" : bombs.length === 1 ? "bomb" : "bombs"}</span>
           </div>
         </div>
 
@@ -264,7 +287,8 @@ const HotPotatoMonitor = ({ session, sessionId }: Props) => {
               style={{ color: PCB_GREEN }}>{ar ? "> في انتظار اللاعبين..." : "> WAITING FOR PLAYERS..."}</div>
           ) : (
             students.slice(0, 9).map((s, i) => {
-              const isBomb  = s.id === bombHolderId;
+              const burn    = holderBurn.get(s.id);
+              const isBomb  = burn !== undefined;
               const isFirst = i === 0;
               const rowStyle = isFirst
                 ? { ...metalPanel, border: `1.5px solid hsl(71 48% 47% / 0.45)` }
@@ -282,7 +306,7 @@ const HotPotatoMonitor = ({ session, sessionId }: Props) => {
                     style={{ color: isFirst ? "hsl(210 10% 92%)" : "hsl(210 10% 72%)" }}>
                     {s.name}
                   </span>
-                  {isBomb && <BombIcon className="h-6 w-6 shrink-0" burn={fusePct / 100} />}
+                  {isBomb && <BombIcon className={cn("h-6 w-6 shrink-0", burn! > 0.85 && "animate-fuse-critical")} burn={1 - burn!} sparks />}
                   <span className="font-mono text-lg font-black tabular-nums shrink-0"
                     style={{ color: isFirst ? PCB_GREEN : "hsl(210 10% 50%)" }}>
                     {fmt(s.crypto ?? 0)}
@@ -296,62 +320,65 @@ const HotPotatoMonitor = ({ session, sessionId }: Props) => {
         {/* ── RIGHT PANEL ── */}
         <div className="grid grid-rows-[auto_1fr] gap-4 overflow-hidden">
 
-          {/* Bomb holder card — no fuse bar */}
+          {/* Bombs in play. No seconds shown: the class can see this screen,
+              and a fuse you can count down isn't a surprise. */}
           <div className="rounded-2xl p-4" style={metalPanel}>
             <div className="text-xs font-mono tracking-widest uppercase mb-3" style={{ color: "hsl(210 10% 40%)" }}>
-              {ar ? "حامل القنبلة" : "Bomb Holder"}
+              {ar ? "القنابل الآن" : "Bombs in play"}
             </div>
-            {bombHolder ? (
-              <div className="flex items-center gap-3">
-                <BombIcon sparks burn={fusePct / 100} className={cn("h-10 w-10 shrink-0", fuseCritical && "animate-fuse-critical")}
-                  style={{ color: fuseColor }} />
-                <div className="flex-1 min-w-0">
-                  <div className="font-black text-xl truncate" style={{ color: fuseColor }}>{bombHolder.name}</div>
-                  <div className="text-sm font-mono tabular-nums mt-0.5 font-bold" style={{ color: fuseColor }}>
-                    {ar ? `${Math.ceil(fuseMs / 1000)} ث متبقية` : `${Math.ceil(fuseMs / 1000)}s remaining`}
-                  </div>
-                </div>
-                {/* Countdown ring */}
-                <svg width="52" height="52" viewBox="0 0 48 48" className="shrink-0">
-                  <circle cx="24" cy="24" r="20" fill="none" stroke="hsl(210 20% 20%)" strokeWidth="3.5" />
-                  <circle cx="24" cy="24" r="20" fill="none" stroke={fuseColor} strokeWidth="3.5"
-                    strokeDasharray="125.66"
-                    strokeDashoffset={125.66 * (1 - fusePct / 100)}
-                    strokeLinecap="round"
-                    transform="rotate(-90 24 24)"
-                    style={{ transition: "stroke-dashoffset 0.4s linear" }} />
-                </svg>
+            {bombs.length ? (
+              <div className="grid grid-cols-1 gap-2">
+                {bombs.map(b => {
+                  const h = students.find(x => x.id === b.holderId);
+                  const burn = fuseBurn(b.explodesAt, now);
+                  return (
+                    <div key={b.id} className="flex items-center gap-3">
+                      <BombIcon sparks burn={1 - burn} className={cn("h-8 w-8 shrink-0", burn > 0.85 && "animate-fuse-critical")} />
+                      {h && <Avatar name={h.name} colorIndex={h.avatar_color} faceIndex={h.avatar_face} size="sm" />}
+                      <span className="font-black text-lg truncate" style={{ color: "hsl(210 10% 88%)" }}>{h?.name ?? "..."}</span>
+                    </div>
+                  );
+                })}
               </div>
             ) : (
-              <div className="font-mono text-sm animate-pulse" style={{ color: "hsl(210 10% 38%)" }}>{ar ? "جارٍ التعيين..." : "Assigning..."}</div>
+              <div className="font-mono text-sm animate-pulse" style={{ color: "hsl(210 10% 38%)" }}>{ar ? "جارٍ توزيع القنابل..." : "Handing out bombs..."}</div>
             )}
           </div>
 
-          {/* Blast log */}
+          {/* Live feed: passes and blasts */}
           <div className="rounded-2xl p-4 overflow-hidden flex flex-col" style={metalPanel}>
             <div className="font-mono text-xs mb-3 flex items-center justify-between uppercase tracking-widest"
               style={{ color: "hsl(210 10% 42%)" }}>
-              <span>{ar ? "سجل الانفجارات" : "Blast Log"}</span>
+              <span>{ar ? "ما يحدث" : "Live"}</span>
               <div className="flex items-center gap-1.5">
-                <span className="tabular-nums font-bold" style={{ color: PCB_GREEN }}>{explosionCount}</span>
-                <span className="h-2 w-2 rounded-full animate-pulse" style={{ background: PCB_GREEN }} />
+                <span className="normal-case tracking-normal">{ar ? "انفجارات" : "blasts"}</span>
+                <span className="tabular-nums font-bold" style={{ color: PCB_GREEN }}>{blastCount}</span>
               </div>
             </div>
 
             <div className="flex-1 overflow-hidden space-y-2">
-              {explosionFeed.length === 0 ? (
+              {feed.filter(e => e.kind !== "spawn").length === 0 ? (
                 <div className="font-mono text-sm pt-1" style={{ color: "hsl(210 10% 28%)" }}>
-                  {ar ? "> في انتظار أول انفجار..." : "> awaiting first explosion..."}
+                  {ar ? "> أجب صح لتمرير القنبلة..." : "> answer right to pass the bomb..."}
                 </div>
               ) : (
-                explosionFeed.map((e) => (
-                  <div key={e.at}
+                feed.filter(e => e.kind !== "spawn").map(e => (
+                  <div key={e.id}
                     className="animate-blast-in flex items-center gap-2.5 px-2.5 py-2 rounded-lg"
-                    style={{ background: "hsl(210 18% 12% / 0.7)", border: "1px solid hsl(210 20% 22%)" }}>
-                    <BombIcon className="h-4 w-4 shrink-0" style={{ color: "hsl(210 10% 62%)" }} />
-                    <span className="font-mono text-sm">
-                      <span className="font-black" style={{ color: "hsl(210 12% 88%)" }}>{e.name}</span>
-                      <span className="text-muted-foreground">{ar ? " — انفجرت" : " — wiped"}</span>
+                    style={{
+                      background: e.kind === "boom" ? "hsl(0 60% 30% / 0.35)" : "hsl(210 18% 12% / 0.7)",
+                      border: `1px solid ${e.kind === "boom" ? "hsl(0 60% 45% / 0.6)" : "hsl(210 20% 22%)"}`,
+                    }}>
+                    <BombIcon className="h-4 w-4 shrink-0" style={{ color: e.kind === "boom" ? "hsl(0 70% 65%)" : "hsl(210 10% 62%)" }} />
+                    <span className="font-mono text-sm truncate">
+                      {e.kind === "boom" ? (
+                        <><span className="font-black" style={{ color: "hsl(0 70% 75%)" }}>{nameOf(e.to)}</span>
+                          <span className="text-muted-foreground">{ar ? " انفجرت عليه" : " blew up"}</span></>
+                      ) : (
+                        <><span className="font-black" style={{ color: "hsl(210 12% 88%)" }}>{nameOf(e.from)}</span>
+                          <span className="text-muted-foreground">{" → "}</span>
+                          <span className="font-black" style={{ color: "hsl(210 12% 88%)" }}>{nameOf(e.to)}</span></>
+                      )}
                     </span>
                   </div>
                 ))

@@ -533,8 +533,8 @@ const HostGame = () => {
                 <>
                   <p className="text-black/65 leading-relaxed">
                     {ar
-                      ? "قنبلة موقوتة تنتقل بين الطلاب. من يجيب صح يمررها لغيره، ومن يجيب خطأ يحتفظ بها. عند الانفجار يخسر من يحملها كل نقاطه."
-                      : "A live bomb passes between students. Answer correctly to pass it on, answer wrong and you keep it. When it explodes, whoever's holding it loses all their points."}
+                      ? "قنابل موقوتة تنتقل بين الطلاب، قنبلة لكل خمسة تقريبًا. من يجيب صح يمررها لغيره، ومن يجيب خطأ يحتفظ بها. لا أحد يعرف متى تنفجر، ومن تنفجر معه يخسر نصف نقاطه."
+                      : "Live bombs pass between students, about one for every five. Answer right to pass yours on, answer wrong and you keep it. Nobody knows when a fuse runs out, and whoever holds it then loses half their points."}
                   </p>
                   <div className="flex items-center gap-2 text-black/45">
                     <Timer className="h-4 w-4 shrink-0" style={{ color: selectedAccent }} />

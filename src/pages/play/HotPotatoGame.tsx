@@ -8,15 +8,14 @@ import { cn } from "@/lib/utils";
 import { BombIcon } from "@/components/BombIcon";
 import { Trophy, Zap, Check, X as XIcon } from "lucide-react";
 import logoLight from "@/assets/logo-light.png";
-import { playSelect, playCorrect, playWrong, playExplode, playGameOver, primeAudio } from "@/lib/sound";
+import { playSelect, playCorrect, playWrong, playExplode, playGameOver, playHackAlert, primeAudio } from "@/lib/sound";
+import { POINTS_PER_CORRECT, PASS_SECONDS, BOOM_KEEP, pickTargets, fuseBurn, type Bomb, type FeedEvent } from "@/lib/passIt";
 import { Avatar } from "@/components/Avatar";
 import MissedReview from "@/components/game/MissedReview";
 
 type Q = { id: string; text: string; options: string[]; correct_index: number; image_url?: string };
 type Phase = "waiting" | "question" | "answered" | "passing" | "exploded" | "done";
 
-const POINTS_PER_CORRECT = 100;
-const PASS_SECONDS = 5;
 
 interface Props { sessionId: string; studentId: string; }
 
@@ -33,9 +32,15 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
   const [timeLeft, setTimeLeft]     = useState(20);
   const [qSeed, setQSeed]           = useState(0);
   const [passTargets, setPassTargets] = useState<any[]>([]);
+  const passTargetsRef = useRef<any[]>([]);
+  passTargetsRef.current = passTargets;
+  const passBombRef = useRef<(id: string) => void>(() => {});
   const [passSecsLeft, setPassSecsLeft] = useState(PASS_SECONDS);
   const [now, setNow] = useState(Date.now());
   const [showFlash, setShowFlash] = useState(false);
+  // "Sara passed you the bomb!" — shown for a moment when a bomb lands on you.
+  const [incoming, setIncoming] = useState<{ from: string | null } | null>(null);
+  const [blasts, setBlasts] = useState(0);
 
   const qStartRef    = useRef(Date.now());
   const askedRef     = useRef(0);
@@ -43,17 +48,24 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
   const passedRef    = useRef(false);
   const studentsRef  = useRef<any[]>([]);
   studentsRef.current = students;
-  const lastExplosionAtRef = useRef<string | null>(null);
+  const pointsRef = useRef(0);
+  const myBombIdRef = useRef<string | null>(null);
+  const passChRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const passTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const sessionStatusRef = useRef<string>("lobby");
 
   const settings        = session?.settings ?? {};
-  const hasBomb         = settings.bombHolderId === studentId;
-  const bombExplodesAt  = settings.bombExplodesAt as string | null;
-  const fuseMs          = bombExplodesAt ? Math.max(0, new Date(bombExplodesAt).getTime() - now) : 0;
-  const fusePct         = bombExplodesAt ? Math.min(100, (fuseMs / 90_000) * 100) : 100;
-  const fuseColor       = fuseMs > 30_000 ? "hsl(71 48% 55%)" : fuseMs > 10_000 ? "hsl(42 55% 58%)" : "hsl(32 62% 58%)";
-  const bombHolder = useMemo(() => students.find(s => s.id === settings.bombHolderId), [students, settings.bombHolderId]);
+  const bombs: Bomb[]   = useMemo(() => Array.isArray(settings.bombs) ? settings.bombs : [], [settings.bombs]);
+  const feed: FeedEvent[] = useMemo(() => Array.isArray(settings.hpFeed) ? settings.hpFeed : [], [settings.hpFeed]);
+  const myBomb          = bombs.find(b => b.holderId === studentId) ?? null;
+  const hasBomb         = !!myBomb;
+  // The fuse is hidden on purpose: the drawing burns down, no seconds.
+  const burn            = myBomb ? fuseBurn(myBomb.explodesAt, now) : 0;
+  const fusePct         = (1 - burn) * 100;
+  const fuseColor       = burn < 0.5 ? "hsl(71 48% 55%)" : burn < 0.8 ? "hsl(42 55% 58%)" : "hsl(32 62% 58%)";
+  const otherHolders    = useMemo(() => bombs.filter(b => b.holderId !== studentId)
+    .map(b => students.find(s => s.id === b.holderId)).filter(Boolean), [bombs, students, studentId]);
+  const nameOf = (id: string | null) => students.find(s => s.id === id)?.name ?? null;
 
   // ── Initial load ─────────────────────────────────────────────────────────
   useEffect(() => {
@@ -75,6 +87,51 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
 
     return () => { window.removeEventListener("pointerdown", onFirstTouch); };
   }, [sessionId, studentId]);
+
+  useEffect(() => { if (me) pointsRef.current = me.crypto ?? 0; }, [me?.crypto]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Pass requests go to the projector, which moves the bomb (passIt.ts).
+  useEffect(() => {
+    const ch = supabase.channel(`passit-${sessionId}`).subscribe();
+    passChRef.current = ch;
+    return () => { supabase.removeChannel(ch); passChRef.current = null; };
+  }, [sessionId]);
+
+  // A bomb just landed on me.
+  useEffect(() => {
+    const id = myBomb?.id ?? null;
+    if (id && id !== myBombIdRef.current && session?.status === "running") {
+      setIncoming({ from: myBomb!.fromId });
+      playHackAlert();
+      navigator.vibrate?.([200, 80, 200]);
+      const t = setTimeout(() => setIncoming(null), 1800);
+      myBombIdRef.current = id;
+      return () => clearTimeout(t);
+    }
+    myBombIdRef.current = id;
+  }, [myBomb?.id, myBomb?.holderId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // A bomb went off in my hands: I halve my own points (each phone writes only
+  // its own row). Handled blast ids are remembered so a reload can't double it.
+  useEffect(() => {
+    const key = `passit_blasts_${sessionId}`;
+    let done: string[] = [];
+    try { done = JSON.parse(localStorage.getItem(key) ?? "[]"); } catch { /* fresh */ }
+    setBlasts(done.length);
+    const mine = feed.filter(e => e.kind === "boom" && e.to === studentId && !done.includes(e.id));
+    if (!mine.length) return;
+    done = [...done, ...mine.map(e => e.id)];
+    try { localStorage.setItem(key, JSON.stringify(done)); } catch { /* private mode */ }
+    setBlasts(done.length);
+    (async () => {
+      const { data: row } = await supabase.from("game_students").select("crypto").eq("id", studentId).maybeSingle();
+      let pts = row?.crypto ?? pointsRef.current;
+      for (let i = 0; i < mine.length; i++) pts = Math.floor(pts * BOOM_KEEP);
+      pointsRef.current = pts;
+      await supabase.from("game_students").update({ crypto: pts }).eq("id", studentId);
+    })();
+    setPhase("exploded");
+  }, [feed]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Now ticker (for fuse bar) ────────────────────────────────────────────
   useEffect(() => {
@@ -117,19 +174,6 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
   useEffect(() => {
     if (phase === "done") playGameOver();
   }, [phase]);
-
-  // ── Explosion detection ───────────────────────────────────────────────────
-  useEffect(() => {
-    if (!session) return;
-    const lastAt  = settings.lastExplosionAt;
-    const victimId = settings.lastExplosionVictimId;
-    if (lastAt && lastAt !== lastExplosionAtRef.current) {
-      lastExplosionAtRef.current = lastAt;
-      if (victimId === studentId) {
-        setPhase("exploded");
-      }
-    }
-  }, [settings.lastExplosionAt, settings.lastExplosionVictimId]);
 
   // ── Auto-advance after exploded + trigger flash ───────────────────────────
   useEffect(() => {
@@ -192,10 +236,11 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
       setPassSecsLeft(prev => {
         if (prev <= 1) {
           clearInterval(passTimerRef.current!);
-          // timeout: bomb stays, move to next question
+          // Out of time: it goes to one of the choices at random, so the
+          // bomb never gets stuck with someone who answered right.
           if (!passedRef.current) {
-            passedRef.current = true;
-            setTimeout(() => { if (sessionStatusRef.current !== "finished") { setQSeed(s => s + 1); setPhase("question"); } }, 200);
+            const pick = passTargetsRef.current[Math.floor(Math.random() * passTargetsRef.current.length)];
+            if (pick) passBombRef.current(pick.id);
           }
           return 0;
         }
@@ -218,18 +263,23 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
 
     if (correct) {
       // Award points fire-and-forget
+      pointsRef.current += POINTS_PER_CORRECT;
       supabase.from("game_students").update({
-        crypto: (me.crypto ?? 0) + POINTS_PER_CORRECT,
+        crypto: pointsRef.current,
         correct_answers: (me.correct_answers ?? 0) + 1,
         total_answers: (me.total_answers ?? 0) + 1,
       }).eq("id", me.id).then(undefined, () => {});
 
       if (hasBomb) {
-        // Pick 3 random pass targets
-        const others = studentsRef.current.filter((s: any) => s.id !== studentId);
-        const shuffled = [...others].sort(() => Math.random() - 0.5).slice(0, 3);
-        setPassTargets(shuffled);
-        setTimeout(() => { if (sessionStatusRef.current !== "finished") setPhase("passing"); }, 600);
+        // Choices: players who don't already hold a bomb.
+        const ids = pickTargets(studentsRef.current.map((s: any) => s.id), bombs, studentId, Math.random);
+        const targets = ids.map(id => studentsRef.current.find((s: any) => s.id === id)).filter(Boolean);
+        if (targets.length) {
+          setPassTargets(targets);
+          setTimeout(() => { if (sessionStatusRef.current !== "finished") setPhase("passing"); }, 600);
+        } else {
+          setTimeout(() => { if (sessionStatusRef.current !== "finished") setPhase("answered"); }, 700);
+        }
       } else {
         setTimeout(() => { if (sessionStatusRef.current !== "finished") setPhase("answered"); }, 700);
       }
@@ -244,22 +294,18 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
       session_id: sessionId, student_id: me.id, question_id: currentQ.id,
       question_index: askedRef.current, answer_index: idx, is_correct: correct,
     }).then(undefined, () => {});
-  }, [currentQ, me, hasBomb, studentId, sessionId]);
+  }, [currentQ, me, hasBomb, bombs, studentId, sessionId]);
 
   const submit = (idx: number) => { if (pickedRef.current !== null) return; handleAnswer(idx); };
 
-  const passBomb = async (targetId: string) => {
-    if (passedRef.current) return;
+  const passBomb = (targetId: string) => {
+    if (passedRef.current || !myBomb) return;
     passedRef.current = true;
     if (passTimerRef.current) clearInterval(passTimerRef.current);
-    // Fetch fresh settings to avoid stale spread (session may have updated since render)
-    const { data: fresh } = await supabase.from("game_sessions")
-      .select("settings").eq("id", sessionId).single();
-    const live = fresh?.settings ?? settings;
-    supabase.from("game_sessions").update({ settings: { ...live, bombHolderId: targetId } })
-      .eq("id", sessionId).then(undefined, () => {});
+    passChRef.current?.send({ type: "broadcast", event: "pass", payload: { bombId: myBomb.id, from: studentId, to: targetId } });
     setTimeout(() => { if (sessionStatusRef.current !== "finished") { setQSeed(s => s + 1); setPhase("question"); } }, 300);
   };
+  passBombRef.current = passBomb;
 
   const fmt = (n: number) => n.toLocaleString();
   const points = me?.crypto ?? 0;
@@ -291,8 +337,24 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
         </>
       )}
 
+      {/* A bomb just landed on you */}
+      {incoming && phase !== "done" && (
+        <div className="pointer-events-none absolute inset-0 z-[60] flex flex-col items-center justify-center gap-4 text-center px-6 animate-hp-explode"
+          style={{ background: "radial-gradient(ellipse at center, hsl(20 70% 22% / 0.96), hsl(210 22% 6% / 0.97))" }}>
+          <BombIcon className="h-24 w-24 animate-fuse-critical" sparks />
+          <div className="text-3xl font-black" style={{ color: "hsl(32 90% 70%)" }}>
+            {nameOf(incoming.from)
+              ? (ar ? `${nameOf(incoming.from)} مرّر لك القنبلة!` : `${nameOf(incoming.from)} passed you the bomb!`)
+              : (ar ? "معك قنبلة!" : "You got a bomb!")}
+          </div>
+          <div className="text-base font-bold" style={{ color: "hsl(210 10% 80%)" }}>
+            {ar ? "أجب صح بسرعة لتتخلص منها" : "Answer right, fast, to get rid of it"}
+          </div>
+        </div>
+      )}
+
       {/* Shake wrapper */}
-      <div className={cn("relative z-10 flex flex-col h-full overflow-y-auto", hasBomb && fuseMs < 5_000 && "animate-screen-shake")}>
+      <div className={cn("relative z-10 flex flex-col h-full overflow-y-auto", hasBomb && burn > 0.85 && "animate-screen-shake")}>
 
         {/* ── HEADER — metal panel ── */}
         <header className="relative shrink-0 flex items-center justify-between px-5 py-3 safe-top z-10"
@@ -396,7 +458,7 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
             const sorted   = [...students].sort((a, b) => (b.crypto ?? 0) - (a.crypto ?? 0));
             const rank     = sorted.findIndex(s => s.id === studentId) + 1 || sorted.length;
             const top5     = sorted.slice(0, 5);
-            const exploded = (me as any)?.exploded_count ?? 0;
+            const exploded = blasts;
             const defused  = me?.correct_answers ?? 0;
             const survived = rank <= 3;
             const verdict  = ar
@@ -528,7 +590,7 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
             <div className="flex-1 flex flex-col items-center justify-center text-center gap-5 animate-hp-explode">
               <BombIcon className="h-24 w-24" sparks />
               <h2 className="text-3xl font-black" style={{ color: "hsl(210 12% 88%)" }}>{ar ? "انفجرت!" : "You exploded!"}</h2>
-              <p className="text-muted-foreground text-base">{ar ? "تم تصفير نقاطك" : "Your score was reset"}</p>
+              <p className="text-muted-foreground text-base">{ar ? "خسرت نصف نقاطك" : "You lost half your points"}</p>
               <p className="text-muted-foreground/50 text-xs">{ar ? "تعود للعبة الآن..." : "Back to the game..."}</p>
             </div>
           )}
@@ -537,21 +599,22 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
           {(phase === "question" || phase === "answered") && currentQ && (
             <div key={qSeed} className="flex-1 flex flex-col max-w-2xl mx-auto w-full pt-3 animate-question-in">
 
-              {/* Bomb strip — bomb + seconds, same shape whoever holds it. */}
-              {(hasBomb || bombHolder) && phase === "question" && (
-                <div className="mb-3 flex items-center gap-2.5 px-3 py-2 rounded-lg" style={metalPanel}>
-                  <BombIcon className="h-4 w-4 shrink-0" burn={fusePct / 100} sparks={hasBomb} />
-                  <span className="flex-1 truncate text-xs font-mono"
-                    style={{ color: hasBomb ? "hsl(210 12% 88%)" : "hsl(210 10% 58%)" }}>
-                    {hasBomb
-                      ? (ar ? "لديك القنبلة" : "You have the bomb")
-                      : (ar ? `${bombHolder.name} يحمل القنبلة` : `${bombHolder.name} has the bomb`)}
-                  </span>
-                  <span className="tabular-nums text-xs font-mono font-bold" style={{ color: fuseColor }}>
-                    {Math.ceil(fuseMs / 1000)}s
-                  </span>
-                </div>
-              )}
+              {/* Bomb strip. Holding one: it burns down with no seconds shown.
+                  Not holding: who has the bombs right now. */}
+              {/* Always there and always the same height, so the question and
+                  the answers never jump when you answer or a bomb moves. */}
+              <div className="mb-3 h-11 shrink-0 flex items-center gap-2.5 px-3 rounded-lg overflow-hidden transition-colors duration-300"
+                style={{ ...metalPanel, border: `1.5px solid ${hasBomb ? fuseColor : "hsl(210 20% 22%)"}` }}>
+                <BombIcon className="h-5 w-5 shrink-0" burn={hasBomb ? fusePct / 100 : undefined} sparks={hasBomb} />
+                <span className="flex-1 min-w-0 truncate font-mono text-[13px]"
+                  style={{ color: hasBomb ? "hsl(210 12% 92%)" : "hsl(210 10% 58%)", fontWeight: hasBomb ? 800 : 400 }}>
+                  {hasBomb
+                    ? (ar ? "معك قنبلة! أجب صح لتمرّرها" : "You have a bomb! Answer right to pass it")
+                    : otherHolders.length
+                      ? (ar ? `القنابل مع: ${otherHolders.map((h: any) => h.name).join("، ")}` : `Bombs: ${otherHolders.map((h: any) => h.name).join(", ")}`)
+                      : (ar ? "لا قنابل معك" : "No bomb on you")}
+                </span>
+              </div>
 
               {/* Arc timer — only when the teacher enabled a per-question timer */}
               {timerEnabled && (
@@ -633,7 +696,7 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
                   </button>
                 ))}
               </div>
-              <p className="text-center text-xs text-muted-foreground/50">{ar ? "إذا لم تختر — تبقى القنبلة معك" : "If you don't choose — the bomb stays with you"}</p>
+              <p className="text-center text-xs text-muted-foreground/50">{ar ? "إذا لم تختر، تذهب لأحدهم عشوائيًا" : "If you don't choose, it goes to one of them at random"}</p>
             </div>
           )}
 
