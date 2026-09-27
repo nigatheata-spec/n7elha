@@ -495,7 +495,7 @@ const HostGame = () => {
           {quiz && <p className="mt-1 text-sm text-black/45">{quiz.title}</p>}
         </div>
 
-        <div className="grid md:grid-cols-[1fr_340px] gap-5 items-start">
+        <div className="grid md:grid-cols-[360px_1fr] gap-5 items-start">
 
           {/* ── Settings card ── */}
           <div className="rounded-2xl p-6 space-y-6 bg-white border-2 border-[hsl(var(--nb-border))] shadow-[4px_4px_0_0_hsl(var(--nb-border))]">
@@ -693,11 +693,14 @@ const HostGame = () => {
             <h2 className="font-semibold text-[15px] text-[#3F5A63]">{t("game_code")}</h2>
 
             {/* Code display */}
-            <div className="rounded-2xl p-6 text-center bg-white border-2 border-[hsl(var(--nb-border))] shadow-[4px_4px_0_0_hsl(var(--nb-border))]">
-              <div className="font-mono text-5xl font-black tracking-[0.2em] select-all text-[#3F5A63]">
+            <div className="rounded-2xl px-6 py-10 text-center bg-white border-2 border-[hsl(var(--nb-border))] shadow-[4px_4px_0_0_hsl(var(--nb-border))]">
+              <div className="text-base sm:text-lg font-semibold text-black/45" dir="ltr">
+                {window.location.host}/join
+              </div>
+              <div className="mt-3 font-mono text-7xl sm:text-8xl lg:text-9xl font-black tracking-[0.18em] select-all text-[#3F5A63] leading-none" dir="ltr">
                 {code}
               </div>
-              <div className="mt-2 text-xs text-black/35">
+              <div className="mt-4 text-sm text-black/40">
                 {ar ? "شارك مع طلابك" : "Share with your students"}
               </div>
             </div>
@@ -743,16 +746,17 @@ const HostGame = () => {
                       {t("waiting_students")}...
                     </div>
                   ) : (
-                    <div className="space-y-1.5 max-h-56 overflow-auto">
+                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-1.5 max-h-72 overflow-auto">
                       {students.map(s => <PlayerRow key={s.id} s={s} ar={ar} />)}
                     </div>
                   )}
                 </div>
 
+                <div className="flex gap-3">
                 {/* Cancel lobby */}
                 <button
                   onClick={cancelLobby}
-                  className="w-full flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold border-2 border-[hsl(var(--nb-border))] bg-white text-red-500 shadow-[3px_3px_0_0_hsl(var(--nb-border))] hover:translate-x-px hover:translate-y-px hover:shadow-[2px_2px_0_0_hsl(var(--nb-border))] transition-all"
+                  className="shrink-0 px-5 flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold border-2 border-[hsl(var(--nb-border))] bg-white text-red-500 shadow-[3px_3px_0_0_hsl(var(--nb-border))] hover:translate-x-px hover:translate-y-px hover:shadow-[2px_2px_0_0_hsl(var(--nb-border))] transition-all"
                 >
                   {ar ? "إغلاق الردهة" : "Cancel lobby"}
                 </button>
@@ -761,11 +765,12 @@ const HostGame = () => {
                 <button
                   onClick={startGame}
                   disabled={students.length < 1}
-                  className="w-full flex items-center justify-center gap-2 rounded-xl py-3.5 text-base font-bold border-2 border-[hsl(var(--nb-border))] bg-[#3F5A63] text-white shadow-[4px_4px_0_0_hsl(var(--nb-border))] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_0_hsl(var(--nb-border))] transition-all active:scale-[0.99] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-x-0 disabled:hover:translate-y-0 disabled:shadow-[4px_4px_0_0_hsl(var(--nb-border))]"
+                  className="flex-1 flex items-center justify-center gap-2 rounded-xl py-3.5 text-base font-bold border-2 border-[hsl(var(--nb-border))] bg-[#3F5A63] text-white shadow-[4px_4px_0_0_hsl(var(--nb-border))] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_0_hsl(var(--nb-border))] transition-all active:scale-[0.99] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-x-0 disabled:hover:translate-y-0 disabled:shadow-[4px_4px_0_0_hsl(var(--nb-border))]"
                 >
                   <Play className="h-5 w-5" />
                   {t("start_game")}
                 </button>
+                </div>
               </>
             )}
           </div>
