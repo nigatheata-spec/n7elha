@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Plus, Trash2, Sparkles, Upload, Save, Check, ChevronDown, Image as ImageIcon, X, Wand2, FileText, Camera } from "lucide-react";
+import { shrinkPhoto, MAX_PHOTOS } from "@/lib/photo";
 import { toast } from "@/components/ui/sonner";
 
 type Q = { id?: string; text: string; options: string[]; correct_index: number; difficulty: "easy"|"medium"|"hard"; image_url?: string | null };
@@ -75,18 +76,6 @@ const QuizEditor = () => {
     r.readAsDataURL(file);
   });
 
-  // Phone photos are several MB each; the AI reads a page just as well at
-  // 1600px, and the request stays small enough to send a few pages at once.
-  const shrinkPhoto = async (file: File) => {
-    const img = await createImageBitmap(file).catch(() => null);
-    if (!img) return fileToDataUrl(file);
-    const k = Math.min(1, 1600 / Math.max(img.width, img.height));
-    const c = document.createElement("canvas");
-    c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
-    c.getContext("2d")!.drawImage(img, 0, 0, c.width, c.height);
-    return c.toDataURL("image/jpeg", 0.85);
-  };
-
   const onUpload = async (file: File) => {
     setUploading(true);
     try {
@@ -94,7 +83,7 @@ const QuizEditor = () => {
       const isImage = file.type.startsWith("image/") || ["png","jpg","jpeg","webp","gif"].includes(ext);
       if (isImage) {
         const url = await shrinkPhoto(file);
-        setDocImages(imgs => [...imgs, url].slice(0, 8));
+        setDocImages(imgs => [...imgs, url].slice(0, MAX_PHOTOS));
         return; // the file chip appearing is the confirmation
       }
       let text = "";

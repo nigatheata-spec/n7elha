@@ -6,13 +6,14 @@ import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Plus, ArrowUp, FileText, X, Loader2, Gauge, Hash, FileQuestion, Check, RefreshCw, Pencil, ChevronDown, Play, Upload, Image as ImageIcon, Trash2 } from "lucide-react";
+import { Sparkles, Plus, ArrowUp, Camera, Paperclip, FileText, X, Loader2, Gauge, Hash, FileQuestion, Check, RefreshCw, Pencil, ChevronDown, Play, Upload, Image as ImageIcon, Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/sonner";
 import { TryGameButton } from "@/components/TryGameButton";
+import { shrinkPhoto, MAX_PHOTOS } from "@/lib/photo";
 
 const PHRASES = {
   en: [
@@ -112,6 +113,9 @@ const Dashboard = () => {
 
   const [prompt, setPrompt] = useState("");
   const [files, setFiles] = useState<{ name: string; text: string }[]>([]);
+  const [photos, setPhotos] = useState<string[]>([]);
+  const [dragging, setDragging] = useState(false);
+  const photoRef = useRef<HTMLInputElement>(null);
   const [creativity, setCreativity] = useState(1);
   const [difficulty, setDifficulty] = useState("medium");
   const [numQ, setNumQ] = useState(5);
@@ -174,6 +178,11 @@ const Dashboard = () => {
     for (const f of arr) {
       const ext = f.name.split(".").pop()?.toLowerCase() ?? "";
       try {
+        if (f.type.startsWith("image/") || ["png", "jpg", "jpeg", "webp", "heic", "gif"].includes(ext)) {
+          const url = await shrinkPhoto(f);
+          setPhotos(p => [...p, url].slice(0, MAX_PHOTOS));
+          continue;
+        }
         let text = "";
         if (ext === "txt" || ext === "md") {
           text = await f.text();
@@ -194,8 +203,8 @@ const Dashboard = () => {
 
   const generateDraft = async (extraInstruction?: string) => {
     if (!user) return;
-    if (!prompt.trim() && files.length === 0) {
-      toast.error(ar ? "اكتب طلبك أو ارفع مصدر" : "Write a prompt or upload a file");
+    if (!prompt.trim() && files.length === 0 && photos.length === 0) {
+      toast.error(ar ? "اكتب موضوعًا أو أضف صورة أو ملفًا" : "Type a topic, or add a photo or a file");
       return;
     }
     if (numQ > 10) {
@@ -208,6 +217,7 @@ const Dashboard = () => {
       const { data, error } = await supabase.functions.invoke("generate-quiz", {
         body: {
           content,
+          images: photos,
           topics: prompt + (extraInstruction ? `\n\nتعديلات المعلم: ${extraInstruction}` : ""),
           numQuestions: numQ,
           difficulty,
@@ -275,6 +285,7 @@ const Dashboard = () => {
   };
 
   const cur = CREATIVITY[creativity];
+  const hasSource = files.length > 0 || photos.length > 0;
 
   // When a draft is ready, show the review as the full page (no modal, no nested scroll)
   if (draft) {
@@ -307,19 +318,37 @@ const Dashboard = () => {
           <TypewriterHeading ar={ar} />
         </h1>
 
-        <div className={`rounded-3xl bg-white border-2 border-[hsl(var(--nb-border))] shadow-[4px_4px_0_0_hsl(var(--nb-border))] p-4 md:p-5 text-start transition-opacity ${busy ? "opacity-60" : ""}`}>
+        {/* One box: type a topic, or give it the lesson itself (a photo of
+            the page, a PDF). Photos and files can also be dropped on the box
+            or pasted into it. Enter generates, Shift+Enter is a new line. */}
+        <div
+          onDragOver={e => { e.preventDefault(); setDragging(true); }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={e => { e.preventDefault(); setDragging(false); handleFiles(e.dataTransfer.files); }}
+          className={`relative rounded-3xl bg-white border-2 border-[hsl(var(--nb-border))] shadow-[4px_4px_0_0_hsl(var(--nb-border))] p-4 md:p-5 text-start transition-all ${busy ? "opacity-60" : ""} ${dragging ? "ring-4 ring-accent/40" : ""}`}>
           <textarea
             value={prompt}
             onChange={e => setPrompt(e.target.value)}
-            placeholder={ar ? "اطلب من نفلها توليد اختبار... (مثال: اختبار عن الكسور للصف الخامس)" : "Ask nefelha to create a quiz... (e.g. Fractions quiz for grade 5)"}
+            onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); generateDraft(); } }}
+            onPaste={e => { const imgs = Array.from(e.clipboardData.files).filter(f => f.type.startsWith("image/")); if (imgs.length) { e.preventDefault(); const dt = new DataTransfer(); imgs.forEach(f => dt.items.add(f)); handleFiles(dt.files); } }}
+            placeholder={ar ? "عن ماذا الاختبار؟ اكتب موضوعًا، أو أضف صورة صفحة من الكتاب..." : "What's the quiz about? Type a topic, or add a photo of a textbook page..."}
             rows={3}
             disabled={busy}
             className="w-full resize-none bg-transparent outline-none text-lg placeholder:text-muted-foreground/70 disabled:cursor-not-allowed"
             maxLength={2000}
           />
 
-          {files.length > 0 && (
-            <div className="flex flex-wrap gap-2 mt-2">
+          {(photos.length > 0 || files.length > 0) && (
+            <div className="flex flex-wrap items-center gap-2 mt-2">
+              {photos.map((src, i) => (
+                <div key={i} className="relative">
+                  <img src={src} alt="" className="h-16 w-16 object-cover rounded-xl border border-border" />
+                  <button type="button" aria-label={ar ? "إزالة" : "Remove"} onClick={() => setPhotos(p => p.filter((_, j) => j !== i))}
+                    className="absolute -top-1.5 -end-1.5 h-5 w-5 rounded-full bg-foreground text-background flex items-center justify-center">
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
               {files.map((f, i) => (
                 <Badge key={i} variant="secondary" className="gap-1.5 py-1.5 ps-2 pe-1">
                   <FileText className="h-3 w-3" />
@@ -332,18 +361,57 @@ const Dashboard = () => {
             </div>
           )}
 
-          <div className={`flex items-center justify-between mt-3 pt-3 border-t border-border/60 gap-2 flex-wrap ${busy ? "pointer-events-none" : ""}`}>
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <input ref={fileRef} type="file" multiple accept=".pdf,.txt,.md" className="hidden"
-                onChange={e => { handleFiles(e.target.files); if (fileRef.current) fileRef.current.value = ""; }} />
-              <Button variant="ghost" size="icon" className="rounded-full h-9 w-9" disabled={busy} onClick={() => fileRef.current?.click()}>
-                <Plus className="h-4 w-4" />
-              </Button>
+          <input ref={photoRef} type="file" multiple accept="image/*" className="hidden"
+            onChange={e => { handleFiles(e.target.files); if (photoRef.current) photoRef.current.value = ""; }} />
+          <input ref={fileRef} type="file" multiple accept=".pdf,.txt,.md" className="hidden"
+            onChange={e => { handleFiles(e.target.files); if (fileRef.current) fileRef.current.value = ""; }} />
 
-              {files.length > 0 && (
+          <div className={`mt-3 pt-3 border-t border-border/60 space-y-3 ${busy ? "pointer-events-none" : ""}`}>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <button type="button" onClick={() => photoRef.current?.click()} disabled={busy}
+                className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full border-2 border-[hsl(var(--nb-border))] text-sm font-bold hover:bg-muted transition-colors">
+                <Camera className="h-4 w-4" />{ar ? "صورة" : "Photo"}
+              </button>
+              <button type="button" onClick={() => fileRef.current?.click()} disabled={busy}
+                className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full border-2 border-[hsl(var(--nb-border))] text-sm font-bold hover:bg-muted transition-colors">
+                <Paperclip className="h-4 w-4" />{ar ? "ملف PDF" : "PDF"}
+              </button>
+
+              <span className="flex-1" />
+
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button type="button" className="inline-flex items-center gap-1.5 h-9 px-3 rounded-full bg-secondary text-secondary-foreground text-xs transition-colors hover:brightness-110">
+                    <Gauge className="h-3.5 w-3.5 opacity-80" />
+                    <span className="font-semibold">{ar ? DIFFICULTY.find(d => d.key === difficulty)?.label_ar : DIFFICULTY.find(d => d.key === difficulty)?.label_en}</span>
+                    <ChevronDown className="h-3 w-3 opacity-80" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-40 p-1" align="start">
+                  {DIFFICULTY.map((d) => (
+                    <button key={d.key} type="button" onClick={() => setDifficulty(d.key)}
+                      className={`w-full flex items-center justify-between px-2.5 py-2 rounded-md text-sm hover:bg-accent ${difficulty === d.key ? "bg-accent/50" : ""}`}>
+                      <span>{ar ? d.label_ar : d.label_en}</span>
+                      {difficulty === d.key && <Check className="h-3.5 w-3.5" />}
+                    </button>
+                  ))}
+                </PopoverContent>
+              </Popover>
+
+              {/* Two choices: a toggle, not a dropdown. */}
+              <div className="inline-flex h-9 p-0.5 rounded-full bg-muted text-xs font-bold" role="radiogroup" aria-label={ar ? "عدد الأسئلة" : "Questions"}>
+                {[5, 10].map(n => (
+                  <button key={n} type="button" role="radio" aria-checked={numQ === n} onClick={() => setNumQ(n)}
+                    className={`px-3 rounded-full transition-colors ${numQ === n ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground"}`}>
+                    {n} {ar ? "أسئلة" : "Qs"}
+                  </button>
+                ))}
+              </div>
+
+              {hasSource && (
                 <Popover>
                   <PopoverTrigger asChild>
-                    <button type="button" className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full bg-primary text-primary-foreground text-xs transition-colors hover:brightness-110">
+                    <button type="button" className="inline-flex items-center gap-1.5 h-9 px-3 rounded-full bg-primary text-primary-foreground text-xs transition-colors hover:brightness-110">
                       <span className="font-semibold">{ar ? cur.label_ar : cur.label_en}</span>
                       <ChevronDown className="h-3 w-3 opacity-80" />
                     </button>
@@ -362,55 +430,23 @@ const Dashboard = () => {
                   </PopoverContent>
                 </Popover>
               )}
-
-              <Popover>
-                <PopoverTrigger asChild>
-                  <button type="button" className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full bg-secondary text-secondary-foreground text-xs transition-colors hover:brightness-110">
-                    <Gauge className="h-3 w-3 opacity-80" />
-                    <span className="font-semibold">{ar ? DIFFICULTY.find(d => d.key === difficulty)?.label_ar : DIFFICULTY.find(d => d.key === difficulty)?.label_en}</span>
-                    <ChevronDown className="h-3 w-3 opacity-80" />
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent className="w-40 p-1" align="start">
-                  {DIFFICULTY.map((d) => (
-                    <button key={d.key} type="button" onClick={() => setDifficulty(d.key)}
-                      className={`w-full flex items-center justify-between px-2.5 py-2 rounded-md text-sm hover:bg-accent ${difficulty === d.key ? "bg-accent/50" : ""}`}>
-                      <span>{ar ? d.label_ar : d.label_en}</span>
-                      {difficulty === d.key && <Check className="h-3.5 w-3.5" />}
-                    </button>
-                  ))}
-                </PopoverContent>
-              </Popover>
-
-              <Popover>
-                <PopoverTrigger asChild>
-                  <button type="button" className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full bg-accent text-accent-foreground text-xs transition-colors hover:brightness-110">
-                    <span className="font-semibold">{numQ}</span>
-                    <span className="opacity-90">{ar ? "سؤال" : "Q"}</span>
-                    <ChevronDown className="h-3 w-3 opacity-80" />
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent className="w-32 p-1 max-h-64 overflow-y-auto" align="start">
-                  {[5,10].map(n => (
-                    <button key={n} type="button" onClick={() => setNumQ(n)}
-                      className={`w-full flex items-center justify-between px-2.5 py-2 rounded-md text-sm hover:bg-accent ${numQ === n ? "bg-accent/50" : ""}`}>
-                      <span>{n}</span>
-                      {numQ === n && <Check className="h-3.5 w-3.5" />}
-                    </button>
-                  ))}
-                </PopoverContent>
-              </Popover>
             </div>
 
             <Button
               onClick={() => generateDraft()}
               disabled={busy}
-              className="rounded-full h-10 w-10 p-0 bg-accent text-accent-foreground hover:bg-accent/90 shadow-md"
-              aria-label="generate"
+              className="w-full rounded-full h-12 gap-2 bg-accent text-accent-foreground hover:bg-accent/90 shadow-md text-base font-bold"
             >
-              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowUp className="h-4 w-4" />}
+              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+              {ar ? "أنشئ الاختبار" : "Create quiz"}
             </Button>
           </div>
+
+          {dragging && (
+            <div className="absolute inset-0 rounded-3xl bg-accent/10 flex items-center justify-center text-lg font-bold pointer-events-none">
+              {ar ? "أفلت الصورة أو الملف هنا" : "Drop the photo or file here"}
+            </div>
+          )}
         </div>
 
         {!busy && (
