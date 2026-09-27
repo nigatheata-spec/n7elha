@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,8 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Plus, Trash2, Sparkles, Upload, Save, Check, ChevronDown, Image as ImageIcon, X, Wand2, FileText, Camera } from "lucide-react";
+import { Plus, Trash2, Sparkles, Upload, Save, Check, Image as ImageIcon, X, Wand2, FileText, Camera, Paperclip, Loader2 } from "lucide-react";
 import { shrinkPhoto, MAX_PHOTOS } from "@/lib/photo";
 import { toast } from "@/components/ui/sonner";
 
@@ -44,6 +43,9 @@ const QuizEditor = () => {
   const [generating, setGenerating] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [imgBusy, setImgBusy] = useState<number | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const photoRef = useRef<HTMLInputElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -226,103 +228,97 @@ const QuizEditor = () => {
         </div>
       </div>
 
+      {/* Same box as the dashboard's: a topic, or the lesson itself as
+          photos of the page or a PDF (buttons, drop, or paste). */}
       {showAI && (
-        <Card className="p-4 md:p-5 border-accent/30 bg-card/80 backdrop-blur animate-fade-in">
-          <div className="flex items-center gap-2 mb-3">
-            <Sparkles className="h-4 w-4 text-accent" />
-            <h2 className="font-bold text-sm">{t("ai_generate")}</h2>
+        <div
+          onDragOver={e => { e.preventDefault(); setDragging(true); }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={e => { e.preventDefault(); setDragging(false); Array.from(e.dataTransfer.files).forEach(onUpload); }}
+          className={`relative rounded-3xl bg-white border-2 border-[hsl(var(--nb-border))] shadow-[4px_4px_0_0_hsl(var(--nb-border))] p-4 md:p-5 animate-fade-in transition-all ${generating ? "opacity-60 pointer-events-none" : ""} ${dragging ? "ring-4 ring-accent/40" : ""}`}>
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="font-bold text-sm flex items-center gap-2"><Sparkles className="h-4 w-4 text-accent" />{t("ai_generate")}</h2>
+            <button type="button" aria-label={t("cancel")} onClick={() => setShowAI(false)} className="h-8 w-8 rounded-full flex items-center justify-center text-muted-foreground hover:bg-muted">
+              <X className="h-4 w-4" />
+            </button>
           </div>
+          <textarea
+            value={topics}
+            onChange={e => setTopics(e.target.value)}
+            onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); generate(); } }}
+            onPaste={e => { const imgs = Array.from(e.clipboardData.files).filter(f => f.type.startsWith("image/")); if (imgs.length) { e.preventDefault(); imgs.forEach(onUpload); } }}
+            maxLength={400}
+            rows={3}
+            placeholder={ar ? "عن ماذا الاختبار؟ اكتب موضوعًا، أو أضف صورة صفحة من الكتاب..." : "What's the quiz about? Type a topic, or add a photo of a textbook page..."}
+            className="w-full resize-none bg-transparent outline-none text-base placeholder:text-muted-foreground/70"
+          />
 
-          <div className="rounded-2xl border border-border bg-background/60 p-3 space-y-3 shadow-sm">
-            <Textarea
-              value={topics}
-              onChange={e => setTopics(e.target.value)}
-              maxLength={400}
-              rows={3}
-              placeholder={t("focus_topics")}
-              className="border-0 bg-transparent focus-visible:ring-0 resize-none p-1 text-sm"
-            />
+          {(docImages.length > 0 || docText) && (
+            <div className="flex flex-wrap items-center gap-2 mt-2">
+              {docImages.map((src, idx) => (
+                <div key={idx} className="relative">
+                  <img src={src} alt="" className="h-16 w-16 object-cover rounded-xl border border-border" />
+                  <button type="button" aria-label={ar ? "إزالة" : "Remove"} onClick={() => setDocImages(imgs => imgs.filter((_, j) => j !== idx))}
+                    className="absolute -top-1.5 -end-1.5 h-5 w-5 rounded-full bg-foreground text-background flex items-center justify-center">
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+              {docText && (
+                <span className="inline-flex items-center gap-1.5 h-8 ps-2.5 pe-1 rounded-full bg-secondary text-secondary-foreground text-xs">
+                  <FileText className="h-3.5 w-3.5" />{docText.length} {ar ? "حرف" : "chars"}
+                  <button type="button" aria-label={ar ? "إزالة" : "Remove"} onClick={() => setDocText("")} className="p-0.5 rounded hover:bg-background/60"><X className="h-3 w-3" /></button>
+                </span>
+              )}
+            </div>
+          )}
 
-            {docText && (
-              <div className="text-xs text-muted-foreground px-1 flex items-center gap-1.5"><FileText className="h-3.5 w-3.5" />{docText.length} حرف</div>
-            )}
-            {docImages.length > 0 && (
-              <div className="flex flex-wrap gap-2 px-1">
-                {docImages.map((src, idx) => (
-                  <div key={idx} className="relative">
-                    <img src={src} alt="" className="h-14 w-14 object-cover rounded-md border" />
-                    <button type="button" onClick={() => setDocImages(imgs => imgs.filter((_, j) => j !== idx))}
-                      className="absolute -top-1.5 -end-1.5 h-5 w-5 rounded-full bg-foreground text-background flex items-center justify-center">
-                      <X className="h-3 w-3" />
-                    </button>
-                  </div>
+          <input ref={photoRef} type="file" multiple accept="image/*" className="hidden"
+            onChange={e => { Array.from(e.target.files ?? []).forEach(onUpload); e.currentTarget.value = ""; }} />
+          <input ref={fileRef} type="file" accept=".pdf,.txt,.md" className="hidden"
+            onChange={e => { const f = e.target.files?.[0]; if (f) onUpload(f); e.currentTarget.value = ""; }} />
+
+          <div className="mt-3 pt-3 border-t border-border/60 space-y-3">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <button type="button" onClick={() => photoRef.current?.click()}
+                className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full border-2 border-[hsl(var(--nb-border))] text-sm font-bold hover:bg-muted transition-colors">
+                <Camera className="h-4 w-4" />{ar ? "صورة" : "Photo"}
+              </button>
+              <button type="button" onClick={() => fileRef.current?.click()}
+                className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full border-2 border-[hsl(var(--nb-border))] text-sm font-bold hover:bg-muted transition-colors">
+                <Paperclip className="h-4 w-4" />{uploading ? "..." : ar ? "ملف PDF" : "PDF"}
+              </button>
+              <span className="flex-1" />
+              <div className="inline-flex h-9 p-0.5 rounded-full bg-muted text-xs font-bold" role="radiogroup" aria-label={t("difficulty")}>
+                {(["easy", "medium", "hard"] as const).map(d => (
+                  <button key={d} type="button" role="radio" aria-checked={diff === d} onClick={() => setDiff(d)}
+                    className={`px-3 rounded-full transition-colors ${diff === d ? "bg-[#3F5A63] text-white" : "text-muted-foreground hover:text-foreground"}`}>
+                    {t(d)}
+                  </button>
                 ))}
               </div>
-            )}
-
-            <div className="flex items-center justify-between gap-2 flex-wrap pt-2 border-t border-border/50">
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <label className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full border border-border hover:border-primary cursor-pointer text-xs transition-colors">
-                  <input type="file" multiple accept=".pdf,.txt,.md,image/*" className="hidden" onChange={(e) => { for (const f of Array.from(e.target.files ?? [])) onUpload(f); e.currentTarget.value = ""; }} />
-                  <Upload className="h-3.5 w-3.5" />
-                  <span>{uploading ? "..." : "PDF / TXT / صور"}</span>
-                </label>
-                {/* Opens the camera straight away on a phone or tablet: snap the
-                    textbook page and the quiz is built from it. */}
-                <label className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full border border-border hover:border-primary cursor-pointer text-xs transition-colors">
-                  <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onUpload(f); e.currentTarget.value = ""; }} />
-                  <Camera className="h-3.5 w-3.5" />
-                  <span>{t("snap_page")}</span>
-                </label>
-
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <button type="button" className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full border border-border hover:border-primary text-xs transition-colors">
-                      <span className="text-muted-foreground">{t("difficulty")}:</span>
-                      <span className="font-semibold">{t(diff)}</span>
-                      <ChevronDown className="h-3 w-3 opacity-60" />
-                    </button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-44 p-1" align="start">
-                    {(["easy","medium","hard"] as const).map(d => (
-                      <button key={d} type="button" onClick={() => setDiff(d)}
-                        className={`w-full flex items-center justify-between px-2.5 py-2 rounded-md text-sm hover:bg-accent ${diff === d ? "bg-accent/50" : ""}`}>
-                        <span>{t(d)}</span>
-                        {diff === d && <Check className="h-3.5 w-3.5" />}
-                      </button>
-                    ))}
-                  </PopoverContent>
-                </Popover>
-
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <button type="button" className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full border border-border hover:border-primary text-xs transition-colors">
-                      <span className="text-muted-foreground">{t("num_questions")}:</span>
-                      <span className="font-semibold">{numQ}</span>
-                      <ChevronDown className="h-3 w-3 opacity-60" />
-                    </button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-40 p-1 max-h-64 overflow-y-auto" align="start">
-                    {[5,10].map(n => (
-                      <button key={n} type="button" onClick={() => setNumQ(n)}
-                        className={`w-full flex items-center justify-between px-2.5 py-2 rounded-md text-sm hover:bg-accent ${numQ === n ? "bg-accent/50" : ""}`}>
-                        <span>{n}</span>
-                        {numQ === n && <Check className="h-3.5 w-3.5" />}
-                      </button>
-                    ))}
-                  </PopoverContent>
-                </Popover>
-              </div>
-
-              <div className="flex items-center gap-1.5">
-                <Button variant="ghost" size="sm" onClick={() => setShowAI(false)} className="h-8 text-xs">{t("cancel")}</Button>
-                <Button onClick={generate} disabled={generating} size="sm" className="h-8 bg-accent text-white hover:bg-accent/90 text-xs">
-                  <Sparkles className="h-3.5 w-3.5 me-1.5" />{generating ? "..." : t("generate")}
-                </Button>
+              <div className="inline-flex h-9 p-0.5 rounded-full bg-muted text-xs font-bold" role="radiogroup" aria-label={t("num_questions")}>
+                {[5, 10].map(n => (
+                  <button key={n} type="button" role="radio" aria-checked={numQ === n} onClick={() => setNumQ(n)}
+                    className={`px-3 rounded-full transition-colors ${numQ === n ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground"}`}>
+                    {n} {ar ? "أسئلة" : "Qs"}
+                  </button>
+                ))}
               </div>
             </div>
+            <Button onClick={generate} disabled={generating}
+              className="w-full rounded-full h-12 gap-2 bg-accent text-white hover:bg-accent/90 shadow-md text-base font-bold">
+              {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+              {generating ? (ar ? "جارٍ إنشاء الأسئلة..." : "Writing questions...") : (ar ? "أنشئ الأسئلة" : "Create questions")}
+            </Button>
           </div>
-        </Card>
+
+          {dragging && (
+            <div className="absolute inset-0 rounded-3xl bg-accent/10 flex items-center justify-center text-lg font-bold pointer-events-none">
+              {ar ? "أفلت الصورة أو الملف هنا" : "Drop the photo or file here"}
+            </div>
+          )}
+        </div>
       )}
 
       <Card className="p-6 space-y-4">
