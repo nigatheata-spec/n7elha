@@ -118,14 +118,35 @@ const MINUTE_PRESETS = [5, 10, 15, 20, 30];
    answer, which is what most classrooms actually want. */
 const SECOND_PRESETS = [10, 15, 20, 30, 45, 60];
 
+/* One row of equal buttons in a single frame, the selected one filled. */
+const Segmented = ({ options, value, onChange, fmt }: { options: number[]; value: number | null; onChange: (v: number) => void; fmt: (v: number) => string }) => (
+  <div className="grid gap-1 rounded-xl border-2 border-[hsl(var(--nb-border))] bg-white p-1" style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}>
+    {options.map(o => (
+      <button
+        key={o}
+        type="button"
+        onClick={() => onChange(o)}
+        className={`rounded-lg py-1.5 text-[13px] font-bold tabular-nums transition-colors ${value === o ? "bg-[#3F5A63] text-white" : "text-[#3F5A63] hover:bg-black/[0.05]"}`}
+      >
+        {fmt(o)}
+      </button>
+    ))}
+  </div>
+);
+
+const SettingLabel = ({ children }: { children: React.ReactNode }) => (
+  <p className="text-sm font-semibold text-[#3F5A63]">{children}</p>
+);
+
 const QuestionTimerControl = ({ ar, value, onChange }: { ar: boolean; value: number | null; onChange: (v: number | null) => void }) => {
   const on = value !== null;
   return (
-    <div>
-      <div className="flex items-center justify-between gap-3 mb-3">
-        <p className="text-xs font-semibold tracking-widest uppercase text-black/40">
-          {ar ? "مؤقت لكل سؤال" : "Timer Per Question"}
-        </p>
+    <div className="space-y-3">
+      <div className="flex items-center justify-between gap-3">
+        <SettingLabel>
+          {ar ? "مؤقت لكل سؤال" : "Timer per question"}
+          {on && <span className="ms-1.5 text-xs font-medium text-black/45">{ar ? "بالثواني" : "seconds"}</span>}
+        </SettingLabel>
         <button
           type="button"
           role="switch"
@@ -140,76 +161,37 @@ const QuestionTimerControl = ({ ar, value, onChange }: { ar: boolean; value: num
           />
         </button>
       </div>
-
       {on ? (
-        <div className="flex gap-2 flex-wrap">
-          {SECOND_PRESETS.map(s => (
-            <button
-              key={s}
-              onClick={() => onChange(s)}
-              className="px-3 py-1.5 rounded-lg text-xs font-bold border-2 border-[hsl(var(--nb-border))] transition-all hover:translate-x-px hover:translate-y-px"
-              style={value === s
-                ? { background: "#3F5A63", color: "white", boxShadow: "2px 2px 0 0 hsl(var(--nb-border))" }
-                : { background: "white", color: "#3F5A63", boxShadow: "2px 2px 0 0 hsl(var(--nb-border))" }
-              }
-            >
-              {s}s
-            </button>
-          ))}
-        </div>
+        <Segmented options={SECOND_PRESETS} value={value} onChange={onChange} fmt={String} />
       ) : (
-        <p className="text-sm text-black/45 leading-relaxed">
-          {ar
-            ? "لا مؤقت — يبقى السؤال معروضًا حتى يجيب الطلاب."
-            : "No timer — each question stays up until students answer."}
+        <p className="text-[13px] text-black/45">
+          {ar ? "كل سؤال يبقى حتى يجيب الطالب." : "Each question waits for an answer."}
         </p>
       )}
     </div>
   );
 };
 
-const MinuteStepper = ({ value, onChange }: { value: number; onChange: (v: number) => void }) => {
+const MinuteStepper = ({ ar, value, onChange }: { ar: boolean; value: number; onChange: (v: number) => void }) => {
   const step = (delta: number) => onChange(Math.min(30, Math.max(2, value + delta)));
+  const btn = "h-8 w-8 rounded-full flex items-center justify-center text-[#3F5A63] hover:bg-black/[0.06] transition-colors disabled:opacity-30 disabled:cursor-not-allowed";
   return (
     <div className="space-y-3">
-      <div className="flex items-center gap-3">
-        <button
-          onClick={() => step(-1)}
-          disabled={value <= 2}
-          className="h-11 w-11 rounded-xl flex items-center justify-center border-2 border-[hsl(var(--nb-border))] bg-white text-[#3F5A63] shadow-[3px_3px_0_0_hsl(var(--nb-border))] hover:translate-x-px hover:translate-y-px hover:shadow-[2px_2px_0_0_hsl(var(--nb-border))] transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-        >
-          <Minus className="h-4 w-4" />
-        </button>
-
-        <div className="flex-1 rounded-xl flex flex-col items-center justify-center py-3 border-2 border-[hsl(var(--nb-border))] bg-white shadow-[3px_3px_0_0_hsl(var(--nb-border))]">
-          <span className="font-black text-4xl leading-none text-[#3F5A63]">{value}</span>
-          <span className="text-xs mt-1 font-medium text-black/40">min</span>
-        </div>
-
-        <button
-          onClick={() => step(1)}
-          disabled={value >= 30}
-          className="h-11 w-11 rounded-xl flex items-center justify-center border-2 border-[hsl(var(--nb-border))] bg-white text-[#3F5A63] shadow-[3px_3px_0_0_hsl(var(--nb-border))] hover:translate-x-px hover:translate-y-px hover:shadow-[2px_2px_0_0_hsl(var(--nb-border))] transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-        >
-          <Plus className="h-4 w-4" />
-        </button>
-      </div>
-
-      <div className="flex gap-2 flex-wrap">
-        {MINUTE_PRESETS.map(p => (
-          <button
-            key={p}
-            onClick={() => onChange(p)}
-            className="px-3 py-1.5 rounded-lg text-xs font-bold border-2 border-[hsl(var(--nb-border))] transition-all hover:translate-x-px hover:translate-y-px"
-            style={value === p
-              ? { background: "#3F5A63", color: "white", boxShadow: "2px 2px 0 0 hsl(var(--nb-border))" }
-              : { background: "white", color: "#3F5A63", boxShadow: "2px 2px 0 0 hsl(var(--nb-border))" }
-            }
-          >
-            {p}m
+      <div className="flex items-center justify-between gap-3">
+        <SettingLabel>{ar ? "مدة اللعبة" : "Game length"}</SettingLabel>
+        <div className="flex items-center rounded-full border-2 border-[hsl(var(--nb-border))] bg-white p-0.5" dir="ltr">
+          <button type="button" onClick={() => step(-1)} disabled={value <= 2} className={btn} aria-label="-1">
+            <Minus className="h-3.5 w-3.5" />
           </button>
-        ))}
+          <span className="min-w-[5.5rem] text-center text-[15px] font-bold tabular-nums text-[#3F5A63]">
+            {value} <span className="text-xs font-medium text-black/45">{ar ? "دقيقة" : "min"}</span>
+          </span>
+          <button type="button" onClick={() => step(1)} disabled={value >= 30} className={btn} aria-label="+1">
+            <Plus className="h-3.5 w-3.5" />
+          </button>
+        </div>
       </div>
+      <Segmented options={MINUTE_PRESETS} value={value} onChange={onChange} fmt={String} />
     </div>
   );
 };
@@ -477,14 +459,6 @@ const HostGame = () => {
             <ChevronLeft className="h-4 w-4" />
             {ar ? "تغيير الوضع" : "Change mode"}
           </button>
-
-          <div
-            className="flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold border-2 border-[hsl(var(--nb-border))] bg-white shadow-[2px_2px_0_0_hsl(var(--nb-border))]"
-            style={{ color: selectedAccent }}
-          >
-            <span className="h-3.5 w-3.5 [&>svg]:h-full [&>svg]:w-full">{selectedMode!.icon}</span>
-            {ar ? selectedMode!.labelAr : selectedMode!.label}
-          </div>
         </div>
 
         <div>
@@ -499,10 +473,24 @@ const HostGame = () => {
 
           {/* ── Settings card ── */}
           <div className="rounded-2xl p-6 space-y-6 bg-white border-2 border-[hsl(var(--nb-border))] shadow-[4px_4px_0_0_hsl(var(--nb-border))]">
-            <h2 className="font-semibold text-[15px] text-[#3F5A63]">{ar ? "إعدادات اللعبة" : "Game Settings"}</h2>
-
-            {/* Mode description */}
-            <div className="rounded-xl p-4 text-sm bg-[hsl(var(--background))] border border-black/[0.06] space-y-3">
+            {/* Mode: name, one line, and the full rules folded away */}
+            <div>
+              <div className="flex items-center gap-2.5">
+                <span
+                  className="h-9 w-9 shrink-0 rounded-lg flex items-center justify-center [&>svg]:h-5 [&>svg]:w-5"
+                  style={{ background: `${selectedAccent}1f`, color: selectedAccent }}
+                >
+                  {selectedMode!.icon}
+                </span>
+                <h2 className="font-bold text-[17px] text-[#3F5A63]">{ar ? selectedMode!.labelAr : selectedMode!.label}</h2>
+              </div>
+              <p className="mt-2.5 text-sm text-black/55 leading-relaxed">{ar ? selectedMode!.descAr : selectedMode!.desc}</p>
+              <details className="group mt-2">
+                <summary className="list-none cursor-pointer inline-flex items-center gap-1 text-[13px] font-semibold text-[#3F5A63]/70 hover:text-[#3F5A63]">
+                  {ar ? "طريقة اللعب" : "How it plays"}
+                  <ChevronUp className="h-3.5 w-3.5 rotate-180 group-open:rotate-0 transition-transform" />
+                </summary>
+            <div className="mt-2 text-[13px] space-y-2.5">
               {mode === "classic" && (
                 <>
                   <p className="text-black/65 leading-relaxed">
@@ -621,15 +609,12 @@ const HostGame = () => {
                 </>
               )}
             </div>
+              </details>
+            </div>
 
-            {needsTimer && (
-              <div>
-                <p className="text-xs font-semibold tracking-widest uppercase text-black/40 mb-3">
-                  {ar ? "مدة اللعبة" : "Game Duration"}
-                </p>
-                <MinuteStepper value={minutes} onChange={setMinutes} />
-              </div>
-            )}
+            {mode !== "physical" && <div className="h-px bg-black/[0.08]" />}
+
+            {needsTimer && <MinuteStepper ar={ar} value={minutes} onChange={setMinutes} />}
 
             {mode !== "physical" && mode !== "homework" && (
               <QuestionTimerControl ar={ar} value={secsPerQ} onChange={setSecsPerQ} />
@@ -637,10 +622,8 @@ const HostGame = () => {
 
             {mode === "homework" && (
               <div>
-                <p className="text-xs font-semibold tracking-widest uppercase text-black/40 mb-1">
-                  {ar ? "موعد التسليم (اختياري)" : "Due date (optional)"}
-                </p>
-                <p className="text-[12px] text-black/45 mb-3">
+                <SettingLabel>{ar ? "موعد التسليم (اختياري)" : "Due date (optional)"}</SettingLabel>
+                <p className="text-[12px] text-black/45 mt-1 mb-3">
                   {ar
                     ? "بعد نهاية هذا اليوم يتوقف الرابط عن قبول إجابات جديدة."
                     : "After the end of this day the link stops accepting new answers."}
