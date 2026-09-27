@@ -366,7 +366,7 @@ const Dashboard = () => {
           <input ref={fileRef} type="file" multiple accept=".pdf,.txt,.md" className="hidden"
             onChange={e => { handleFiles(e.target.files); if (fileRef.current) fileRef.current.value = ""; }} />
 
-          <div className={`mt-3 pt-3 border-t border-border/60 space-y-3 ${busy ? "pointer-events-none" : ""}`}>
+          <div className={`mt-3 pt-3 border-t border-border/60 ${busy ? "pointer-events-none" : ""}`}>
             <div className="flex items-center gap-1.5 flex-wrap">
               <button type="button" onClick={() => photoRef.current?.click()} disabled={busy}
                 className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full border-2 border-[hsl(var(--nb-border))] text-sm font-bold hover:bg-muted transition-colors">
@@ -377,7 +377,6 @@ const Dashboard = () => {
                 <Paperclip className="h-4 w-4" />{ar ? "ملف PDF" : "PDF"}
               </button>
 
-              <span className="flex-1" />
 
               <Popover>
                 <PopoverTrigger asChild>
@@ -430,16 +429,17 @@ const Dashboard = () => {
                   </PopoverContent>
                 </Popover>
               )}
+              <Button
+                onClick={() => generateDraft()}
+                disabled={busy}
+                className="ms-auto rounded-full h-10 px-5 gap-2 bg-accent text-accent-foreground hover:bg-accent/90 font-bold"
+              >
+                {busy && <Loader2 className="h-4 w-4 animate-spin" />}
+                {ar ? "أنشئ الاختبار" : "Create quiz"}
+              </Button>
             </div>
 
-            <Button
-              onClick={() => generateDraft()}
-              disabled={busy}
-              className="w-full rounded-full h-12 gap-2 bg-accent text-accent-foreground hover:bg-accent/90 shadow-md text-base font-bold"
-            >
-              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-              {ar ? "أنشئ الاختبار" : "Create quiz"}
-            </Button>
+
           </div>
 
           {dragging && (

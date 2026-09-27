@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, Sparkles, Upload, Save, Check, Image as ImageIcon, X, Wand2, FileText, Camera, Paperclip, Loader2 } from "lucide-react";
+import { Plus, Trash2, Upload, Save, Check, Image as ImageIcon, X, Wand2, FileText, Camera, Paperclip, Loader2 } from "lucide-react";
 import { shrinkPhoto, MAX_PHOTOS } from "@/lib/photo";
 import { toast } from "@/components/ui/sonner";
 
@@ -223,7 +223,7 @@ const QuizEditor = () => {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h1 className="font-display text-3xl font-bold">{id ? t("edit") : t("create_quiz")}</h1>
         <div className="flex gap-2">
-          {!showAI && <Button variant="outline" onClick={() => setShowAI(true)} className="border-accent/40"><Sparkles className="h-4 w-4 me-2" />{t("ai_generate")}</Button>}
+          {!showAI && <Button variant="outline" onClick={() => setShowAI(true)} className="border-accent/40">{t("ai_generate")}</Button>}
           <Button onClick={save} disabled={saving} className="bg-accent text-white hover:bg-accent/90"><Save className="h-4 w-4 me-2" />{saving ? "..." : t("save_quiz")}</Button>
         </div>
       </div>
@@ -237,7 +237,7 @@ const QuizEditor = () => {
           onDrop={e => { e.preventDefault(); setDragging(false); Array.from(e.dataTransfer.files).forEach(onUpload); }}
           className={`relative rounded-3xl bg-white border-2 border-[hsl(var(--nb-border))] shadow-[4px_4px_0_0_hsl(var(--nb-border))] p-4 md:p-5 animate-fade-in transition-all ${generating ? "opacity-60 pointer-events-none" : ""} ${dragging ? "ring-4 ring-accent/40" : ""}`}>
           <div className="flex items-center justify-between mb-2">
-            <h2 className="font-bold text-sm flex items-center gap-2"><Sparkles className="h-4 w-4 text-accent" />{t("ai_generate")}</h2>
+            <h2 className="font-bold text-sm">{t("ai_generate")}</h2>
             <button type="button" aria-label={t("cancel")} onClick={() => setShowAI(false)} className="h-8 w-8 rounded-full flex items-center justify-center text-muted-foreground hover:bg-muted">
               <X className="h-4 w-4" />
             </button>
@@ -278,7 +278,7 @@ const QuizEditor = () => {
           <input ref={fileRef} type="file" accept=".pdf,.txt,.md" className="hidden"
             onChange={e => { const f = e.target.files?.[0]; if (f) onUpload(f); e.currentTarget.value = ""; }} />
 
-          <div className="mt-3 pt-3 border-t border-border/60 space-y-3">
+          <div className="mt-3 pt-3 border-t border-border/60">
             <div className="flex items-center gap-1.5 flex-wrap">
               <button type="button" onClick={() => photoRef.current?.click()}
                 className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full border-2 border-[hsl(var(--nb-border))] text-sm font-bold hover:bg-muted transition-colors">
@@ -288,7 +288,6 @@ const QuizEditor = () => {
                 className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full border-2 border-[hsl(var(--nb-border))] text-sm font-bold hover:bg-muted transition-colors">
                 <Paperclip className="h-4 w-4" />{uploading ? "..." : ar ? "ملف PDF" : "PDF"}
               </button>
-              <span className="flex-1" />
               <div className="inline-flex h-9 p-0.5 rounded-full bg-muted text-xs font-bold" role="radiogroup" aria-label={t("difficulty")}>
                 {(["easy", "medium", "hard"] as const).map(d => (
                   <button key={d} type="button" role="radio" aria-checked={diff === d} onClick={() => setDiff(d)}
@@ -305,12 +304,13 @@ const QuizEditor = () => {
                   </button>
                 ))}
               </div>
+              <Button onClick={generate} disabled={generating}
+                className="ms-auto rounded-full h-10 px-5 gap-2 bg-accent text-white hover:bg-accent/90 font-bold">
+                {generating && <Loader2 className="h-4 w-4 animate-spin" />}
+                {ar ? "أنشئ الأسئلة" : "Create questions"}
+              </Button>
             </div>
-            <Button onClick={generate} disabled={generating}
-              className="w-full rounded-full h-12 gap-2 bg-accent text-white hover:bg-accent/90 shadow-md text-base font-bold">
-              {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-              {generating ? (ar ? "جارٍ إنشاء الأسئلة..." : "Writing questions...") : (ar ? "أنشئ الأسئلة" : "Create questions")}
-            </Button>
+
           </div>
 
           {dragging && (
