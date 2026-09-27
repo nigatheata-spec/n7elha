@@ -12,6 +12,7 @@ import { Seo } from "@/components/Seo";
 import { HackingFlow } from "@/components/game/HackingFlow";
 import { BreachModal } from "@/components/game/BreachModal";
 import { OutputCards, OutputResult } from "@/components/game/OutputCards";
+import { WrongScreen, NewPassword } from "@/components/game/CryptoScreens";
 import HotPotatoGame from "./HotPotatoGame";
 import LavaFloorGame from "./LavaFloorGame";
 import ClassicGame from "./ClassicGame";
@@ -59,7 +60,7 @@ const Game = () => {
   const [questions, setQuestions] = useState<Q[]>(isPreview ? [MOCK_Q] : []);
   const [students, setStudents] = useState<any[]>(isPreview ? MOCK_STUDENTS : []);
   const [me, setMe] = useState<any>(isPreview ? MOCK_STUDENTS[2] : null);
-  const [phase, setPhase] = useState<"waiting"|"question"|"answered"|"output"|"hacking"|"breach"|"done">(
+  const [phase, setPhase] = useState<"waiting"|"question"|"answered"|"wrong"|"output"|"hacking"|"breach"|"repass"|"done">(
     isPreview ? ((searchParams.get("phase") as any) ?? "waiting") : "waiting"
   );
   const [picked, setPicked] = useState<number | null>(null);
@@ -293,7 +294,7 @@ const Game = () => {
       const elapsed = (Date.now() - startedAtRef.current) / 1000;
       const left = Math.max(0, Math.ceil(duration - elapsed));
       setTimeLeft(left);
-      if (left <= 0) { setPicked(p => p ?? -1); setPhase("answered"); clearInterval(t); }
+      if (left <= 0) { setPicked(p => p ?? -1); playWrong(); setPhase("wrong"); clearInterval(t); }
     }, 200);
     return () => clearInterval(t);
   }, [phase, currentQ, duration, timerEnabled]);
@@ -317,26 +318,29 @@ const Game = () => {
         session_id: sessionId, student_id: me.id, question_id: currentQ.id,
         question_index: askedCount.current, answer_index: idx, is_correct: correct,
       });
-      await supabase.from("game_students").update({
-        total_answers: me.total_answers + 1,
-        correct_answers: me.correct_answers + (correct ? 1 : 0),
-      }).eq("id", me.id);
+      await supabase.rpc("crypto_rush_answer", { p_student_id: me.id, p_correct: correct });
     }
     if (correct) setTimeout(() => setPhase("output"), 700);
-    else setTimeout(() => setPhase("answered"), 700);
+    else setTimeout(() => setPhase("wrong"), 700);
   };
+
+  const nextQuestion = () => { setQSeed(s => s + 1); setPhase("question"); };
 
   const onOutput = async (r: OutputResult) => {
     setOutput(r);
     if (!me) return;
-    let delta = 0;
-    if (r.kind === "flat") delta = r.value;
-    if (r.kind === "mult") delta = Math.floor(me.crypto * (r.value - 1));
-    if (delta !== 0 && !isPreview) {
-      await supabase.from("game_students").update({ crypto: me.crypto + delta }).eq("id", me.id);
+    // Applied to the live balance on the server: a hack may have landed on
+    // this row since `me` was last read.
+    if ((r.kind === "flat" || r.kind === "mult") && !isPreview) {
+      await supabase.rpc("crypto_rush_reward", {
+        p_student_id: me.id,
+        p_flat: r.kind === "flat" ? r.value : 0,
+        p_mult: r.kind === "mult" ? r.value : 1,
+      });
     }
-    if (r.kind === "hack") { setTimeout(() => setPhase("hacking"), 700); return; }
-    setTimeout(() => { setQSeed(s => s + 1); setPhase("question"); }, 1200);
+    if (r.kind === "hack") { setPhase("hacking"); return; }
+    if (r.kind === "password") { setPhase("repass"); return; }
+    nextQuestion();
   };
 
   if (showLoading) return (
@@ -583,21 +587,38 @@ const Game = () => {
           <OutputCards onPick={onOutput} picked={output} ar={ar} />
         )}
 
+        {phase === "repass" && me && (
+          <NewPassword ar={ar} current={me.password} onDone={async (pwd) => {
+            if (!isPreview) await supabase.from("game_students").update({ password: pwd }).eq("id", me.id);
+            setMe((m: any) => m && { ...m, password: pwd });
+            nextQuestion();
+          }} />
+        )}
+
         {phase === "hacking" && me && (
           <HackingFlow
             me={me}
             students={students.filter(s => s.id !== me.id)}
             sessionId={sessionId!}
-            onDone={() => { setQSeed(s => s + 1); setPhase("question"); }}
+            onDone={nextQuestion}
             ar={ar}
           />
         )}
       </main>
 
+      {phase === "wrong" && currentQ && (
+        <WrongScreen
+          ar={ar}
+          timedOut={picked === -1}
+          answer={currentQ.options[currentQ.correct_index] ?? ""}
+          onNext={nextQuestion}
+        />
+      )}
+
       {phase === "breach" && me && (
         <BreachModal me={me} ar={ar} onDone={async () => {
           await supabase.from("game_students").update({ is_breached: false }).eq("id", me.id);
-          setQSeed(s => s + 1); setPhase("question");
+          nextQuestion();
         }} />
       )}
     </div>

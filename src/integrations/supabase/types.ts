@@ -745,6 +745,31 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      crypto_rush_answer: {
+        Args: { p_correct: boolean; p_student_id: string }
+        Returns: {
+          correct_answers: number
+          total_answers: number
+        }[]
+      }
+      crypto_rush_hack: {
+        Args: {
+          p_hacker_id: string
+          p_password: string
+          p_pct: number
+          p_target_id: string
+        }
+        Returns: {
+          success: boolean
+          transferred: number
+        }[]
+      }
+      crypto_rush_reward: {
+        Args: { p_flat: number; p_mult: number; p_student_id: string }
+        Returns: {
+          crypto: number
+        }[]
+      }
       auto_end_stale_sessions: { Args: never; Returns: number }
       dld_apply_answer: {
         Args: {

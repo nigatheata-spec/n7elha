@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
+import { passwordChoices as cryptoPasswordChoices } from "@/lib/cryptoRush";
 import { toast } from "@/components/ui/sonner";
 import { cn } from "@/lib/utils";
 import logoLight from "@/assets/logo-light.png";
@@ -23,21 +24,6 @@ const BackButton = ({ onClick, label }: { onClick: () => void; label: string }) 
     <ChevronLeft className="h-5 w-5" />
   </button>
 );
-
-// ─── Password pools (Crypto Rush only) ─────────────────────────────────────
-// English pool: trendy internet-slang flavored, keeps the "hacker handle" feel
-const PASSWORD_POOL_EN = [
-  "skibidi_toilet", "sigma_grindset", "rizz_god_67", "gyatt_alert", "no_cap_frfr",
-  "ohio_rizz", "goated_67", "npc_moment", "brainrot_king", "aura_100k",
-  "delulu_mode", "mewing_maxx", "sigma_67", "chad_energy", "labubu_army",
-  "z3r0_c00l", "matrix_42", "quantum_leap", "cyber_punk_77", "hyper_drive_8",
-];
-// Arabic pool: ~70% Arabic slang, ~30% trendy English mixed in
-const PASSWORD_POOL_AR = [
-  "زعيم_67", "فشخ_99", "أسطورة_42", "وحش_الشبكة", "نار_تجنن",
-  "جامد_قوي", "ملك_البيانات", "خطير_بزيادة", "طاقة_زعيم", "هكر_شبح",
-  "sigma_67", "gyatt_alert", "labubu_67", "goated_af",
-];
 
 // Crypto Rush terminal theme (used by boot + launch stages only) — same green
 // as the real in-session terminal (Game.tsx) and the teacher monitor, not an
@@ -148,10 +134,7 @@ const Join = () => {
   // teacher's language, once known; falls back to the browser's current language pre-session
   const ar = (session?.settings?.lang ?? i18n.language) === "ar";
 
-  const passwordChoices = useMemo(
-    () => [...(ar ? PASSWORD_POOL_AR : PASSWORD_POOL_EN)].sort(() => Math.random() - 0.5).slice(0, 5),
-    [ar]
-  );
+  const passwordChoices = useMemo(() => cryptoPasswordChoices(ar), [ar]);
 
   // Pre-fill from URL ?code=XXXX
   useEffect(() => {

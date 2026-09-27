@@ -92,9 +92,11 @@ Adding a new mode means: a `settings.mode` string, a `*Game.tsx` + `*Monitor.tsx
 `Game.tsx` phase machine: `waiting → question → answered → output → hacking → breach → question → ...`
 
 - Questions picked randomly client-side each round (not server-driven)
-- Correct → `output` phase: `OutputCards` shows reward card (flat crypto, multiplier, or hack power-up)
-- Hack power-up → `hacking` phase: `HackingFlow` picks weighted random target, shows 5 password choices (1 real + 4 decoys)
-- If targeted → `breach` phase: `BreachModal` animation
+- Correct → `output` phase: `OutputCards` shows 3 face-down cards (flat crypto, multiplier, hack power-up, or a rare 5% "new password" card that opens the `repass` phase). Card pool and password pools live in `src/lib/cryptoRush.ts`.
+- Wrong or timed out → `wrong` phase: full-screen red `WrongScreen` (`CryptoScreens.tsx`) showing the right answer, tap to continue
+- Hack power-up → `hacking` phase: `HackingFlow` picks weighted random target, shows 5 password choices (1 real + 4 decoys), frozen once built
+- If targeted → `breach` phase: `BreachModal` gives a task that costs progress on a mistake (type a code, repeat a sequence, tap 1-16, match pairs, sort numbers)
+- Balances only change through the `crypto_rush_answer` / `crypto_rush_reward` / `crypto_rush_hack` RPCs, which do the math on the live row (the hack checks the target's current password server-side), so no phone writes a balance it read earlier
 - `GameMonitor.tsx` auto-ends game: polls every 500ms, sets `status = "finished"` when time or crypto cap hit
 
 ### Game loop: other modes

@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import { hackPct } from "@/lib/cryptoRush";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
@@ -48,9 +49,12 @@ export const HackingFlow = ({
     return () => clearTimeout(t);
   }, [target, phase]);
 
-  // Build 5 password choices: real one is ALWAYS included + 4 decoys from other students.
-  const choices = useMemo(() => {
-    if (!target) return [] as string[];
+  // Build 5 password choices: the real one + 4 decoys from other students.
+  // Built once per target and then frozen. Deriving them from `students` made
+  // them reshuffle under the player's finger every time any score changed.
+  const [choices, setChoices] = useState<string[]>([]);
+  useEffect(() => {
+    if (!target || choices.length) return;
     const real = (target.password as string) || "ghost_byte";
     const otherPwds = students
       .filter(s => s.id !== target.id && s.password)
@@ -59,37 +63,25 @@ export const HackingFlow = ({
     const unique = Array.from(new Set(otherPwds));
     const decoys = unique.sort(() => Math.random() - 0.5).slice(0, 4);
     const fillers = ["null_route", "0xDEAD", "admin_root", "guest_42", "no_signal", "root_kit", "byte_me"];
-    while (decoys.length < 4) {
-      const fake = fillers[decoys.length % fillers.length];
-      if (!decoys.includes(fake) && fake !== real) decoys.push(fake);
-      else fillers.push(fake + "_" + decoys.length);
+    for (const f of fillers) {
+      if (decoys.length >= 4) break;
+      if (!decoys.includes(f) && f !== real) decoys.push(f);
     }
-    return [real, ...decoys].sort(() => Math.random() - 0.5);
-  }, [target, students]);
+    setChoices([real, ...decoys].sort(() => Math.random() - 0.5));
+  }, [target, students, choices.length]);
 
+  const [trying, setTrying] = useState(false);
   const tryPwd = async (pwd: string) => {
-    if (!target) return;
-    const ok = pwd === target.password;
-    // steal 30-70% on success
-    const pct = 0.3 + Math.random() * 0.4;
-    const transferred = ok ? Math.floor((target.crypto || 0) * pct) : 0;
-    setResult({ ok, transferred });
-    setPhase("result");
-    await supabase.from("hack_events").insert({
-      session_id: sessionId, hacker_id: me.id, target_id: target.id,
-      password_attempted: pwd, success: ok, crypto_transferred: transferred,
+    if (!target || trying) return;
+    setTrying(true);
+    // Checked and paid out on the server against the target's live row: their
+    // current balance, and their current password (they may have changed it).
+    const { data } = await supabase.rpc("crypto_rush_hack", {
+      p_hacker_id: me.id, p_target_id: target.id, p_password: pwd, p_pct: hackPct(),
     });
-    if (ok && transferred > 0) {
-      await supabase.from("game_students").update({
-        crypto: Math.max(0, (target.crypto || 0) - transferred),
-        is_breached: true,
-        hacks_received: (target.hacks_received || 0) + 1,
-      }).eq("id", target.id);
-      await supabase.from("game_students").update({
-        crypto: (me.crypto || 0) + transferred,
-        hacks_made: (me.hacks_made || 0) + 1,
-      }).eq("id", me.id);
-    }
+    const row = data?.[0];
+    setResult({ ok: !!row?.success, transferred: Number(row?.transferred ?? 0) });
+    setPhase("result");
     setTimeout(onDone, 2400);
   };
 
@@ -154,6 +146,7 @@ export const HackingFlow = ({
           <button
             key={p}
             onClick={() => tryPwd(p)}
+            disabled={trying}
             className={cn(
               "px-3 py-2 md:px-4 md:py-3 border-2 text-left text-sm md:text-base transition-all break-all",
               "border-primary/70 text-primary bg-primary/10 shadow-[inset_0_0_10px_hsl(var(--primary)/0.18)]",

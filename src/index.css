@@ -596,6 +596,19 @@
   }
   .animate-scale-in { animation: scale-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) both; }
 
+  /* Crypto Rush wrong-answer screen: flash in, then the X box shakes. */
+  @keyframes cr-flash {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  @keyframes cr-shake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-8px); }
+    40% { transform: translateX(7px); }
+    60% { transform: translateX(-5px); }
+    80% { transform: translateX(3px); }
+  }
+
   /* Notification pill — drops in from the top edge, leaves quickly upward.
      Transform/opacity only so it never triggers layout during the stack shift. */
   @keyframes notify-in {
