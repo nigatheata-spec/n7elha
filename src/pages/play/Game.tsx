@@ -313,6 +313,10 @@ const Game = () => {
     setPicked(idx);
     const correct = idx === currentQ.correct_index;
     if (correct) playCorrect(); else playWrong();
+    // Move on first, save after: the screen never waits on the network.
+    // A wrong answer goes straight to the red screen.
+    if (correct) setTimeout(() => setPhase("output"), 700);
+    else setPhase("wrong");
     if (!isPreview) {
       await supabase.from("question_responses").insert({
         session_id: sessionId, student_id: me.id, question_id: currentQ.id,
@@ -320,8 +324,6 @@ const Game = () => {
       });
       await supabase.rpc("crypto_rush_answer", { p_student_id: me.id, p_correct: correct });
     }
-    if (correct) setTimeout(() => setPhase("output"), 700);
-    else setTimeout(() => setPhase("wrong"), 700);
   };
 
   const nextQuestion = () => { setQSeed(s => s + 1); setPhase("question"); };
