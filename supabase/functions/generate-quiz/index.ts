@@ -9,7 +9,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { content, numQuestions = 10, difficulty = "medium", topics = "", language = "ar", creativity = "balanced" } = await req.json();
+    const { content, images = [], numQuestions = 10, difficulty = "medium", topics = "", language = "ar", creativity = "balanced" } = await req.json();
     const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY");
     const GOOGLE_API_KEY = Deno.env.get("GOOGLE_API_KEY");
     if (!OPENROUTER_API_KEY && !GOOGLE_API_KEY) throw new Error("OPENROUTER_API_KEY missing");
@@ -29,13 +29,27 @@ serve(async (req) => {
 
     const systemPrompt = `You are an expert quiz generator for teachers. Generate exactly ${n} multiple-choice questions in ${lang}. Each question has exactly 4 distinct plausible options and ONE correct answer. ${difficultyRule} ${topics ? `Teacher's request / focus: ${topics}.` : ""} ${creativityRule} You MUST respond with valid JSON only, matching this exact schema: {"title": string, "questions": [{"text": string, "options": [string, string, string, string], "correct_index": 0|1|2|3, "difficulty": "easy"|"medium"|"hard"}]}. No markdown, no explanation, just JSON.`;
 
+    // Photos (a textbook page, a worksheet, the board) arrive as data URLs.
+    // The OpenRouter free models are text-only, so with photos we go straight
+    // to Gemini, which reads them itself.
+    const photos = (Array.isArray(images) ? images : [])
+      .map((u: unknown) => /^data:(image\/[\w.+-]+);base64,(.+)$/.exec(String(u)))
+      .filter((m): m is RegExpExecArray => !!m)
+      .slice(0, 8)
+      .map(m => ({ inline_data: { mime_type: m[1], data: m[2] } }));
+
     const userMessage = content?.trim()
       ? `Source content:\n\n${String(content).slice(0, 25000)}`
+      : photos.length
+      ? "Source content: the attached photos."
       : `Topic(s): ${topics || "general knowledge"}`;
+    const photoRule = photos.length
+      ? ` The attached ${photos.length === 1 ? "photo is" : "photos are"} of the lesson material (a textbook page, worksheet, notes or a whiteboard). Read all the text and figures in ${photos.length === 1 ? "it" : "them"}, in whatever language, and base the questions on that content. Ignore page numbers, headers and anything unrelated to the lesson.`
+      : "";
 
     // Free-tier models on OpenRouter get upstream-rate-limited or pulled from
     // free routing unpredictably, so try a couple of fallbacks before giving up.
-    const models = OPENROUTER_API_KEY
+    const models = OPENROUTER_API_KEY && !photos.length
       ? ["openai/gpt-oss-20b:free", "openai/gpt-oss-120b:free", "meta-llama/llama-3.3-70b-instruct:free"]
       : [];
 
@@ -80,14 +94,17 @@ serve(async (req) => {
     // once (upstream providers pulling free access, not just per-model rate
     // limits). Google's Gemini API is already used directly (with its own key)
     // for question-image generation, so it's a reliable last resort here too.
-    if (!text && GOOGLE_API_KEY) {
+    if (!text && photos.length && !GOOGLE_API_KEY) throw new Error("Reading photos needs GOOGLE_API_KEY");
+    // A Gemini model under load answers 503; the next one usually doesn't.
+    const geminiModels = ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-2.5-flash"];
+    for (const gm of GOOGLE_API_KEY && !text ? geminiModels : []) {
       const resp = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${GOOGLE_API_KEY}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/${gm}:generateContent?key=${GOOGLE_API_KEY}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            contents: [{ parts: [{ text: `${systemPrompt}\n\n${userMessage}` }] }],
+            contents: [{ parts: [{ text: `${systemPrompt}${photoRule}\n\n${userMessage}` }, ...photos] }],
             generationConfig: { responseMimeType: "application/json" },
           }),
         }
@@ -95,10 +112,11 @@ serve(async (req) => {
       if (resp.ok) {
         const data = await resp.json();
         text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (text) break;
       } else {
         lastErrText = await resp.text();
         lastErrStatus = resp.status;
-        console.error("AI error", "gemini-3.6-flash", resp.status, lastErrText);
+        console.error("AI error", gm, resp.status, lastErrText);
       }
     }
 

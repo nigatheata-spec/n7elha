@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Plus, Trash2, Sparkles, Upload, Save, Check, ChevronDown, Image as ImageIcon, X, Wand2, FileText } from "lucide-react";
+import { Plus, Trash2, Sparkles, Upload, Save, Check, ChevronDown, Image as ImageIcon, X, Wand2, FileText, Camera } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
 
 type Q = { id?: string; text: string; options: string[]; correct_index: number; difficulty: "easy"|"medium"|"hard"; image_url?: string | null };
@@ -75,14 +75,26 @@ const QuizEditor = () => {
     r.readAsDataURL(file);
   });
 
+  // Phone photos are several MB each; the AI reads a page just as well at
+  // 1600px, and the request stays small enough to send a few pages at once.
+  const shrinkPhoto = async (file: File) => {
+    const img = await createImageBitmap(file).catch(() => null);
+    if (!img) return fileToDataUrl(file);
+    const k = Math.min(1, 1600 / Math.max(img.width, img.height));
+    const c = document.createElement("canvas");
+    c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+    c.getContext("2d")!.drawImage(img, 0, 0, c.width, c.height);
+    return c.toDataURL("image/jpeg", 0.85);
+  };
+
   const onUpload = async (file: File) => {
     setUploading(true);
     try {
       const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
       const isImage = file.type.startsWith("image/") || ["png","jpg","jpeg","webp","gif"].includes(ext);
       if (isImage) {
-        const url = await fileToDataUrl(file);
-        setDocImages(imgs => [...imgs, url]);
+        const url = await shrinkPhoto(file);
+        setDocImages(imgs => [...imgs, url].slice(0, 8));
         return; // the file chip appearing is the confirmation
       }
       let text = "";
@@ -262,9 +274,16 @@ const QuizEditor = () => {
             <div className="flex items-center justify-between gap-2 flex-wrap pt-2 border-t border-border/50">
               <div className="flex items-center gap-1.5 flex-wrap">
                 <label className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full border border-border hover:border-primary cursor-pointer text-xs transition-colors">
-                  <input type="file" accept=".pdf,.txt,.md,image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onUpload(f); e.currentTarget.value = ""; }} />
+                  <input type="file" multiple accept=".pdf,.txt,.md,image/*" className="hidden" onChange={(e) => { for (const f of Array.from(e.target.files ?? [])) onUpload(f); e.currentTarget.value = ""; }} />
                   <Upload className="h-3.5 w-3.5" />
                   <span>{uploading ? "..." : "PDF / TXT / صور"}</span>
+                </label>
+                {/* Opens the camera straight away on a phone or tablet: snap the
+                    textbook page and the quiz is built from it. */}
+                <label className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full border border-border hover:border-primary cursor-pointer text-xs transition-colors">
+                  <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onUpload(f); e.currentTarget.value = ""; }} />
+                  <Camera className="h-3.5 w-3.5" />
+                  <span>{t("snap_page")}</span>
                 </label>
 
                 <Popover>
