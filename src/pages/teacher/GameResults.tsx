@@ -9,7 +9,7 @@ import { Seo } from "@/components/Seo";
 import { computeCoverage, arenaCellCount, type CoverageRow, type Stroke } from "@/lib/paintFight";
 import { Avatar } from "@/components/Avatar";
 import { readSettings } from "@/lib/sessionSettings";
-import { rankStudents } from "@/lib/results";
+import { rankStudents, resultsCsv } from "@/lib/results";
 import { toMetres } from "@/lib/dontLookDown";
 
 const fmt = (n: number) => n.toLocaleString();
@@ -105,11 +105,11 @@ const GameResults = () => {
       const a = s.total_answers ? (s.correct_answers / s.total_answers) * 100 : 0;
       const metric = mode === "paintfight" ? paintPctFor(s.id).toFixed(0)
         : isPointsMode ? String(s.crypto) : (s.eliminated ? (ar ? "أُقصي" : "Eliminated") : (ar ? "نجا" : "Survived"));
-      return [String(i + 1), s.name, metric, String(s.correct_answers), String(s.total_answers), a.toFixed(0)];
+      return { id: s.id, cells: [String(i + 1), s.name, metric, String(s.correct_answers), String(s.total_answers), a.toFixed(0)] };
     });
-    const csv = [header, ...rows].map(r => r.map(c => `"${c}"`).join(",")).join("\n");
+    const csv = resultsCsv(header, rows, questions, responses, ar ? "نسبة الإجابات الصحيحة" : "% right");
     const a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+    a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
     a.download = `${session?.quizzes?.title || "game"}-results.csv`;
     a.click();
   };
