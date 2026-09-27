@@ -249,7 +249,7 @@ const QuizEditor = () => {
             onPaste={e => { const imgs = Array.from(e.clipboardData.files).filter(f => f.type.startsWith("image/")); if (imgs.length) { e.preventDefault(); imgs.forEach(onUpload); } }}
             maxLength={400}
             rows={3}
-            placeholder={ar ? "عن ماذا الاختبار؟ اكتب موضوعًا، أو أضف صورة صفحة من الكتاب..." : "What's the quiz about? Type a topic, or add a photo of a textbook page..."}
+            placeholder={ar ? "عن ماذا الاختبار؟ اكتب موضوعًا، أو صوّر السبورة بعد شرح الدرس..." : "What's the quiz about? Type a topic, or snap the board after your lesson..."}
             className="w-full resize-none bg-transparent outline-none text-base placeholder:text-muted-foreground/70"
           />
 

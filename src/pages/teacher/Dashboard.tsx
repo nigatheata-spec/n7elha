@@ -331,7 +331,7 @@ const Dashboard = () => {
             onChange={e => setPrompt(e.target.value)}
             onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); generateDraft(); } }}
             onPaste={e => { const imgs = Array.from(e.clipboardData.files).filter(f => f.type.startsWith("image/")); if (imgs.length) { e.preventDefault(); const dt = new DataTransfer(); imgs.forEach(f => dt.items.add(f)); handleFiles(dt.files); } }}
-            placeholder={ar ? "عن ماذا الاختبار؟ اكتب موضوعًا، أو أضف صورة صفحة من الكتاب..." : "What's the quiz about? Type a topic, or add a photo of a textbook page..."}
+            placeholder={ar ? "عن ماذا الاختبار؟ اكتب موضوعًا، أو صوّر السبورة بعد شرح الدرس..." : "What's the quiz about? Type a topic, or snap the board after your lesson..."}
             rows={3}
             disabled={busy}
             className="w-full resize-none bg-transparent outline-none text-lg placeholder:text-muted-foreground/70 disabled:cursor-not-allowed"
