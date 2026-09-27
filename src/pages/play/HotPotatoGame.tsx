@@ -347,14 +347,11 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
   return (
     <div className="fixed inset-0 overflow-hidden select-none"
       style={{ background: PI.ink, color: PI.text, fontFamily: "'Almarai', system-ui, sans-serif" }}>
-      {/* Danger glow: grows with the fuse while a bomb is in your hands */}
-      <div className="pointer-events-none absolute inset-0 transition-opacity duration-700"
-        style={{
-          opacity: hasBomb && phase !== "done" ? 0.35 + burn * 0.65 : 0,
-          background: "radial-gradient(130% 75% at 50% 0%, rgba(255,106,61,0.5), transparent 62%)",
-        }} />
-      {hasBomb && burn > 0.7 && phase !== "done" && (
-        <div className="pointer-events-none absolute inset-0 animate-pulse" style={{ boxShadow: "inset 0 0 90px rgba(255,70,30,0.6)" }} />
+      {/* Holding a bomb: a crisp orange frame round the screen, blinking
+          only when the fuse is nearly gone. */}
+      {hasBomb && phase !== "done" && (
+        <div className={cn("pointer-events-none absolute inset-0 z-40", burn > 0.85 && "animate-pulse")}
+          style={{ boxShadow: `inset 0 0 0 4px ${PI.bomb}` }} />
       )}
 
       {/* Explosion flash */}
@@ -370,7 +367,7 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
       {/* A bomb just landed on you */}
       {incoming && phase !== "done" && (
         <div className="pointer-events-none absolute inset-0 z-[60] flex flex-col items-center justify-center gap-4 text-center px-8 animate-hp-explode"
-          style={{ background: "radial-gradient(circle at 50% 42%, #7A2A12 0%, rgba(18,20,28,0.97) 70%)" }}>
+          style={{ background: "rgba(18,20,28,0.96)", boxShadow: `inset 0 0 0 4px ${PI.bomb}` }}>
           <BombIcon className="h-28 w-28 animate-fuse-critical" sparks />
           <div className="text-3xl font-extrabold leading-tight" style={{ color: PI.spark }}>
             {nameOf(incoming.from)

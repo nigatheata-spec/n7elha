@@ -189,7 +189,6 @@ const HotPotatoMonitor = ({ session, sessionId }: Props) => {
     return (
       <div className="fixed inset-0 flex flex-col items-center justify-center gap-10 overflow-hidden"
         style={{ background: PI.ink, color: PI.text, fontFamily: "'Almarai', system-ui, sans-serif" }}>
-        <div className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(90% 60% at 50% 0%, rgba(255,106,61,0.28), transparent 65%)" }} />
         <div className="relative text-center">
           <BombIcon className="h-20 w-20 mx-auto mb-3" sparks />
           <div className="text-6xl font-extrabold">{ar ? "انتهت اللعبة" : "Game over"}</div>
@@ -229,7 +228,6 @@ const HotPotatoMonitor = ({ session, sessionId }: Props) => {
     <div className="fixed inset-0 flex flex-col overflow-hidden"
       style={{ background: PI.ink, color: PI.text, fontFamily: "'Almarai', system-ui, sans-serif" }}>
       {ConfirmDialog}
-      <div className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(80% 50% at 50% 0%, rgba(255,106,61,0.16), transparent 70%)" }} />
 
       {/* Top bar */}
       <header className="relative z-10 shrink-0 grid grid-cols-3 items-center px-6 pt-4 pb-3">
@@ -280,7 +278,6 @@ const HotPotatoMonitor = ({ session, sessionId }: Props) => {
                   style={{
                     padding: 4,
                     background: hot ? `conic-gradient(${PI.bomb} ${(1 - burn!) * 360}deg, rgba(255,255,255,0.12) 0)` : "transparent",
-                    boxShadow: hot ? `0 0 ${18 + burn! * 30}px rgba(255,106,61,${0.35 + burn! * 0.5})` : "none",
                     transform: hot ? "scale(1.08)" : "scale(1)",
                   }}>
                   <Avatar name={s.name} colorIndex={s.avatar_color} faceIndex={s.avatar_face} size={avatarPx} />
