@@ -1,3 +1,4 @@
+import { PausedOverlay } from "@/components/teacher/GameControls";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -354,23 +355,24 @@ const Game = () => {
   const ar = session.settings?.lang === "ar";
 
   // Route to mode-specific game
+  const paused = <PausedOverlay session={session} ar={(session.settings?.lang ?? i18n.language) === "ar"} />;
   if (session.settings?.mode === "hotpotato" && studentId) {
-    return <HotPotatoGame sessionId={sessionId!} studentId={studentId} />;
+    return <><HotPotatoGame sessionId={sessionId!} studentId={studentId} />{paused}</>;
   }
   if (session.settings?.mode === "lavafloor" && studentId) {
-    return <LavaFloorGame sessionId={sessionId!} studentId={studentId} />;
+    return <><LavaFloorGame sessionId={sessionId!} studentId={studentId} />{paused}</>;
   }
   if (session.settings?.mode === "classic" && studentId) {
-    return <ClassicGame sessionId={sessionId!} studentId={studentId} />;
+    return <><ClassicGame sessionId={sessionId!} studentId={studentId} />{paused}</>;
   }
   if (session.settings?.mode === "humansvszombies" && studentId) {
-    return <HumansVsZombiesGame sessionId={sessionId!} studentId={studentId} />;
+    return <><HumansVsZombiesGame sessionId={sessionId!} studentId={studentId} />{paused}</>;
   }
   if (session.settings?.mode === "dontlookdown" && studentId) {
-    return <DontLookDownGame sessionId={sessionId!} studentId={studentId} />;
+    return <><DontLookDownGame sessionId={sessionId!} studentId={studentId} />{paused}</>;
   }
   if (session.settings?.mode === "paintfight" && studentId) {
-    return <PaintFightGame sessionId={sessionId!} studentId={studentId} />;
+    return <><PaintFightGame sessionId={sessionId!} studentId={studentId} />{paused}</>;
   }
 
   return (
@@ -386,6 +388,7 @@ const Game = () => {
         descriptionEn="A live game session on nefelha."
         index={false}
       />
+      {paused}
       <div className="pointer-events-none fixed inset-0 terminal-scanlines z-20" />
       <div className="pointer-events-none fixed inset-0 terminal-vignette z-20" />
 

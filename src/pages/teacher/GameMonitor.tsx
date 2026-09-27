@@ -14,7 +14,7 @@ import HumansVsZombiesMonitor from "./HumansVsZombiesMonitor";
 import DontLookDownMonitor from "./DontLookDownMonitor";
 import PaintFightMonitor from "./PaintFightMonitor";
 import PhysicalMonitor from "./PhysicalMonitor";
-import { PlayersButton } from "@/components/teacher/PlayerManager";
+import { GameControls } from "@/components/teacher/GameControls";
 
 const fmt = (n: number) => n.toLocaleString();
 
@@ -136,8 +136,8 @@ const GameMonitor = () => {
 
   if (!session) return null;
 
-  // Rename / remove players, on every mode that has them.
-  const players = session.status === "running" ? <PlayersButton sessionId={sessionId!} ar={ar} /> : null;
+  // Players, pause and end, on every live mode.
+  const players = session.status === "running" ? <GameControls session={session} ar={ar} /> : null;
   if (session.settings?.mode === "hotpotato") return <><HotPotatoMonitor session={session} sessionId={sessionId!} />{players}</>;
   if (session.settings?.mode === "lavafloor") return <><LavaFloorMonitor session={session} sessionId={sessionId!} />{players}</>;
   if (session.settings?.mode === "classic") return <><ClassicMonitor session={session} sessionId={sessionId!} />{players}</>;
