@@ -9,7 +9,7 @@ import { hueForJoinIndex } from "@/lib/paintFight";
 import { Seo } from "@/components/Seo";
 import { Avatar } from "@/components/Avatar";
 import { CIRCLE_COLORS, FACES, colorIndexForName, faceIndexForName } from "@/lib/avatarIdentity";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 
 // Small, quiet back control shared by the code and name screens — same muted
 // chevron treatment as the avatar face arrows below, never a full button.
@@ -389,118 +389,83 @@ const Join = () => {
           }}
         />
 
-        <div className="relative z-10 w-full max-w-xs text-center space-y-12 animate-fade-up">
-          <div className="space-y-3 flex flex-col items-center">
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                aria-label={ar ? "الوجه السابق" : "Previous face"}
-                onClick={() => { setFaceTouched(true); setAvatarFaceIdx(i => (i - 1 + FACES.length) % FACES.length); }}
-                className={cn(
-                  "h-8 w-8 flex items-center justify-center text-white/25 hover:text-white/70 transition-all duration-200",
-                  name.trim() ? "opacity-100" : "opacity-0 pointer-events-none"
-                )}
-              >
-                <ChevronLeft className="h-5 w-5" />
-              </button>
+        {/* Name first, then the look: a big preview of yourself, the colors,
+            and every face in a grid you can see at once and tap. The picker
+            works before a name is typed too; the name only seeds the default. */}
+        <form onSubmit={submitName}
+          className="relative z-10 w-full max-w-sm h-full flex flex-col items-center pt-10 pb-2 gap-4 animate-fade-up">
+          <Avatar
+            key={`${avatarColorIdx}-${avatarFaceIdx}`}
+            name={name.trim() || "?"}
+            colorIndex={avatarColorIdx}
+            faceIndex={avatarFaceIdx}
+            size={104}
+            className="animate-scale-in shrink-0"
+          />
+          <input
+            autoFocus
+            value={name}
+            onChange={e => setName(e.target.value)}
+            maxLength={24}
+            placeholder={ar ? "اسمك في اللعبة..." : "Your name..."}
+            className={cn(
+              "w-full h-14 px-4 text-center text-lg font-bold rounded-2xl text-white shrink-0",
+              "bg-white/[0.06] border-2 border-white/[0.14]",
+              "focus:border-white/50 focus:bg-white/[0.10] focus:outline-none",
+              "placeholder:text-white/25 transition-all duration-150"
+            )}
+          />
 
-              <div className="relative h-16 w-16 shrink-0">
-                <img
-                  src={logoLight} alt="nefelha"
+          <div className="flex justify-center gap-2.5 shrink-0">
+            {CIRCLE_COLORS.map((c, i) => (
+              <button
+                key={c}
+                type="button"
+                aria-label={ar ? `اللون ${i + 1}` : `Color ${i + 1}`}
+                onClick={() => { setColorTouched(true); setAvatarColorIdx(i); }}
+                className={cn(
+                  "h-8 w-8 rounded-full transition-all duration-150",
+                  avatarColorIdx === i
+                    ? "scale-110 ring-2 ring-white ring-offset-2 ring-offset-[#0d1119]"
+                    : "opacity-60 hover:opacity-100"
+                )}
+                style={{ background: c }}
+              />
+            ))}
+          </div>
+
+          <div className="w-full flex-1 min-h-0 overflow-y-auto rounded-2xl bg-white/[0.04] p-2.5"
+            style={{ maskImage: "linear-gradient(to bottom, black 88%, transparent)" }}>
+            <div className="grid grid-cols-6 gap-1.5 pb-4">
+              {FACES.map((f, i) => (
+                <button
+                  key={f}
+                  type="button"
+                  aria-label={ar ? `الوجه ${i + 1}` : `Face ${i + 1}`}
+                  onClick={() => { setFaceTouched(true); setAvatarFaceIdx(i); }}
                   className={cn(
-                    "absolute inset-0 h-16 w-16 object-contain transition-opacity duration-200",
-                    name.trim() ? "opacity-0" : "opacity-100"
-                  )}
-                />
-                <div
-                  className={cn(
-                    "absolute inset-0 flex items-center justify-center transition-all duration-200",
-                    name.trim() ? "opacity-100 scale-100" : "opacity-0 scale-75"
+                    "aspect-square rounded-xl flex items-center justify-center transition-all duration-150 active:scale-90",
+                    avatarFaceIdx === i ? "bg-white/20 ring-2 ring-white" : "hover:bg-white/10"
                   )}
                 >
-                  {name.trim() && (
-                    <Avatar
-                      key={`${avatarColorIdx}-${avatarFaceIdx}`}
-                      name={name.trim()}
-                      colorIndex={avatarColorIdx}
-                      faceIndex={avatarFaceIdx}
-                      size={64}
-                      className="animate-scale-in"
-                    />
-                  )}
-                </div>
-              </div>
-
-              <button
-                type="button"
-                aria-label={ar ? "الوجه التالي" : "Next face"}
-                onClick={() => { setFaceTouched(true); setAvatarFaceIdx(i => (i + 1) % FACES.length); }}
-                className={cn(
-                  "h-8 w-8 flex items-center justify-center text-white/25 hover:text-white/70 transition-all duration-200",
-                  name.trim() ? "opacity-100" : "opacity-0 pointer-events-none"
-                )}
-              >
-                <ChevronRight className="h-5 w-5" />
-              </button>
-            </div>
-
-            <div
-              className={cn(
-                "flex gap-2 transition-opacity duration-200",
-                name.trim() ? "opacity-100" : "opacity-0 pointer-events-none"
-              )}
-            >
-              {CIRCLE_COLORS.map((c, i) => (
-                <button
-                  key={c}
-                  type="button"
-                  aria-label={ar ? `اللون ${i + 1}` : `Color ${i + 1}`}
-                  onClick={() => { setColorTouched(true); setAvatarColorIdx(i); }}
-                  className={cn(
-                    "h-5 w-5 rounded-full transition-all duration-150",
-                    avatarColorIdx === i && name.trim()
-                      ? "scale-125 ring-2 ring-white/70 ring-offset-2 ring-offset-[#0d1119]"
-                      : "opacity-50 hover:opacity-90"
-                  )}
-                  style={{ background: c }}
-                />
+                  <Avatar name={name.trim() || "?"} colorIndex={avatarColorIdx} faceIndex={i} size={40} />
+                </button>
               ))}
-            </div>
-
-            <div className="text-white/30 text-sm tracking-wide">
-              {name.trim()
-                ? name.trim()
-                : ar ? "اسمك في اللعبة؟" : "What's your name?"}
             </div>
           </div>
 
-          <form onSubmit={submitName} className="space-y-4">
-            <input
-              autoFocus
-              value={name}
-              onChange={e => setName(e.target.value)}
-              maxLength={24}
-              placeholder={ar ? "اسم اللاعب..." : "Player name..."}
-              className={cn(
-                "w-full h-14 px-4 text-center text-lg font-bold rounded-2xl text-white",
-                "bg-white/[0.06] border-2 border-white/[0.14]",
-                "focus:border-white/50 focus:bg-white/[0.10] focus:outline-none",
-                "placeholder:text-white/20 transition-all duration-150"
-              )}
-            />
-            <button
-              type="submit"
-              disabled={!name.trim()}
-              className={cn(
-                "w-full h-14 rounded-2xl font-black text-lg bg-white text-[#080a10]",
-                "transition-transform active:scale-[0.97] hover:brightness-90",
-                "disabled:opacity-30 disabled:active:scale-100"
-              )}
-            >
-              {ar ? "دخول" : "Join"}
-            </button>
-          </form>
-        </div>
+          <button
+            type="submit"
+            disabled={!name.trim()}
+            className={cn(
+              "w-full h-14 rounded-2xl font-black text-lg bg-white text-[#080a10] shrink-0",
+              "transition-transform active:scale-[0.97] hover:brightness-90",
+              "disabled:opacity-30 disabled:active:scale-100"
+            )}
+          >
+            {ar ? "دخول" : "Join"}
+          </button>
+        </form>
       </div>
     );
   }
