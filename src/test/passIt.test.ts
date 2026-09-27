@@ -79,4 +79,31 @@ describe("Pass It rules", () => {
     const later = extendFuses(bombs, 10_000);
     expect(new Date(later[0].explodesAt).getTime() - new Date(bombs[0].explodesAt).getTime()).toBe(10_000);
   });
+
+  it("never gives anyone two bombs, over thousands of random passes and blasts", () => {
+    const rand = seeded(7);
+    for (let game = 0; game < 40; game++) {
+      let players = P(2 + Math.floor(rand() * 30));
+      let now = 0;
+      let bombs = initBombs(players, now, rand);
+      for (let step = 0; step < 200; step++) {
+        now += Math.floor(rand() * 8000);
+        const roll = rand();
+        if (roll < 0.6 && bombs.length) {
+          // A pass, sometimes aimed at someone who already has a bomb.
+          const b = bombs[Math.floor(rand() * bombs.length)];
+          const to = players[Math.floor(rand() * players.length)];
+          if (to !== b.holderId) bombs = applyPass(bombs, players, { bombId: b.id, from: b.holderId, to }, rand)?.bombs ?? bombs;
+        } else if (roll < 0.7) {
+          players = [...players, `n${game}-${step}`];
+        } else if (roll < 0.75 && players.length > 2) {
+          players = players.filter((_, i) => i !== Math.floor(rand() * players.length));
+        }
+        bombs = topUpBombs(resolveBlasts(bombs, players, now, rand).bombs, players, now, rand);
+        const holders = bombs.map(b => b.holderId);
+        expect(new Set(holders).size).toBe(holders.length);
+        for (const h of holders) expect(players).toContain(h);
+      }
+    }
+  });
 });

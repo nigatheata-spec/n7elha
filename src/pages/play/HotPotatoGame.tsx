@@ -250,6 +250,22 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
     return () => { if (passTimerRef.current) clearInterval(passTimerRef.current); };
   }, [phase]);
 
+  // While choosing, a choice can pick up another bomb from someone else. Swap
+  // them for a free player right away so nobody can be handed a second bomb
+  // (the projector checks again when it applies the pass).
+  useEffect(() => {
+    if (phase !== "passing") return;
+    const held = new Set(bombs.map(b => b.holderId));
+    if (!passTargets.some(t => held.has(t.id))) return;
+    const keep = passTargets.filter(t => !held.has(t.id));
+    const fresh = pickTargets(studentsRef.current.map((x: any) => x.id), bombs, studentId, Math.random, 99)
+      .filter(id => !keep.some(t => t.id === id))
+      .map(id => studentsRef.current.find((x: any) => x.id === id))
+      .filter(Boolean)
+      .slice(0, passTargets.length - keep.length);
+    setPassTargets([...keep, ...fresh]);
+  }, [bombs, phase]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // ── Answer handler ────────────────────────────────────────────────────────
   const handleAnswer = useCallback((idx: number) => {
     if (!currentQ || !me) return;
@@ -300,6 +316,7 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
 
   const passBomb = (targetId: string) => {
     if (passedRef.current || !myBomb) return;
+    if (bombs.some(b => b.holderId === targetId)) return; // they got one meanwhile
     passedRef.current = true;
     if (passTimerRef.current) clearInterval(passTimerRef.current);
     passChRef.current?.send({ type: "broadcast", event: "pass", payload: { bombId: myBomb.id, from: studentId, to: targetId } });
