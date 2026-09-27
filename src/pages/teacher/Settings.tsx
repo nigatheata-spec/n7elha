@@ -4,19 +4,31 @@ import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { triggerLangTransition } from "@/lib/langTransitionBus";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { LogOut, Check } from "lucide-react";
+import { LogOut, Eye, EyeOff } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
-import { cn } from "@/lib/utils";
 import { Avatar } from "@/components/Avatar";
 
 const LANGS = [
-  { code: "ar", label: "العربية", sub: "Arabic" },
-  { code: "en", label: "English", sub: "الإنجليزية" },
+  { code: "ar", label: "العربية" },
+  { code: "en", label: "English" },
 ] as const;
+
+const MIN_PASSWORD = 6;
+
+const field = "w-full rounded-xl border-2 border-[hsl(var(--nb-border))] bg-white px-3.5 py-2.5 text-[15px] text-[#3F5A63] placeholder:text-black/30 focus:outline-none focus:ring-2 focus:ring-[#3F5A63]/20";
+const primaryBtn = "shrink-0 rounded-xl border-2 border-[hsl(var(--nb-border))] bg-[#3F5A63] px-4 py-2.5 text-sm font-bold text-white shadow-[3px_3px_0_0_hsl(var(--nb-border))] transition-all hover:translate-x-px hover:translate-y-px hover:shadow-[2px_2px_0_0_hsl(var(--nb-border))] disabled:opacity-40 disabled:pointer-events-none";
+const quietBtn = "shrink-0 rounded-xl border-2 border-[hsl(var(--nb-border))] bg-white px-4 py-2 text-sm font-semibold text-[#3F5A63] shadow-[3px_3px_0_0_hsl(var(--nb-border))] transition-all hover:translate-x-px hover:translate-y-px hover:shadow-[2px_2px_0_0_hsl(var(--nb-border))]";
+
+/* One setting: label (and a hint) on one side, the control on the other. */
+const Row = ({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) => (
+  <div className="py-5 grid gap-3 sm:grid-cols-[200px_1fr] sm:items-start">
+    <div className="pt-1">
+      <div className="text-[15px] font-semibold text-[#3F5A63]">{label}</div>
+      {hint && <div className="mt-0.5 text-[13px] text-black/45">{hint}</div>}
+    </div>
+    <div className="min-w-0">{children}</div>
+  </div>
+);
 
 export const SettingsPage = () => {
   const { user, signOut } = useAuth();
@@ -24,29 +36,39 @@ export const SettingsPage = () => {
   const navigate = useNavigate();
   const ar = i18n.language === "ar";
 
-  const displayName = user?.user_metadata?.full_name ?? user?.email?.split("@")[0] ?? "";
+  const savedName = user?.user_metadata?.full_name ?? user?.email?.split("@")[0] ?? "";
 
-  const [name, setName]         = useState(displayName);
+  const [name, setName] = useState(savedName);
   const [nameSaving, setNameSaving] = useState(false);
-  const [pwNew, setPwNew]       = useState("");
+  const [pwOpen, setPwOpen] = useState(false);
+  const [pw, setPw] = useState("");
+  const [pw2, setPw2] = useState("");
+  const [showPw, setShowPw] = useState(false);
   const [pwSaving, setPwSaving] = useState(false);
 
+  const nameChanged = name.trim() !== "" && name.trim() !== savedName;
+  const pwShort = pw.length > 0 && pw.length < MIN_PASSWORD;
+  const pwMismatch = pw2.length > 0 && pw !== pw2;
+  const pwReady = pw.length >= MIN_PASSWORD && pw === pw2;
+
   const saveName = async () => {
-    if (!name.trim()) return;
+    if (!nameChanged) return;
     setNameSaving(true);
     const { error } = await supabase.auth.updateUser({ data: { full_name: name.trim() } });
     setNameSaving(false);
     if (error) toast.error(error.message);
-    else toast.success(ar ? "تم الحفظ" : "Saved");
+    else toast.success(ar ? "تم حفظ الاسم" : "Name saved");
   };
 
+  const closePw = () => { setPwOpen(false); setPw(""); setPw2(""); setShowPw(false); };
+
   const changePassword = async () => {
-    if (!pwNew) return;
+    if (!pwReady) return;
     setPwSaving(true);
-    const { error } = await supabase.auth.updateUser({ password: pwNew });
+    const { error } = await supabase.auth.updateUser({ password: pw });
     setPwSaving(false);
     if (error) toast.error(error.message);
-    else { toast.success(ar ? "تم تغيير كلمة المرور" : "Password updated"); setPwNew(""); }
+    else { toast.success(ar ? "تم تغيير كلمة المرور" : "Password changed"); closePw(); }
   };
 
   const switchLang = (code: "ar" | "en") => {
@@ -61,107 +83,118 @@ export const SettingsPage = () => {
   };
 
   return (
-    <div className="space-y-6 max-w-2xl">
-      <div>
-        <h1 className="font-display text-3xl font-bold">{t("settings")}</h1>
+    <div className="max-w-2xl">
+      <h1 className="text-[26px] sm:text-[32px] font-bold text-[#3F5A63] leading-tight"
+        style={{ fontFamily: "'ArslanWessam', 'Almarai', sans-serif" }}>
+        {t("settings")}
+      </h1>
+
+      {/* Who is signed in */}
+      <div className="mt-8 flex items-center gap-4">
+        <Avatar name={savedName || "?"} size={64} />
+        <div className="min-w-0">
+          <div className="text-xl font-bold text-[#3F5A63] truncate">{savedName}</div>
+          <div className="text-sm text-black/45 truncate" dir="ltr">{user?.email}</div>
+        </div>
       </div>
 
-      {/* ── Account ── */}
-      <Card className="p-6 space-y-6">
-        <h2 className="font-semibold text-lg">{ar ? "الحساب" : "Account"}</h2>
-
-        {/* Avatar + email identity */}
-        <div className="flex items-center gap-4">
-          <Avatar name={displayName || "?"} size={56} />
-          <div className="min-w-0">
-            <div className="font-semibold truncate">{displayName}</div>
-            <div className="text-sm text-muted-foreground truncate">{user?.email}</div>
-          </div>
-        </div>
-
-        <div className="h-px bg-border" />
-
-        {/* Display name */}
-        <div className="space-y-2">
-          <Label htmlFor="display-name">{ar ? "الاسم المعروض" : "Display name"}</Label>
+      <div className="mt-6 divide-y divide-black/[0.08] border-y border-black/[0.08]">
+        <Row label={ar ? "الاسم" : "Name"} hint={ar ? "يظهر في لوحة التحكم" : "Shown on your dashboard"}>
           <div className="flex gap-2">
-            <Input
-              id="display-name"
+            <input
               value={name}
               onChange={e => setName(e.target.value)}
               onKeyDown={e => e.key === "Enter" && saveName()}
-              className="flex-1"
+              className={field}
+              maxLength={60}
             />
-            <Button
-              onClick={saveName}
-              disabled={nameSaving || !name.trim()}
-              className="bg-accent text-white hover:bg-accent/90 shrink-0">
-              {nameSaving ? "..." : ar ? "حفظ" : "Save"}
-            </Button>
-          </div>
-        </div>
-
-        {/* Password */}
-        <div className="space-y-2">
-          <Label htmlFor="new-password">{ar ? "كلمة مرور جديدة" : "New password"}</Label>
-          <div className="flex gap-2">
-            <Input
-              id="new-password"
-              type="password"
-              value={pwNew}
-              onChange={e => setPwNew(e.target.value)}
-              onKeyDown={e => e.key === "Enter" && changePassword()}
-              placeholder={ar ? "اتركه فارغاً للإلغاء" : "Leave blank to cancel"}
-              className="flex-1"
-            />
-            <Button
-              onClick={changePassword}
-              disabled={!pwNew || pwSaving}
-              variant="outline"
-              className="shrink-0">
-              {pwSaving ? "..." : ar ? "تغيير" : "Update"}
-            </Button>
-          </div>
-        </div>
-      </Card>
-
-      {/* ── Language ── */}
-      <Card className="p-6 space-y-4">
-        <h2 className="font-semibold text-lg">{ar ? "اللغة" : "Language"}</h2>
-        <div className="grid grid-cols-2 gap-3">
-          {LANGS.map(lang => {
-            const active = i18n.language === lang.code;
-            return (
-              <button
-                key={lang.code}
-                onClick={() => switchLang(lang.code)}
-                className={cn(
-                  "relative rounded-xl border-2 p-4 text-center transition-all",
-                  active
-                    ? "border-accent bg-accent/8 text-accent"
-                    : "border-border hover:border-accent/40 text-foreground"
-                )}>
-                {active && (
-                  <span className="absolute top-2.5 end-2.5 h-5 w-5 rounded-full bg-accent flex items-center justify-center">
-                    <Check className="h-3 w-3 text-white" />
-                  </span>
-                )}
-                <div className={cn("text-xl font-bold", active ? "text-accent" : "")}>{lang.label}</div>
-                <div className="text-xs text-muted-foreground mt-1">{lang.sub}</div>
+            {nameChanged && (
+              <button onClick={saveName} disabled={nameSaving} className={primaryBtn}>
+                {nameSaving ? "..." : ar ? "حفظ" : "Save"}
               </button>
-            );
-          })}
-        </div>
-      </Card>
+            )}
+          </div>
+        </Row>
 
-      {/* ── Sign out ── */}
-      <Card className="p-6">
-        <h2 className="font-semibold text-lg mb-4">{ar ? "الجلسة" : "Session"}</h2>
-        <Button variant="destructive" onClick={handleSignOut}>
-          <LogOut className="h-4 w-4 me-2" />
-          {t("logout")}
-        </Button>
-      </Card>
+        <Row label={ar ? "كلمة المرور" : "Password"} hint={pwOpen ? (ar ? `${MIN_PASSWORD} أحرف على الأقل` : `At least ${MIN_PASSWORD} characters`) : undefined}>
+          {!pwOpen ? (
+            <button onClick={() => setPwOpen(true)} className={quietBtn}>
+              {ar ? "تغيير كلمة المرور" : "Change password"}
+            </button>
+          ) : (
+            <div className="space-y-2.5">
+              <div className="relative">
+                <input
+                  type={showPw ? "text" : "password"}
+                  value={pw}
+                  onChange={e => setPw(e.target.value)}
+                  placeholder={ar ? "كلمة المرور الجديدة" : "New password"}
+                  autoComplete="new-password"
+                  autoFocus
+                  className={`${field} pe-11`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPw(v => !v)}
+                  className="absolute inset-y-0 end-0 px-3 text-black/40 hover:text-[#3F5A63]"
+                  aria-label={showPw ? (ar ? "إخفاء" : "Hide") : (ar ? "إظهار" : "Show")}
+                >
+                  {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              <input
+                type={showPw ? "text" : "password"}
+                value={pw2}
+                onChange={e => setPw2(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && changePassword()}
+                placeholder={ar ? "أعد كتابتها" : "Type it again"}
+                autoComplete="new-password"
+                className={field}
+              />
+              {(pwShort || pwMismatch) && (
+                <p className="text-[13px] text-red-600">
+                  {pwShort
+                    ? (ar ? `قصيرة، ${MIN_PASSWORD} أحرف على الأقل` : `Too short, at least ${MIN_PASSWORD} characters`)
+                    : (ar ? "الكلمتان غير متطابقتين" : "The two don't match")}
+                </p>
+              )}
+              <div className="flex gap-2 pt-1">
+                <button onClick={changePassword} disabled={!pwReady || pwSaving} className={primaryBtn}>
+                  {pwSaving ? "..." : ar ? "تغيير" : "Change"}
+                </button>
+                <button onClick={closePw} className="px-3 text-sm font-semibold text-black/50 hover:text-[#3F5A63]">
+                  {ar ? "إلغاء" : "Cancel"}
+                </button>
+              </div>
+            </div>
+          )}
+        </Row>
+
+        <Row label={ar ? "اللغة" : "Language"}>
+          <div className="inline-grid grid-cols-2 gap-1 rounded-xl border-2 border-[hsl(var(--nb-border))] bg-white p-1">
+            {LANGS.map(l => {
+              const active = i18n.language === l.code;
+              return (
+                <button
+                  key={l.code}
+                  onClick={() => switchLang(l.code)}
+                  className={`min-w-[6.5rem] rounded-lg px-4 py-2 text-sm font-bold transition-colors ${active ? "bg-[#3F5A63] text-white" : "text-[#3F5A63] hover:bg-black/[0.05]"}`}
+                >
+                  {l.label}
+                </button>
+              );
+            })}
+          </div>
+        </Row>
+      </div>
+
+      <button
+        onClick={handleSignOut}
+        className="mt-6 inline-flex items-center gap-2 rounded-xl px-3 py-2 -mx-3 text-sm font-semibold text-red-600 hover:bg-red-50 transition-colors"
+      >
+        <LogOut className="h-4 w-4" />
+        {t("logout")}
+      </button>
     </div>
   );
 };
