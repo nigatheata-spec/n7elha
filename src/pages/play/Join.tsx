@@ -184,6 +184,14 @@ const Join = () => {
       setTimeout(() => r0.current?.focus(), 50);
       return;
     }
+    // Already in this game on this phone (tab closed, page reloaded, code
+    // typed again): go back in as the same player, not a second one.
+    const saved = localStorage.getItem(`hash_student_${data.id}`);
+    if (saved) {
+      const { data: row } = await supabase.from("game_students").select("id,approved").eq("id", saved).maybeSingle();
+      if (row && row.approved !== false) { nav(`/join/${data.id}`); return; }
+      localStorage.removeItem(`hash_student_${data.id}`);
+    }
     setSession(data);
     setStage("name");
   };
@@ -239,6 +247,24 @@ const Join = () => {
 
   const doInsert = async (sess: any, playerName: string, password: string) => {
     try {
+      // Same name already in the game: once it's running that's this student
+      // on a new phone or a cleared browser, so hand them their player back
+      // (score intact). In the lobby it's more likely two kids with one name.
+      const { data: same } = await supabase.from("game_students").select("id,name,approved")
+        .eq("session_id", sess.id).ilike("name", playerName.trim());
+      const match = (same ?? []).find(s => s.approved !== false && s.name.trim().toLowerCase() === playerName.trim().toLowerCase());
+      if (match) {
+        const { data: fresh } = await supabase.from("game_sessions").select("status").eq("id", sess.id).maybeSingle();
+        if (fresh?.status === "running") {
+          localStorage.setItem(`hash_student_${sess.id}`, match.id);
+          toast(ar ? "رجعت إلى اللعبة" : "Welcome back");
+          nav(`/join/${sess.id}`);
+          return;
+        }
+        toast.error(ar ? "هذا الاسم مستخدم، اختر اسمًا آخر" : "That name is taken, pick another");
+        setStage("name");
+        return;
+      }
       const payload: any = {
         session_id: sess.id, name: playerName.trim(), password,
         avatar_color: avatarColorIdx, avatar_face: avatarFaceIdx,

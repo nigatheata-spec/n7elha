@@ -183,6 +183,37 @@ const Game = () => {
     return () => { supabase.removeChannel(ch); };
   }, [sessionId, studentId]); // ← `students` removed: channel stays alive for the whole session
 
+  // A phone that sleeps or drops Wi-Fi misses realtime events (the game
+  // starting, ending, a kick). When it comes back, re-read the session and
+  // roster instead of trusting a stale screen.
+  useEffect(() => {
+    if (!sessionId || isPreview) return;
+    const resync = async () => {
+      if (document.visibilityState !== "visible") return;
+      const { data: s } = await supabase.from("game_sessions").select("*").eq("id", sessionId).maybeSingle();
+      if (s) setSession((prev: any) => ({ ...prev, ...s }));
+      const { data: ss } = await supabase.from("game_students").select("*").eq("session_id", sessionId).order("crypto", { ascending: false });
+      if (!ss) return;
+      setStudents(ss);
+      const m = ss.find((x: any) => x.id === studentId);
+      if (m) setMe(m);
+      checkStanding(m);
+    };
+    document.addEventListener("visibilitychange", resync);
+    window.addEventListener("online", resync);
+    return () => {
+      document.removeEventListener("visibilitychange", resync);
+      window.removeEventListener("online", resync);
+    };
+  }, [sessionId, studentId]);
+
+  // Opened on a device that never joined this game: send it to the join
+  // screen with the code filled in rather than a game with no player.
+  useEffect(() => {
+    if (isPreview || studentId || !session?.code) return;
+    navigate(`/join?code=${session.code}`, { replace: true });
+  }, [session?.code, studentId]);
+
   // status sync
   useEffect(() => {
     if (!session || isPreview) return;
