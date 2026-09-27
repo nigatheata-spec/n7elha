@@ -5,7 +5,7 @@ import { toast } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { BombIcon } from "@/components/BombIcon";
-import { Trophy, Zap, Check, X as XIcon } from "lucide-react";
+import { Trophy, Zap, Check, X as XIcon, ChevronLeft, ChevronRight } from "lucide-react";
 import { playSelect, playCorrect, playWrong, playExplode, playGameOver, playHackAlert, primeAudio } from "@/lib/sound";
 import { POINTS_PER_CORRECT, PASS_SECONDS, BOOM_KEEP, pickTargets, fuseBurn, type Bomb, type FeedEvent } from "@/lib/passIt";
 import { Avatar } from "@/components/Avatar";
@@ -115,12 +115,17 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
       setIncoming({ from: myBomb!.fromId });
       playHackAlert();
       navigator.vibrate?.([200, 80, 200]);
-      const t = setTimeout(() => setIncoming(null), 1800);
-      myBombIdRef.current = id;
-      return () => clearTimeout(t);
     }
     myBombIdRef.current = id;
   }, [myBomb?.id, myBomb?.holderId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // The alert hides itself on its own clock, so nothing re-running the
+  // effect above can leave it stuck on screen.
+  useEffect(() => {
+    if (!incoming) return;
+    const t = setTimeout(() => setIncoming(null), 1800);
+    return () => clearTimeout(t);
+  }, [incoming]);
 
   // A bomb went off in my hands: I halve my own points (each phone writes only
   // its own row). Handled blast ids are remembered so a reload can't double it.
@@ -519,7 +524,12 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
                       <div className="text-lg font-extrabold truncate">{target.name}</div>
                       <div className="text-xs font-bold tabular-nums" style={{ color: PI.muted }}>{fmt(target.crypto ?? 0)} {ar ? "نقطة" : "pts"}</div>
                     </div>
-                    <BombIcon className="h-8 w-8 shrink-0" />
+                    {/* An action, not a status: these players have no bomb. */}
+                    <span className="shrink-0 flex items-center gap-1 h-9 ps-3.5 pe-2.5 rounded-full text-sm font-extrabold"
+                      style={{ background: PI.spark, color: PI.ink }}>
+                      {ar ? "مرّر" : "Pass"}
+                      {ar ? <ChevronLeft className="h-4 w-4" strokeWidth={3} /> : <ChevronRight className="h-4 w-4" strokeWidth={3} />}
+                    </span>
                   </button>
                 ))}
               </div>
