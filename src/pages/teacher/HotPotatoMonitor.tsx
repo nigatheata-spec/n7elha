@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Square, Maximize, Trophy } from "lucide-react";
 import { BombIcon } from "@/components/BombIcon";
@@ -17,15 +16,12 @@ import {
 const fmt = (n: number) => n.toLocaleString();
 
 
-// Shared metal panel style — matches student screen
-const metalPanel = {
-  background: "linear-gradient(180deg, hsl(210 20% 14%), hsl(210 18% 10%))",
-  border: "1.5px solid hsl(210 20% 22%)",
-  boxShadow: "inset 0 1.5px 0 hsl(210 18% 30%), inset 0 -1px 0 hsl(210 15% 6%), 0 4px 14px hsl(0 0% 0% / 0.4)",
+// Pass It palette, same as the phones (HotPotatoGame).
+const PI = {
+  ink: "#12141C", text: "#F5F2EA", muted: "#969CB0",
+  bomb: "#FF6A3D", spark: "#FFD34D", bad: "#F43F5E",
 };
 
-const GUN_BG = "radial-gradient(ellipse at 30% 10%, hsl(210 28% 11%) 0%, hsl(210 22% 7%) 55%, hsl(210 18% 5%) 100%)";
-const PCB_GREEN = "hsl(71 48% 47%)";
 
 interface Props { session: any; sessionId: string; }
 
@@ -179,227 +175,171 @@ const HotPotatoMonitor = ({ session, sessionId }: Props) => {
   };
 
   const nameOf = (id: string | null) => students.find(x => x.id === id)?.name ?? "?";
+  // Join order, not score order: kids look for their own face.
+  const classOrder = [...students].sort((a, b) => String(a.joined_at ?? "").localeCompare(String(b.joined_at ?? "")));
   const holderBurn = new Map(bombs.map(b => [b.holderId, fuseBurn(b.explodesAt, now)]));
 
   // ── GAME OVER ─────────────────────────────────────────────────────────────
+  const ranked = [...students].sort((a, b) => (b.crypto ?? 0) - (a.crypto ?? 0));
   if (session?.status === "finished") {
-    const top3 = students.slice(0, 3);
-    const podiumColors = ["hsl(210 20% 72%)", PCB_GREEN, "hsl(25 80% 52%)"];
-    const podiumOrder  = [top3[1], top3[0], top3[2]];
-    const podiumHeights = ["h-20", "h-28", "h-16"];
-    const podiumRanks   = [2, 1, 3];
+    const top3 = ranked.slice(0, 3);
+    const podium = [top3[1], top3[0], top3[2]];
+    const heights = ["h-28", "h-40", "h-20"];
+    const places = [2, 1, 3];
     return (
-      <div className="theme-hotpotato fixed inset-0 flex flex-col items-center justify-center gap-8 overflow-hidden"
-        style={{ background: GUN_BG, fontFamily: "monospace" }}>
-        <div className="pcb-trace-bg pointer-events-none absolute inset-0 z-0" />
-        <div className="relative z-10 text-center">
-          <BombIcon className="h-20 w-20 mx-auto mb-4" sparks />
-          <div className="text-6xl font-black tracking-widest" style={{ color: PCB_GREEN }}>
-            {ar ? "انتهت اللعبة" : "GAME OVER"}
-          </div>
+      <div className="fixed inset-0 flex flex-col items-center justify-center gap-10 overflow-hidden"
+        style={{ background: PI.ink, color: PI.text, fontFamily: "'Almarai', system-ui, sans-serif" }}>
+        <div className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(90% 60% at 50% 0%, rgba(255,106,61,0.28), transparent 65%)" }} />
+        <div className="relative text-center">
+          <BombIcon className="h-20 w-20 mx-auto mb-3" sparks />
+          <div className="text-6xl font-extrabold">{ar ? "انتهت اللعبة" : "Game over"}</div>
         </div>
         {top3.length > 0 && (
-          <div className="relative z-10 flex gap-4 items-end">
-            {podiumOrder.map((s, idx) => {
-              if (!s) return <div key={idx} className="w-28" />;
-              return (
-                <div key={s.id} className="flex flex-col items-center gap-2">
-                  <span className="font-mono font-black text-sm truncate max-w-[80px] text-center"
-                    style={{ color: podiumColors[idx] }}>{s.name}</span>
-                  <div className="text-xs font-mono tabular-nums" style={{ color: podiumColors[idx] }}>
-                    {fmt(s.crypto ?? 0)}
-                  </div>
-                  <div className={cn("w-24 rounded-t-xl flex items-center justify-center font-black text-2xl", podiumHeights[idx])}
-                    style={{ background: `${podiumColors[idx]}22`, border: `2px solid ${podiumColors[idx]}66` }}>
-                    {podiumRanks[idx]}
-                  </div>
+          <div className="relative flex gap-6 items-end">
+            {podium.map((s, idx) => s ? (
+              <div key={s.id} className="flex flex-col items-center gap-2 w-40">
+                <Avatar name={s.name} colorIndex={s.avatar_color} faceIndex={s.avatar_face} size={places[idx] === 1 ? 96 : 72} />
+                <span className="text-xl font-extrabold truncate max-w-full">{s.name}</span>
+                <span className="text-lg font-extrabold tabular-nums" style={{ color: PI.spark }}>{fmt(s.crypto ?? 0)}</span>
+                <div className={cn("w-full rounded-t-2xl flex items-start justify-center pt-3 text-4xl font-extrabold", heights[idx])}
+                  style={{ background: places[idx] === 1 ? PI.spark : "rgba(255,255,255,0.1)", color: places[idx] === 1 ? PI.ink : PI.text }}>
+                  {places[idx]}
                 </div>
-              );
-            })}
+              </div>
+            ) : <div key={idx} className="w-40" />)}
           </div>
         )}
-        <Button onClick={() => nav(`/app/games/${session.id}/results`, { state: { justEnded: true } })}
-          className="relative z-10 text-lg px-10 py-5 font-mono font-bold"
-          style={{ background: PCB_GREEN, color: "hsl(210 22% 7%)" }}>
-          <Trophy className="h-5 w-5 me-2" /> {ar ? "عرض النتائج الكاملة" : "View Full Results"}
-        </Button>
+        <button onClick={() => nav(`/app/games/${session.id}/results`, { state: { justEnded: true } })}
+          className="relative flex items-center gap-2 px-8 py-4 rounded-2xl text-xl font-extrabold active:translate-y-0.5 transition-transform"
+          style={{ background: PI.spark, color: PI.ink, borderBottom: "5px solid #B8901C" }}>
+          <Trophy className="h-6 w-6" /> {ar ? "النتائج الكاملة" : "Full results"}
+        </button>
       </div>
     );
   }
 
   // ── RUNNING ───────────────────────────────────────────────────────────────
+  // The class as faces, in join order so everyone can find themselves. A bomb
+  // lights up whoever holds it; fuses burn with no numbers (the class can see
+  // this screen).
+  const top5 = ranked.slice(0, 5);
+  const shown = feed.filter(e => e.kind !== "spawn").slice(0, 7);
+  const avatarPx = students.length > 30 ? 52 : students.length > 18 ? 64 : 80;
   return (
-    <div className="theme-hotpotato fixed inset-0 flex flex-col text-foreground overflow-hidden"
-      style={{ background: GUN_BG, fontFamily: "monospace" }}>
+    <div className="fixed inset-0 flex flex-col overflow-hidden"
+      style={{ background: PI.ink, color: PI.text, fontFamily: "'Almarai', system-ui, sans-serif" }}>
       {ConfirmDialog}
+      <div className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(80% 50% at 50% 0%, rgba(255,106,61,0.16), transparent 70%)" }} />
 
-      <div className="pcb-trace-bg pointer-events-none absolute inset-0 z-0" />
-
-      {/* Header — metal panel bar */}
-      <header className="relative z-20 flex items-center gap-3 px-4 pt-3 pb-2 shrink-0"
-        style={{ ...metalPanel, borderRadius: 0, borderLeft: "none", borderRight: "none", borderTop: "none" }}>
-
-        {/* Left: session code + explosion count */}
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="text-muted-foreground font-mono text-sm whitespace-nowrap">
-            {ar ? "الرمز" : "CODE"} <span className="font-black tracking-widest text-base" style={{ color: PCB_GREEN }}>{session?.code}</span>
+      {/* Top bar */}
+      <header className="relative z-10 shrink-0 grid grid-cols-3 items-center px-6 pt-4 pb-3">
+        <div className="flex items-center gap-4 min-w-0">
+          <div className="flex items-center gap-2">
+            <BombIcon className="h-9 w-9" sparks />
+            <span className="text-2xl font-extrabold">{ar ? "مرّرها" : "Pass It"}</span>
           </div>
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-mono text-sm whitespace-nowrap"
-            style={{ background: "hsl(71 48% 47% / 0.08)", border: "1px solid hsl(71 48% 47% / 0.3)" }}>
-            <BombIcon className="h-3.5 w-3.5 shrink-0" style={{ color: PCB_GREEN }} />
-            <span className="font-bold tabular-nums" style={{ color: PCB_GREEN }}>{bombs.length}</span>
-            <span className="text-muted-foreground">{ar ? "قنابل" : bombs.length === 1 ? "bomb" : "bombs"}</span>
+          <div className="flex items-center gap-2 h-10 px-4 rounded-full text-lg font-extrabold" style={{ background: "rgba(255,255,255,0.08)" }}>
+            <span style={{ color: PI.muted }}>{ar ? "الرمز" : "Code"}</span>
+            <span className="tracking-[0.2em] tabular-nums">{session?.code}</span>
           </div>
         </div>
-
-        {/* Center: countdown timer */}
-        <div className="flex-1 flex justify-center">
-          <div className="px-5 py-1.5 rounded-xl font-mono font-black text-3xl tabular-nums tracking-widest"
-            style={{
-              background: "hsl(210 22% 6%)",
-              border: `2px solid ${critical ? "hsl(32 45% 42%)" : "hsl(210 20% 22%)"}`,
-              color: critical ? "hsl(32 62% 66%)" : "hsl(210 10% 82%)",
-              boxShadow: "inset 0 1px 0 hsl(210 18% 26%), 0 4px 14px hsl(0 0% 0% / 0.4)",
-            }}>
+        <div className="flex justify-center">
+          <div className={cn("px-6 py-1.5 rounded-2xl text-5xl font-extrabold tabular-nums", critical && "animate-pulse")}
+            style={{ background: critical ? "rgba(244,63,94,0.18)" : "rgba(255,255,255,0.06)", color: critical ? PI.bad : PI.text }}>
             {mm}:{ss}
           </div>
         </div>
-
-        {/* Right: controls */}
-        <div className="flex gap-2 shrink-0">
-          <Button size="sm" variant="ghost" onClick={goFullscreen} className="text-muted-foreground hover:text-foreground">
-            <Maximize className="h-4 w-4" />
-          </Button>
-          <Button size="sm" onClick={endNow}
-            className="bg-destructive hover:bg-destructive/90 text-destructive-foreground font-mono font-bold">
-            <Square className="h-4 w-4 me-1" />{ar ? "إنهاء" : "END"}
-          </Button>
+        <div className="flex items-center justify-end gap-3">
+          <div className="flex items-center gap-2 h-10 px-4 rounded-full text-lg font-extrabold" style={{ background: "rgba(255,106,61,0.16)", color: PI.bomb }}>
+            <BombIcon className="h-6 w-6" />
+            <span className="tabular-nums">{bombs.length}</span>
+            <span className="text-base">{ar ? "قنابل" : bombs.length === 1 ? "bomb" : "bombs"}</span>
+          </div>
+          <button onClick={goFullscreen} aria-label={ar ? "ملء الشاشة" : "Fullscreen"}
+            className="h-10 w-10 rounded-full flex items-center justify-center hover:bg-white/10" style={{ color: PI.muted }}>
+            <Maximize className="h-5 w-5" />
+          </button>
+          <button onClick={endNow} className="h-10 px-4 rounded-full flex items-center gap-1.5 text-base font-extrabold text-white" style={{ background: PI.bad }}>
+            <Square className="h-4 w-4 fill-current" />{ar ? "إنهاء" : "End"}
+          </button>
         </div>
       </header>
 
-      {/* Main grid */}
-      <div className="relative z-10 flex-1 overflow-hidden grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-4 px-4 pb-4 pt-3">
-
-        {/* ── LEADERBOARD ── */}
-        <div className="space-y-1.5 overflow-hidden flex flex-col">
-          {students.length === 0 ? (
-            <div className="flex-1 flex items-center justify-center font-mono text-2xl animate-pulse"
-              style={{ color: PCB_GREEN }}>{ar ? "> في انتظار اللاعبين..." : "> WAITING FOR PLAYERS..."}</div>
-          ) : (
-            students.slice(0, 9).map((s, i) => {
-              const burn    = holderBurn.get(s.id);
-              const isBomb  = burn !== undefined;
-              const isFirst = i === 0;
-              const rowStyle = isFirst
-                ? { ...metalPanel, border: `1.5px solid hsl(71 48% 47% / 0.45)` }
-                : metalPanel;
-              return (
-                <div key={s.id}
-                  className="rounded-xl px-4 py-2.5 flex items-center gap-3 transition-all duration-500"
-                  style={rowStyle}>
-                  <span className="font-mono font-black text-lg w-8 shrink-0 tabular-nums"
-                    style={{ color: isFirst ? PCB_GREEN : "hsl(210 10% 38%)" }}>
-                    {i + 1}
-                  </span>
-                  <Avatar name={s.name} colorIndex={s.avatar_color} faceIndex={s.avatar_face} />
-                  <span className="font-mono text-lg font-bold flex-1 truncate"
-                    style={{ color: isFirst ? "hsl(210 10% 92%)" : "hsl(210 10% 72%)" }}>
-                    {s.name}
-                  </span>
-                  {isBomb && <BombIcon className={cn("h-6 w-6 shrink-0", burn! > 0.85 && "animate-fuse-critical")} burn={1 - burn!} sparks />}
-                  <span className="font-mono text-lg font-black tabular-nums shrink-0"
-                    style={{ color: isFirst ? PCB_GREEN : "hsl(210 10% 50%)" }}>
-                    {fmt(s.crypto ?? 0)}
-                  </span>
-                </div>
-              );
-            })
+      <div className="relative z-10 flex-1 min-h-0 grid grid-cols-[1fr_360px] gap-6 px-6 pb-6">
+        {/* The class */}
+        <div className="min-h-0 overflow-hidden flex flex-wrap content-center justify-center gap-x-5 gap-y-4">
+          {students.length === 0 && (
+            <div className="text-3xl font-extrabold animate-pulse" style={{ color: PI.muted }}>{ar ? "بانتظار اللاعبين..." : "Waiting for players..."}</div>
           )}
+          {classOrder.map(s => {
+            const burn = holderBurn.get(s.id);
+            const hot = burn !== undefined;
+            return (
+              <div key={s.id} className="flex flex-col items-center gap-1.5 transition-all duration-300" style={{ width: avatarPx + 28 }}>
+                <div className={cn("relative rounded-full transition-all duration-300", hot && burn! > 0.85 && "animate-fuse-critical")}
+                  style={{
+                    padding: 4,
+                    background: hot ? `conic-gradient(${PI.bomb} ${(1 - burn!) * 360}deg, rgba(255,255,255,0.12) 0)` : "transparent",
+                    boxShadow: hot ? `0 0 ${18 + burn! * 30}px rgba(255,106,61,${0.35 + burn! * 0.5})` : "none",
+                    transform: hot ? "scale(1.08)" : "scale(1)",
+                  }}>
+                  <Avatar name={s.name} colorIndex={s.avatar_color} faceIndex={s.avatar_face} size={avatarPx} />
+                  {hot && <BombIcon className="absolute -top-3 -end-4 h-10 w-10 drop-shadow-lg" burn={1 - burn!} sparks />}
+                </div>
+                <span className="max-w-full truncate text-base font-extrabold" style={{ color: hot ? PI.bomb : PI.text }}>{s.name}</span>
+                <span className="text-sm font-bold tabular-nums -mt-1" style={{ color: PI.muted }}>{fmt(s.crypto ?? 0)}</span>
+              </div>
+            );
+          })}
         </div>
 
-        {/* ── RIGHT PANEL ── */}
-        <div className="grid grid-rows-[auto_1fr] gap-4 overflow-hidden">
-
-          {/* Bombs in play. No seconds shown: the class can see this screen,
-              and a fuse you can count down isn't a surprise. */}
-          <div className="rounded-2xl p-4" style={metalPanel}>
-            <div className="text-xs font-mono tracking-widest uppercase mb-3" style={{ color: "hsl(210 10% 40%)" }}>
-              {ar ? "القنابل الآن" : "Bombs in play"}
+        {/* Side: leaders + what just happened */}
+        <div className="min-h-0 flex flex-col gap-6 pb-10">
+          <div>
+            <div className="flex items-center gap-2 mb-2 text-sm font-extrabold" style={{ color: PI.muted }}>
+              <Trophy className="h-4 w-4" style={{ color: PI.spark }} />{ar ? "المتصدرون" : "Leaders"}
             </div>
-            {bombs.length ? (
-              <div className="grid grid-cols-1 gap-2">
-                {bombs.map(b => {
-                  const h = students.find(x => x.id === b.holderId);
-                  const burn = fuseBurn(b.explodesAt, now);
-                  return (
-                    <div key={b.id} className="flex items-center gap-3">
-                      <BombIcon sparks burn={1 - burn} className={cn("h-8 w-8 shrink-0", burn > 0.85 && "animate-fuse-critical")} />
-                      {h && <Avatar name={h.name} colorIndex={h.avatar_color} faceIndex={h.avatar_face} size="sm" />}
-                      <span className="font-black text-lg truncate" style={{ color: "hsl(210 10% 88%)" }}>{h?.name ?? "..."}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="font-mono text-sm animate-pulse" style={{ color: "hsl(210 10% 38%)" }}>{ar ? "جارٍ توزيع القنابل..." : "Handing out bombs..."}</div>
-            )}
+            <div className="flex flex-col gap-1">
+              {top5.map((s, i) => (
+                <div key={s.id} className="flex items-center gap-3 px-3 py-2 rounded-xl" style={{ background: i === 0 ? "rgba(255,211,77,0.12)" : "transparent" }}>
+                  <span className="w-5 text-center text-lg font-extrabold tabular-nums" style={{ color: i === 0 ? PI.spark : PI.muted }}>{i + 1}</span>
+                  <Avatar name={s.name} colorIndex={s.avatar_color} faceIndex={s.avatar_face} size={32} />
+                  <span className="flex-1 min-w-0 truncate text-lg font-extrabold">{s.name}</span>
+                  <span className="text-lg font-extrabold tabular-nums" style={{ color: i === 0 ? PI.spark : PI.text }}>{fmt(s.crypto ?? 0)}</span>
+                </div>
+              ))}
+            </div>
           </div>
 
-          {/* Live feed: passes and blasts */}
-          <div className="rounded-2xl p-4 overflow-hidden flex flex-col" style={metalPanel}>
-            <div className="font-mono text-xs mb-3 flex items-center justify-between uppercase tracking-widest"
-              style={{ color: "hsl(210 10% 42%)" }}>
-              <span>{ar ? "ما يحدث" : "Live"}</span>
-              <div className="flex items-center gap-1.5">
-                <span className="normal-case tracking-normal">{ar ? "انفجارات" : "blasts"}</span>
-                <span className="tabular-nums font-bold" style={{ color: PCB_GREEN }}>{blastCount}</span>
-              </div>
+          <div className="flex-1 min-h-0 flex flex-col">
+            <div className="flex items-center justify-between mb-2 text-sm font-extrabold" style={{ color: PI.muted }}>
+              <span>{ar ? "ما يحدث الآن" : "Right now"}</span>
+              <span>{ar ? `${blastCount} انفجارات` : `${blastCount} ${blastCount === 1 ? "blast" : "blasts"}`}</span>
             </div>
-
-            <div className="flex-1 overflow-hidden space-y-2">
-              {feed.filter(e => e.kind !== "spawn").length === 0 ? (
-                <div className="font-mono text-sm pt-1" style={{ color: "hsl(210 10% 28%)" }}>
-                  {ar ? "> أجب صح لتمرير القنبلة..." : "> answer right to pass the bomb..."}
-                </div>
-              ) : (
-                feed.filter(e => e.kind !== "spawn").map(e => (
-                  <div key={e.id}
-                    className="animate-blast-in flex items-center gap-2.5 px-2.5 py-2 rounded-lg"
-                    style={{
-                      background: e.kind === "boom" ? "hsl(0 60% 30% / 0.35)" : "hsl(210 18% 12% / 0.7)",
-                      border: `1px solid ${e.kind === "boom" ? "hsl(0 60% 45% / 0.6)" : "hsl(210 20% 22%)"}`,
-                    }}>
-                    <BombIcon className="h-4 w-4 shrink-0" style={{ color: e.kind === "boom" ? "hsl(0 70% 65%)" : "hsl(210 10% 62%)" }} />
-                    <span className="font-mono text-sm truncate">
-                      {e.kind === "boom" ? (
-                        <><span className="font-black" style={{ color: "hsl(0 70% 75%)" }}>{nameOf(e.to)}</span>
-                          <span className="text-muted-foreground">{ar ? " انفجرت عليه" : " blew up"}</span></>
-                      ) : (
-                        <><span className="font-black" style={{ color: "hsl(210 12% 88%)" }}>{nameOf(e.from)}</span>
-                          <span className="text-muted-foreground">{" → "}</span>
-                          <span className="font-black" style={{ color: "hsl(210 12% 88%)" }}>{nameOf(e.to)}</span></>
-                      )}
+            <div className="flex-1 min-h-0 overflow-hidden flex flex-col gap-2">
+              {shown.length === 0 && (
+                <div className="text-base font-bold" style={{ color: PI.muted }}>{ar ? "أجب صح لتمرّر القنبلة..." : "Answer right to pass the bomb..."}</div>
+              )}
+              {shown.map(e => {
+                const from = students.find(x => x.id === e.from), to = students.find(x => x.id === e.to);
+                return e.kind === "boom" ? (
+                  <div key={e.id} className="animate-blast-in flex items-center gap-3 px-3 py-2.5 rounded-xl" style={{ background: "rgba(255,106,61,0.18)" }}>
+                    <BombIcon className="h-7 w-7 shrink-0" burn={0} sparks />
+                    {to && <Avatar name={to.name} colorIndex={to.avatar_color} faceIndex={to.avatar_face} size={28} />}
+                    <span className="min-w-0 truncate text-base font-extrabold">
+                      <span style={{ color: PI.bomb }}>{to?.name ?? "?"}</span>{ar ? " انفجرت معه!" : " blew up!"}
                     </span>
                   </div>
-                ))
-              )}
-            </div>
-
-            {/* Bottom stats */}
-            <div className="mt-3 pt-3 grid grid-cols-2 gap-3"
-              style={{ borderTop: "1px solid hsl(210 20% 18%)" }}>
-              <div>
-                <div className="text-xs font-mono mb-0.5 uppercase tracking-widest" style={{ color: "hsl(210 10% 40%)" }}>{ar ? "أعلى نتيجة" : "Top Score"}</div>
-                <div className="font-mono font-black text-xl tabular-nums" style={{ color: PCB_GREEN }}>
-                  {fmt(Math.max(...students.map(s => s.crypto ?? 0), 0))}
-                </div>
-              </div>
-              <div>
-                <div className="text-xs font-mono mb-0.5 uppercase tracking-widest" style={{ color: "hsl(210 10% 40%)" }}>{ar ? "اللاعبون" : "Players"}</div>
-                <div className="font-mono font-black text-xl tabular-nums" style={{ color: "hsl(210 10% 72%)" }}>
-                  {students.length}
-                </div>
-              </div>
+                ) : (
+                  <div key={e.id} className="animate-blast-in flex items-center gap-2.5 px-3 py-2.5 rounded-xl" style={{ background: "rgba(255,255,255,0.05)" }}>
+                    {from && <Avatar name={from.name} colorIndex={from.avatar_color} faceIndex={from.avatar_face} size={28} />}
+                    <span className="min-w-0 truncate text-base font-extrabold">{from?.name ?? "?"}</span>
+                    <BombIcon className="h-5 w-5 shrink-0" />
+                    {to && <Avatar name={to.name} colorIndex={to.avatar_color} faceIndex={to.avatar_face} size={28} />}
+                    <span className="min-w-0 truncate text-base font-extrabold">{to?.name ?? "?"}</span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>

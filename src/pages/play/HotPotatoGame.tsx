@@ -3,11 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { BombIcon } from "@/components/BombIcon";
 import { Trophy, Zap, Check, X as XIcon } from "lucide-react";
-import logoLight from "@/assets/logo-light.png";
 import { playSelect, playCorrect, playWrong, playExplode, playGameOver, playHackAlert, primeAudio } from "@/lib/sound";
 import { POINTS_PER_CORRECT, PASS_SECONDS, BOOM_KEEP, pickTargets, fuseBurn, type Bomb, type FeedEvent } from "@/lib/passIt";
 import { Avatar } from "@/components/Avatar";
@@ -18,6 +16,20 @@ type Phase = "waiting" | "question" | "answered" | "passing" | "exploded" | "don
 
 
 interface Props { sessionId: string; studentId: string; }
+
+// Pass It palette: warm night, bomb orange, spark yellow. Answer buttons get
+// four loud colors with a darker bottom edge so they read as pressable.
+const PI = {
+  ink: "#12141C", ink2: "#1C1F2B", line: "rgba(255,255,255,0.1)",
+  text: "#F5F2EA", muted: "#969CB0",
+  bomb: "#FF6A3D", spark: "#FFD34D", good: "#22C55E", bad: "#F43F5E",
+};
+const ANSWER_COLORS = [
+  { bg: "#EF4F5A", edge: "#B0303A" },
+  { bg: "#14A89A", edge: "#0B7469" },
+  { bg: "#F29D1B", edge: "#B06C06" },
+  { bg: "#7657F5", edge: "#4F35BF" },
+];
 
 const HotPotatoGame = ({ sessionId, studentId }: Props) => {
   const navigate = useNavigate();
@@ -62,7 +74,6 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
   // The fuse is hidden on purpose: the drawing burns down, no seconds.
   const burn            = myBomb ? fuseBurn(myBomb.explodesAt, now) : 0;
   const fusePct         = (1 - burn) * 100;
-  const fuseColor       = burn < 0.5 ? "hsl(71 48% 55%)" : burn < 0.8 ? "hsl(42 55% 58%)" : "hsl(32 62% 58%)";
   const otherHolders    = useMemo(() => bombs.filter(b => b.holderId !== studentId)
     .map(b => students.find(s => s.id === b.holderId)).filter(Boolean), [bombs, students, studentId]);
   const nameOf = (id: string | null) => students.find(s => s.id === id)?.name ?? null;
@@ -329,351 +340,154 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
   const ar = (session?.settings?.lang ?? i18n.language) === "ar";
 
 
-  // Shared metal panel style
-  const metalPanel = {
-    background: "linear-gradient(180deg, hsl(210 20% 14%), hsl(210 18% 10%))",
-    border: "1.5px solid hsl(210 20% 22%)",
-    boxShadow: "inset 0 1.5px 0 hsl(210 18% 30%), inset 0 -1px 0 hsl(210 15% 6%), 0 6px 20px hsl(0 0% 0% / 0.45)",
-  };
+  const timerLeftPct = timerEnabled ? timeLeft / duration : 1;
+  const sorted = [...students].sort((a, b) => (b.crypto ?? 0) - (a.crypto ?? 0));
+  const rank = sorted.findIndex(s => s.id === studentId) + 1 || sorted.length;
 
   return (
-    <div className="theme-hotpotato fixed inset-0 overflow-hidden text-foreground font-mono"
-      style={{
-        background: "radial-gradient(ellipse at 30% 10%, hsl(210 28% 11%) 0%, hsl(210 22% 7%) 55%, hsl(210 18% 5%) 100%)",
-      }}>
-      {/* PCB circuit board trace — background texture only, panels are solid */}
-      <div className="pcb-trace-bg pointer-events-none absolute inset-0" style={{ zIndex: 0 }} />
+    <div className="fixed inset-0 overflow-hidden select-none"
+      style={{ background: PI.ink, color: PI.text, fontFamily: "'Almarai', system-ui, sans-serif" }}>
+      {/* Danger glow: grows with the fuse while a bomb is in your hands */}
+      <div className="pointer-events-none absolute inset-0 transition-opacity duration-700"
+        style={{
+          opacity: hasBomb && phase !== "done" ? 0.35 + burn * 0.65 : 0,
+          background: "radial-gradient(130% 75% at 50% 0%, rgba(255,106,61,0.5), transparent 62%)",
+        }} />
+      {hasBomb && burn > 0.7 && phase !== "done" && (
+        <div className="pointer-events-none absolute inset-0 animate-pulse" style={{ boxShadow: "inset 0 0 90px rgba(255,70,30,0.6)" }} />
+      )}
 
       {/* Explosion flash */}
       {showFlash && (
         <>
           <div className="pointer-events-none absolute inset-0 z-50 animate-screen-flash"
-            style={{ background: "radial-gradient(ellipse at center, hsl(210 10% 90%) 0%, hsl(210 15% 50%) 60%, transparent 100%)" }} />
+            style={{ background: "radial-gradient(circle at center, #FFF3C4 0%, #FF8A3D 45%, transparent 80%)" }} />
           <div className="pointer-events-none absolute z-[51] rounded-full animate-shockwave"
-            style={{ top: "50%", left: "50%", width: 80, height: 80, transform: "translate(-50%,-50%)", border: "3px solid hsl(210 10% 75%)" }} />
+            style={{ top: "50%", left: "50%", width: 80, height: 80, transform: "translate(-50%,-50%)", border: `4px solid ${PI.spark}` }} />
         </>
       )}
 
       {/* A bomb just landed on you */}
       {incoming && phase !== "done" && (
-        <div className="pointer-events-none absolute inset-0 z-[60] flex flex-col items-center justify-center gap-4 text-center px-6 animate-hp-explode"
-          style={{ background: "radial-gradient(ellipse at center, hsl(20 70% 22% / 0.96), hsl(210 22% 6% / 0.97))" }}>
-          <BombIcon className="h-24 w-24 animate-fuse-critical" sparks />
-          <div className="text-3xl font-black" style={{ color: "hsl(32 90% 70%)" }}>
+        <div className="pointer-events-none absolute inset-0 z-[60] flex flex-col items-center justify-center gap-4 text-center px-8 animate-hp-explode"
+          style={{ background: "radial-gradient(circle at 50% 42%, #7A2A12 0%, rgba(18,20,28,0.97) 70%)" }}>
+          <BombIcon className="h-28 w-28 animate-fuse-critical" sparks />
+          <div className="text-3xl font-extrabold leading-tight" style={{ color: PI.spark }}>
             {nameOf(incoming.from)
               ? (ar ? `${nameOf(incoming.from)} مرّر لك القنبلة!` : `${nameOf(incoming.from)} passed you the bomb!`)
               : (ar ? "معك قنبلة!" : "You got a bomb!")}
           </div>
-          <div className="text-base font-bold" style={{ color: "hsl(210 10% 80%)" }}>
+          <div className="text-base font-bold" style={{ color: PI.text }}>
             {ar ? "أجب صح بسرعة لتتخلص منها" : "Answer right, fast, to get rid of it"}
           </div>
         </div>
       )}
 
-      {/* Shake wrapper */}
-      <div className={cn("relative z-10 flex flex-col h-full overflow-y-auto", hasBomb && burn > 0.85 && "animate-screen-shake")}>
+      <div className={cn("relative z-10 flex flex-col h-full", hasBomb && burn > 0.85 && phase === "question" && "animate-screen-shake")}>
 
-        {/* ── HEADER — metal panel ── */}
-        <header className="relative shrink-0 flex items-center justify-between px-5 py-3 safe-top z-10"
-          style={{ ...metalPanel, borderRadius: 0, borderLeft: "none", borderRight: "none", borderTop: "none" }}>
-          <div className="flex items-center gap-2 min-w-0">
-            <img src={logoLight} alt="nefelha" className="h-6 w-6 object-contain shrink-0" />
-            {hasBomb && <BombIcon className="h-5 w-5 shrink-0" burn={fusePct / 100} />}
-            <span className="text-sm font-bold truncate" style={{ color: "hsl(210 10% 80%)" }}>{me?.name ?? "—"}</span>
+        {/* ── Header ── */}
+        <header className="shrink-0 flex items-center justify-between gap-3 px-4 pt-3 pb-2 safe-top">
+          <div className="flex items-center gap-2.5 min-w-0">
+            {me && <Avatar name={me.name} colorIndex={me.avatar_color} faceIndex={me.avatar_face} size={34} />}
+            <span className="text-[15px] font-extrabold truncate">{me?.name ?? ""}</span>
           </div>
-          <div className="flex items-center gap-1.5 font-black tabular-nums text-lg text-success">
-            <Zap className="h-4 w-4" />
+          <div className="shrink-0 flex items-center gap-1.5 h-9 px-3.5 rounded-full text-[15px] font-extrabold tabular-nums"
+            style={{ background: "rgba(255,255,255,0.08)" }}>
+            <Zap className="h-4 w-4" style={{ color: PI.spark }} fill={PI.spark} />
             {fmt(points)}
           </div>
         </header>
 
-        <main className="flex-1 px-4 pb-6 safe-bottom flex flex-col overflow-y-auto">
+        <main className="flex-1 min-h-0 px-4 pb-4 safe-bottom flex flex-col overflow-y-auto">
 
           {/* ── WAITING ── */}
           {phase === "waiting" && (
-            <div className="max-w-3xl mx-auto w-full py-5 px-1">
-              {/* header */}
-              <div className="text-center mb-5">
-                <BombIcon className="h-10 w-10 mx-auto mb-1.5" sparks />
-                <h1 className="text-2xl font-black tracking-widest" style={{ color: "hsl(210 10% 82%)" }}>{ar ? "مرّرها" : "PASS IT"}</h1>
-                {session?.quizzes?.title && (
-                  <p className="text-muted-foreground/60 text-xs font-mono mt-1 truncate max-w-[240px] mx-auto">{session.quizzes.title}</p>
-                )}
+            <div className="flex-1 flex flex-col items-center pt-8 gap-6 text-center">
+              <BombIcon className="h-24 w-24" sparks />
+              <div>
+                <h1 className="text-4xl font-extrabold">{ar ? "مرّرها" : "Pass It"}</h1>
+                {session?.quizzes?.title && <p className="mt-1.5 text-sm font-bold truncate max-w-[280px]" style={{ color: PI.muted }}>{session.quizzes.title}</p>}
               </div>
-
-              {/* counter strip */}
-              <div
-                className="flex items-center justify-between text-xs font-mono px-3 py-2 mb-3"
-                style={{
-                  borderTop: "1px solid hsl(210 18% 30%)",
-                  borderBottom: "1px solid hsl(210 18% 30%)",
-                  color: "hsl(210 10% 55%)",
-                }}
-              >
-                <span className="tracking-widest">{ar ? "اللاعبون المتصلون" : "PLAYERS_ONLINE"}</span>
-                <span className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full animate-pulse" style={{ background: "hsl(210 10% 70%)" }} />
-                  <span className="font-bold tabular-nums text-sm" style={{ color: "hsl(210 10% 85%)" }}>
-                    {students.length.toString().padStart(2, "0")}
-                  </span>
-                </span>
-              </div>
-
-              {/* roster grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-                {students.map((s, i) => {
-                  const isMe = s.id === me?.id;
-                  return (
-                    <div
-                      key={s.id}
-                      className="flex items-center gap-2.5 p-2.5 rounded-xl transition-all"
-                      style={{
-                        ...metalPanel,
-                        border: `1px solid hsl(210 18% ${isMe ? 42 : 26}%)`,
-                        boxShadow: isMe ? "inset 0 1px 0 rgba(255,255,255,0.08), 0 0 14px rgba(255,255,255,0.06)" : (metalPanel as any).boxShadow,
-                        animation: `fade-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) ${Math.min(i * 60, 600)}ms both`,
-                      }}
-                    >
-                      <Avatar name={s.name} colorIndex={s.avatar_color} faceIndex={s.avatar_face} size="sm" />
-                      <div className="min-w-0 flex-1">
-                        <div className="text-sm font-bold truncate font-mono" style={{ color: isMe ? "hsl(210 10% 90%)" : "hsl(210 10% 72%)" }}>
-                          {s.name}
-                        </div>
-                        {isMe && (
-                          <div className="font-mono text-[9px]" style={{ color: "hsl(210 10% 55%)" }}>{ar ? "أنت" : "you"}</div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-                {students.length < 4 && Array.from({ length: 4 - students.length }).map((_, i) => (
-                  <div
-                    key={`empty-${i}`}
-                    className="flex items-center gap-2.5 p-2.5 rounded-xl"
-                    style={{
-                      border: "1px dashed hsl(210 18% 22%)",
-                      opacity: 0.5,
-                    }}
-                  >
-                    <div className="h-8 w-8 rounded-full shrink-0 flex items-center justify-center"
-                      style={{ background: "hsl(210 18% 14%)", color: "hsl(210 10% 35%)" }}>
-                      ?
-                    </div>
-                    <div className="font-mono text-xs" style={{ color: "hsl(210 10% 30%)" }}>{ar ? "بالانتظار..." : "waiting..."}</div>
+              <p className="text-sm leading-relaxed max-w-[300px]" style={{ color: PI.muted }}>
+                {ar ? "أجب صح لتمرّر القنبلة لغيرك. إذا انفجرت وهي معك تخسر نصف نقاطك." : "Answer right to pass the bomb on. If it blows up in your hands, you lose half your points."}
+              </p>
+              <div className="flex flex-wrap justify-center gap-3 max-w-sm">
+                {students.map((s, i) => (
+                  <div key={s.id} className="flex flex-col items-center gap-1 w-14"
+                    style={{ animation: `fade-up 0.4s cubic-bezier(0.16,1,0.3,1) ${Math.min(i * 50, 600)}ms both` }}>
+                    <Avatar name={s.name} colorIndex={s.avatar_color} faceIndex={s.avatar_face} size={44} />
+                    <span className="text-[11px] font-bold truncate w-full" style={{ color: s.id === studentId ? PI.text : PI.muted }}>{s.name}</span>
                   </div>
                 ))}
               </div>
-
-              <p className="mt-6 font-mono text-xs text-center animate-pulse" style={{ color: "hsl(210 10% 45%)" }}>
-                {ar ? "> بانتظار المعلّم..." : "> waiting for the teacher..."}
-              </p>
-            </div>
-          )}
-
-          {/* ── DONE ── */}
-          {phase === "done" && (() => {
-            const sorted   = [...students].sort((a, b) => (b.crypto ?? 0) - (a.crypto ?? 0));
-            const rank     = sorted.findIndex(s => s.id === studentId) + 1 || sorted.length;
-            const top5     = sorted.slice(0, 5);
-            const exploded = blasts;
-            const defused  = me?.correct_answers ?? 0;
-            const survived = rank <= 3;
-            const verdict  = ar
-              ? (rank === 1 ? "المهمة أُنجزت" : survived ? "فريق التفكيك" : "موقع الانفجار")
-              : (rank === 1 ? "MISSION ACCOMPLISHED" : survived ? "DEFUSAL TEAM" : "DETONATION SITE");
-
-            return (
-              <div className="max-w-md mx-auto py-6 px-3 flex flex-col gap-4 font-mono">
-                {/* Status header — defusal report */}
-                <div
-                  className="rounded-xl p-4 text-center relative overflow-hidden"
-                  style={{
-                    ...metalPanel,
-                    borderColor: rank === 1 ? "hsl(48 90% 50%)" : survived ? "hsl(210 25% 35%)" : "hsl(0 60% 40%)",
-                  }}
-                >
-                  {/* warning stripes only on detonation */}
-                  {!survived && (
-                    <div
-                      className="absolute inset-0 opacity-20 pointer-events-none"
-                      style={{
-                        backgroundImage: "repeating-linear-gradient(45deg, hsl(48 90% 50%) 0 10px, transparent 10px 20px)",
-                      }}
-                    />
-                  )}
-                  <div className="relative">
-                    <div
-                      className="text-[10px] tracking-[0.4em] mb-2"
-                      style={{ color: "hsl(210 15% 60%)" }}
-                    >
-                      {ar ? "تقرير الحادثة" : "INCIDENT_REPORT"}
-                    </div>
-                    <div className="flex items-center justify-center gap-3 mb-2">
-                      <BombIcon
-                        className="h-12 w-12"
-                        style={{
-                          color: rank === 1 ? "hsl(48 70% 55%)" : survived ? "hsl(210 15% 75%)" : "hsl(0 70% 55%)",
-                        }}
-                      />
-                      <div className="text-left">
-                        <div
-                          className="text-xl font-black tracking-wider"
-                          style={{
-                            color: rank === 1 ? "hsl(48 100% 70%)" : survived ? "hsl(210 10% 85%)" : "hsl(0 70% 70%)",
-                          }}
-                        >
-                          {verdict}
-                        </div>
-                        <div className="text-xs tracking-widest mt-0.5" style={{ color: "hsl(210 12% 50%)" }}>
-                          {rank === 1
-                            ? (ar ? "أنت البطل" : "You're the hero")
-                            : (ar ? `الرتبة #${rank}` : `Rank #${rank}`)}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Stat row — like a clipboard */}
-                <div className="grid grid-cols-3 gap-2">
-                  {[
-                    { label: ar ? "قنابل مفكَّكة" : "BOMBS_DEFUSED", value: defused, color: "hsl(142 65% 55%)" },
-                    { label: ar ? "انفجارات" : "DETONATIONS",   value: exploded, color: "hsl(0 70% 60%)" },
-                    { label: ar ? "النقاط" : "SCORE",         value: fmt(points), color: "hsl(48 90% 60%)" },
-                  ].map(s => (
-                    <div
-                      key={s.label}
-                      className="rounded-lg p-2.5 text-center"
-                      style={metalPanel}
-                    >
-                      <div className="text-[9px] tracking-widest" style={{ color: "hsl(210 10% 50%)" }}>{s.label}</div>
-                      <div className="text-lg font-black tabular-nums mt-0.5" style={{ color: s.color }}>{s.value}</div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Squad leaderboard */}
-                <div className="space-y-1">
-                  <div className="text-[10px] tracking-[0.3em] uppercase pb-1" style={{ color: "hsl(210 15% 50%)" }}>
-                    {ar ? "━ تقييم الفريق ━" : "━ SQUAD_DEBRIEF ━"}
-                  </div>
-                  {top5.map((s, i) => {
-                    const isMe = s.id === studentId;
-                    const accent = i === 0 ? "hsl(48 90% 58%)" : i === 1 ? "hsl(210 18% 75%)" : i === 2 ? "hsl(25 75% 55%)" : "hsl(210 12% 55%)";
-                    return (
-                      <div
-                        key={s.id}
-                        className="flex items-center gap-3 px-3 py-2 rounded-lg"
-                        style={{
-                          ...metalPanel,
-                          borderColor: isMe ? "hsl(210 25% 45%)" : (metalPanel as any).border,
-                          boxShadow: isMe ? "0 0 14px hsl(210 30% 40% / 0.6), " + (metalPanel as any).boxShadow : (metalPanel as any).boxShadow,
-                        }}
-                      >
-                        <span className="text-sm font-black w-5 text-center" style={{ color: accent }}>{i + 1}</span>
-                        <span className="flex-1 text-sm font-bold truncate" style={{ color: isMe ? "hsl(210 10% 92%)" : "hsl(210 10% 70%)" }}>
-                          {s.name}{isMe && " ←"}
-                        </span>
-                        <span className="text-sm tabular-nums font-bold" style={{ color: accent }}>{fmt(s.crypto ?? 0)}</span>
-                      </div>
-                    );
-                  })}
-                  {rank > 5 && (
-                    <>
-                      <div className="text-center text-xs" style={{ color: "hsl(210 12% 35%)" }}>···</div>
-                      <div className="flex items-center gap-3 px-3 py-2 rounded-lg" style={{ ...metalPanel, borderColor: "hsl(210 25% 45%)" }}>
-                        <span className="text-sm font-black w-5 text-center" style={{ color: "hsl(210 12% 60%)" }}>{rank}</span>
-                        <span className="flex-1 text-sm font-bold truncate" style={{ color: "hsl(210 10% 92%)" }}>{me?.name} ←</span>
-                        <span className="text-sm tabular-nums font-bold" style={{ color: "hsl(210 12% 70%)" }}>{fmt(points)}</span>
-                      </div>
-                    </>
-                  )}
-                </div>
-
-                <MissedReview sessionId={sessionId} studentId={studentId} ar={ar} tone="dark" className="self-center mt-2" />
-                <Button
-                  onClick={() => navigate("/join")}
-                  className="mt-2 tracking-widest font-black"
-                  style={{ background: "hsl(210 18% 24%)", color: "hsl(210 10% 90%)" }}
-                >
-                  {ar ? "خروج" : "EXIT"}
-                </Button>
-              </div>
-            );
-          })()}
-
-          {/* ── EXPLODED ── */}
-          {phase === "exploded" && (
-            <div className="flex-1 flex flex-col items-center justify-center text-center gap-5 animate-hp-explode">
-              <BombIcon className="h-24 w-24" sparks />
-              <h2 className="text-3xl font-black" style={{ color: "hsl(210 12% 88%)" }}>{ar ? "انفجرت!" : "You exploded!"}</h2>
-              <p className="text-muted-foreground text-base">{ar ? "خسرت نصف نقاطك" : "You lost half your points"}</p>
-              <p className="text-muted-foreground/50 text-xs">{ar ? "تعود للعبة الآن..." : "Back to the game..."}</p>
+              <p className="text-sm font-bold animate-pulse" style={{ color: PI.muted }}>{ar ? "بانتظار المعلّم..." : "Waiting for the teacher..."}</p>
             </div>
           )}
 
           {/* ── QUESTION ── */}
           {(phase === "question" || phase === "answered") && currentQ && (
-            <div key={qSeed} className="flex-1 flex flex-col max-w-2xl mx-auto w-full pt-3 animate-question-in">
+            <div key={qSeed} className="flex-1 min-h-0 flex flex-col max-w-2xl mx-auto w-full animate-question-in">
 
-              {/* Bomb strip. Holding one: it burns down with no seconds shown.
-                  Not holding: who has the bombs right now. */}
-              {/* Always there and always the same height, so the question and
-                  the answers never jump when you answer or a bomb moves. */}
-              <div className="mb-3 h-11 shrink-0 flex items-center gap-2.5 px-3 rounded-lg overflow-hidden transition-colors duration-300"
-                style={{ ...metalPanel, border: `1.5px solid ${hasBomb ? fuseColor : "hsl(210 20% 22%)"}` }}>
-                <BombIcon className="h-5 w-5 shrink-0" burn={hasBomb ? fusePct / 100 : undefined} sparks={hasBomb} />
-                <span className="flex-1 min-w-0 truncate font-mono text-[13px]"
-                  style={{ color: hasBomb ? "hsl(210 12% 92%)" : "hsl(210 10% 58%)", fontWeight: hasBomb ? 800 : 400 }}>
-                  {hasBomb
-                    ? (ar ? "معك قنبلة! أجب صح لتمرّرها" : "You have a bomb! Answer right to pass it")
-                    : otherHolders.length
-                      ? (ar ? `القنابل مع: ${otherHolders.map((h: any) => h.name).join("، ")}` : `Bombs: ${otherHolders.map((h: any) => h.name).join(", ")}`)
-                      : (ar ? "لا قنابل معك" : "No bomb on you")}
-                </span>
-              </div>
-
-              {/* Arc timer — only when the teacher enabled a per-question timer */}
-              {timerEnabled && (
-                <div className="flex justify-center mb-2">
-                  <svg width="60" height="60" viewBox="0 0 60 60">
-                    <circle cx="30" cy="30" r="26" fill="none" stroke="hsl(210 18% 20%)" strokeWidth="3.5" />
-                    <circle cx="30" cy="30" r="26" fill="none" stroke="hsl(210 10% 60%)" strokeWidth="3.5"
-                      strokeDasharray="163.36" strokeDashoffset={163.36 * (1 - timeLeft / duration)}
-                      strokeLinecap="round" transform="rotate(-90 30 30)"
-                      style={{ transition: "stroke-dashoffset 0.18s linear" }} />
-                    <text x="30" y="35" textAnchor="middle" fill="hsl(210 10% 75%)" fontSize="15" fontWeight="bold" fontFamily="monospace">{timeLeft}</text>
-                  </svg>
-                </div>
-              )}
-
-              {/* Question card — full metal panel */}
-              <div className="relative mb-3 rounded-xl px-4 py-4 text-center shrink-0" style={metalPanel}>
-                {currentQ.image_url && (
-                  <img
-                    src={currentQ.image_url}
-                    alt=""
-                    className="mx-auto mb-3 max-h-[26vh] w-auto object-contain rounded-lg"
-                    style={{ border: "1px solid hsl(210 18% 22%)" }}
-                  />
+              {/* Bomb bar: same height always, so nothing below it moves. */}
+              <div className="h-12 shrink-0 flex items-center gap-2.5 px-3 rounded-2xl transition-colors duration-300"
+                style={hasBomb
+                  ? { background: "linear-gradient(90deg, #FF6A3D, #E23E2A)", color: "#fff" }
+                  : { background: PI.ink2, color: PI.muted }}>
+                <BombIcon className="h-7 w-7 shrink-0" burn={hasBomb ? fusePct / 100 : 1} sparks={hasBomb} />
+                {hasBomb ? (
+                  <span className="flex-1 min-w-0 truncate text-[15px] font-extrabold">
+                    {ar ? "معك قنبلة! أجب صح لتمرّرها" : "You have a bomb! Answer right to pass it"}
+                  </span>
+                ) : (
+                  <>
+                    <span className="shrink-0 text-[13px] font-bold">{ar ? "القنابل مع" : "Bombs with"}</span>
+                    <div className="flex -space-x-2 rtl:space-x-reverse shrink-0">
+                      {otherHolders.slice(0, 5).map((h: any) => (
+                        <Avatar key={h.id} name={h.name} colorIndex={h.avatar_color} faceIndex={h.avatar_face} size={26} className="ring-2 ring-[#1A1D29]" />
+                      ))}
+                    </div>
+                    <span className="flex-1 min-w-0 truncate text-[13px] font-bold" style={{ color: PI.text }}>
+                      {otherHolders.map((h: any) => h.name).join(ar ? "، " : ", ")}
+                    </span>
+                  </>
                 )}
-                <p className="text-base md:text-xl font-bold leading-relaxed" style={{ color: "hsl(210 10% 88%)" }}>{currentQ.text}</p>
               </div>
 
-              {/* Answer buttons */}
-              <div className="grid grid-cols-2 gap-2.5 flex-1 min-h-0 pb-safe px-1">
+              {/* Question */}
+              <div className="shrink-0 py-5 text-center">
+                {timerEnabled && (
+                  <div className="mx-auto mb-3 h-1.5 w-40 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.1)" }}>
+                    <div className="h-full rounded-full transition-[width] duration-200 ease-linear"
+                      style={{ width: `${timerLeftPct * 100}%`, background: timerLeftPct < 0.3 ? PI.bad : PI.spark }} />
+                  </div>
+                )}
+                {currentQ.image_url && (
+                  <img src={currentQ.image_url} alt="" className="mx-auto mb-3 max-h-[24vh] w-auto object-contain rounded-xl" />
+                )}
+                <p className="text-xl md:text-2xl font-extrabold leading-relaxed">{currentQ.text}</p>
+              </div>
+
+              {/* Answers */}
+              <div className="grid grid-cols-2 gap-3 flex-1 min-h-0 auto-rows-fr">
                 {currentQ.options.map((opt, i) => {
                   const isCorrect = i === currentQ.correct_index;
                   const isPicked  = picked === i;
                   const show      = picked !== null;
+                  const c = show && isCorrect ? { bg: PI.good, edge: "#15925F" }
+                    : show && isPicked ? { bg: PI.bad, edge: "#B4213A" }
+                    : ANSWER_COLORS[i % ANSWER_COLORS.length];
                   return (
                     <button key={i} disabled={picked !== null} onClick={() => submit(i)}
                       className={cn(
-                        "btn-panel min-h-[88px] px-3 py-3 text-center text-base font-bold rounded-xl leading-snug break-words",
-                        show && isCorrect              && "btn-panel-correct animate-answer-correct",
-                        show && isPicked && !isCorrect && "btn-panel-wrong animate-answer-wrong",
-                        show && !isPicked && !isCorrect && "opacity-20"
-                      )}>
+                        "relative min-h-[84px] px-3 py-3 rounded-2xl text-center text-[17px] font-extrabold leading-snug break-words text-white",
+                        "transition-all duration-150 active:translate-y-1 active:border-b-[2px] disabled:active:translate-y-0",
+                        show && isCorrect && "animate-answer-correct",
+                        show && isPicked && !isCorrect && "animate-answer-wrong",
+                        show && !isPicked && !isCorrect && "opacity-25",
+                      )}
+                      style={{ background: c.bg, borderBottom: `6px solid ${c.edge}` }}>
+                      {show && isCorrect && <Check className="absolute top-2 end-2 h-5 w-5" strokeWidth={3.5} />}
+                      {show && isPicked && !isCorrect && <XIcon className="absolute top-2 end-2 h-5 w-5" strokeWidth={3.5} />}
                       {opt}
                     </button>
                   );
@@ -684,39 +498,97 @@ const HotPotatoGame = ({ sessionId, studentId }: Props) => {
 
           {/* ── PASSING ── */}
           {phase === "passing" && (
-            <div className="flex-1 flex flex-col pt-4 gap-4 max-w-md mx-auto w-full">
-              <div className="text-center">
-                <BombIcon className="h-12 w-12 mx-auto mb-2" sparks />
-                <h2 className="text-xl font-black" style={{ color: "hsl(210 10% 82%)" }}>{ar ? "مرّر القنبلة!" : "Pass the bomb!"}</h2>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {ar ? `عندك ${passSecsLeft}ث — اختر من تعطيها` : `You have ${passSecsLeft}s — pick someone to give it to`}
-                </p>
-                <svg className="mx-auto mt-2" width="48" height="48" viewBox="0 0 44 44">
-                  <circle cx="22" cy="22" r="20" fill="none" stroke="hsl(210 18% 20%)" strokeWidth="3" />
-                  <circle cx="22" cy="22" r="20" fill="none" stroke="hsl(210 10% 60%)" strokeWidth="3"
-                    strokeDasharray="126" strokeDashoffset={126 - (passSecsLeft / PASS_SECONDS) * 126}
-                    strokeLinecap="round" transform="rotate(-90 22 22)"
-                    style={{ transition: "stroke-dashoffset 0.9s linear" }} />
-                  <text x="22" y="26" textAnchor="middle" fill="hsl(210 10% 72%)" fontSize="13" fontWeight="bold" fontFamily="monospace">{passSecsLeft}</text>
+            <div className="flex-1 flex flex-col items-center pt-6 gap-5 max-w-md mx-auto w-full text-center">
+              <div className="relative h-32 w-32">
+                <svg className="absolute inset-0" viewBox="0 0 120 120">
+                  <circle cx="60" cy="60" r="54" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="7" />
+                  <circle cx="60" cy="60" r="54" fill="none" stroke={PI.spark} strokeWidth="7" strokeLinecap="round"
+                    strokeDasharray="339.3" strokeDashoffset={339.3 * (1 - passSecsLeft / PASS_SECONDS)}
+                    transform="rotate(-90 60 60)" style={{ transition: "stroke-dashoffset 0.9s linear" }} />
                 </svg>
+                <BombIcon className="absolute inset-5 animate-fuse-critical" sparks />
               </div>
-              <div className="flex flex-col gap-2.5">
+              <div>
+                <h2 className="text-4xl font-extrabold" style={{ color: PI.spark }}>{ar ? "مرّرها!" : "Pass it!"}</h2>
+                <p className="mt-1.5 text-base font-bold" style={{ color: PI.muted }}>{ar ? "من يأخذ القنبلة؟" : "Who gets the bomb?"}</p>
+              </div>
+              <div className="w-full flex flex-col gap-3">
                 {passTargets.map(target => (
                   <button key={target.id} onClick={() => passBomb(target.id)}
-                    className="relative group btn-panel rounded-xl p-4 flex items-center gap-3 transition-all hover:scale-[1.02] active:scale-[0.97]">
-                    <Avatar name={target.name} colorIndex={target.avatar_color} faceIndex={target.avatar_face} size="md" />
-                    <div className="flex-1 min-w-0 text-left">
-                      <div className="font-bold text-base truncate" style={{ color: "hsl(210 10% 82%)" }}>{target.name}</div>
-                      <div className="text-success/80 text-xs font-mono tabular-nums">{fmt(target.crypto ?? 0)} {ar ? "نقطة" : "pts"}</div>
+                    className="w-full flex items-center gap-3.5 px-4 py-3.5 rounded-2xl text-start transition-transform active:scale-[0.97]"
+                    style={{ background: PI.ink2, borderBottom: "5px solid #0C0E14" }}>
+                    <Avatar name={target.name} colorIndex={target.avatar_color} faceIndex={target.avatar_face} size={48} />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-lg font-extrabold truncate">{target.name}</div>
+                      <div className="text-xs font-bold tabular-nums" style={{ color: PI.muted }}>{fmt(target.crypto ?? 0)} {ar ? "نقطة" : "pts"}</div>
                     </div>
-                    <BombIcon className="h-6 w-6 shrink-0 opacity-40 group-hover:opacity-90 transition-opacity" style={{ color: fuseColor }} />
+                    <BombIcon className="h-8 w-8 shrink-0" />
                   </button>
                 ))}
               </div>
-              <p className="text-center text-xs text-muted-foreground/50">{ar ? "إذا لم تختر، تذهب لأحدهم عشوائيًا" : "If you don't choose, it goes to one of them at random"}</p>
+              <p className="text-xs font-bold" style={{ color: PI.muted }}>
+                {ar ? `${passSecsLeft} ث — إذا لم تختر، تذهب لأحدهم عشوائيًا` : `${passSecsLeft}s — if you don't choose, it goes to one of them at random`}
+              </p>
             </div>
           )}
 
+          {/* ── EXPLODED ── */}
+          {phase === "exploded" && (
+            <div className="flex-1 flex flex-col items-center justify-center text-center gap-4 animate-hp-explode">
+              <BombIcon className="h-32 w-32" burn={0} sparks />
+              <h2 className="text-6xl font-extrabold" style={{ color: PI.bomb }}>{ar ? "بووم!" : "BOOM!"}</h2>
+              <p className="text-lg font-bold">{ar ? "انفجرت القنبلة معك، خسرت نصف نقاطك" : "It blew up on you. You lost half your points"}</p>
+              <p className="text-sm font-bold" style={{ color: PI.muted }}>{ar ? "تعود للعبة الآن..." : "Back in the game..."}</p>
+            </div>
+          )}
+
+          {/* ── DONE ── */}
+          {phase === "done" && (
+            <div className="max-w-md mx-auto w-full pt-6 flex flex-col items-center gap-6 text-center">
+              <div className="flex flex-col items-center gap-2">
+                {rank === 1 ? <Trophy className="h-16 w-16" style={{ color: PI.spark }} /> : me && <Avatar name={me.name} colorIndex={me.avatar_color} faceIndex={me.avatar_face} size={72} />}
+                <div className="text-5xl font-extrabold tabular-nums" style={{ color: rank === 1 ? PI.spark : PI.text }}>#{rank}</div>
+                <div className="text-base font-bold" style={{ color: PI.muted }}>
+                  {rank === 1 ? (ar ? "الأول! لا أحد مرّرها أفضل منك" : "First place! Nobody passed it better") : ar ? `من ${sorted.length} لاعبين` : `out of ${sorted.length} players`}
+                </div>
+              </div>
+
+              <div className="w-full grid grid-cols-3">
+                {[
+                  { label: ar ? "النقاط" : "Points", value: fmt(points), color: PI.spark },
+                  { label: ar ? "إجابات صحيحة" : "Right answers", value: me?.correct_answers ?? 0, color: PI.good },
+                  { label: ar ? "انفجارات" : "Blasts", value: blasts, color: PI.bomb },
+                ].map((s, i) => (
+                  <div key={s.label} className="py-1" style={{ borderInlineStart: i ? `1px solid ${PI.line}` : "none" }}>
+                    <div className="text-2xl font-extrabold tabular-nums" style={{ color: s.color }}>{s.value}</div>
+                    <div className="text-xs font-bold mt-0.5" style={{ color: PI.muted }}>{s.label}</div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="w-full flex flex-col gap-1.5 text-start">
+                {sorted.slice(0, 5).map((s, i) => {
+                  const isMe = s.id === studentId;
+                  return (
+                    <div key={s.id} className="flex items-center gap-3 px-3 py-2 rounded-xl"
+                      style={{ background: isMe ? "rgba(255,211,77,0.12)" : "transparent" }}>
+                      <span className="w-6 text-center text-base font-extrabold tabular-nums" style={{ color: i === 0 ? PI.spark : PI.muted }}>{i + 1}</span>
+                      <Avatar name={s.name} colorIndex={s.avatar_color} faceIndex={s.avatar_face} size={32} />
+                      <span className="flex-1 min-w-0 truncate font-extrabold">{s.name}</span>
+                      <span className="font-extrabold tabular-nums" style={{ color: PI.muted }}>{fmt(s.crypto ?? 0)}</span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <MissedReview sessionId={sessionId} studentId={studentId} ar={ar} tone="dark" />
+              <button onClick={() => navigate("/join")}
+                className="w-full h-13 py-3.5 rounded-2xl text-lg font-extrabold active:translate-y-0.5 transition-transform"
+                style={{ background: PI.text, color: PI.ink, borderBottom: "5px solid #B9B4A8" }}>
+                {ar ? "خروج" : "Exit"}
+              </button>
+            </div>
+          )}
         </main>
       </div>
     </div>
