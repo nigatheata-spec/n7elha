@@ -16,14 +16,15 @@ export const DashboardAccents = () => (
       <path fill={LIME} d="M0 0H246C298 34 270 104 226 150C178 200 198 262 134 310C92 342 40 340 0 330Z" />
     </svg>
 
-    {/* opposite corner: teal wave over a sand rim */}
-    <svg viewBox="0 0 400 400" className="accent-drift absolute -bottom-12 -right-16 w-[280px] md:w-[580px]" style={{ animationDuration: "26s", animationDelay: "-8s" }}>
-      <path fill={SAND} d="M400 400H40C10 352 52 300 110 278C182 250 170 168 236 120C284 86 352 84 400 92Z" />
-      <path fill={TEAL} d="M400 400H112C88 362 124 322 172 304C232 282 226 214 278 176C318 148 366 150 400 160Z" />
+    {/* bottom: a teal wave over a sand rim, rising from the bottom edge and
+        curving back down before the sidebar so nothing is cut against it */}
+    <svg viewBox="0 0 420 300" className="accent-drift absolute -bottom-4 right-6 md:right-10 w-[260px] md:w-[520px]" style={{ animationDuration: "26s", animationDelay: "-8s" }}>
+      <path fill={SAND} d="M0 300C24 236 86 222 136 192C196 156 204 74 280 50C352 28 412 88 416 166C419 222 402 270 384 300Z" />
+      <path fill={TEAL} d="M60 300C82 252 132 240 174 216C226 186 232 122 292 104C346 88 388 134 390 192C392 236 378 272 364 300Z" />
     </svg>
 
-    {/* a small lime drop drifting on the far side of the hero */}
-    <svg viewBox="0 0 120 120" className="accent-drift absolute top-[300px] -right-6 w-[70px] md:w-[110px] hidden sm:block" style={{ animationDuration: "18s", animationDelay: "-4s" }}>
+    {/* a small lime drop on the far side of the hero, clear of the sidebar */}
+    <svg viewBox="0 0 120 120" className="accent-drift absolute top-[420px] right-[2.5%] w-[80px] hidden xl:block" style={{ animationDuration: "18s", animationDelay: "-4s" }}>
       <path fill={LIME} d="M64 6C94 8 116 34 112 66C108 98 82 116 52 112C22 108 4 84 8 56C12 26 34 4 64 6Z" />
     </svg>
 
