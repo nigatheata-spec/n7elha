@@ -596,6 +596,15 @@
   }
   .animate-scale-in { animation: scale-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) both; }
 
+  /* Dashboard accents: a slow, small drift so the shapes feel alive. */
+  @keyframes accent-drift {
+    0%   { transform: translate(0, 0) rotate(0deg); }
+    50%  { transform: translate(6px, -10px) rotate(1.5deg); }
+    100% { transform: translate(0, 0) rotate(0deg); }
+  }
+  .accent-drift { animation: accent-drift 22s ease-in-out infinite; transform-origin: center; }
+  @media (prefers-reduced-motion: reduce) { .accent-drift { animation: none; } }
+
   /* Crypto Rush wrong-answer screen: flash in, then the X box shakes. */
   @keyframes cr-flash {
     from { opacity: 0; }

@@ -6,7 +6,8 @@ import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Plus, ArrowUp, Camera, Paperclip, FileText, X, Loader2, Gauge, Hash, FileQuestion, Check, RefreshCw, Pencil, ChevronDown, Play, Upload, Image as ImageIcon, Trash2 } from "lucide-react";
+import { Sparkles, Plus, ArrowUp, Camera, Paperclip, FileText, X, Loader2, Gauge, Hash, ListOrdered, FileQuestion, Check, RefreshCw, Pencil, ChevronDown, Play, Upload, Image as ImageIcon, Trash2 } from "lucide-react";
+import { DashboardAccents } from "@/components/teacher/DashboardAccents";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
@@ -81,6 +82,10 @@ const GENERATING_STATUS = {
   en: ["Reading your material...", "Thinking of good questions...", "Writing distractors...", "Almost done..."],
   ar: ["نقرأ المحتوى...", "نفكر في أسئلة جيدة...", "نكتب الخيارات...", "أوشكنا على الانتهاء..."],
 };
+
+const QUESTION_COUNTS = [5, 10, 15];
+// Arabic counts 3-10 take the plural "أسئلة", 11 and up the singular "سؤالاً".
+const qCountLabel = (n: number, ar: boolean) => ar ? `${n} ${n <= 10 ? "أسئلة" : "سؤالاً"}` : `${n} questions`;
 
 const GeneratingSkeleton = ({ count, ar }: { count: number; ar: boolean }) => (
   <div className="space-y-3">
@@ -207,8 +212,8 @@ const Dashboard = () => {
       toast.error(ar ? "اكتب موضوعًا أو أضف صورة أو ملفًا" : "Type a topic, or add a photo or a file");
       return;
     }
-    if (numQ > 10) {
-      toast.error(ar ? "الحد الأقصى 10 أسئلة حالياً" : "Max 10 questions for now");
+    if (numQ > 15) {
+      toast.error(ar ? "الحد الأقصى 15 سؤالاً حالياً" : "Max 15 questions for now");
       return;
     }
     setBusy(true);
@@ -311,7 +316,10 @@ const Dashboard = () => {
   }
 
   return (
+    <div className="relative isolate min-h-[calc(100dvh-2rem)] md:min-h-[calc(100dvh-4rem)]">
+      <DashboardAccents />
     <div className="space-y-10 max-w-5xl mx-auto pt-2">
+
       {/* Hero prompt */}
       <div className="text-center space-y-6 animate-fade-in">
         <h1 className="text-4xl md:text-5xl font-bold tracking-tight min-h-[1.2em]" style={{ fontFamily: "'ArslanWessam', 'Almarai', sans-serif" }}>
@@ -397,15 +405,24 @@ const Dashboard = () => {
                 </PopoverContent>
               </Popover>
 
-              {/* Two choices: a toggle, not a dropdown. */}
-              <div className="inline-flex h-9 p-0.5 rounded-full bg-muted text-xs font-bold" role="radiogroup" aria-label={ar ? "عدد الأسئلة" : "Questions"}>
-                {[5, 10].map(n => (
-                  <button key={n} type="button" role="radio" aria-checked={numQ === n} onClick={() => setNumQ(n)}
-                    className={`px-3 rounded-full transition-colors ${numQ === n ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground"}`}>
-                    {n} {ar ? "أسئلة" : "Qs"}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button type="button" aria-label={ar ? "عدد الأسئلة" : "Questions"} className="inline-flex items-center gap-1.5 h-9 px-3 rounded-full bg-secondary text-secondary-foreground text-xs transition-colors hover:brightness-110">
+                    <ListOrdered className="h-3.5 w-3.5 opacity-80" />
+                    <span className="font-semibold">{qCountLabel(numQ, ar)}</span>
+                    <ChevronDown className="h-3 w-3 opacity-80" />
                   </button>
-                ))}
-              </div>
+                </PopoverTrigger>
+                <PopoverContent className="w-40 p-1" align="start">
+                  {QUESTION_COUNTS.map(n => (
+                    <button key={n} type="button" onClick={() => setNumQ(n)}
+                      className={`w-full flex items-center justify-between px-2.5 py-2 rounded-md text-sm hover:bg-accent ${numQ === n ? "bg-accent/50" : ""}`}>
+                      <span>{qCountLabel(n, ar)}</span>
+                      {numQ === n && <Check className="h-3.5 w-3.5" />}
+                    </button>
+                  ))}
+                </PopoverContent>
+              </Popover>
 
               {hasSource && (
                 <Popover>
@@ -516,6 +533,7 @@ const Dashboard = () => {
           </div>
         )}
       </div>
+    </div>
     </div>
   );
 };
