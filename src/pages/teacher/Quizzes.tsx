@@ -49,7 +49,7 @@ const Quizzes = () => {
   return (
     <div className="relative isolate min-h-[calc(100dvh-2rem)] md:min-h-[calc(100dvh-4rem)]">
       <QuietAccents />
-    <div className="space-y-6 max-w-6xl">
+    <div className="space-y-6 max-w-6xl mx-auto">
       <div className="rounded-2xl border-2 border-[hsl(var(--nb-border))] bg-white shadow-[4px_4px_0_0_hsl(var(--nb-border))] px-5 py-4 flex items-center justify-between gap-3 flex-wrap">
         <h1 className="font-display text-2xl font-bold">{t("my_quizzes")}</h1>
         <div className="flex gap-2 flex-wrap">

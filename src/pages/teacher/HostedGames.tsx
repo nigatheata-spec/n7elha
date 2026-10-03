@@ -4,7 +4,9 @@ import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
-import { ChevronDown, Users, BookOpen } from "lucide-react";
+import { ChevronDown, ChevronLeft, Users } from "lucide-react";
+import { QuietAccents } from "@/components/teacher/DashboardAccents";
+import { modeName } from "@/lib/modeLabels";
 
 const PAGE_SIZE = 9;
 
@@ -32,18 +34,11 @@ const HostedGames = () => {
   const thisWeek = games.filter(g => new Date(g.created_at) > weekAgo).length;
   const thisMonth = games.filter(g => new Date(g.created_at) > monthAgo).length;
 
-  const statusColor = (status: string) => {
-    if (status === "running") return "text-blue-600";
-    if (status === "finished") return "text-green-600";
-    if (status === "lobby") return "text-amber-600";
-    return "text-gray-600";
-  };
-
-  const statusLabel = (status: string) => {
-    if (status === "running") return ar ? "جاري" : "Running";
-    if (status === "finished") return ar ? "انتهى" : "Finished";
-    if (status === "lobby") return ar ? "في الانتظار" : "Waiting";
-    return status;
+  // Only states worth calling out get a pill; "finished" is nearly every row.
+  const STATUS: Record<string, { ar: string; en: string; bg: string; fg: string }> = {
+    running: { ar: "جارية الآن", en: "Live now", bg: "#E1F0D2", fg: "#3D6B12" },
+    lobby: { ar: "في الانتظار", en: "Waiting", bg: "#F6E7C8", fg: "#8A5A0B" },
+    cancelled: { ar: "أُلغيت", en: "Cancelled", bg: "#EEE9E0", fg: "#6B6357" },
   };
 
   // Homework isn't a live projector view like the other modes' monitors, and
@@ -58,80 +53,68 @@ const HostedGames = () => {
 
   const visible = games.slice(0, shown);
 
+  const fmtDate = (iso: string) =>
+    new Date(iso).toLocaleDateString(ar ? "ar-EG-u-nu-latn" : "en-GB", { day: "numeric", month: "short" });
+
   return (
-    <div className="space-y-5">
+    <div className="relative isolate min-h-[calc(100dvh-2rem)] md:min-h-[calc(100dvh-4rem)]">
+      <QuietAccents />
+    <div className="space-y-5 max-w-4xl mx-auto">
       {/* ── Header ── */}
       <div className="rounded-2xl border-2 border-[hsl(var(--nb-border))] bg-white shadow-[4px_4px_0_0_hsl(var(--nb-border))] px-5 py-4 flex flex-wrap items-center justify-between gap-4">
         <h1 className="font-display text-2xl font-bold text-primary">{t("hosted_games")}</h1>
-        <div className="flex items-center gap-5 divide-x divide-[hsl(var(--nb-border))]/20 rtl:divide-x-reverse">
-          <div className="text-center">
-            <div className="text-[10px] font-bold text-primary/50 uppercase tracking-wide">{ar ? "هذا الأسبوع" : "This week"}</div>
-            <div className="text-xl font-extrabold text-primary mt-0.5">{thisWeek}</div>
-          </div>
-          <div className="text-center ps-5">
-            <div className="text-[10px] font-bold text-primary/50 uppercase tracking-wide">{ar ? "هذا الشهر" : "This month"}</div>
-            <div className="text-xl font-extrabold text-primary mt-0.5">{thisMonth}</div>
-          </div>
+        <div className="flex items-stretch">
+          {[
+            { n: thisWeek, label: ar ? "هذا الأسبوع" : "This week" },
+            { n: thisMonth, label: ar ? "هذا الشهر" : "This month" },
+            { n: games.length, label: ar ? "الكل" : "All time" },
+          ].map((m, i) => (
+            <div key={i} className={cn("px-4 text-center", i > 0 && "border-s border-black/10")}>
+              <div className="text-2xl font-bold leading-none text-[#1F3439]">{m.n}</div>
+              <div className="mt-1.5 text-[12px] text-black/50">{m.label}</div>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* One plain list instead of a grid of individually-boxed cards — a
-          border-and-shadow per row, repeated dozens of times down the page,
-          was the "too much" the single header card above was fixed for too. */}
       {games.length === 0 ? (
-        <div className="px-4 py-8 rounded-lg border-2 border-[hsl(var(--nb-border))] bg-white text-center text-muted-foreground shadow-[2px_2px_0_0_hsl(var(--nb-border))]">
+        <div className="px-4 py-12 rounded-2xl border-2 border-[hsl(var(--nb-border))] bg-white text-center text-muted-foreground">
           {ar ? "لا توجد ألعاب بعد" : "No games yet"}
         </div>
       ) : (
         <>
-          <div className="rounded-2xl border-2 border-[hsl(var(--nb-border))] bg-white divide-y divide-black/[0.06] overflow-hidden">
-            {visible.map((g, idx) => {
+          <div className="rounded-2xl border-2 border-[hsl(var(--nb-border))] bg-white shadow-[4px_4px_0_0_hsl(var(--nb-border))] divide-y divide-black/[0.07] overflow-hidden">
+            {visible.map(g => {
               const mode = g.settings?.mode as string | undefined;
-              const isHomework = mode === "homework";
               const path = actionPath(g.id, g.status, mode);
               const count = (g.game_students || []).length;
-              const date = new Date(g.created_at).toLocaleString(ar ? "ar" : "en-US", {
-                month: "short",
-                day: "2-digit",
-                calendar: "gregory",
-              });
-
+              const st = STATUS[g.status];
               return (
                 <Link
                   key={g.id}
                   to={path || "#"}
                   className={cn(
-                    "flex items-center gap-3 px-4 py-3 hover:bg-black/[0.02] transition-colors",
-                    idx % 2 === 1 && "bg-[#8FC44A]/[0.08]",
-                    !path && "cursor-default",
+                    "group flex items-center gap-4 px-5 py-3.5 transition-colors",
+                    path ? "hover:bg-[#8FC44A]/[0.08]" : "cursor-default",
                   )}
                 >
+                  <div className="w-16 shrink-0 text-[13px] font-bold text-[#1F3439] whitespace-nowrap">{fmtDate(g.created_at)}</div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      {/* "Finished" is the default outcome for nearly every row, so it's
-                          noise repeated down the whole list — only a state worth calling
-                          out (still running, waiting, cancelled) gets a label at all. */}
-                      {g.status !== "finished" && (
-                        <span className={cn("text-[10px] font-bold", statusColor(g.status))}>
-                          {statusLabel(g.status)}
+                    <div className="font-bold text-[15px] text-primary leading-snug truncate">{g.quizzes?.title || "—"}</div>
+                    <div className="mt-1 flex items-center gap-2 text-[12px] text-black/50">
+                      <span>{modeName(mode, ar)}</span>
+                      {st && (
+                        <span className="rounded-full px-2 py-0.5 text-[11px] font-bold" style={{ background: st.bg, color: st.fg }}>
+                          {ar ? st.ar : st.en}
                         </span>
                       )}
-                      {isHomework && (
-                        <span className="flex items-center gap-0.5 text-[10px] font-bold text-[#8FC44A]">
-                          <BookOpen className="h-2.5 w-2.5" />
-                          {ar ? "واجب" : "Homework"}
-                        </span>
-                      )}
-                    </div>
-                    <div className="font-bold text-primary text-sm leading-snug truncate">
-                      {g.quizzes?.title}
                     </div>
                   </div>
-                  <span className="flex items-center gap-1 text-xs text-primary/55 shrink-0">
-                    <Users className="h-3 w-3" />
+                  <span className="flex items-center gap-1.5 text-[13px] font-semibold text-primary/70 shrink-0">
+                    <Users className="h-3.5 w-3.5" />
                     {count}
                   </span>
-                  <span className="text-xs text-primary/55 shrink-0 w-16 text-end">{date}</span>
+                  <ChevronLeft className={cn("h-4 w-4 shrink-0 ltr:rotate-180", path ? "text-black/25 group-hover:text-primary" : "invisible")} />
                 </Link>
               );
             })}
@@ -140,7 +123,7 @@ const HostedGames = () => {
           {shown < games.length && (
             <button
               onClick={() => setShown(s => s + PAGE_SIZE)}
-              className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-lg border-2 border-[hsl(var(--nb-border))] bg-white text-sm font-bold text-primary/70 hover:bg-gray-50 transition-colors"
+              className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl border-2 border-[hsl(var(--nb-border))] bg-white text-sm font-bold text-primary/70 hover:bg-gray-50 transition-colors"
             >
               {ar ? "عرض المزيد" : "Show more"}
               <ChevronDown className="h-3.5 w-3.5" />
@@ -148,6 +131,7 @@ const HostedGames = () => {
           )}
         </>
       )}
+    </div>
     </div>
   );
 };

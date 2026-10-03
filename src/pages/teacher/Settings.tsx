@@ -7,6 +7,7 @@ import { triggerLangTransition } from "@/lib/langTransitionBus";
 import { LogOut, Eye, EyeOff } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
 import { Avatar } from "@/components/Avatar";
+import { QuietAccents } from "@/components/teacher/DashboardAccents";
 
 const LANGS = [
   { code: "ar", label: "العربية" },
@@ -14,6 +15,7 @@ const LANGS = [
 ] as const;
 
 const MIN_PASSWORD = 6;
+const PANEL = "rounded-2xl bg-white border-2 border-[hsl(var(--nb-border))] shadow-[4px_4px_0_0_hsl(var(--nb-border))]";
 
 const field = "w-full rounded-xl border-2 border-[hsl(var(--nb-border))] bg-white px-3.5 py-2.5 text-[15px] text-[#3F5A63] placeholder:text-black/30 focus:outline-none focus:ring-2 focus:ring-[#3F5A63]/20";
 const primaryBtn = "shrink-0 rounded-xl border-2 border-[hsl(var(--nb-border))] bg-[#3F5A63] px-4 py-2.5 text-sm font-bold text-white shadow-[3px_3px_0_0_hsl(var(--nb-border))] transition-all hover:translate-x-px hover:translate-y-px hover:shadow-[2px_2px_0_0_hsl(var(--nb-border))] disabled:opacity-40 disabled:pointer-events-none";
@@ -83,14 +85,16 @@ export const SettingsPage = () => {
   };
 
   return (
-    <div className="max-w-2xl">
-      <h1 className="text-[26px] sm:text-[32px] font-bold text-[#3F5A63] leading-tight"
-        style={{ fontFamily: "'ArslanWessam', 'Almarai', sans-serif" }}>
-        {t("settings")}
-      </h1>
+    <div className="relative isolate min-h-[calc(100dvh-2rem)] md:min-h-[calc(100dvh-4rem)]">
+      <QuietAccents />
+    <div className="max-w-3xl mx-auto space-y-5">
+      <div className={PANEL + " px-5 py-4"}>
+        <h1 className="font-display text-2xl font-bold text-primary">{t("settings")}</h1>
+      </div>
 
+      <div className={PANEL + " px-5 md:px-7 pt-6 pb-2"}>
       {/* Who is signed in */}
-      <div className="mt-8 flex items-center gap-4">
+      <div className="flex items-center gap-4">
         <Avatar name={savedName || "?"} size={64} />
         <div className="min-w-0">
           <div className="text-xl font-bold text-[#3F5A63] truncate">{savedName}</div>
@@ -98,7 +102,7 @@ export const SettingsPage = () => {
         </div>
       </div>
 
-      <div className="mt-6 divide-y divide-black/[0.08] border-y border-black/[0.08]">
+      <div className="mt-6 divide-y divide-black/[0.08] border-t border-black/[0.08]">
         <Row label={ar ? "الاسم" : "Name"} hint={ar ? "يظهر في لوحة التحكم" : "Shown on your dashboard"}>
           <div className="flex gap-2">
             <input
@@ -187,14 +191,16 @@ export const SettingsPage = () => {
           </div>
         </Row>
       </div>
+      </div>
 
       <button
         onClick={handleSignOut}
-        className="mt-6 inline-flex items-center gap-2 rounded-xl px-3 py-2 -mx-3 text-sm font-semibold text-red-600 hover:bg-red-50 transition-colors"
+        className="inline-flex items-center gap-2 rounded-xl px-3 py-2 -mx-3 text-sm font-semibold text-red-600 hover:bg-red-50 transition-colors"
       >
         <LogOut className="h-4 w-4" />
         {t("logout")}
       </button>
+    </div>
     </div>
   );
 };

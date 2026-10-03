@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { QuietAccents } from "@/components/teacher/DashboardAccents";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
@@ -213,7 +214,7 @@ const GameResults = () => {
 
   // ── Full results ─────────────────────────────────────────────────────────
   return (
-    <div className="text-foreground font-sans">
+    <div className="relative isolate min-h-[calc(100dvh-2rem)] md:min-h-[calc(100dvh-4rem)] text-foreground font-sans">
       <Seo
         path={`/app/games/${sessionId}/results`}
         titleAr="نتائج الجلسة"
@@ -222,7 +223,7 @@ const GameResults = () => {
         descriptionEn="Results for a live game session."
         index={false}
       />
-      <div className="pointer-events-none fixed inset-0 bg-grid opacity-[0.06]" />
+      <QuietAccents />
 
       <div className="relative max-w-7xl mx-auto space-y-6"
         style={{ animation: "fade-up 0.45s both" }}>
