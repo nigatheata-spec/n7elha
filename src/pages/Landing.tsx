@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { LIME, SAND, TEAL } from "@/components/teacher/DashboardAccents";
 import { useAuth } from "@/lib/auth";
 import { useTranslation } from "react-i18next";
 import { ArrowUpRight, Play } from "lucide-react";
@@ -122,9 +123,31 @@ const Landing = () => {
       />
       <div className="relative w-full">
 
-        <SiteNav />
+        {/* Positioned so it paints over the hero shapes that run up behind it. */}
+        <div className="relative z-10"><SiteNav /></div>
 
         {/* ---------------- HERO ---------------- */}
+        <div className="relative">
+        {/* Brand shapes (the business-card look), running from the very top
+            of the page up behind the nav so the top reads as one piece. Drawn
+            for left-to-right and mirrored in Arabic, so they always sit on the
+            mockup's side. The layer clips itself; nothing can scroll sideways. */}
+        <div aria-hidden className="pointer-events-none absolute inset-x-0 -top-40 bottom-0 overflow-hidden">
+          <div className="absolute -top-10 -end-20 w-[300px] md:w-[600px] rtl:-scale-x-100">
+            <svg viewBox="0 0 400 400" className="accent-drift w-full" style={{ animationDuration: "24s" }}>
+              <path fill={SAND} d="M400 0H70C20 40 48 118 100 172C154 228 132 300 204 356C254 396 338 404 400 392Z" />
+              <path fill={LIME} d="M400 0H154C102 34 130 104 174 150C222 200 202 262 266 310C308 342 360 340 400 330Z" />
+            </svg>
+          </div>
+          <div className="absolute -bottom-10 -end-10 w-[240px] md:w-[440px] rtl:-scale-x-100">
+            <svg viewBox="0 0 400 300" className="accent-drift w-full" style={{ animationDuration: "28s", animationDelay: "-9s" }}>
+              <path fill={TEAL} d="M400 300V120C360 104 318 124 296 166C266 226 198 226 148 258C118 278 98 292 90 300Z" />
+            </svg>
+          </div>
+          <svg viewBox="0 0 240 140" className="accent-drift absolute top-48 start-[38%] w-[200px] hidden lg:block" style={{ animationDuration: "20s", animationDelay: "-5s" }}>
+            <ellipse cx="120" cy="70" rx="112" ry="52" transform="rotate(-14 120 70)" fill="none" stroke="#12262B" strokeWidth="1.5" opacity="0.4" />
+          </svg>
+        </div>
         <div className="wrap relative grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] items-center gap-8 lg:gap-14 px-5 sm:px-8 md:px-14 pt-10 sm:pt-16 pb-14 sm:pb-20">
           <div className="relative z-10">
             <h1
@@ -179,6 +202,7 @@ const Landing = () => {
             />
           </div>
         </div>
+        </div>
 
         {/* ---------------- OUR STORY ---------------- */}
         <section className="bg-[#14212A] text-white px-5 sm:px-8 md:px-14 py-20 sm:py-28">
@@ -202,7 +226,46 @@ const Landing = () => {
         </section>
 
         {/* ---------------- WHAT WE BELIEVE ---------------- */}
-        <section className="px-5 sm:px-8 md:px-14 py-24 sm:py-32">
+        <div className="relative">
+        {/* A teal and sand wave coming in from the page edge and crossing from
+            this section into the next, so the two read as one stretch of page
+            instead of the wave being cut where a section ends. */}
+        <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute bottom-20 md:bottom-28 -end-8 w-[170px] md:w-[300px] rtl:-scale-x-100">
+            <svg viewBox="0 0 300 600" className="accent-drift w-full" style={{ animationDuration: "30s", animationDelay: "-11s" }}>
+              <path fill={SAND} d="M300 0C226 22 186 92 196 168C206 248 104 280 84 360C62 446 160 540 300 600Z" />
+              <path fill={TEAL} d="M300 60C252 82 232 140 240 200C248 266 168 294 154 362C140 432 210 506 300 548Z" />
+            </svg>
+          </div>
+        </div>
+        <section className="relative isolate overflow-hidden px-5 sm:px-8 md:px-14 pt-24 sm:pt-32 pb-12 sm:pb-16">
+          <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
+            <div className="absolute -top-12 -start-16 w-[200px] md:w-[360px] ltr:-scale-x-100">
+              <svg viewBox="0 0 400 400" className="accent-drift w-full" style={{ animationDuration: "26s" }}>
+                <path fill={SAND} d="M400 0H70C20 40 48 118 100 172C154 228 132 300 204 356C254 396 338 404 400 392Z" />
+                <path fill={LIME} d="M400 0H154C102 34 130 104 174 150C222 200 202 262 266 310C308 342 360 340 400 330Z" />
+              </svg>
+            </div>
+            {/* the opposite upper corner: a teal wave over sand, mirroring the lime one */}
+            <div className="absolute -top-12 -end-16 w-[200px] md:w-[360px] rtl:-scale-x-100">
+              <svg viewBox="0 0 400 400" className="accent-drift w-full" style={{ animationDuration: "28s", animationDelay: "-13s" }}>
+                <path fill={SAND} d="M400 0H96C52 30 66 96 112 140C164 190 150 252 214 300C262 336 344 344 400 332Z" />
+                <path fill={TEAL} d="M400 0H178C140 26 156 84 192 120C232 160 222 214 274 252C314 282 362 284 400 276Z" />
+              </svg>
+            </div>
+            {/* beside the phones, on the lime side: a thin oval with a teal and a lime drop */}
+            <div className="absolute top-[54%] start-[6%] w-[220px] h-[180px] hidden md:block">
+              <svg viewBox="0 0 240 140" className="accent-drift absolute inset-x-0 top-0 w-full" style={{ animationDuration: "22s", animationDelay: "-9s" }}>
+                <ellipse cx="120" cy="70" rx="112" ry="52" transform="rotate(-20 120 70)" fill="none" stroke="#12262B" strokeWidth="1.5" opacity="0.4" />
+              </svg>
+              <svg viewBox="0 0 120 120" className="accent-drift absolute top-[46%] start-[14%] w-[64px]" style={{ animationDuration: "19s", animationDelay: "-5s" }}>
+                <path fill={TEAL} d="M64 6C94 8 116 34 112 66C108 98 82 116 52 112C22 108 4 84 8 56C12 26 34 4 64 6Z" />
+              </svg>
+              <svg viewBox="0 0 120 120" className="accent-drift absolute top-[6%] end-[6%] w-[34px]" style={{ animationDuration: "16s", animationDelay: "-2s" }}>
+                <path fill={LIME} d="M64 6C94 8 116 34 112 66C108 98 82 116 52 112C22 108 4 84 8 56C12 26 34 4 64 6Z" />
+              </svg>
+            </div>
+          </div>
           <div className="wrap max-w-3xl mx-auto text-center">
             <span className={`text-[12px] font-semibold text-[#8FC44A] ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`}>
               {t.feelKicker}
@@ -214,64 +277,49 @@ const Landing = () => {
               <span className="block">{t.feelLine1}</span>
               <span className="block italic" style={{ color: "#8FC44A" }}>{t.feelLine2}</span>
             </h2>
-            <p className="mt-7 mx-auto max-w-xl text-[16px] sm:text-[17px] leading-relaxed text-black/60">
-              {t.feelBody}
-            </p>
           </div>
-        </section>
 
-        {/* ---------------- ON THE STUDENT'S PHONE ---------------- */}
-        {/* The one place the marketing site shows the game as a student sees it:
-            three real screens, dark ground so the cream one reads as lit. */}
-        <section className="bg-[#14212A] text-white px-5 sm:px-8 md:px-14 py-16 sm:py-24 overflow-hidden">
-          <div className="wrap">
-            <div className="max-w-2xl">
-              <span className={`text-[12px] font-semibold text-[#8FC44A] ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`}>{t.phonesKicker}</span>
-              <h2 className="mt-3 text-[28px] sm:text-[40px] tracking-tight leading-[1.1] text-white" style={{ fontFamily: "'ArslanWessam', 'Almarai', sans-serif" }}>
-                {t.phonesTitle}
-              </h2>
-              <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-white/60">{t.phonesSub}</p>
-            </div>
-
-            {/* Fanned rather than lined up: the side phones tuck behind the centre
-                one so the three read as a single object. Forced LTR so the fan
-                stays symmetrical and the captions keep matching it in Arabic. */}
-            <div dir="ltr" className="mt-12 sm:mt-16">
-              <div className="flex items-end justify-center">
-                <img
-                  src={phoneJoin}
-                  alt={t.phoneJoinCap}
-                  loading="lazy"
-                  className="w-[27%] max-w-[196px] h-auto select-none origin-bottom -rotate-[9deg] translate-y-3 -mr-[6%] drop-shadow-[0_18px_34px_rgba(0,0,0,0.5)]"
-                />
-                <img
-                  src={phoneClassic}
-                  alt={t.phoneClassicCap}
-                  loading="lazy"
-                  className="relative z-10 w-[31%] max-w-[226px] h-auto select-none drop-shadow-[0_22px_40px_rgba(0,0,0,0.55)]"
-                />
-                <img
-                  src={phoneCrypto}
-                  alt={t.phoneCryptoCap}
-                  loading="lazy"
-                  className="w-[27%] max-w-[196px] h-auto select-none origin-bottom rotate-[9deg] translate-y-3 -ml-[6%] drop-shadow-[0_18px_34px_rgba(0,0,0,0.5)]"
-                />
-              </div>
-
-              <div className="mt-8 flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5 text-[12px] sm:text-[13.5px] font-semibold text-white/70">
-                <span>{t.phoneJoinCap}</span>
-                <span className="text-[#8FC44A]">·</span>
-                <span className="text-white">{t.phoneClassicCap}</span>
-                <span className="text-[#8FC44A]">·</span>
-                <span>{t.phoneCryptoCap}</span>
-              </div>
-            </div>
+          {/* Three real student screens, fanned: the side phones tuck behind
+              the center one so the three read as a single object. Forced LTR
+              so the fan stays symmetrical in Arabic. */}
+          <div dir="ltr" className="wrap mt-14 sm:mt-20 flex items-end justify-center">
+            <img
+              src={phoneJoin}
+              alt={t.phoneJoinCap}
+              loading="lazy"
+              className="w-[27%] max-w-[196px] h-auto select-none origin-bottom -rotate-[9deg] translate-y-3 -mr-[6%] drop-shadow-[0_18px_30px_rgba(20,33,42,0.28)]"
+            />
+            <img
+              src={phoneClassic}
+              alt={t.phoneClassicCap}
+              loading="lazy"
+              className="relative z-10 w-[31%] max-w-[226px] h-auto select-none drop-shadow-[0_22px_36px_rgba(20,33,42,0.32)]"
+            />
+            <img
+              src={phoneCrypto}
+              alt={t.phoneCryptoCap}
+              loading="lazy"
+              className="w-[27%] max-w-[196px] h-auto select-none origin-bottom rotate-[9deg] translate-y-3 -ml-[6%] drop-shadow-[0_18px_30px_rgba(20,33,42,0.28)]"
+            />
           </div>
+
+          <p className="mt-12 sm:mt-14 mx-auto max-w-2xl text-center text-[17px] sm:text-[20px] leading-relaxed text-black/70 font-medium">
+            {t.feelBody}
+          </p>
         </section>
 
         {/* ---------------- FOR WHO ---------------- */}
-        <section className="wrap px-5 sm:px-8 md:px-14 py-16 sm:py-24 border-t border-black/5">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-20">
+        <section className="wrap relative px-5 sm:px-8 md:px-14 pt-10 sm:pt-14 pb-16 sm:pb-24">
+          {/* the gap between the text and the map gets a small lime drop and an oval */}
+          <div aria-hidden className="pointer-events-none absolute inset-0 hidden md:block">
+            <svg viewBox="0 0 240 140" className="accent-drift absolute top-[30%] left-1/2 -translate-x-1/2 w-[170px]" style={{ animationDuration: "22s", animationDelay: "-7s" }}>
+              <ellipse cx="120" cy="70" rx="112" ry="52" transform="rotate(18 120 70)" fill="none" stroke="#12262B" strokeWidth="1.5" opacity="0.35" />
+            </svg>
+            <svg viewBox="0 0 120 120" className="accent-drift absolute top-[52%] left-[54%] w-[56px]" style={{ animationDuration: "18s", animationDelay: "-3s" }}>
+              <path fill={LIME} d="M64 6C94 8 116 34 112 66C108 98 82 116 52 112C22 108 4 84 8 56C12 26 34 4 64 6Z" />
+            </svg>
+          </div>
+          <div className="relative grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-20">
             <div>
               <span className={`text-[12px] font-semibold text-[#3F5A63] ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`}>
                 {t.forWhoKicker}
@@ -293,6 +341,7 @@ const Landing = () => {
             </div>
           </div>
         </section>
+        </div>
 
         <SiteFooter />
       </div>
