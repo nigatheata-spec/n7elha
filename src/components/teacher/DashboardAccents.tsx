@@ -3,10 +3,28 @@
    decorative: behind the content, ignores the pointer, hidden from screen
    readers, and still for anyone who asks for reduced motion. */
 
-const LIME = "#A9CB1E";
-const SAND = "#EAD7B0";
-const TEAL = "#0E7C7B";
+export const LIME = "#A9CB1E";
+export const SAND = "#EAD7B0";
+export const TEAL = "#0E7C7B";
 const INK = "#12262B";
+
+/* The same shapes, smaller and fewer, for working pages like the quiz list
+   where the content is dense and the shapes should only frame it. */
+export const QuietAccents = () => (
+  <div aria-hidden className="pointer-events-none absolute -inset-4 md:-inset-8 -z-10 overflow-hidden">
+    <svg viewBox="0 0 400 400" className="accent-drift absolute -top-8 -left-12 w-[170px] md:w-[300px]" style={{ animationDuration: "24s" }}>
+      <path fill={SAND} d="M0 0H330C380 40 352 118 300 172C246 228 268 300 196 356C146 396 62 404 0 392Z" />
+      <path fill={LIME} d="M0 0H246C298 34 270 104 226 150C178 200 198 262 134 310C92 342 40 340 0 330Z" />
+    </svg>
+    <svg viewBox="0 0 420 300" className="accent-drift absolute -bottom-4 -end-6 w-[200px] md:w-[340px]" style={{ animationDuration: "28s", animationDelay: "-10s" }}>
+      <path fill={SAND} d="M0 300C24 236 86 222 136 192C196 156 204 74 280 50C352 28 412 88 416 166C419 222 402 270 384 300Z" />
+      <path fill={TEAL} d="M60 300C82 252 132 240 174 216C226 186 232 122 292 104C346 88 388 134 390 192C392 236 378 272 364 300Z" />
+    </svg>
+    <svg viewBox="0 0 200 200" className="accent-drift absolute bottom-[18%] left-[1%] w-[130px] hidden xl:block" style={{ animationDuration: "22s", animationDelay: "-6s" }}>
+      <ellipse cx="100" cy="100" rx="88" ry="60" transform="rotate(32 100 100)" fill="none" stroke={INK} strokeWidth="1.5" opacity="0.35" />
+    </svg>
+  </div>
+);
 
 export const DashboardAccents = () => (
   <div aria-hidden className="pointer-events-none absolute -inset-4 md:-inset-8 -z-10 overflow-hidden">

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { LIME, SAND, TEAL } from "@/components/teacher/DashboardAccents";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Logo } from "@/components/Logo";
@@ -96,14 +97,26 @@ const Auth = () => {
 
       {/* ── Left brand panel ── */}
       <div className="hidden lg:flex flex-col bg-[#3F5A63] p-12 relative overflow-hidden">
-        <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-15" aria-hidden>
-          {[[80,80],[240,80],[400,80],[80,240],[400,240],[80,400],[240,400],[400,400]].map(([x,y],i)=>(
-            <g key={i} stroke="#fff" strokeWidth="1">
-              <line x1={x-18} y1={y} x2={x+18} y2={y}/>
-              <line x1={x} y1={y-18} x2={x} y2={y+18}/>
-            </g>
-          ))}
-        </svg>
+        {/* The brand's flowing shapes (the business-card look) in place of a
+            pattern: lime from the top corner, sand and teal from the bottom. */}
+        <div aria-hidden className="pointer-events-none absolute inset-0">
+          {/* drawn for left-to-right; mirrored in Arabic so it stays opposite the logo */}
+          <div className="absolute -top-16 -end-20 w-[380px] rtl:-scale-x-100">
+          <svg viewBox="0 0 400 400" className="accent-drift w-full" style={{ animationDuration: "24s" }}>
+            <path fill={SAND} opacity="0.9" d="M400 0H70C20 40 48 118 100 172C154 228 132 300 204 356C254 396 338 404 400 392Z" />
+            <path fill={LIME} d="M400 0H154C102 34 130 104 174 150C222 200 202 262 266 310C308 342 360 340 400 330Z" />
+          </svg>
+          </div>
+          <div className="absolute -bottom-6 -start-10 w-[460px] rtl:-scale-x-100">
+          <svg viewBox="0 0 420 300" className="accent-drift w-full" style={{ animationDuration: "28s", animationDelay: "-9s" }}>
+            <path fill={SAND} d="M0 300V96C46 70 112 92 150 150C190 210 262 200 320 236C362 262 392 284 404 300Z" />
+            <path fill={TEAL} d="M0 300V150C40 132 92 150 120 194C150 240 214 236 268 262C298 276 318 290 326 300Z" />
+          </svg>
+          </div>
+          <svg viewBox="0 0 240 140" className="accent-drift absolute top-[15%] start-[10%] w-[150px]" style={{ animationDuration: "20s", animationDelay: "-5s" }}>
+            <ellipse cx="120" cy="70" rx="112" ry="52" transform="rotate(-14 120 70)" fill="none" stroke="#FFE8DC" strokeWidth="1.5" opacity="0.4" />
+          </svg>
+        </div>
 
         <Link to="/" className="relative z-10 flex items-center gap-2 shrink-0">
           <img src={logoLight} alt="nefelha" className="h-9 w-9 object-contain" />
@@ -124,7 +137,7 @@ const Auth = () => {
           </blockquote>
         </div>
 
-        <p className="relative z-10 text-white/30 text-[12px] tracking-wider">{isAr ? "نفلها © ٢٠٢٦" : "nefelha © 2026"}</p>
+        <p className="relative z-10 text-white/70 text-[12px] tracking-wider">{isAr ? "نفلها © ٢٠٢٦" : "nefelha © 2026"}</p>
       </div>
 
       {/* ── Right form panel ── */}
