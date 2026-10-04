@@ -2,13 +2,12 @@ import { useEffect, useState } from "react";
 import { LIME, SAND, TEAL } from "@/components/teacher/DashboardAccents";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Logo } from "@/components/Logo";
-import logoLight from "@/assets/logo-light.png";
+import logoMark from "@/assets/logo-mark.png";
 import { LangToggle } from "@/components/LangToggle";
 import { useTranslation } from "react-i18next";
 import { toast } from "@/components/ui/sonner";
 import { z } from "zod";
-import { Loader2 } from "lucide-react";
+import { Loader2, ArrowUpRight } from "lucide-react";
 import { Seo } from "@/components/Seo";
 
 const loginSchema = z.object({
@@ -85,7 +84,10 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-[100dvh] grid lg:grid-cols-2" style={{ fontFamily: "'Outfit', 'Tajawal', system-ui, sans-serif" }}>
+    <div
+      className="relative min-h-[100dvh] overflow-hidden flex flex-col"
+      style={{ background: "hsl(var(--cream-panel))", fontFamily: "'Outfit', 'Almarai', system-ui, sans-serif" }}
+    >
       <Seo
         path="/auth"
         titleAr="تسجيل الدخول"
@@ -95,83 +97,65 @@ const Auth = () => {
         index={false}
       />
 
-      {/* ── Left brand panel ── */}
-      <div className="hidden lg:flex flex-col bg-[#3F5A63] p-12 relative overflow-hidden">
-        {/* The brand's flowing shapes (the business-card look) in place of a
-            pattern: lime from the top corner, sand and teal from the bottom. */}
-        <div aria-hidden className="pointer-events-none absolute inset-0">
-          {/* drawn for left-to-right; mirrored in Arabic so it stays opposite the logo */}
-          <div className="absolute -top-16 -end-20 w-[380px] rtl:-scale-x-100">
+      {/* The home page's shapes, so signing in feels like the same place:
+          lime and sand from one top corner, teal from the opposite bottom,
+          and a thin oval with a drop. Drawn left-to-right, mirrored in Arabic. */}
+      <div aria-hidden className="pointer-events-none absolute inset-0">
+        <div className="absolute -top-16 -end-20 w-[240px] sm:w-[420px] lg:w-[520px] rtl:-scale-x-100">
           <svg viewBox="0 0 400 400" className="accent-drift w-full" style={{ animationDuration: "24s" }}>
-            <path fill={SAND} opacity="0.9" d="M400 0H70C20 40 48 118 100 172C154 228 132 300 204 356C254 396 338 404 400 392Z" />
+            <path fill={SAND} d="M400 0H70C20 40 48 118 100 172C154 228 132 300 204 356C254 396 338 404 400 392Z" />
             <path fill={LIME} d="M400 0H154C102 34 130 104 174 150C222 200 202 262 266 310C308 342 360 340 400 330Z" />
           </svg>
-          </div>
-          <div className="absolute -bottom-6 -start-10 w-[460px] rtl:-scale-x-100">
-          <svg viewBox="0 0 420 300" className="accent-drift w-full" style={{ animationDuration: "28s", animationDelay: "-9s" }}>
-            <path fill={SAND} d="M0 300V96C46 70 112 92 150 150C190 210 262 200 320 236C362 262 392 284 404 300Z" />
-            <path fill={TEAL} d="M0 300V150C40 132 92 150 120 194C150 240 214 236 268 262C298 276 318 290 326 300Z" />
-          </svg>
-          </div>
-          <svg viewBox="0 0 240 140" className="accent-drift absolute top-[15%] start-[10%] w-[150px]" style={{ animationDuration: "20s", animationDelay: "-5s" }}>
-            <ellipse cx="120" cy="70" rx="112" ry="52" transform="rotate(-14 120 70)" fill="none" stroke="#FFE8DC" strokeWidth="1.5" opacity="0.4" />
+        </div>
+        <div className="absolute -bottom-10 -start-10 w-[260px] sm:w-[440px] lg:w-[560px] ltr:-scale-x-100">
+          <svg viewBox="0 0 400 300" className="accent-drift w-full" style={{ animationDuration: "28s", animationDelay: "-9s" }}>
+            <path fill={SAND} d="M400 300V84C350 66 300 92 274 140C238 208 170 214 112 250C78 272 56 290 46 300Z" />
+            <path fill={TEAL} d="M400 300V140C364 126 328 144 308 180C282 230 224 234 180 262C154 278 138 292 132 300Z" />
           </svg>
         </div>
-
-        <Link to="/" className="relative z-10 flex items-center gap-2 shrink-0">
-          <img src={logoLight} alt="nefelha" className="h-9 w-9 object-contain" />
-          <span className="text-[17px] font-medium tracking-tight text-white">{isAr ? "نفلها" : "nefelha"}</span>
-        </Link>
-
-        <div className="relative z-10 flex-1 flex flex-col justify-center">
-          <blockquote className="space-y-5">
-            <p className="text-[#FFE8DC] text-[22px] leading-relaxed font-medium">
-              {t("hero_title")}
-            </p>
-            <footer className="flex items-center gap-3">
-              <div className="h-8 w-8 rounded-full bg-[#8FC44A]/40 flex items-center justify-center shrink-0">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-              </div>
-              <span className="text-white/55 text-sm">{t("tagline")}</span>
-            </footer>
-          </blockquote>
+        <div className="absolute top-[22%] start-[8%] w-[200px] h-[150px] hidden lg:block">
+          <svg viewBox="0 0 240 140" className="accent-drift absolute inset-x-0 top-0 w-full" style={{ animationDuration: "22s", animationDelay: "-6s" }}>
+            <ellipse cx="120" cy="70" rx="112" ry="52" transform="rotate(-18 120 70)" fill="none" stroke="#12262B" strokeWidth="1.5" opacity="0.4" />
+          </svg>
+          <svg viewBox="0 0 120 120" className="accent-drift absolute top-[52%] end-[10%] w-[48px]" style={{ animationDuration: "18s", animationDelay: "-3s" }}>
+            <path fill={TEAL} d="M64 6C94 8 116 34 112 66C108 98 82 116 52 112C22 108 4 84 8 56C12 26 34 4 64 6Z" />
+          </svg>
         </div>
-
-        <p className="relative z-10 text-white/70 text-[12px] tracking-wider">{isAr ? "نفلها © ٢٠٢٦" : "nefelha © 2026"}</p>
       </div>
 
-      {/* ── Right form panel ── */}
-      <div className="flex flex-col" style={{ background: "#FAFAF8" }}>
-        <header className="flex items-center justify-between px-6 lg:px-10 pt-6 lg:pt-8">
-          <Link to="/" className="lg:hidden"><Logo /></Link>
-          <div className="lg:ms-auto"><LangToggle /></div>
-        </header>
+      <header className="relative z-10 flex items-center justify-between px-5 sm:px-10 pt-5 sm:pt-7">
+        <Link to="/" className="flex items-center gap-2">
+          <img src={logoMark} alt="nefelha" className="h-9 w-9 object-contain" />
+          <span className="text-[18px] font-semibold tracking-tight text-[#2B3F45]">{isAr ? "نفلها" : "nefelha"}</span>
+        </Link>
+        <LangToggle />
+      </header>
 
-        <main className="flex-1 flex items-center justify-center px-6 pb-10">
-          <div className="w-full max-w-[400px]">
+      <main className="relative z-10 flex-1 flex items-center justify-center px-5 py-10">
+        <div className="w-full max-w-[440px]">
+          <h1
+            className="text-center leading-[1.15] text-[40px] sm:text-[52px]"
+            style={{ fontFamily: "'ArslanWessam', 'Almarai', sans-serif", color: "#3F5A63" }}
+          >
+            {mode === "signup"
+              ? (isAr ? <>ابدأ مع <span style={{ color: "#8FC44A" }}>نفلها</span></> : <>Start with <span style={{ color: "#8FC44A" }}>nefelha</span></>)
+              : (isAr ? <>أهلاً <span style={{ color: "#8FC44A" }}>من جديد</span></> : <>Welcome <span style={{ color: "#8FC44A" }}>back</span></>)}
+          </h1>
+          <p className="mt-3 text-center text-[15px] text-black/55">
+            {mode === "signup"
+              ? (isAr ? "حساب مجاني، وأول لعبة على السبورة خلال دقيقة." : "A free account, and your first game on the board in a minute.")
+              : (isAr ? "اختباراتك وألعابك بانتظارك." : "Your quizzes and games are waiting.")}
+          </p>
 
-            {/* Heading */}
-            <div className="mb-8">
-              <h1 className="text-[28px] font-bold tracking-tight" style={{ color: "#1a2b30" }}>
-                {mode === "signup" ? t("signup") : t("welcome_back")}
-              </h1>
-              <p className="mt-1.5 text-[14px]" style={{ color: "#6b8089" }}>
-                {mode === "signup" ? t("hero_sub") : t("tagline")}
-              </p>
-            </div>
-
-            {/* Mode toggle pills */}
-            <div className="flex gap-1 p-1 rounded-xl mb-7" style={{ background: "#ede8df" }}>
+          <div className="mt-8 rounded-[28px] bg-white border-2 border-[hsl(var(--nb-border))] shadow-[6px_6px_0_0_hsl(var(--nb-border))] p-6 sm:p-8">
+            {/* login / signup */}
+            <div className="grid grid-cols-2 gap-1 p-1 rounded-full border-2 border-[hsl(var(--nb-border))] mb-6">
               {(["login", "signup"] as const).map(m => (
                 <button
                   key={m}
                   type="button"
                   onClick={() => switchMode(m)}
-                  className="flex-1 py-2 text-[13px] font-semibold rounded-lg transition-all"
-                  style={mode === m
-                    ? { background: "#fff", color: "#3F5A63", boxShadow: "0 1px 4px rgba(0,0,0,0.10)" }
-                    : { background: "transparent", color: "#7a8e93" }
-                  }
+                  className={`py-2 rounded-full text-[14px] font-bold transition-colors ${mode === m ? "bg-[#2B3F45] text-white" : "text-[#2B3F45] hover:bg-black/[0.05]"}`}
                 >
                   {m === "login" ? t("login") : t("signup")}
                 </button>
@@ -181,84 +165,59 @@ const Auth = () => {
             <form onSubmit={submit} className="space-y-4">
               {mode === "signup" && (
                 <Field label={t("display_name")}>
-                  <AuthInput
-                    value={name}
-                    onChange={e => setName(e.target.value)}
-                    maxLength={100}
-                    required
-                    placeholder={t("display_name")}
-                  />
+                  <AuthInput value={name} onChange={e => setName(e.target.value)} maxLength={100} required autoComplete="name" />
                 </Field>
               )}
               <Field label={t("email")}>
-                <AuthInput
-                  type="email"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  required
-                  placeholder="you@example.com"
-                />
+                <AuthInput type="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="you@example.com" autoComplete="email" dir="ltr" />
               </Field>
               <Field label={t("password")}>
                 <AuthInput
-                  type="password"
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  minLength={6}
-                  required
-                  placeholder="••••••••"
+                  type="password" value={password} onChange={e => setPassword(e.target.value)}
+                  minLength={6} required placeholder="••••••••" dir="ltr"
+                  autoComplete={mode === "signup" ? "new-password" : "current-password"}
                 />
               </Field>
 
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full h-11 rounded-xl font-semibold text-white text-[15px] flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
-                style={{ background: "#3F5A63" }}
+                className="group mt-2 w-full inline-flex items-center justify-between gap-3 rounded-full border-2 border-[hsl(var(--nb-border))] bg-[#8FC44A] text-[#2B3F45] ps-6 pe-2 py-2 text-[16px] font-bold shadow-[4px_4px_0_0_hsl(var(--nb-border))] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_0_hsl(var(--nb-border))] transition-all disabled:opacity-60"
               >
-                {loading && <Loader2 className="h-4 w-4 animate-spin" />}
                 {mode === "signup" ? t("signup") : t("login")}
+                <span className="h-10 w-10 rounded-full bg-white flex items-center justify-center transition group-hover:rotate-12">
+                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowUpRight className="h-4 w-4" strokeWidth={2.25} />}
+                </span>
               </button>
             </form>
-
-            <p className="mt-6 text-[13px] text-center" style={{ color: "#7a8e93" }}>
-              {mode === "signup" ? t("have_account") : t("no_account")}{" "}
-              <button
-                type="button"
-                className="font-semibold hover:underline underline-offset-4 transition"
-                style={{ color: "#8FC44A" }}
-                onClick={() => switchMode(mode === "signup" ? "login" : "signup")}
-              >
-                {mode === "signup" ? t("login") : t("signup")}
-              </button>
-            </p>
           </div>
-        </main>
-      </div>
+
+          {/* Students sometimes land here looking for the game */}
+          <p className="mt-6 text-center text-[14px] text-black/55">
+            {isAr ? "طالب؟" : "A student?"}{" "}
+            <Link to="/join" className="font-bold text-[#2B3F45] underline underline-offset-4 decoration-[#8FC44A] decoration-2">
+              {isAr ? "ادخل اللعبة برمزها" : "Join a game with its code"}
+            </Link>
+          </p>
+        </div>
+      </main>
     </div>
   );
 };
 
 /* ── Field wrapper ─────────────────────────────────────────────────────── */
 const Field = ({ label, children }: { label: string; children: React.ReactNode }) => (
-  <div className="space-y-1.5">
-    <label className="block text-[13px] font-semibold" style={{ color: "#2c3e44" }}>{label}</label>
+  <label className="block space-y-1.5">
+    <span className="block text-[13px] font-bold text-[#2B3F45]">{label}</span>
     {children}
-  </div>
+  </label>
 );
 
 /* ── Input ─────────────────────────────────────────────────────────────── */
 const AuthInput = (props: React.InputHTMLAttributes<HTMLInputElement>) => (
   <input
     {...props}
-    className="w-full h-11 rounded-xl px-4 text-[14px] outline-none transition-all"
-    style={{
-      background: "#fff",
-      border: "1.5px solid #d4cec6",
-      color: "#1a2b30",
-    }}
-    onFocus={e => { e.currentTarget.style.borderColor = "#3F5A63"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(63,90,99,0.12)"; }}
-    onBlur={e => { e.currentTarget.style.borderColor = "#d4cec6"; e.currentTarget.style.boxShadow = "none"; }}
+    className="w-full h-12 rounded-2xl px-4 text-[15px] text-[#12262B] bg-[hsl(var(--cream-panel))] border-2 border-[hsl(var(--nb-border))] outline-none placeholder:text-black/30 focus:bg-white focus:ring-4 focus:ring-[#8FC44A]/30 transition"
   />
 );
 

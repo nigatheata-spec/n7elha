@@ -3,6 +3,7 @@ import { useAuth } from "@/lib/auth";
 import { useTranslation } from "react-i18next";
 import { ArrowUpRight, Mail, Github, Twitter, Instagram } from "lucide-react";
 import logoMark from "@/assets/logo-mark.png";
+import { LIME } from "@/components/teacher/DashboardAccents";
 
 export const SiteFooter = () => {
   const { user } = useAuth();
@@ -48,31 +49,45 @@ export const SiteFooter = () => {
       };
 
   return (
-    <footer className="relative bg-[#2B3F45] text-white">
+    <footer className="relative text-white">
 
-      {/* CTA card — pops up from the footer top */}
-      <div className="px-5 sm:px-8 md:px-14">
-        <div className="relative -top-10 rounded-[24px] bg-white border-2 border-[hsl(var(--nb-border))] shadow-[6px_6px_0_0_hsl(var(--nb-border))] p-8 sm:p-12 md:p-14 flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
-          <div className="max-w-xl">
-            <h3 className="text-[24px] sm:text-[32px] font-semibold tracking-tight leading-[1.15] text-[#2B3F45]">
-              {t.ctaTitle}
-            </h3>
-            <p className="mt-3 text-black/55 text-[15px]">{t.ctaSub}</p>
-          </div>
-          <div className="shrink-0">
-            <Link
-              to={user ? "/app" : "/auth?mode=signup"}
-              className="group inline-flex items-center gap-3 rounded-full border-2 border-[hsl(var(--nb-border))] bg-[#8FC44A] text-[#3F5A63] pl-6 pr-2 py-2 text-[15px] font-medium shadow-[4px_4px_0_0_hsl(var(--nb-border))] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_0_hsl(var(--nb-border))] transition-all"
-            >
-              {t.ctaBtn}
-              <span className="h-9 w-9 rounded-full bg-white text-[#8FC44A] flex items-center justify-center transition group-hover:rotate-12">
-                <ArrowUpRight className="h-4 w-4" strokeWidth={2.25} />
-              </span>
-            </Link>
+      {/* CTA: a lime shape with soft, uneven edges instead of a boxed card.
+          It sits over the footer's wavy top so the two overlap like the
+          shapes elsewhere on the page. The shape is drawn as one stretched
+          path behind the content, so it grows with the text at any width. */}
+      <div className="relative z-10 px-5 sm:px-8 md:px-14 -mb-14 sm:-mb-16">
+        <div className="wrap relative">
+          <svg aria-hidden viewBox="0 0 1000 300" preserveAspectRatio="none" className="absolute inset-0 w-full h-full">
+            <path fill={LIME} d="M38 58C58 14 142 6 262 12C420 20 560 2 722 8C862 14 958 22 982 70C1002 118 992 198 978 238C960 288 862 296 722 290C562 284 402 298 252 292C122 288 32 284 16 236C2 190 18 104 38 58Z" />
+          </svg>
+          <div className="relative px-8 sm:px-14 md:px-16 py-10 sm:py-14 flex flex-col md:flex-row items-start md:items-center justify-between gap-7">
+            <div className="max-w-xl">
+              <h3 className="text-[24px] sm:text-[32px] font-semibold tracking-tight leading-[1.15] text-[#12262B]">
+                {t.ctaTitle}
+              </h3>
+              <p className="mt-3 text-[#12262B]/70 text-[15px]">{t.ctaSub}</p>
+            </div>
+            <div className="shrink-0">
+              <Link
+                to={user ? "/app" : "/auth?mode=signup"}
+                className="group inline-flex items-center gap-3 rounded-full border-2 border-[hsl(var(--nb-border))] bg-[#2B3F45] text-white pl-6 pr-2 py-2 text-[15px] font-medium shadow-[4px_4px_0_0_hsl(var(--nb-border))] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_0_hsl(var(--nb-border))] transition-all"
+              >
+                {t.ctaBtn}
+                <span className="h-9 w-9 rounded-full bg-white text-[#2B3F45] flex items-center justify-center transition group-hover:rotate-12">
+                  <ArrowUpRight className="h-4 w-4" strokeWidth={2.25} />
+                </span>
+              </Link>
+            </div>
           </div>
         </div>
       </div>
 
+      {/* the footer's wavy top edge */}
+      <svg aria-hidden viewBox="0 0 1440 72" preserveAspectRatio="none" className="block w-full h-[72px]">
+        <path fill="#2B3F45" d="M0 30C240 66 500 8 780 36C1040 62 1250 12 1440 34V72H0Z" />
+      </svg>
+
+      <div className="bg-[#2B3F45] pt-16 sm:pt-20">
       {/* Footer content */}
       <div className="px-5 sm:px-8 md:px-14 pb-10">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
@@ -118,6 +133,7 @@ export const SiteFooter = () => {
           <span>{t.footerRights}</span>
           <span className="tracking-wider">Built for teachers.</span>
         </div>
+      </div>
       </div>
     </footer>
   );

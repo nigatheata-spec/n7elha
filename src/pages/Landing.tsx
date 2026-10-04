@@ -148,7 +148,7 @@ const Landing = () => {
             <ellipse cx="120" cy="70" rx="112" ry="52" transform="rotate(-14 120 70)" fill="none" stroke="#12262B" strokeWidth="1.5" opacity="0.4" />
           </svg>
         </div>
-        <div className="wrap relative grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] items-center gap-8 lg:gap-14 px-5 sm:px-8 md:px-14 pt-10 sm:pt-16 pb-14 sm:pb-20">
+        <div className="wrap relative grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] items-center gap-8 lg:gap-14 px-5 sm:px-8 md:px-14 pt-10 sm:pt-16 pb-28 sm:pb-32">
           <div className="relative z-10">
             <h1
               className="leading-[1.05] tracking-tight text-[38px] sm:text-[52px] md:text-[68px]"
@@ -205,10 +205,18 @@ const Landing = () => {
         </div>
 
         {/* ---------------- OUR STORY ---------------- */}
-        <section className="bg-[#14212A] text-white px-5 sm:px-8 md:px-14 py-20 sm:py-28">
+        {/* A teal band with wavy edges instead of a flat dark block. It overlaps
+            the sections above and below by the wave's height, so their shapes
+            run under the waves instead of stopping at a straight seam. The
+            waves stay inside that overlap, so no seam can show through. */}
+        <section className="relative z-10 -my-[72px] text-white">
+          <svg aria-hidden viewBox="0 0 1440 72" preserveAspectRatio="none" className="block w-full h-[72px]">
+            <path fill={TEAL} d="M0 44C220 6 470 64 760 30C1010 2 1240 8 1440 26V72H0Z" />
+          </svg>
+          <div className="px-5 sm:px-8 md:px-14 py-14 sm:py-20" style={{ background: TEAL }}>
           <div className="wrap grid grid-cols-1 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] gap-8 lg:gap-16">
             <div>
-              <span className={`text-[12px] font-semibold text-[#8FC44A] ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`}>{t.storyKicker}</span>
+              <span className={`text-[12px] font-semibold ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`} style={{ color: SAND }}>{t.storyKicker}</span>
               <h2
                 className="mt-3 text-[26px] sm:text-[34px] tracking-tight leading-[1.15]"
                 style={{ color: "#FFFFFF", fontFamily: "'ArslanWessam', 'Almarai', sans-serif" }}
@@ -217,12 +225,16 @@ const Landing = () => {
               </h2>
             </div>
             <div className="max-w-xl relative">
-              <div className="h-1 w-16 bg-[#8FC44A] rounded-full" />
+              <div className="h-1 w-16 rounded-full" style={{ background: LIME }} />
               <p className="mt-6 text-[17px] sm:text-[19px] leading-relaxed text-white font-medium">{t.sp1}</p>
-              <p className="mt-5 text-[15px] leading-relaxed text-white/60">{t.sp2}</p>
-              <p className="mt-5 text-[15px] leading-relaxed text-white/60">{t.sp3}</p>
+              <p className="mt-5 text-[15px] leading-relaxed text-white/80">{t.sp2}</p>
+              <p className="mt-5 text-[15px] leading-relaxed text-white/80">{t.sp3}</p>
             </div>
           </div>
+          </div>
+          <svg aria-hidden viewBox="0 0 1440 72" preserveAspectRatio="none" className="block w-full h-[72px]">
+            <path fill={TEAL} d="M0 0H1440V36C1200 70 960 14 690 46C430 74 200 64 0 30Z" />
+          </svg>
         </section>
 
         {/* ---------------- WHAT WE BELIEVE ---------------- */}
@@ -231,7 +243,7 @@ const Landing = () => {
             this section into the next, so the two read as one stretch of page
             instead of the wave being cut where a section ends. */}
         <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
-          <div className="absolute bottom-20 md:bottom-28 -end-8 w-[170px] md:w-[300px] rtl:-scale-x-100">
+          <div className="absolute bottom-20 md:bottom-28 -end-8 w-[100px] md:w-[300px] rtl:-scale-x-100">
             <svg viewBox="0 0 300 600" className="accent-drift w-full" style={{ animationDuration: "30s", animationDelay: "-11s" }}>
               <path fill={SAND} d="M300 0C226 22 186 92 196 168C206 248 104 280 84 360C62 446 160 540 300 600Z" />
               <path fill={TEAL} d="M300 60C252 82 232 140 240 200C248 266 168 294 154 362C140 432 210 506 300 548Z" />
