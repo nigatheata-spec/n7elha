@@ -84,6 +84,7 @@ const GENERATING_STATUS = {
 };
 
 const QUESTION_COUNTS = [5, 10, 15];
+const blankQ = () => ({ text: "", options: ["", "", "", ""], correct_index: 0, difficulty: "medium", image_url: null });
 const CHIP = "inline-flex items-center gap-1.5 h-10 px-3 sm:px-3.5 rounded-full bg-[#F3ECDF] text-[#3F5A63] text-sm font-semibold transition-colors hover:bg-[#EADFCB] disabled:opacity-50";
 // Arabic counts 3-10 take the plural "أسئلة", 11 and up the singular "سؤالاً".
 const qCountLabel = (n: number, ar: boolean) => ar ? `${n} ${n <= 10 ? "أسئلة" : "سؤالاً"}` : `${n} questions`;
@@ -135,7 +136,9 @@ const Dashboard = () => {
   }, [busy]);
 
   // Review step
-  const [draft, setDraft] = useState<{ title: string; questions: any[] } | null>(null);
+  // A quiz being reviewed before it's saved: an AI draft, or a blank one the
+  // teacher fills in by hand (manual). Both are edited in the same view.
+  const [draft, setDraft] = useState<{ title: string; questions: any[]; manual?: boolean } | null>(null);
   const [saving, setSaving] = useState(false);
   const [imgBusy, setImgBusy] = useState<number | null>(null);
 
@@ -247,10 +250,15 @@ const Dashboard = () => {
 
   const saveQuiz = async (host: boolean) => {
     if (!user || !draft) return;
+    if (!draft.title.trim()) { toast.error(ar ? "اكتب عنوان الاختبار" : "Give the quiz a title"); return; }
+    if (!draft.questions.length || draft.questions.some((q: any) => !q.text?.trim() || (q.options ?? []).some((o: string) => !o?.trim()))) {
+      toast.error(ar ? "أكمل نص كل سؤال وخياراته" : "Fill in every question and its options");
+      return;
+    }
     setSaving(true);
     try {
       const { data: quiz, error: qerr } = await supabase.from("quizzes")
-        .insert({ created_by: user.id, title: draft.title, source: "ai", description: prompt.slice(0, 200) })
+        .insert({ created_by: user.id, title: draft.title.trim(), source: draft.manual ? "manual" : "ai", description: draft.manual ? null : prompt.slice(0, 200) })
         .select().single();
       if (qerr) throw qerr;
       const rows = draft.questions.map((q: any, i: number) => ({
@@ -305,7 +313,7 @@ const Dashboard = () => {
         onUpdateQ={updateDraftQ}
         onUpdateOpt={updateDraftOption}
         onRemove={removeDraftQ}
-        onAddQ={() => setDraft({ ...draft, questions: [...draft.questions, { text: "", options: ["", "", "", ""], correct_index: 0, difficulty: "medium", image_url: null }] })}
+        onAddQ={() => setDraft({ ...draft, questions: [...draft.questions, blankQ()] })}
         onUploadImage={uploadQuestionImage}
         onRegen={(extra) => generateDraft(extra)}
         onSave={() => saveQuiz(false)}
@@ -460,7 +468,8 @@ const Dashboard = () => {
         {!busy && (
           <div className="text-sm text-muted-foreground">
             {ar ? "أو" : "or"}{" "}
-            <Link to="/app/quizzes/new" className="underline underline-offset-4 hover:text-foreground">{ar ? "أنشئ يدوياً" : "build manually"}</Link>
+            <button type="button" onClick={() => setDraft({ title: "", questions: [blankQ()], manual: true })}
+              className="underline underline-offset-4 hover:text-foreground">{ar ? "أنشئ يدوياً" : "build manually"}</button>
           </div>
         )}
       </div>
@@ -534,7 +543,7 @@ const ReviewDraft = ({
   onTitleChange, onUpdateQ, onUpdateOpt, onRemove, onAddQ, onUploadImage,
   onRegen, onSave, onConfirm, onCancel,
 }: {
-  draft: { title: string; questions: any[] };
+  draft: { title: string; questions: any[]; manual?: boolean };
   ar: boolean;
   saving: boolean;
   busy: boolean;
@@ -556,14 +565,16 @@ const ReviewDraft = ({
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <Sparkles className="h-5 w-5 text-primary" />
-          <h2 className="text-xl md:text-2xl font-bold">{ar ? "مراجعة الاختبار قبل الحفظ" : "Review quiz before saving"}</h2>
+          <h2 className="text-xl md:text-2xl font-bold">
+            {draft.manual ? (ar ? "اختبار جديد" : "New quiz") : (ar ? "مراجعة الاختبار قبل الحفظ" : "Review quiz before saving")}
+          </h2>
         </div>
         <Button variant="ghost" size="icon" onClick={onCancel} aria-label="close"><X className="h-4 w-4" /></Button>
       </div>
 
       <Card className="p-4 md:p-5 space-y-1">
         <label className="text-xs text-muted-foreground">{ar ? "عنوان الاختبار" : "Quiz title"}</label>
-        <Input value={draft.title} onChange={(e) => onTitleChange(e.target.value)} className="font-semibold text-lg" />
+        <Input value={draft.title} onChange={(e) => onTitleChange(e.target.value)} className="font-semibold text-lg" autoFocus={draft.manual} maxLength={200} />
       </Card>
 
       <div className="space-y-3">
@@ -650,22 +661,29 @@ const ReviewDraft = ({
       </button>
 
       <Card className="p-4 md:p-5 space-y-3">
-        <label className="text-xs text-muted-foreground flex items-center gap-2">
-          <Pencil className="h-3 w-3" />
-          {ar ? "اطلب تعديلات من الذكاء (اختياري)" : "Ask AI for changes (optional)"}
-        </label>
-        <Textarea
-          value={feedback}
-          onChange={(e) => setFeedback(e.target.value)}
-          rows={2}
-          placeholder={ar ? "مثال: اجعل الأسئلة أصعب، أضف أمثلة عددية..." : "e.g. Make harder, add numeric examples..."}
-        />
+        {/* Asking the AI for changes only makes sense on an AI draft. */}
+        {!draft.manual && (
+          <>
+            <label className="text-xs text-muted-foreground flex items-center gap-2">
+              <Pencil className="h-3 w-3" />
+              {ar ? "اطلب تعديلات من الذكاء (اختياري)" : "Ask AI for changes (optional)"}
+            </label>
+            <Textarea
+              value={feedback}
+              onChange={(e) => setFeedback(e.target.value)}
+              rows={2}
+              placeholder={ar ? "مثال: اجعل الأسئلة أصعب، أضف أمثلة عددية..." : "e.g. Make harder, add numeric examples..."}
+            />
+          </>
+        )}
         <div className="flex flex-wrap items-center justify-end gap-2">
           <Button variant="outline" onClick={onCancel} disabled={saving || busy}>{ar ? "إلغاء" : "Cancel"}</Button>
-          <Button variant="secondary" onClick={() => { onRegen(feedback); setFeedback(""); }} disabled={busy || saving}>
-            {busy ? <Loader2 className="h-4 w-4 animate-spin me-2" /> : <RefreshCw className="h-4 w-4 me-2" />}
-            {ar ? "إعادة التوليد" : "Regenerate"}
-          </Button>
+          {!draft.manual && (
+            <Button variant="secondary" onClick={() => { onRegen(feedback); setFeedback(""); }} disabled={busy || saving}>
+              {busy ? <Loader2 className="h-4 w-4 animate-spin me-2" /> : <RefreshCw className="h-4 w-4 me-2" />}
+              {ar ? "إعادة التوليد" : "Regenerate"}
+            </Button>
+          )}
           <Button variant="outline" onClick={onSave} disabled={saving || busy}>
             {saving ? <Loader2 className="h-4 w-4 animate-spin me-2" /> : <Check className="h-4 w-4 me-2" />}
             {ar ? "حفظ" : "Save"}

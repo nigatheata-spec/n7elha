@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
@@ -9,8 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, Upload, Save, Check, Image as ImageIcon, X, Wand2, FileText, Camera, Paperclip, Loader2 } from "lucide-react";
-import { shrinkPhoto, MAX_PHOTOS } from "@/lib/photo";
+import { Plus, Trash2, Upload, Save, Check, Image as ImageIcon, X, Wand2 } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
 
 type Q = { id?: string; text: string; options: string[]; correct_index: number; difficulty: "easy"|"medium"|"hard"; image_url?: string | null };
@@ -19,8 +18,6 @@ const blank = (): Q => ({ text: "", options: ["", "", "", ""], correct_index: 0,
 
 const QuizEditor = () => {
   const { id } = useParams();
-  const [params] = useSearchParams();
-  const aiMode = params.get("ai") === "1";
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const ar = i18n.language === "ar";
@@ -31,21 +28,9 @@ const QuizEditor = () => {
   const [grade, setGrade] = useState("");
   const [questions, setQuestions] = useState<Q[]>([blank()]);
   const [saving, setSaving] = useState(false);
-  const [source, setSource] = useState<"manual"|"ai">(aiMode ? "ai" : "manual");
+  const [source, setSource] = useState<"manual"|"ai">("manual");
 
-  // AI panel
-  const [showAI, setShowAI] = useState(aiMode);
-  const [docText, setDocText] = useState("");
-  const [docImages, setDocImages] = useState<string[]>([]);
-  const [numQ, setNumQ] = useState(10);
-  const [diff, setDiff] = useState<"easy"|"medium"|"hard">("medium");
-  const [topics, setTopics] = useState("");
-  const [generating, setGenerating] = useState(false);
-  const [uploading, setUploading] = useState(false);
   const [imgBusy, setImgBusy] = useState<number | null>(null);
-  const [dragging, setDragging] = useState(false);
-  const photoRef = useRef<HTMLInputElement>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -70,48 +55,6 @@ const QuizEditor = () => {
 
   const updateOpt = (i: number, oi: number, v: string) =>
     setQuestions(qs => qs.map((q, idx) => idx === i ? { ...q, options: q.options.map((o, j) => j === oi ? v : o) } : q));
-
-  const fileToDataUrl = (file: File) => new Promise<string>((res, rej) => {
-    const r = new FileReader();
-    r.onload = () => res(r.result as string);
-    r.onerror = () => rej(r.error);
-    r.readAsDataURL(file);
-  });
-
-  const onUpload = async (file: File) => {
-    setUploading(true);
-    try {
-      const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
-      const isImage = file.type.startsWith("image/") || ["png","jpg","jpeg","webp","gif"].includes(ext);
-      if (isImage) {
-        const url = await shrinkPhoto(file);
-        setDocImages(imgs => [...imgs, url].slice(0, MAX_PHOTOS));
-        return; // the file chip appearing is the confirmation
-      }
-      let text = "";
-      if (ext === "txt" || ext === "md") {
-        text = await file.text();
-      } else if (ext === "pdf") {
-        const pdfjs: any = await import("pdfjs-dist");
-        pdfjs.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
-        const buf = await file.arrayBuffer();
-        const pdf = await pdfjs.getDocument({ data: buf }).promise;
-        for (let p = 1; p <= Math.min(pdf.numPages, 30); p++) {
-          const page = await pdf.getPage(p);
-          const content = await page.getTextContent();
-          text += content.items.map((it: any) => it.str).join(" ") + "\n\n";
-        }
-      } else {
-        toast.info("للمستندات المعقدة الصق المحتوى يدوياً");
-        text = await file.text().catch(() => "");
-      }
-      setDocText(text.slice(0, 30000));
-      } catch (e: any) {
-      toast.error(e.message || "Error");
-    } finally {
-      setUploading(false);
-    }
-  };
 
   const uploadQuestionImage = async (i: number, file: File) => {
     setImgBusy(i);
@@ -154,38 +97,6 @@ const QuizEditor = () => {
     }
   };
 
-  const generate = async () => {
-    if (!docText.trim() && !topics.trim() && !docImages.length) {
-      toast.error("ارفع مستنداً أو صورة أو اكتب موضوعاً");
-      return;
-    }
-    if (numQ > 10) {
-      toast.error("الحد الأقصى 10 أسئلة حالياً");
-      return;
-    }
-    setGenerating(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("generate-quiz", {
-        body: { content: docText, images: docImages, numQuestions: numQ, difficulty: diff, topics, language: document.documentElement.lang || "ar" },
-      });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      const qs: Q[] = (data?.questions ?? []).map((q: any) => ({
-        text: q.text, options: q.options, correct_index: q.correct_index, difficulty: q.difficulty || diff,
-      }));
-      if (!qs.length) throw new Error("لم يتم توليد أسئلة");
-      setQuestions(qs);
-      if (!title && data?.title) setTitle(data.title);
-      setSource("ai");
-      setShowAI(false);
-      
-    } catch (e: any) {
-      toast.error(e.message || "Error");
-    } finally {
-      setGenerating(false);
-    }
-  };
-
   const save = async () => {
     if (!user) return;
     if (!title.trim()) { toast.error(t("title")); return; }
@@ -223,103 +134,9 @@ const QuizEditor = () => {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h1 className="font-display text-3xl font-bold">{id ? t("edit") : t("create_quiz")}</h1>
         <div className="flex gap-2">
-          {!showAI && <Button variant="outline" onClick={() => setShowAI(true)} className="border-accent/40">{t("ai_generate")}</Button>}
           <Button onClick={save} disabled={saving} className="bg-accent text-white hover:bg-accent/90"><Save className="h-4 w-4 me-2" />{saving ? "..." : t("save_quiz")}</Button>
         </div>
       </div>
-
-      {/* Same box as the dashboard's: a topic, or the lesson itself as
-          photos of the page or a PDF (buttons, drop, or paste). */}
-      {showAI && (
-        <div
-          onDragOver={e => { e.preventDefault(); setDragging(true); }}
-          onDragLeave={() => setDragging(false)}
-          onDrop={e => { e.preventDefault(); setDragging(false); Array.from(e.dataTransfer.files).forEach(onUpload); }}
-          className={`relative rounded-3xl bg-white border-2 border-[hsl(var(--nb-border))] shadow-[4px_4px_0_0_hsl(var(--nb-border))] p-4 md:p-5 animate-fade-in transition-all ${generating ? "opacity-60 pointer-events-none" : ""} ${dragging ? "ring-4 ring-accent/40" : ""}`}>
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="font-bold text-sm">{t("ai_generate")}</h2>
-            <button type="button" aria-label={t("cancel")} onClick={() => setShowAI(false)} className="h-8 w-8 rounded-full flex items-center justify-center text-muted-foreground hover:bg-muted">
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-          <textarea
-            value={topics}
-            onChange={e => setTopics(e.target.value)}
-            onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); generate(); } }}
-            onPaste={e => { const imgs = Array.from(e.clipboardData.files).filter(f => f.type.startsWith("image/")); if (imgs.length) { e.preventDefault(); imgs.forEach(onUpload); } }}
-            maxLength={400}
-            rows={3}
-            placeholder={ar ? "عن ماذا الاختبار؟ اكتب موضوعًا، أو صوّر السبورة بعد شرح الدرس..." : "What's the quiz about? Type a topic, or snap the board after your lesson..."}
-            className="w-full resize-none bg-transparent outline-none text-base placeholder:text-muted-foreground/70"
-          />
-
-          {(docImages.length > 0 || docText) && (
-            <div className="flex flex-wrap items-center gap-2 mt-2">
-              {docImages.map((src, idx) => (
-                <div key={idx} className="relative">
-                  <img src={src} alt="" className="h-16 w-16 object-cover rounded-xl border border-border" />
-                  <button type="button" aria-label={ar ? "إزالة" : "Remove"} onClick={() => setDocImages(imgs => imgs.filter((_, j) => j !== idx))}
-                    className="absolute -top-1.5 -end-1.5 h-5 w-5 rounded-full bg-foreground text-background flex items-center justify-center">
-                    <X className="h-3 w-3" />
-                  </button>
-                </div>
-              ))}
-              {docText && (
-                <span className="inline-flex items-center gap-1.5 h-8 ps-2.5 pe-1 rounded-full bg-secondary text-secondary-foreground text-xs">
-                  <FileText className="h-3.5 w-3.5" />{docText.length} {ar ? "حرف" : "chars"}
-                  <button type="button" aria-label={ar ? "إزالة" : "Remove"} onClick={() => setDocText("")} className="p-0.5 rounded hover:bg-background/60"><X className="h-3 w-3" /></button>
-                </span>
-              )}
-            </div>
-          )}
-
-          <input ref={photoRef} type="file" multiple accept="image/*" className="hidden"
-            onChange={e => { Array.from(e.target.files ?? []).forEach(onUpload); e.currentTarget.value = ""; }} />
-          <input ref={fileRef} type="file" accept=".pdf,.txt,.md" className="hidden"
-            onChange={e => { const f = e.target.files?.[0]; if (f) onUpload(f); e.currentTarget.value = ""; }} />
-
-          <div className="mt-3 pt-3 border-t border-border/60">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <button type="button" onClick={() => photoRef.current?.click()}
-                className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full border-2 border-[hsl(var(--nb-border))] text-sm font-bold hover:bg-muted transition-colors">
-                <Camera className="h-4 w-4" />{ar ? "صورة" : "Photo"}
-              </button>
-              <button type="button" onClick={() => fileRef.current?.click()}
-                className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full border-2 border-[hsl(var(--nb-border))] text-sm font-bold hover:bg-muted transition-colors">
-                <Paperclip className="h-4 w-4" />{uploading ? "..." : ar ? "ملف PDF" : "PDF"}
-              </button>
-              <div className="inline-flex h-9 p-0.5 rounded-full bg-muted text-xs font-bold" role="radiogroup" aria-label={t("difficulty")}>
-                {(["easy", "medium", "hard"] as const).map(d => (
-                  <button key={d} type="button" role="radio" aria-checked={diff === d} onClick={() => setDiff(d)}
-                    className={`px-3 rounded-full transition-colors ${diff === d ? "bg-[#3F5A63] text-white" : "text-muted-foreground hover:text-foreground"}`}>
-                    {t(d)}
-                  </button>
-                ))}
-              </div>
-              <div className="inline-flex h-9 p-0.5 rounded-full bg-muted text-xs font-bold" role="radiogroup" aria-label={t("num_questions")}>
-                {[5, 10].map(n => (
-                  <button key={n} type="button" role="radio" aria-checked={numQ === n} onClick={() => setNumQ(n)}
-                    className={`px-3 rounded-full transition-colors ${numQ === n ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground"}`}>
-                    {n} {ar ? "أسئلة" : "Qs"}
-                  </button>
-                ))}
-              </div>
-              <Button onClick={generate} disabled={generating}
-                className="ms-auto rounded-full h-10 px-5 gap-2 bg-accent text-white hover:bg-accent/90 font-bold">
-                {generating && <Loader2 className="h-4 w-4 animate-spin" />}
-                {ar ? "أنشئ الأسئلة" : "Create questions"}
-              </Button>
-            </div>
-
-          </div>
-
-          {dragging && (
-            <div className="absolute inset-0 rounded-3xl bg-accent/10 flex items-center justify-center text-lg font-bold pointer-events-none">
-              {ar ? "أفلت الصورة أو الملف هنا" : "Drop the photo or file here"}
-            </div>
-          )}
-        </div>
-      )}
 
       <Card className="p-6 space-y-4">
         <div><Label className="mb-1.5 block">{t("title")}</Label><Input value={title} onChange={e => setTitle(e.target.value)} maxLength={200} /></div>

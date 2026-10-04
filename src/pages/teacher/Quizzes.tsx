@@ -7,7 +7,7 @@ import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { TryGameButton } from "@/components/TryGameButton";
-import { Plus, Sparkles, Trash2, FileQuestion } from "lucide-react";
+import { Plus, Trash2, FileQuestion } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
 
 type Quiz = {
@@ -53,8 +53,7 @@ const Quizzes = () => {
       <div className="rounded-2xl border-2 border-[hsl(var(--nb-border))] bg-white shadow-[4px_4px_0_0_hsl(var(--nb-border))] px-5 py-4 flex items-center justify-between gap-3 flex-wrap">
         <h1 className="font-display text-2xl font-bold">{t("my_quizzes")}</h1>
         <div className="flex gap-2 flex-wrap">
-          <Button asChild className="bg-accent text-white hover:bg-accent/90"><Link to="/app/quizzes/new"><Plus className="h-4 w-4 me-2" />{t("manual_build")}</Link></Button>
-          <Button asChild variant="outline"><Link to="/app/quizzes/new?ai=1"><Sparkles className="h-4 w-4 me-2" />{t("ai_generate")}</Link></Button>
+          <Button asChild className="bg-accent text-white hover:bg-accent/90"><Link to="/app"><Plus className="h-4 w-4 me-2" />{t("create_quiz")}</Link></Button>
         </div>
       </div>
 
@@ -67,7 +66,7 @@ const Quizzes = () => {
           <p className="text-muted-foreground mb-5">{t("start_first")}</p>
           <div className="flex flex-wrap items-center justify-center gap-2.5">
             <TryGameButton />
-            <Button asChild variant="outline" className="rounded-full"><Link to="/app/quizzes/new"><Plus className="h-4 w-4 me-2" />{t("create_quiz")}</Link></Button>
+            <Button asChild variant="outline" className="rounded-full"><Link to="/app"><Plus className="h-4 w-4 me-2" />{t("create_quiz")}</Link></Button>
           </div>
         </div>
       ) : (

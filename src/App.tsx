@@ -107,7 +107,8 @@ const AppContent = () => {
             <Route path="/app" element={<RequireAuth><TeacherLayout /></RequireAuth>}>
               <Route index element={<Dashboard />} />
               <Route path="quizzes" element={<Quizzes />} />
-              <Route path="quizzes/new" element={<QuizEditor />} />
+              {/* Quizzes are made on the dashboard; old links land there. */}
+              <Route path="quizzes/new" element={<Navigate to="/app" replace />} />
               <Route path="quizzes/:id/edit" element={<QuizEditor />} />
               <Route path="host/:quizId" element={<HostGame />} />
               <Route path="games" element={<HostedGames />} />
