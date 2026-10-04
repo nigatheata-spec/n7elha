@@ -250,41 +250,25 @@ const Landing = () => {
             </svg>
           </div>
         </div>
-        {/* Only the tops of the two corner shapes below, drawn again above the
-            teal band so they round up over its wave instead of stopping at it.
-            Same box, flip and drift as the shapes in the section, so each cap
-            sits on its shape and moves with it; each one reaches down into
-            its shape so no seam shows. Wide screens only: on a phone the wave
-            sits too low against the smaller shapes for the caps to meet them. */}
-        <div aria-hidden className="pointer-events-none absolute inset-x-0 -top-12 h-[200px] overflow-hidden z-20 hidden md:block">
-          <div className="absolute top-0 -start-16 w-[360px] ltr:-scale-x-100">
+        {/* The two upper corner shapes, above the teal band: each ends in a
+            round head that rises over the band's wave, like it's flowing up
+            into it. Own layer, since the section below clips its top. */}
+        <div aria-hidden className="pointer-events-none absolute inset-x-0 -top-12 h-[240px] md:h-[420px] overflow-hidden z-20">
+          <div className="absolute top-0 -start-16 w-[200px] md:w-[360px] ltr:-scale-x-100">
             <svg viewBox="0 0 400 400" className="accent-drift w-full" style={{ animationDuration: "26s" }}>
-              <path fill={SAND} d="M66 128L61 119L57 109L53 100L49 90L47 81C47 66 60 58 80 58C102 58 120 68 130 86L170 128Z" />
-              <path fill={LIME} d="M155 128L150 120L145 112L136 92L133 87C130 60 150 40 190 28C260 10 330 14 400 6V128Z" />
+              <path fill={SAND} d="M400 80H150L126 58C118 44 100 34 80 34C58 34 44 44 43.9 60C45.3 96.8 68.1 138.9 100 172C154 228 132 300 204 356C254 396 338 404 400 392Z" />
+              <path fill={LIME} d="M400 56C340 30 220 18 168 32C142 40 129 48 126.3 60C129.4 90.5 149.2 124 174 150C222 200 202 262 266 310C308 342 360 340 400 330Z" />
             </svg>
           </div>
-          <div className="absolute top-0 -end-16 w-[360px] rtl:-scale-x-100">
+          <div className="absolute top-0 -end-16 w-[200px] md:w-[360px] rtl:-scale-x-100">
             <svg viewBox="0 0 400 400" className="accent-drift w-full" style={{ animationDuration: "28s", animationDelay: "-13s" }}>
-              <path fill={SAND} d="M97 128L92 120L88 112L84 104L80 96L77 88C76 70 92 62 112 62C134 62 150 72 160 88L200 128Z" />
-              <path fill={TEAL} d="M193 128L188 120L184 112L177 102L173 96L166 83C160 60 170 40 200 30H400V128Z" />
+              <path fill={SAND} d="M400 0H200L170 60C156 42 136 32 112 32C88 32 70 42 69.7 60C72.2 87.1 87.6 116.6 112 140C164 190 150 252 214 300C262 336 344 344 400 332Z" />
+              <path fill={TEAL} d="M400 0H178C140 26 156 84 192 120C232 160 222 214 274 252C314 282 362 284 400 276Z" />
             </svg>
           </div>
         </div>
         <section className="relative isolate overflow-hidden px-5 sm:px-8 md:px-14 pt-24 sm:pt-32 pb-12 sm:pb-16">
           <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
-            <div className="absolute -top-12 -start-16 w-[200px] md:w-[360px] ltr:-scale-x-100">
-              <svg viewBox="0 0 400 400" className="accent-drift w-full" style={{ animationDuration: "26s" }}>
-                <path fill={SAND} d="M400 0H70C20 40 48 118 100 172C154 228 132 300 204 356C254 396 338 404 400 392Z" />
-                <path fill={LIME} d="M400 0H154C102 34 130 104 174 150C222 200 202 262 266 310C308 342 360 340 400 330Z" />
-              </svg>
-            </div>
-            {/* the opposite upper corner: a teal wave over sand, mirroring the lime one */}
-            <div className="absolute -top-12 -end-16 w-[200px] md:w-[360px] rtl:-scale-x-100">
-              <svg viewBox="0 0 400 400" className="accent-drift w-full" style={{ animationDuration: "28s", animationDelay: "-13s" }}>
-                <path fill={SAND} d="M400 0H96C52 30 66 96 112 140C164 190 150 252 214 300C262 336 344 344 400 332Z" />
-                <path fill={TEAL} d="M400 0H178C140 26 156 84 192 120C232 160 222 214 274 252C314 282 362 284 400 276Z" />
-              </svg>
-            </div>
             {/* beside the phones, on the lime side: a thin oval with a teal and a lime drop */}
             <div className="absolute top-[54%] start-[6%] w-[220px] h-[180px] hidden md:block">
               <svg viewBox="0 0 240 140" className="accent-drift absolute inset-x-0 top-0 w-full" style={{ animationDuration: "22s", animationDelay: "-9s" }}>
