@@ -197,6 +197,7 @@ export type Database = {
           hacks_received: number
           height_reached: number
           id: string
+          lf_tower: string | null
           income_tier: number
           is_breached: boolean
           joined_at: string
@@ -229,6 +230,7 @@ export type Database = {
           hacks_received?: number
           height_reached?: number
           id?: string
+          lf_tower?: string | null
           income_tier?: number
           is_breached?: boolean
           joined_at?: string
@@ -261,6 +263,7 @@ export type Database = {
           hacks_received?: number
           height_reached?: number
           id?: string
+          lf_tower?: string | null
           income_tier?: number
           is_breached?: boolean
           joined_at?: string
@@ -438,6 +441,72 @@ export type Database = {
           id?: string
           label?: string | null
           status?: string
+        }
+        Relationships: []
+      }
+      lava_state: {
+        Row: {
+          at: string
+          erupt_at: string | null
+          level: number
+          rate: number
+          session_id: string
+        }
+        Insert: {
+          at?: string
+          erupt_at?: string | null
+          level?: number
+          rate?: number
+          session_id: string
+        }
+        Update: {
+          at?: string
+          erupt_at?: string | null
+          level?: number
+          rate?: number
+          session_id?: string
+        }
+        Relationships: []
+      }
+      lava_towers: {
+        Row: {
+          base: number
+          bricks: number
+          climb: number
+          created_at: string
+          dunked: boolean
+          dunks: number
+          id: string
+          idx: number
+          name: string | null
+          session_id: string
+          width: number
+        }
+        Insert: {
+          base?: number
+          bricks?: number
+          climb?: number
+          created_at?: string
+          dunked?: boolean
+          dunks?: number
+          id?: string
+          idx: number
+          name?: string | null
+          session_id: string
+          width?: number
+        }
+        Update: {
+          base?: number
+          bricks?: number
+          climb?: number
+          created_at?: string
+          dunked?: boolean
+          dunks?: number
+          id?: string
+          idx?: number
+          name?: string | null
+          session_id?: string
+          width?: number
         }
         Relationships: []
       }
@@ -873,6 +942,18 @@ export type Database = {
           streak: number
           total_answers: number
         }[]
+      }
+      lava_floor_answer: {
+        Args: { p_correct: boolean; p_student_id: string }
+        Returns: undefined
+      }
+      lava_floor_assign: {
+        Args: { p_session_id: string }
+        Returns: undefined
+      }
+      lava_floor_referee: {
+        Args: { p_lava: number; p_need: number; p_tower: string }
+        Returns: undefined
       }
       lava_floor_spend: {
         Args: {

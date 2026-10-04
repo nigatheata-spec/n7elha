@@ -47,6 +47,7 @@ const PfPreview   = lazy(() => import("./pages/play/PaintFightPreview"));
 const HvzPreview  = lazy(() => import("./pages/play/HvzPreview"));
 // Dev-only layout preview for the analytics page over synthetic data (see the file header).
 const AnalyticsPreview = lazy(() => import("./pages/teacher/AnalyticsPreview"));
+const LavaPreview = lazy(() => import("./pages/play/LavaPreview"));
 const NotFound    = lazy(() => import("./pages/NotFound"));
 
 import { ScrollToTop } from "@/components/ScrollToTop";
@@ -98,6 +99,7 @@ const AppContent = () => {
             {import.meta.env.DEV && <Route path="/join/pf-preview" element={<PfPreview />} />}
             {import.meta.env.DEV && <Route path="/join/hvz-preview" element={<HvzPreview />} />}
             {import.meta.env.DEV && <Route path="/join/analytics-preview" element={<AnalyticsPreview />} />}
+            {import.meta.env.DEV && <Route path="/join/lava-preview" element={<LavaPreview />} />}
             <Route path="/join/:sessionId" element={<Game />} />
             <Route path="/scan/:kitId/:typeCode" element={<ScanSquare />} />
             {/* Homework links are shared straight to students — short, no code, no lobby. */}

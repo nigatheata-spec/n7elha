@@ -7,6 +7,7 @@ import { Copy, Play, Users, Zap, Heart, Skull, Timer, Trophy, Flame, ChevronLeft
 import { BitcoinIcon, LavaBucketIcon, DynamiteIcon, PaintRollerIcon } from "@/components/game/icons";
 import { computeArenaSize } from "@/lib/paintFight";
 import { roomsFor, zeroCount } from "@/lib/humansVsZombies";
+import { LF_MODES, LAVA_START, MIN_RATE, type LfMode } from "@/lib/lavaFloor";
 import { toast } from "@/components/ui/sonner";
 import { readSettings } from "@/lib/sessionSettings";
 import { PlayerRow } from "@/components/teacher/PlayerManager";
@@ -54,7 +55,7 @@ const MODES: { id: GameMode; icon: React.ReactNode; label: string; labelAr: stri
     icon: <LavaBucketIcon className="h-6 w-6" strokeWidth={2} />,
     label: "Lava Floor",
     labelAr: "أرضية الحمم",
-    desc: "Survive together before the lava rises",
+    desc: "Build towers faster than the lava rises",
     descAr: "اصمدوا معاً قبل أن تبتلعكم الحمم",
     accent: "#8B4A3A",
     num: "03",
@@ -214,6 +215,42 @@ const MinuteStepper = ({ value, onChange }: { value: number; onChange: (v: numbe
   );
 };
 
+/* Lava Floor: who shares a tower. One segmented switch, its rule spelled out
+   under it, and the team count when teams is picked. */
+const LavaSetup = ({ ar, mode, teams, onMode, onTeams }: {
+  ar: boolean; mode: LfMode; teams: number; onMode: (m: LfMode) => void; onTeams: (n: number) => void;
+}) => {
+  const info = LF_MODES.find(m => m.id === mode)!;
+  return (
+    <div>
+      <p className="text-xs font-semibold tracking-widest uppercase text-black/40 mb-3">{ar ? "طريقة اللعب" : "How they play"}</p>
+      <div className="grid grid-cols-3 gap-1 rounded-full border-2 border-[hsl(var(--nb-border))] bg-white p-1">
+        {LF_MODES.map(m => (
+          <button key={m.id} type="button" onClick={() => onMode(m.id)}
+            className={`rounded-full py-2 text-sm font-bold transition-colors ${mode === m.id ? "bg-[#3F5A63] text-white" : "text-[#3F5A63] hover:bg-black/[0.05]"}`}>
+            {ar ? m.nameAr : m.nameEn}
+          </button>
+        ))}
+      </div>
+      <p className="mt-2.5 text-sm text-black/55 leading-relaxed">{ar ? info.descAr : info.descEn}</p>
+      {mode === "teams" && (
+        <div className="mt-3 flex items-center gap-2">
+          <span className="text-sm text-black/50">{ar ? "عدد الفرق" : "Teams"}</span>
+          {[2, 3, 4].map(n => (
+            <button key={n} type="button" onClick={() => onTeams(n)}
+              className="h-9 w-9 rounded-lg text-sm font-bold border-2 border-[hsl(var(--nb-border))] transition-all hover:translate-x-px hover:translate-y-px"
+              style={teams === n
+                ? { background: "#3F5A63", color: "white", boxShadow: "2px 2px 0 0 hsl(var(--nb-border))" }
+                : { background: "white", color: "#3F5A63", boxShadow: "2px 2px 0 0 hsl(var(--nb-border))" }}>
+              {n}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const HostGame = () => {
   const { quizId } = useParams();
   const navigate = useNavigate();
@@ -234,6 +271,9 @@ const HostGame = () => {
   const [secsPerQ, setSecsPerQ] = useState<number | null>(null);
   // Homework only. Empty means no deadline — the link stays open until closed.
   const [dueDate, setDueDate] = useState("");
+  // Lava Floor only: who shares a tower, and how many teams.
+  const [lfMode, setLfMode] = useState<LfMode>("class");
+  const [lfTeams, setLfTeams] = useState(2);
   const maxStudents = 40;
 
   useEffect(() => {
@@ -265,6 +305,8 @@ const HostGame = () => {
       setSessionId(data.id);
       if (cfg.minutes) setMinutes(cfg.minutes);
       setSecsPerQ(typeof cfg.timePerQ === "number" ? cfg.timePerQ : null);
+      if (cfg.lfMode) setLfMode(cfg.lfMode as LfMode);
+      if (cfg.lfTeams) setLfTeams(Number(cfg.lfTeams));
     })();
   }, [user, quizId]);
 
@@ -290,6 +332,7 @@ const HostGame = () => {
       // game views can tell "disabled" apart from "set to some duration".
       settings.timePerQ = secsPerQ;
       settings.lang = i18n.language;
+      if (mode === "lavafloor") { settings.lfMode = lfMode; settings.lfTeams = lfTeams; }
       let tryCode = code;
       let data, error;
       for (let attempt = 0; attempt < 5; attempt++) {
@@ -336,6 +379,14 @@ const HostGame = () => {
       await supabase.from("game_students").update({ team: "human" }).eq("session_id", sessionId);
       if (zeros.length) await supabase.from("game_students").update({ team: "zombie" }).in("id", zeros);
       patch.settings = { ...readSettings(cur?.settings), hvzRooms: roomsFor(ids.length), winner: null };
+    }
+    if (mode === "lavafloor") {
+      // The picked setup, then everyone in the room onto a tower before the
+      // first question, so tower widths match the roster at Start.
+      const { data: cur } = await supabase.from("game_sessions").select("settings").eq("id", sessionId).maybeSingle();
+      await supabase.from("game_sessions").update({ settings: { ...readSettings(cur?.settings), lfMode, lfTeams } }).eq("id", sessionId);
+      await supabase.rpc("lava_floor_assign", { p_session_id: sessionId });
+      await supabase.from("lava_state").upsert({ session_id: sessionId, level: LAVA_START, rate: MIN_RATE, at: new Date().toISOString(), erupt_at: null });
     }
     await supabase.from("game_sessions").update(patch).eq("id", sessionId);
     navigate(`/app/games/${sessionId}/monitor`);
@@ -546,12 +597,12 @@ const HostGame = () => {
                 <>
                   <p className="text-black/65 leading-relaxed">
                     {ar
-                      ? "الفصل كله يلعب معاً ضد الحمم. كل إجابة صحيحة تُبطئ ارتفاع الحمم، وكل إجابة خاطئة تُسرّعها. عليهم التعاون للصمود حتى انتهاء الوقت."
-                      : "The whole class plays together against the rising lava. Correct answers slow it down, wrong answers speed it up. Cooperate to survive until time runs out."}
+                      ? "كل إجابة صحيحة تضع طوبة في البرج، والحمم ترتفع تحتهم وتثور كل قليل. من تصل الحمم لأعلى برجه يسقط فيها، ولا يخرج إلا بالإجابات."
+                      : "Every correct answer lays a brick on the tower while the lava rises underneath and erupts every so often. When it reaches the top of a tower, everyone on it falls in, and only answers get them out."}
                   </p>
                   <div className="flex items-center gap-2 text-black/45">
                     <Flame className="h-4 w-4 shrink-0" style={{ color: selectedAccent }} />
-                    <span>{ar ? "اصمدوا معاً حتى النهاية" : "Survive together to the end"}</span>
+                    <span>{ar ? "ابنوا أسرع من الحمم" : "Build faster than the lava"}</span>
                   </div>
                 </>
               )}
@@ -621,6 +672,10 @@ const HostGame = () => {
                 </>
               )}
             </div>
+
+            {mode === "lavafloor" && (
+              <LavaSetup ar={ar} mode={lfMode} teams={lfTeams} onMode={setLfMode} onTeams={setLfTeams} />
+            )}
 
             {needsTimer && (
               <div>

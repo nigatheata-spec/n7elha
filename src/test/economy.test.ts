@@ -1,11 +1,8 @@
 import { describe, it, expect } from "vitest";
-import * as lava from "@/lib/lavaFloorBlocks";
 import * as dld from "@/lib/dontLookDown";
 
-/* The income-tier economies share a shape, so they share the invariants
-   that make an upgrade ladder worth climbing: paying more must buy more. */
+/* The income-tier economy's invariants: paying more must buy more. */
 const ladders: [string, { level: number; cost: number; payout: number }[]][] = [
-  ["lava floor", lava.INCOME_TIERS],
   ["don't look down", dld.INCOME_TIERS],
 ];
 
@@ -50,50 +47,5 @@ describe("streak multipliers", () => {
 
   it("never rewards a negative streak", () => {
     expect(dld.streakMultiplier(-5)).toBe(1);
-  });
-});
-
-describe("lava floor streak tiers", () => {
-  it("defaults to the free ladder", () => {
-    expect(lava.streakMultiplier(8)).toBe(lava.streakMultiplier(8, 1));
-  });
-
-  it("falls back to the free ladder for an unknown tier rather than throwing", () => {
-    expect(lava.streakMultiplier(8, 99)).toBe(lava.streakMultiplier(8, 1));
-  });
-
-  it("pays at least as much at every streak as the tier below", () => {
-    for (let tier = 2; tier <= 4; tier++) {
-      for (const streak of [0, 1, 2, 4, 5, 7, 8, 20]) {
-        expect(lava.streakMultiplier(streak, tier)).toBeGreaterThanOrEqual(
-          lava.streakMultiplier(streak, tier - 1),
-        );
-      }
-    }
-  });
-
-  it("gives no streak bonus below 2 on any tier", () => {
-    for (let tier = 1; tier <= 4; tier++) expect(lava.streakMultiplier(1, tier)).toBe(1);
-  });
-});
-
-describe("lava floor blocks", () => {
-  it("gets taller as it gets pricier, so cost always buys height", () => {
-    for (let i = 1; i < lava.BLOCK_TYPES.length; i++) {
-      expect(lava.BLOCK_TYPES[i].cost).toBeGreaterThan(lava.BLOCK_TYPES[i - 1].cost);
-      expect(lava.BLOCK_TYPES[i].height).toBeGreaterThan(lava.BLOCK_TYPES[i - 1].height);
-    }
-  });
-
-  it("makes the cheapest block the first one", () => {
-    expect(lava.cheapestBlock).toBe(lava.BLOCK_TYPES[0]);
-  });
-
-  it("indexes every block by key", () => {
-    for (const b of lava.BLOCK_TYPES) expect(lava.BLOCK_BY_KEY[b.key]).toBe(b);
-  });
-
-  it("has a sprite for every block", () => {
-    for (const b of lava.BLOCK_TYPES) expect(lava.spriteRuns(b.key).length).toBeGreaterThan(0);
   });
 });

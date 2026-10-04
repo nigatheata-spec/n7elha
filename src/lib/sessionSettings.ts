@@ -23,7 +23,10 @@ export type SessionSettings = {
   lastExplosionAt?: string | null;
   lastExplosionVictimId?: string | null;
 
-  /* Lava Floor */
+  /* Lava Floor: who shares a tower (the lava itself lives in lava_state).
+     lavaLevel/lavaRate/lavaSnapshotAt are the old version's, kept for old rows. */
+  lfMode?: "class" | "teams" | "solo";
+  lfTeams?: number;
   lavaLevel?: number;
   lavaRate?: number;
   lavaSnapshotAt?: string | null;
