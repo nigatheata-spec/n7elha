@@ -5,6 +5,7 @@ import { LangToggle } from "@/components/LangToggle";
 import { triggerLangTransition } from "@/lib/langTransitionBus";
 import { Menu, X, Languages } from "lucide-react";
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import logoMark from "@/assets/logo-mark.png";
 
 export const SiteNav = () => {
@@ -110,6 +111,10 @@ export const SiteNav = () => {
         </div>
       </nav>
 
+      {/* The menu goes to <body>: inside the page it would be trapped under
+          the hero (the nav sits in its own layer) and sized to the whole page
+          (the scroll-skew wrapper becomes its frame instead of the screen). */}
+      {createPortal(<>
       {/* mobile menu backdrop */}
       <div
         onClick={() => setMenuOpen(false)}
@@ -120,7 +125,8 @@ export const SiteNav = () => {
       {/* mobile menu drawer */}
       <div
         dir="ltr"
-        className={`md:hidden fixed inset-y-0 right-0 z-50 w-[82%] max-w-[320px] bg-white rounded-l-[28px] border-y-2 border-l-2 border-[hsl(var(--nb-border))] shadow-[-6px_6px_0_0_hsl(var(--nb-border))] transition-transform duration-300 ease-out flex flex-col ${menuOpen ? "translate-x-0" : "translate-x-full"}`}
+        className={`md:hidden fixed inset-y-0 right-0 z-50 w-[82%] max-w-[320px] bg-white rounded-l-[28px] border-y-2 border-l-2 border-[hsl(var(--nb-border))] shadow-[-6px_6px_0_0_hsl(var(--nb-border))] transition-[transform,visibility] duration-300 ease-out flex flex-col ${menuOpen ? "translate-x-0" : "translate-x-[calc(100%+16px)] invisible"}`}
+        style={{ fontFamily: "'Outfit', 'Almarai', system-ui, sans-serif" }}
         role="dialog"
         aria-modal="true"
         aria-hidden={!menuOpen}
@@ -193,6 +199,7 @@ export const SiteNav = () => {
           </div>
         </div>
       </div>
+      </>, document.body)}
     </>
   );
 };
