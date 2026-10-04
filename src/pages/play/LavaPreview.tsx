@@ -5,6 +5,8 @@
 //
 // ?mode=class|teams|solo, ?n=24 players, ?teams=3, ?lang=en,
 // ?erupt=5 (seconds to the first eruption).
+// ?phone=1 shows the phone instead, with stand-in questions; &wrong=1 holds
+// the wrong-answer flood on screen.
 // Route is registered only when import.meta.env.DEV.
 
 import { useEffect, useRef, useState } from "react";
@@ -15,6 +17,32 @@ import {
 } from "@/lib/lavaFloor";
 import { drawBoard, fitCamera, faceImage, type BoardTower, type Camera } from "@/lib/lavaFloorRender";
 import { LavaHud, type FeedItem } from "@/components/game/LavaHud";
+import { LavaBackdrop, LavaQuestionView, LavaWrongScreen } from "@/components/game/LavaPhone";
+
+const STAND_IN = [
+  { text: "ما ناتج ٧ × ٨؟", options: ["٥٦", "٤٨", "٦٤", "٥٤"], correct_index: 0 },
+  { text: "What is the past participle of 'take'?", options: ["took", "taken", "taked", "takes"], correct_index: 1 },
+  { text: "أي كوكب هو الأقرب إلى الشمس؟", options: ["الزهرة", "المريخ", "عطارد", "الأرض"], correct_index: 2 },
+];
+
+const PhonePreview = ({ ar, holdWrong }: { ar: boolean; holdWrong: boolean }) => {
+  const [i, setI] = useState(0);
+  const [picked, setPicked] = useState<number | null>(null);
+  const [wrong, setWrong] = useState(holdWrong);
+  const q = STAND_IN[i % STAND_IN.length];
+  const next = () => { setPicked(null); setWrong(false); setI(n => n + 1); };
+  const answer = (k: number) => {
+    setPicked(k);
+    if (k === q.correct_index) setTimeout(next, 650); else setWrong(true);
+  };
+  return (
+    <div className="fixed inset-0 flex flex-col" dir={ar ? "rtl" : "ltr"}>
+      <LavaBackdrop />
+      <LavaQuestionView q={q} picked={picked} correct={picked === q.correct_index} onAnswer={answer} ar={ar} timerFrac={0.62} />
+      {wrong && <LavaWrongScreen ar={ar} answer={q.options[q.correct_index]} onDone={next} holdMs={holdWrong ? 0 : 2200} />}
+    </div>
+  );
+};
 
 const NAMES_AR = ["سارة", "خالد", "نورة", "عبدالله", "ريم", "فهد", "لمى", "يوسف", "جود", "تركي", "هيا", "سلمان",
   "دانة", "ماجد", "شهد", "عمر", "غلا", "بندر", "رهف", "نواف", "لين", "مشاري", "وعد", "راكان", "أريج", "زياد", "مها", "سعود"];
@@ -28,6 +56,11 @@ type Bot = { id: string; name: string; color: string; face: number; landAt: numb
 export default function LavaPreview() {
   const params = new URLSearchParams(window.location.search);
   const ar = params.get("lang") !== "en";
+  if (params.get("phone")) return <PhonePreview ar={ar} holdWrong={!!params.get("wrong")} />;
+  return <BoardPreview params={params} ar={ar} />;
+}
+
+function BoardPreview({ params, ar }: { params: URLSearchParams; ar: boolean }) {
   const mode = (["class", "teams", "solo"].includes(params.get("mode") ?? "") ? params.get("mode") : "solo") as LfMode;
   const n = Math.max(2, Math.min(28, Number(params.get("n")) || 20));
   const teams = Math.max(2, Math.min(4, Number(params.get("teams")) || 3));

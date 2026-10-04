@@ -17,7 +17,7 @@ export const LavaHud = ({ ar, code, left, nextErupt, lava, standing, total, bann
       style={{ fontFamily: "'Outfit', 'Almarai', system-ui, sans-serif" }} dir={ar ? "rtl" : "ltr"}>
       <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" />
 
-      <div className="absolute top-4 inset-x-4 flex items-start justify-between gap-4">
+      <div className="absolute top-4 inset-x-4 flex items-start justify-between gap-3 flex-wrap">
         <div className="flex flex-col gap-2 items-start">
           <div className={`${pill} px-4 py-2 flex items-center gap-3`}>
             <span className="text-xs opacity-60">{ar ? "رمز الغرفة" : "Room code"}</span>

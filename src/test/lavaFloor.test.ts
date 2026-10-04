@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  towerHeight, partialCourse, climbNeed, paceRate, lavaNow, towerName,
+  towerHeight, builtHeight, partialCourse, climbNeed, paceRate, lavaNow, towerName,
   MIN_RATE, MAX_RATE, PACE,
 } from "@/lib/lavaFloor";
 import { layoutTowers, type BoardTower } from "@/lib/lavaFloorRender";
@@ -21,6 +21,15 @@ describe("tower height", () => {
 
   it("never divides by a zero width", () => {
     expect(towerHeight(tower(0, 3))).toBe(6);
+  });
+});
+
+describe("winning", () => {
+  it("counts what was built, so a rescue lift never beats staying out of the lava", () => {
+    const stayedOut = { width: 2, bricks: 16, base: 3 };     // 8 courses, never fell in
+    const rescued = { width: 2, bricks: 10, base: 9 };       // 5 courses, lifted by a rescue
+    expect(towerHeight(rescued)).toBeGreaterThan(towerHeight(stayedOut));
+    expect(builtHeight(stayedOut)).toBeGreaterThan(builtHeight(rescued));
   });
 });
 

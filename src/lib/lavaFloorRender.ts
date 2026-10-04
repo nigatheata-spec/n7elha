@@ -543,7 +543,7 @@ export const drawBoard = (ctx: CanvasRenderingContext2D, w: number, h: number, f
     if (tw.label) {
       const topY = Math.min(...heads.map(hd => hd.headY)) - r - bigSize * 1.3;
       const text = tw.dunked ? `${tw.label}  ${tw.climb}/${tw.need}` : `${tw.label}  ${tw.courses}${f.ar ? "م" : "m"}`;
-      drawLabel(ctx, text, p.center, topY, Math.max(140, p.x1 - p.x0 + 40), tw.dunked ? "#FF5A3C" : "rgba(20,10,20,0.85)", tw.dunked ? "#fff" : tw.color, bigSize);
+      drawLabel(ctx, text, p.center, topY, Math.max(260, p.x1 - p.x0 + 60), tw.dunked ? "#FF5A3C" : "rgba(20,10,20,0.85)", tw.dunked ? "#fff" : tw.color, bigSize);
     } else {
       heads.forEach(({ m, cx, headY }) => drawLabel(ctx, tw.dunked ? `${tw.climb}/${tw.need}` : m.name, cx, headY - r - size * 1.1,
         slotW - 4, tw.dunked ? "#FF5A3C" : "rgba(20,10,20,0.78)", tw.dunked ? "#fff" : "#F5EBD2", size));

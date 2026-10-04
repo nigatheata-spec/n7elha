@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { FACES } from "@/lib/avatarIdentity";
 import { isPaused } from "@/components/teacher/GameControls";
 import {
-  climbNeed, towerHeight, partialCourse, towerName, paceRate,
+  climbNeed, towerHeight, builtHeight, partialCourse, towerName, paceRate,
   ERUPT_EVERY, ERUPT_RISE, ERUPT_SECS, LAVA_START, MIN_RATE, PACE_WINDOW,
   type LfMode, type Tower,
 } from "@/lib/lavaFloor";
@@ -232,9 +232,9 @@ const LavaFloorMonitor = ({ session, sessionId }: Props) => {
     endingRef.current = true;
     const towers = towersRef.current;
     if (mode !== "solo" && towers.length) {
-      const best = [...towers].sort((a, b) => towerHeight(b) - towerHeight(a))[0];
+      const best = [...towers].sort((a, b) => builtHeight(b) - builtHeight(a) || a.dunks - b.dunks)[0];
       setFinale(mode === "class"
-        ? (ar ? `بنيتم ${towerHeight(best)} متر معًا` : `You built ${towerHeight(best)} meters together`)
+        ? (ar ? `بنيتم ${builtHeight(best)} متر معًا` : `You built ${builtHeight(best)} meters together`)
         : (ar ? `فاز ${towerName(mode, best, ar)}` : `${towerName(mode, best, ar)} wins`));
     } else {
       const top = [...studentsRef.current].sort((a, b) => (b.crypto ?? 0) - (a.crypto ?? 0))[0];

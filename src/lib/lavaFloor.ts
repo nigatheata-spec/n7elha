@@ -62,6 +62,14 @@ export type LavaState = { level: number; at: string; rate: number; erupt_at: str
 export const towerHeight = (t: Pick<Tower, "base" | "bricks" | "width">) =>
   t.base + Math.floor(t.bricks / Math.max(1, t.width));
 
+/**
+ * Courses the tower's own members have built. This, not towerHeight, decides
+ * who wins: a rescue lifts a tower back above the lava (base jumps), and that
+ * lift must never beat a team that simply stayed out of it. Answers spent
+ * climbing out lay no bricks, so falling in costs exactly those answers.
+ */
+export const builtHeight = (t: Pick<Tower, "bricks" | "width">) => Math.floor(t.bricks / Math.max(1, t.width));
+
 /** Bricks laid in the course that isn't finished yet. */
 export const partialCourse = (t: Pick<Tower, "bricks" | "width">) => t.bricks % Math.max(1, t.width);
 
@@ -70,11 +78,14 @@ export const climbNeed = (width: number) => (width <= 1 ? 2 : width);
 
 export const LAVA_START = -1.5;
 export const ERUPT_EVERY = 45;   // seconds between eruptions
-export const ERUPT_RISE = 2.5;   // meters an eruption adds
+export const ERUPT_RISE = 2;     // meters an eruption adds
 export const ERUPT_SECS = 2.5;   // how long the surge takes
 export const MIN_RATE = 0.03;    // m/s, so the lava never stands still
 export const MAX_RATE = 0.35;
-export const PACE = 0.55;        // the lava rises at this share of the typical tower's growth
+export const PACE = 0.4;         // the lava rises at this share of the typical tower's growth
+// With the eruptions on top (ERUPT_RISE every ERUPT_EVERY), the lava keeps up
+// with a tower answering correctly about every 14 seconds per student: a
+// normal class stays just ahead, and the eruptions catch whoever lags.
 export const PACE_WINDOW = 60;   // seconds of growth the pace looks at
 
 /** Lava level now, from the last snapshot the projector wrote. */
