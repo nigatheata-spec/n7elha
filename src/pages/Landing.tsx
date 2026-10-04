@@ -250,6 +250,26 @@ const Landing = () => {
             </svg>
           </div>
         </div>
+        {/* Only the tops of the two corner shapes below, drawn again above the
+            teal band so they round up over its wave instead of stopping at it.
+            Same box, flip and drift as the shapes in the section, so each cap
+            sits on its shape and moves with it; each one reaches down into
+            its shape so no seam shows. Wide screens only: on a phone the wave
+            sits too low against the smaller shapes for the caps to meet them. */}
+        <div aria-hidden className="pointer-events-none absolute inset-x-0 -top-12 h-[200px] overflow-hidden z-20 hidden md:block">
+          <div className="absolute top-0 -start-16 w-[360px] ltr:-scale-x-100">
+            <svg viewBox="0 0 400 400" className="accent-drift w-full" style={{ animationDuration: "26s" }}>
+              <path fill={SAND} d="M66 128L61 119L57 109L53 100L49 90L47 81C47 66 60 58 80 58C102 58 120 68 130 86L170 128Z" />
+              <path fill={LIME} d="M155 128L150 120L145 112L136 92L133 87C130 60 150 40 190 28C260 10 330 14 400 6V128Z" />
+            </svg>
+          </div>
+          <div className="absolute top-0 -end-16 w-[360px] rtl:-scale-x-100">
+            <svg viewBox="0 0 400 400" className="accent-drift w-full" style={{ animationDuration: "28s", animationDelay: "-13s" }}>
+              <path fill={SAND} d="M97 128L92 120L88 112L84 104L80 96L77 88C76 70 92 62 112 62C134 62 150 72 160 88L200 128Z" />
+              <path fill={TEAL} d="M193 128L188 120L184 112L177 102L173 96L166 83C160 60 170 40 200 30H400V128Z" />
+            </svg>
+          </div>
+        </div>
         <section className="relative isolate overflow-hidden px-5 sm:px-8 md:px-14 pt-24 sm:pt-32 pb-12 sm:pb-16">
           <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
             <div className="absolute -top-12 -start-16 w-[200px] md:w-[360px] ltr:-scale-x-100">
