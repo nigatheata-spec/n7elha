@@ -84,6 +84,7 @@ const GENERATING_STATUS = {
 };
 
 const QUESTION_COUNTS = [5, 10, 15];
+const CHIP = "inline-flex items-center gap-1.5 h-10 px-3 sm:px-3.5 rounded-full bg-[#F3ECDF] text-[#3F5A63] text-sm font-semibold transition-colors hover:bg-[#EADFCB] disabled:opacity-50";
 // Arabic counts 3-10 take the plural "أسئلة", 11 and up the singular "سؤالاً".
 const qCountLabel = (n: number, ar: boolean) => ar ? `${n} ${n <= 10 ? "أسئلة" : "سؤالاً"}` : `${n} questions`;
 
@@ -126,7 +127,6 @@ const Dashboard = () => {
   const [numQ, setNumQ] = useState(5);
   const [busy, setBusy] = useState(false);
   const [statusIdx, setStatusIdx] = useState(0);
-  const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!busy) { setStatusIdx(0); return; }
@@ -339,7 +339,7 @@ const Dashboard = () => {
             onChange={e => setPrompt(e.target.value)}
             onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); generateDraft(); } }}
             onPaste={e => { const imgs = Array.from(e.clipboardData.files).filter(f => f.type.startsWith("image/")); if (imgs.length) { e.preventDefault(); const dt = new DataTransfer(); imgs.forEach(f => dt.items.add(f)); handleFiles(dt.files); } }}
-            placeholder={ar ? "عن ماذا الاختبار؟ اكتب موضوعًا، أو صوّر السبورة بعد شرح الدرس..." : "What's the quiz about? Type a topic, or snap the board after your lesson..."}
+            placeholder={ar ? "عن ماذا الاختبار؟ اذكر الموضوع والصف، مثلًا: الكسور للصف الخامس" : "What's the quiz about? Add the topic and grade, e.g. fractions for 5th grade"}
             rows={3}
             disabled={busy}
             className="w-full resize-none bg-transparent outline-none text-lg placeholder:text-muted-foreground/70 disabled:cursor-not-allowed"
@@ -369,94 +369,85 @@ const Dashboard = () => {
             </div>
           )}
 
-          <input ref={photoRef} type="file" multiple accept="image/*" className="hidden"
+          <input ref={photoRef} type="file" multiple accept="image/*,.pdf,.txt,.md" className="hidden"
             onChange={e => { handleFiles(e.target.files); if (photoRef.current) photoRef.current.value = ""; }} />
-          <input ref={fileRef} type="file" multiple accept=".pdf,.txt,.md" className="hidden"
-            onChange={e => { handleFiles(e.target.files); if (fileRef.current) fileRef.current.value = ""; }} />
 
-          <div className={`mt-3 pt-3 border-t border-border/60 ${busy ? "pointer-events-none" : ""}`}>
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <button type="button" onClick={() => photoRef.current?.click()} disabled={busy}
-                className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full border-2 border-[hsl(var(--nb-border))] text-sm font-bold hover:bg-muted transition-colors">
-                <Camera className="h-4 w-4" />{ar ? "صورة" : "Photo"}
-              </button>
-              <button type="button" onClick={() => fileRef.current?.click()} disabled={busy}
-                className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full border-2 border-[hsl(var(--nb-border))] text-sm font-bold hover:bg-muted transition-colors">
-                <Paperclip className="h-4 w-4" />{ar ? "ملف PDF" : "PDF"}
-              </button>
+          {/* One row, one style: every control is the same quiet pill, and
+              only the create button is filled. */}
+          <div className={`mt-4 flex items-center gap-2 flex-wrap ${busy ? "pointer-events-none" : ""}`}>
+            <button type="button" onClick={() => photoRef.current?.click()} disabled={busy} className={CHIP}
+              aria-label={ar ? "صورة أو ملف" : "Photo or file"}>
+              <Paperclip className="h-4 w-4" /><span className="hidden sm:inline">{ar ? "صورة أو ملف" : "Photo or file"}</span>
+            </button>
 
+            <Popover>
+              <PopoverTrigger asChild>
+                <button type="button" className={CHIP}>
+                  <Gauge className="h-4 w-4 hidden sm:block" />
+                  {ar ? DIFFICULTY.find(d => d.key === difficulty)?.label_ar : DIFFICULTY.find(d => d.key === difficulty)?.label_en}
+                  <ChevronDown className="h-3.5 w-3.5 opacity-60" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-40 p-1" align="start">
+                {DIFFICULTY.map((d) => (
+                  <button key={d.key} type="button" onClick={() => setDifficulty(d.key)}
+                    className={`w-full flex items-center justify-between px-2.5 py-2 rounded-md text-sm hover:bg-accent ${difficulty === d.key ? "bg-accent/50" : ""}`}>
+                    <span>{ar ? d.label_ar : d.label_en}</span>
+                    {difficulty === d.key && <Check className="h-3.5 w-3.5" />}
+                  </button>
+                ))}
+              </PopoverContent>
+            </Popover>
 
+            <Popover>
+              <PopoverTrigger asChild>
+                <button type="button" aria-label={ar ? "عدد الأسئلة" : "Questions"} className={CHIP}>
+                  <ListOrdered className="h-4 w-4 hidden sm:block" />
+                  {qCountLabel(numQ, ar)}
+                  <ChevronDown className="h-3.5 w-3.5 opacity-60" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-40 p-1" align="start">
+                {QUESTION_COUNTS.map(n => (
+                  <button key={n} type="button" onClick={() => setNumQ(n)}
+                    className={`w-full flex items-center justify-between px-2.5 py-2 rounded-md text-sm hover:bg-accent ${numQ === n ? "bg-accent/50" : ""}`}>
+                    <span>{qCountLabel(n, ar)}</span>
+                    {numQ === n && <Check className="h-3.5 w-3.5" />}
+                  </button>
+                ))}
+              </PopoverContent>
+            </Popover>
+
+            {hasSource && (
               <Popover>
                 <PopoverTrigger asChild>
-                  <button type="button" className="inline-flex items-center gap-1.5 h-9 px-3 rounded-full bg-secondary text-secondary-foreground text-xs transition-colors hover:brightness-110">
-                    <Gauge className="h-3.5 w-3.5 opacity-80" />
-                    <span className="font-semibold">{ar ? DIFFICULTY.find(d => d.key === difficulty)?.label_ar : DIFFICULTY.find(d => d.key === difficulty)?.label_en}</span>
-                    <ChevronDown className="h-3 w-3 opacity-80" />
+                  <button type="button" className={CHIP}>
+                    <Sparkles className="h-4 w-4" />
+                    {ar ? cur.label_ar : cur.label_en}
+                    <ChevronDown className="h-3.5 w-3.5 opacity-60" />
                   </button>
                 </PopoverTrigger>
-                <PopoverContent className="w-40 p-1" align="start">
-                  {DIFFICULTY.map((d) => (
-                    <button key={d.key} type="button" onClick={() => setDifficulty(d.key)}
-                      className={`w-full flex items-center justify-between px-2.5 py-2 rounded-md text-sm hover:bg-accent ${difficulty === d.key ? "bg-accent/50" : ""}`}>
-                      <span>{ar ? d.label_ar : d.label_en}</span>
-                      {difficulty === d.key && <Check className="h-3.5 w-3.5" />}
+                <PopoverContent className="w-56 p-1" align="start">
+                  {CREATIVITY.map((c, i) => (
+                    <button key={c.key} type="button" onClick={() => setCreativity(i)}
+                      className={`w-full flex items-start justify-between gap-2 px-2.5 py-2 rounded-md text-sm hover:bg-accent text-start ${creativity === i ? "bg-accent/50" : ""}`}>
+                      <div className="min-w-0">
+                        <div className="font-medium">{ar ? c.label_ar : c.label_en}</div>
+                        <div className="text-[11px] text-muted-foreground">{ar ? c.desc_ar : c.desc_en}</div>
+                      </div>
+                      {creativity === i && <Check className="h-3.5 w-3.5 shrink-0 mt-0.5" />}
                     </button>
                   ))}
                 </PopoverContent>
               </Popover>
+            )}
 
-              <Popover>
-                <PopoverTrigger asChild>
-                  <button type="button" aria-label={ar ? "عدد الأسئلة" : "Questions"} className="inline-flex items-center gap-1.5 h-9 px-3 rounded-full bg-secondary text-secondary-foreground text-xs transition-colors hover:brightness-110">
-                    <ListOrdered className="h-3.5 w-3.5 opacity-80" />
-                    <span className="font-semibold">{qCountLabel(numQ, ar)}</span>
-                    <ChevronDown className="h-3 w-3 opacity-80" />
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent className="w-40 p-1" align="start">
-                  {QUESTION_COUNTS.map(n => (
-                    <button key={n} type="button" onClick={() => setNumQ(n)}
-                      className={`w-full flex items-center justify-between px-2.5 py-2 rounded-md text-sm hover:bg-accent ${numQ === n ? "bg-accent/50" : ""}`}>
-                      <span>{qCountLabel(n, ar)}</span>
-                      {numQ === n && <Check className="h-3.5 w-3.5" />}
-                    </button>
-                  ))}
-                </PopoverContent>
-              </Popover>
-
-              {hasSource && (
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <button type="button" className="inline-flex items-center gap-1.5 h-9 px-3 rounded-full bg-primary text-primary-foreground text-xs transition-colors hover:brightness-110">
-                      <span className="font-semibold">{ar ? cur.label_ar : cur.label_en}</span>
-                      <ChevronDown className="h-3 w-3 opacity-80" />
-                    </button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-56 p-1" align="start">
-                    {CREATIVITY.map((c, i) => (
-                      <button key={c.key} type="button" onClick={() => setCreativity(i)}
-                        className={`w-full flex items-start justify-between gap-2 px-2.5 py-2 rounded-md text-sm hover:bg-accent text-start ${creativity === i ? "bg-accent/50" : ""}`}>
-                        <div className="min-w-0">
-                          <div className="font-medium">{ar ? c.label_ar : c.label_en}</div>
-                          <div className="text-[11px] text-muted-foreground">{ar ? c.desc_ar : c.desc_en}</div>
-                        </div>
-                        {creativity === i && <Check className="h-3.5 w-3.5 shrink-0 mt-0.5" />}
-                      </button>
-                    ))}
-                  </PopoverContent>
-                </Popover>
-              )}
-              <Button
-                onClick={() => generateDraft()}
-                disabled={busy}
-                className="ms-auto rounded-full h-10 px-5 gap-2 bg-accent text-accent-foreground hover:bg-accent/90 font-bold"
-              >
-                {busy && <Loader2 className="h-4 w-4 animate-spin" />}
-                {ar ? "أنشئ الاختبار" : "Create quiz"}
-              </Button>
-            </div>
-
-
+            <button type="button" onClick={() => generateDraft()} disabled={busy}
+              className="w-full sm:w-auto sm:ms-auto justify-center inline-flex items-center gap-2 h-10 ps-5 pe-4 rounded-full bg-[#3F5A63] text-white text-sm font-bold transition-colors hover:bg-[#344b53] disabled:opacity-60">
+              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              {ar ? "أنشئ الاختبار" : "Create quiz"}
+              {!busy && <ArrowUp className={`h-4 w-4 ${ar ? "-rotate-90" : "rotate-90"}`} />}
+            </button>
           </div>
 
           {dragging && (
