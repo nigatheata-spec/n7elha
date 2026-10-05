@@ -83,7 +83,7 @@ export const SiteFooter = () => {
       </div>
 
       {/* the footer's wavy top edge */}
-      <svg aria-hidden viewBox="0 0 1440 72" preserveAspectRatio="none" className="block w-full h-[72px]">
+      <svg aria-hidden viewBox="0 0 1440 72" preserveAspectRatio="none" className="relative block w-full h-[72px] -mb-px">
         <path fill="#2B3F45" d="M0 30C240 66 500 8 780 36C1040 62 1250 12 1440 34V72H0Z" />
       </svg>
 
