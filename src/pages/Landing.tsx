@@ -99,9 +99,8 @@ const Landing = () => {
 
   return (
     <div
-      id="scroll-skew"
       className="min-h-screen w-full"
-      style={{ background: "hsl(var(--cream-panel))", fontFamily: "'Outfit', 'Almarai', system-ui, sans-serif", willChange: "transform" }}
+      style={{ background: "hsl(var(--cream-panel))", fontFamily: "'Outfit', 'Almarai', system-ui, sans-serif" }}
     >
       <Seo
         path="/"
@@ -210,7 +209,7 @@ const Landing = () => {
             run under the waves instead of stopping at a straight seam. The
             waves stay inside that overlap, so no seam can show through. */}
         <section className="relative z-10 -my-[72px] text-white">
-          <svg aria-hidden viewBox="0 0 1440 72" preserveAspectRatio="none" className="block w-full h-[72px]">
+          <svg aria-hidden viewBox="0 0 1440 72" preserveAspectRatio="none" className="relative block w-full h-[72px] -mb-px">
             <path fill={TEAL} d="M0 44C220 6 470 64 760 30C1010 2 1240 8 1440 26V72H0Z" />
           </svg>
           <div className="px-5 sm:px-8 md:px-14 py-14 sm:py-20" style={{ background: TEAL }}>
@@ -232,7 +231,7 @@ const Landing = () => {
             </div>
           </div>
           </div>
-          <svg aria-hidden viewBox="0 0 1440 72" preserveAspectRatio="none" className="block w-full h-[72px]">
+          <svg aria-hidden viewBox="0 0 1440 72" preserveAspectRatio="none" className="relative block w-full h-[72px] -mt-px">
             <path fill={TEAL} d="M0 0H1440V36C1200 70 960 14 690 46C430 74 200 64 0 30Z" />
           </svg>
         </section>

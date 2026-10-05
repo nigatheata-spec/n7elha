@@ -1,10 +1,10 @@
 import { useEffect } from "react";
 import Lenis from "lenis";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
 
-gsap.registerPlugin(ScrollTrigger);
-
+// Smooth wheel scrolling for the landing page. There used to be a skew on the
+// whole page while it scrolled; it's gone on purpose: tilting a page-height
+// layer every frame stuttered on phones and in Firefox, and the tilt opened
+// hairline seams between the teal band's waves and its body.
 export function useSmoothScroll(enabled = true) {
   useEffect(() => {
     if (!enabled) return;
@@ -12,26 +12,6 @@ export function useSmoothScroll(enabled = true) {
     const lenis = new Lenis({
       duration: 1.1,
       easing: (t: number) => 1 - Math.pow(1 - t, 4),
-    });
-
-    let resetTimeout: ReturnType<typeof setTimeout>;
-
-    lenis.on("scroll", (e: { velocity: number }) => {
-      ScrollTrigger.update();
-
-      const v = gsap.utils.clamp(-2.8, 2.8, e.velocity * 0.48);
-
-      gsap.to("#scroll-skew", {
-        skewY: v,
-        duration: 0.4,
-        ease: "power3.out",
-        overwrite: true,
-      });
-
-      clearTimeout(resetTimeout);
-      resetTimeout = setTimeout(() => {
-        gsap.to("#scroll-skew", { skewY: 0, duration: 0.6, ease: "power3.out" });
-      }, 120);
     });
 
     // Each frame schedules a fresh id, so cleanup has to cancel the LATEST one.
@@ -44,12 +24,8 @@ export function useSmoothScroll(enabled = true) {
     }
     rafId = requestAnimationFrame(raf);
 
-    gsap.ticker.lagSmoothing(0);
-    ScrollTrigger.refresh();
-
     return () => {
       cancelAnimationFrame(rafId);
-      clearTimeout(resetTimeout);
       lenis.destroy();
     };
   }, [enabled]);
