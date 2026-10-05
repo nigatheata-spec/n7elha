@@ -112,7 +112,8 @@ export const SiteNav = () => {
       </nav>
 
       {/* The menu goes to <body>: inside the page it would be trapped under
-          the hero (the nav sits in its own layer). */}
+          the hero (the nav sits in its own layer) and sized to the whole page
+          (the scroll-skew wrapper becomes its frame instead of the screen). */}
       {createPortal(<>
       {/* mobile menu backdrop */}
       <div

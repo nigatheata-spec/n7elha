@@ -1,11 +1,13 @@
 import { useEffect } from "react";
 import Lenis from "lenis";
+import gsap from "gsap";
 
-// Smooth wheel scrolling for the landing page. There used to be a skew on the
-// whole page while it scrolled; it's gone on purpose: tilting a page-height
-// layer every frame stuttered on phones and in Firefox, and the tilt opened
-// hairline seams between the teal band's waves and its body.
-export function useSmoothScroll(enabled = true) {
+// Smooth wheel scrolling for the landing page, plus the skew: the page leans
+// with the scroll speed and settles back when you stop. The skew runs only on
+// a mouse/trackpad. On phones it stuttered (a page-height layer tilted on
+// every touch frame), so they get plain native scrolling. One quickTo is
+// reused instead of a fresh tween per scroll event.
+export function useSmoothScroll(enabled = true, skewId = "scroll-skew") {
   useEffect(() => {
     if (!enabled) return;
 
@@ -13,6 +15,22 @@ export function useSmoothScroll(enabled = true) {
       duration: 1.1,
       easing: (t: number) => 1 - Math.pow(1 - t, 4),
     });
+
+    const el = document.getElementById(skewId);
+    const skew = !!el
+      && window.matchMedia("(pointer: fine)").matches
+      && !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let resetTimeout: ReturnType<typeof setTimeout>;
+
+    if (skew && el) {
+      el.style.willChange = "transform";
+      const skewTo = gsap.quickTo(el, "skewY", { duration: 0.4, ease: "power3.out" });
+      lenis.on("scroll", (e: { velocity: number }) => {
+        skewTo(gsap.utils.clamp(-2.8, 2.8, e.velocity * 0.48));
+        clearTimeout(resetTimeout);
+        resetTimeout = setTimeout(() => skewTo(0), 120);
+      });
+    }
 
     // Each frame schedules a fresh id, so cleanup has to cancel the LATEST one.
     // Cancelling only the first left the loop running against a destroyed Lenis,
@@ -26,7 +44,12 @@ export function useSmoothScroll(enabled = true) {
 
     return () => {
       cancelAnimationFrame(rafId);
+      clearTimeout(resetTimeout);
       lenis.destroy();
+      if (el) {
+        gsap.killTweensOf(el);
+        gsap.set(el, { clearProps: "transform,willChange" });
+      }
     };
-  }, [enabled]);
+  }, [enabled, skewId]);
 }

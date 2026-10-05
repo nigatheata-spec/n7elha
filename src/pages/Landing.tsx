@@ -99,6 +99,7 @@ const Landing = () => {
 
   return (
     <div
+      id="scroll-skew"
       className="min-h-screen w-full"
       style={{ background: "hsl(var(--cream-panel))", fontFamily: "'Outfit', 'Almarai', system-ui, sans-serif" }}
     >
