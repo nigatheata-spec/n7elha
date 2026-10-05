@@ -49,7 +49,7 @@ export const SiteFooter = () => {
       };
 
   return (
-    <footer className="relative text-white">
+    <footer data-skew className="relative isolate text-white">
 
       {/* CTA: a lime shape with soft, uneven edges instead of a boxed card.
           It sits over the footer's wavy top so the two overlap like the

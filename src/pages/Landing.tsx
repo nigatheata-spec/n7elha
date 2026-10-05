@@ -99,7 +99,6 @@ const Landing = () => {
 
   return (
     <div
-      id="scroll-skew"
       className="min-h-screen w-full"
       style={{ background: "hsl(var(--cream-panel))", fontFamily: "'Outfit', 'Almarai', system-ui, sans-serif" }}
     >
@@ -124,27 +123,27 @@ const Landing = () => {
       <div className="relative w-full">
 
         {/* Positioned so it paints over the hero shapes that run up behind it. */}
-        <div className="relative z-10"><SiteNav /></div>
+        <div data-skew className="relative z-10"><SiteNav /></div>
 
         {/* ---------------- HERO ---------------- */}
-        <div className="relative">
+        <div data-skew className="relative isolate">
         {/* Brand shapes (the business-card look), running from the very top
             of the page up behind the nav so the top reads as one piece. Drawn
             for left-to-right and mirrored in Arabic, so they always sit on the
             mockup's side. The layer clips itself; nothing can scroll sideways. */}
         <div aria-hidden className="pointer-events-none absolute inset-x-0 -top-40 bottom-0 overflow-hidden">
           <div className="absolute -top-10 -end-20 w-[300px] md:w-[600px] rtl:-scale-x-100">
-            <svg viewBox="0 0 400 400" className="accent-drift w-full" style={{ animationDuration: "24s" }}>
+            <svg viewBox="0 0 400 400" className="w-full">
               <path fill={SAND} d="M400 0H70C20 40 48 118 100 172C154 228 132 300 204 356C254 396 338 404 400 392Z" />
               <path fill={LIME} d="M400 0H154C102 34 130 104 174 150C222 200 202 262 266 310C308 342 360 340 400 330Z" />
             </svg>
           </div>
           <div className="absolute -bottom-10 -end-10 w-[240px] md:w-[440px] rtl:-scale-x-100">
-            <svg viewBox="0 0 400 300" className="accent-drift w-full" style={{ animationDuration: "28s", animationDelay: "-9s" }}>
+            <svg viewBox="0 0 400 300" className="w-full">
               <path fill={TEAL} d="M400 300V120C360 104 318 124 296 166C266 226 198 226 148 258C118 278 98 292 90 300Z" />
             </svg>
           </div>
-          <svg viewBox="0 0 240 140" className="accent-drift absolute top-48 start-[38%] w-[200px] hidden lg:block" style={{ animationDuration: "20s", animationDelay: "-5s" }}>
+          <svg viewBox="0 0 240 140" className="absolute top-48 start-[38%] w-[200px] hidden lg:block">
             <ellipse cx="120" cy="70" rx="112" ry="52" transform="rotate(-14 120 70)" fill="none" stroke="#12262B" strokeWidth="1.5" opacity="0.4" />
           </svg>
         </div>
@@ -209,7 +208,7 @@ const Landing = () => {
             the sections above and below by the wave's height, so their shapes
             run under the waves instead of stopping at a straight seam. The
             waves stay inside that overlap, so no seam can show through. */}
-        <section className="relative z-10 -my-[72px] text-white">
+        <section data-skew className="relative z-10 -my-[72px] text-white">
           <svg aria-hidden viewBox="0 0 1440 72" preserveAspectRatio="none" className="relative block w-full h-[72px] -mb-px">
             <path fill={TEAL} d="M0 44C220 6 470 64 760 30C1010 2 1240 8 1440 26V72H0Z" />
           </svg>
@@ -238,13 +237,14 @@ const Landing = () => {
         </section>
 
         {/* ---------------- WHAT WE BELIEVE ---------------- */}
-        <div className="relative">
+        {/* z-20 so the corner shapes' heads stay over the teal band above. */}
+        <div data-skew className="relative z-20">
         {/* A teal and sand wave coming in from the page edge and crossing from
             this section into the next, so the two read as one stretch of page
             instead of the wave being cut where a section ends. */}
         <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
           <div className="absolute bottom-20 md:bottom-28 -end-8 w-[100px] md:w-[300px] rtl:-scale-x-100">
-            <svg viewBox="0 0 300 600" className="accent-drift w-full" style={{ animationDuration: "30s", animationDelay: "-11s" }}>
+            <svg viewBox="0 0 300 600" className="w-full">
               <path fill={SAND} d="M300 0C226 22 186 92 196 168C206 248 104 280 84 360C62 446 160 540 300 600Z" />
               <path fill={TEAL} d="M300 60C252 82 232 140 240 200C248 266 168 294 154 362C140 432 210 506 300 548Z" />
             </svg>
@@ -255,13 +255,13 @@ const Landing = () => {
             into it. Own layer, since the section below clips its top. */}
         <div aria-hidden className="pointer-events-none absolute inset-x-0 -top-12 h-[240px] md:h-[420px] overflow-hidden z-20">
           <div className="absolute top-0 -start-16 w-[200px] md:w-[360px] ltr:-scale-x-100">
-            <svg viewBox="0 0 400 400" className="accent-drift w-full" style={{ animationDuration: "26s" }}>
+            <svg viewBox="0 0 400 400" className="w-full">
               <path fill={SAND} d="M400 80H150L126 58C118 44 100 34 80 34C58 34 44 44 43.9 60C45.3 96.8 68.1 138.9 100 172C154 228 132 300 204 356C254 396 338 404 400 392Z" />
               <path fill={LIME} d="M400 56C340 30 220 18 168 32C142 40 129 48 126.3 60C129.4 90.5 149.2 124 174 150C222 200 202 262 266 310C308 342 360 340 400 330Z" />
             </svg>
           </div>
           <div className="absolute top-0 -end-16 w-[200px] md:w-[360px] rtl:-scale-x-100">
-            <svg viewBox="0 0 400 400" className="accent-drift w-full" style={{ animationDuration: "28s", animationDelay: "-13s" }}>
+            <svg viewBox="0 0 400 400" className="w-full">
               <path fill={SAND} d="M400 0H200L170 60C156 42 136 32 112 32C88 32 70 42 69.7 60C72.2 87.1 87.6 116.6 112 140C164 190 150 252 214 300C262 336 344 344 400 332Z" />
               <path fill={TEAL} d="M400 0H178C140 26 156 84 192 120C232 160 222 214 274 252C314 282 362 284 400 276Z" />
             </svg>
@@ -271,13 +271,13 @@ const Landing = () => {
           <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
             {/* beside the phones, on the lime side: a thin oval with a teal and a lime drop */}
             <div className="absolute top-[54%] start-[6%] w-[220px] h-[180px] hidden md:block">
-              <svg viewBox="0 0 240 140" className="accent-drift absolute inset-x-0 top-0 w-full" style={{ animationDuration: "22s", animationDelay: "-9s" }}>
+              <svg viewBox="0 0 240 140" className="absolute inset-x-0 top-0 w-full">
                 <ellipse cx="120" cy="70" rx="112" ry="52" transform="rotate(-20 120 70)" fill="none" stroke="#12262B" strokeWidth="1.5" opacity="0.4" />
               </svg>
-              <svg viewBox="0 0 120 120" className="accent-drift absolute top-[46%] start-[14%] w-[64px]" style={{ animationDuration: "19s", animationDelay: "-5s" }}>
+              <svg viewBox="0 0 120 120" className="absolute top-[46%] start-[14%] w-[64px]">
                 <path fill={TEAL} d="M64 6C94 8 116 34 112 66C108 98 82 116 52 112C22 108 4 84 8 56C12 26 34 4 64 6Z" />
               </svg>
-              <svg viewBox="0 0 120 120" className="accent-drift absolute top-[6%] end-[6%] w-[34px]" style={{ animationDuration: "16s", animationDelay: "-2s" }}>
+              <svg viewBox="0 0 120 120" className="absolute top-[6%] end-[6%] w-[34px]">
                 <path fill={LIME} d="M64 6C94 8 116 34 112 66C108 98 82 116 52 112C22 108 4 84 8 56C12 26 34 4 64 6Z" />
               </svg>
             </div>
@@ -328,10 +328,10 @@ const Landing = () => {
         <section className="wrap relative px-5 sm:px-8 md:px-14 pt-10 sm:pt-14 pb-16 sm:pb-24">
           {/* the gap between the text and the map gets a small lime drop and an oval */}
           <div aria-hidden className="pointer-events-none absolute inset-0 hidden md:block">
-            <svg viewBox="0 0 240 140" className="accent-drift absolute top-[30%] left-1/2 -translate-x-1/2 w-[170px]" style={{ animationDuration: "22s", animationDelay: "-7s" }}>
+            <svg viewBox="0 0 240 140" className="absolute top-[30%] left-1/2 -translate-x-1/2 w-[170px]">
               <ellipse cx="120" cy="70" rx="112" ry="52" transform="rotate(18 120 70)" fill="none" stroke="#12262B" strokeWidth="1.5" opacity="0.35" />
             </svg>
-            <svg viewBox="0 0 120 120" className="accent-drift absolute top-[52%] left-[54%] w-[56px]" style={{ animationDuration: "18s", animationDelay: "-3s" }}>
+            <svg viewBox="0 0 120 120" className="absolute top-[52%] left-[54%] w-[56px]">
               <path fill={LIME} d="M64 6C94 8 116 34 112 66C108 98 82 116 52 112C22 108 4 84 8 56C12 26 34 4 64 6Z" />
             </svg>
           </div>
