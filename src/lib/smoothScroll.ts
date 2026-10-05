@@ -6,7 +6,9 @@ import gsap from "gsap";
 // with the scroll speed and settles back when you stop. The skew runs only on
 // a mouse/trackpad. On phones it stuttered (a page-height layer tilted on
 // every touch frame), so they get plain native scrolling. One quickTo is
-// reused instead of a fresh tween per scroll event.
+// reused instead of a fresh tween per scroll event, and the drifting accent
+// shapes pause while the page moves (html.is-scrolling), so a scroll frame
+// only re-tilts the page instead of also re-placing a dozen animated shapes.
 export function useSmoothScroll(enabled = true, skewId = "scroll-skew") {
   useEffect(() => {
     if (!enabled) return;
@@ -25,10 +27,12 @@ export function useSmoothScroll(enabled = true, skewId = "scroll-skew") {
     if (skew && el) {
       el.style.willChange = "transform";
       const skewTo = gsap.quickTo(el, "skewY", { duration: 0.4, ease: "power3.out" });
+      const root = document.documentElement;
       lenis.on("scroll", (e: { velocity: number }) => {
         skewTo(gsap.utils.clamp(-2.8, 2.8, e.velocity * 0.48));
+        root.classList.add("is-scrolling");
         clearTimeout(resetTimeout);
-        resetTimeout = setTimeout(() => skewTo(0), 120);
+        resetTimeout = setTimeout(() => { skewTo(0); root.classList.remove("is-scrolling"); }, 120);
       });
     }
 
@@ -46,6 +50,7 @@ export function useSmoothScroll(enabled = true, skewId = "scroll-skew") {
       cancelAnimationFrame(rafId);
       clearTimeout(resetTimeout);
       lenis.destroy();
+      document.documentElement.classList.remove("is-scrolling");
       if (el) {
         gsap.killTweensOf(el);
         gsap.set(el, { clearProps: "transform,willChange" });

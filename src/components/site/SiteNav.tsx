@@ -35,7 +35,7 @@ export const SiteNav = () => {
   return (
     <>
       <nav dir="ltr" className="px-5 sm:px-8 md:px-10 pt-5 sm:pt-6">
-        <div className="flex items-center justify-between gap-3 bg-white/90 backdrop-blur-md rounded-2xl px-4 py-3 border-2 border-[hsl(var(--nb-border))] shadow-[4px_4px_0_0_hsl(var(--nb-border))]">
+        <div className="flex items-center justify-between gap-3 bg-white/90 rounded-2xl px-4 py-3 border-2 border-[hsl(var(--nb-border))] shadow-[4px_4px_0_0_hsl(var(--nb-border))]">
 
           <Link to="/" className="flex items-center gap-2 shrink-0">
             <img src={logoMark} alt="nefelha" className="h-8 w-8 object-contain" />

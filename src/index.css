@@ -622,6 +622,7 @@
   }
   .accent-drift { animation: accent-drift 22s ease-in-out infinite; transform-origin: center; }
   @media (prefers-reduced-motion: reduce) { .accent-drift { animation: none; } }
+  .is-scrolling .accent-drift { animation-play-state: paused; }
 
   /* Crypto Rush wrong-answer screen: flash in, then the X box shakes. */
   @keyframes cr-flash {
