@@ -16,11 +16,10 @@ import gsap from "gsap";
 // carry isolate/z classes so switching their transform on and off never
 // changes what paints over what.
 //
-// Mouse/trackpad only. Phones get nothing at all here, just native scrolling.
+// Runs on phones too: with scrolling left native, the tilt alone is light.
 export function useSmoothScroll(enabled = true) {
   useEffect(() => {
     if (!enabled) return;
-    if (!window.matchMedia("(pointer: fine)").matches) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     const els = Array.from(document.querySelectorAll<HTMLElement>("[data-skew]"));
