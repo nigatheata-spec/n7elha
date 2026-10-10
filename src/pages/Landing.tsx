@@ -33,11 +33,15 @@ const Landing = () => {
         joinGame: "ادخل اللعبة",
 
         mapCaption: "من هنا نبدأ",
-        storyKicker: "قصتنا",
-        storyTitle: "الطالب حاضر بجسمه، غايب بعقله",
-        sp1: "نعرف زين شكل الحصة: الطالب قاعد قدامك بس عقله بمكان ثاني. عيونه على الساعة، أو على الجوال تحت الطاولة، يعدّ الدقايق للجرس. مو لأنه ما يفهم — الطريقة اللي يتعلّم فيها ميتة، ما تعطيه سبب يهتم.",
-        sp2: "والمعلم يحارب معركة خاسرة. ينافس جوالات وتطبيقات على انتباهٍ ما عاد يطول أكثر من دقايق. يجتهد ويجهّز زين، بس الصف طافي قبل لا يبدأ الدرس.",
-        sp3: "هالمفهوم — تجربة تعليمية تخلي الطالب يحب التعلّم بدل ما يهرب منه — ما موجود في الفصول العربية. قررنا نكون أول واحد يبنيه. من هني طلعت نفلها.",
+        visKicker: "رؤية السعودية ٢٠٣٠",
+        visTitle: "تعليم يبني الإنسان، كما تريد الرؤية",
+        visIntro: "رؤية ٢٠٣٠ تضع الإنسان في قلب التنمية، وبرنامج تنمية القدرات البشرية يستهدف جيلًا متمكنًا من المعرفة والمهارات. هذا الجيل يتشكل في الفصل كل يوم، ونفلها تشتغل هناك بالذات.",
+        visItems: [
+          ["مجتمع حيوي", "الطالب اللي يحب الحصة يحب المدرسة. نحوّل المراجعة لتجربة يشاركون فيها بحماس، فيصير التعلم عادة يومية مو واجب ثقيل."],
+          ["مهارات اقتصاد المستقبل", "كل طالب يتعامل مع التقنية في كل حصة، والمعلم يشتغل مع الذكاء الاصطناعي وبيانات الفصل، فتتكوّن الثقة الرقمية من الدرس نفسه."],
+          ["عربية أولًا", "أسئلة وتقارير وواجهة بالعربية وبلهجة الفصل، لأن الهوية واللغة جزء من بناء الإنسان، مو شي نضيفه في الآخر."],
+        ],
+        visNote: "نفلها منتج مستقل، وليست جهة حكومية ولا شريكًا رسميًا لبرامج الرؤية. نبني باتجاهها.",
 
         feelKicker: "ما نؤمن به",
         feelLine1: "التفاعل مو رقم",
@@ -70,11 +74,15 @@ const Landing = () => {
         joinGame: "JOIN GAME",
 
         mapCaption: "This is where we start",
-        storyKicker: "OUR STORY",
-        storyTitle: "Students show up. Their minds don't.",
-        sp1: "We know exactly what class looks like. The student's body is there, but their mind is somewhere else. Eyes on the clock. Scrolling under the desk. Counting down to the bell. Not because they don't understand — it's because the way we teach gives them no reason to care.",
-        sp2: "The teacher is fighting a losing battle over attention. Competing with devices they can't beat. Working hard, preparing well, but the room checks out before the lesson even starts.",
-        sp3: "The idea of making students actually want to learn — of creating an experience that intrinsically engages instead of coercing compliance — doesn't exist yet in Arabic classrooms. We decided to build it first. That's how nefelha started.",
+        visKicker: "SAUDI VISION 2030",
+        visTitle: "Education that builds people, the way the Vision intends",
+        visIntro: "Vision 2030 puts people at the center of development, and the Human Capability Development Program aims for a generation strong in knowledge and skills. That generation is shaped in the classroom every day, and that is exactly where nefelha works.",
+        visItems: [
+          ["A vibrant society", "A student who likes the lesson likes school. We turn review into something they join in on, so learning becomes a daily habit instead of a chore."],
+          ["Skills for the future economy", "Every student works with technology in every lesson, and the teacher works with AI and class data, so digital confidence grows inside the lesson itself."],
+          ["Arabic first", "Questions, reports and the interface in Arabic, in the voice of the classroom, because language and identity are part of building people, not an add-on."],
+        ],
+        visNote: "nefelha is an independent product, not a government body or an official partner of the Vision programs. We build in its direction.",
 
         feelKicker: "WHAT WE BELIEVE",
         feelLine1: "Engagement isn't a number",
@@ -203,7 +211,7 @@ const Landing = () => {
         </div>
         </div>
 
-        {/* ---------------- OUR STORY ---------------- */}
+        {/* ---------------- VISION 2030 ---------------- */}
         {/* A teal band with wavy edges instead of a flat dark block. It overlaps
             the sections above and below by the wave's height, so their shapes
             run under the waves instead of stopping at a straight seam. The
@@ -213,21 +221,31 @@ const Landing = () => {
             <path fill={TEAL} d="M0 44C220 6 470 64 760 30C1010 2 1240 8 1440 26V72H0Z" />
           </svg>
           <div className="px-5 sm:px-8 md:px-14 py-14 sm:py-20" style={{ background: TEAL }}>
-          <div className="wrap grid grid-cols-1 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] gap-8 lg:gap-16">
+          <div className="wrap grid grid-cols-1 lg:grid-cols-[minmax(0,24rem)_minmax(0,1fr)] gap-10 lg:gap-16">
             <div>
-              <span className={`text-[12px] font-semibold ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`} style={{ color: SAND }}>{t.storyKicker}</span>
+              <span className={`text-[12px] font-semibold ${isAr ? "tracking-normal" : "tracking-[0.25em]"}`} style={{ color: SAND }}>{t.visKicker}</span>
               <h2
                 className="mt-3 text-[26px] sm:text-[34px] tracking-tight leading-[1.15]"
                 style={{ color: "#FFFFFF", fontFamily: "'ArslanWessam', 'Almarai', sans-serif" }}
               >
-                {t.storyTitle}
+                {t.visTitle}
               </h2>
+              <p className="mt-5 text-[15px] leading-relaxed text-white/80">{t.visIntro}</p>
             </div>
-            <div className="max-w-xl relative">
+            <div className="relative">
               <div className="h-1 w-16 rounded-full" style={{ background: LIME }} />
-              <p className="mt-6 text-[17px] sm:text-[19px] leading-relaxed text-white font-medium">{t.sp1}</p>
-              <p className="mt-5 text-[15px] leading-relaxed text-white/80">{t.sp2}</p>
-              <p className="mt-5 text-[15px] leading-relaxed text-white/80">{t.sp3}</p>
+              <ol className="mt-4 divide-y divide-white/15">
+                {t.visItems.map(([head, body], i) => (
+                  <li key={head} className="flex gap-5 py-6">
+                    <span className="shrink-0 w-9 text-[30px] leading-none font-semibold" style={{ color: LIME, fontFamily: "'ArslanWessam', 'Almarai', sans-serif" }}>{isAr ? ["١", "٢", "٣"][i] : `0${i + 1}`}</span>
+                    <div>
+                      <h3 className="text-[18px] sm:text-[20px] font-semibold text-white">{head}</h3>
+                      <p className="mt-1.5 text-[15px] leading-relaxed text-white/75">{body}</p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+              <p className="mt-2 text-[12.5px] leading-relaxed text-white/55">{t.visNote}</p>
             </div>
           </div>
           </div>
