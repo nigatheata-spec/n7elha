@@ -5,6 +5,7 @@ import ReactMarkdown from "react-markdown";
 import { ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { SiteNav } from "@/components/site/SiteNav";
+import { PageShapes } from "@/components/site/PageShapes";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { Seo } from "@/components/Seo";
 
@@ -74,10 +75,11 @@ const BlogPost = () => {
 
   return (
     <div
-      className="min-h-screen w-full"
+      className="relative isolate overflow-x-clip min-h-screen w-full"
       style={{ background: "hsl(var(--cream-panel))", fontFamily: "'Outfit', 'Almarai', system-ui, sans-serif" }}
     >
       <Seo path={`/blog/${post.slug}`} titleAr={post.title_ar} titleEn={post.title_en} descriptionAr={post.excerpt_ar} descriptionEn={excerpt} />
+      <PageShapes />
       <SiteNav />
 
       <div className="wrap px-5 sm:px-8 md:px-14 pt-10 sm:pt-16 pb-20 sm:pb-28 max-w-2xl">

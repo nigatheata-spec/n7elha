@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { ArrowUpRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { SiteNav } from "@/components/site/SiteNav";
+import { PageShapes } from "@/components/site/PageShapes";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { Seo } from "@/components/Seo";
 
@@ -39,7 +40,7 @@ const Blog = () => {
 
   return (
     <div
-      className="min-h-screen w-full"
+      className="relative isolate overflow-x-clip min-h-screen w-full"
       style={{ background: "hsl(var(--cream-panel))", fontFamily: "'Outfit', 'Almarai', system-ui, sans-serif" }}
     >
       <Seo
@@ -49,6 +50,7 @@ const Blog = () => {
         descriptionAr="مقالات عن أدوات تفاعل الطلاب، التعلم باللعب، الذكاء الاصطناعي في التعليم، وواقع التعليم التفاعلي في السعودية."
         descriptionEn="Articles on classroom engagement tools, gamified learning, AI in education, and the state of interactive learning in Saudi Arabia."
       />
+      <PageShapes />
       <SiteNav />
 
       <section className="wrap relative overflow-hidden px-5 sm:px-8 md:px-14 pt-10 sm:pt-16 pb-14 sm:pb-20">

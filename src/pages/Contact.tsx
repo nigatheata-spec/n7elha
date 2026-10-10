@@ -6,6 +6,7 @@
 import { useTranslation } from "react-i18next";
 import { Mail, Phone, School, UserRound, GraduationCap } from "lucide-react";
 import { SiteNav } from "@/components/site/SiteNav";
+import { PageShapes } from "@/components/site/PageShapes";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { Seo } from "@/components/Seo";
 
@@ -43,7 +44,7 @@ const Contact = () => {
 
   return (
     <div
-      className="min-h-screen w-full"
+      className="relative isolate overflow-x-clip min-h-screen w-full"
       style={{ background: "hsl(var(--cream-panel))", fontFamily: "'Outfit', 'Almarai', system-ui, sans-serif" }}
     >
       <Seo
@@ -53,6 +54,7 @@ const Contact = () => {
         descriptionAr="راسل فريق نفلها. أسئلة المعلمين، شراكات المدارس، والدعم الفني — نقرأ كل رسالة ونرد خلال يوم عمل."
         descriptionEn="Get in touch with the nefelha team. Teacher questions, school partnerships, and technical support — we read every message and reply within a working day."
       />
+      <PageShapes />
       <SiteNav />
 
       {/* ---------------- HERO ---------------- */}

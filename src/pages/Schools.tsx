@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Building2, Users, QrCode, BarChart3, ArrowUpRight } from "lucide-react";
 import { SiteNav } from "@/components/site/SiteNav";
+import { PageShapes } from "@/components/site/PageShapes";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { Seo } from "@/components/Seo";
 import { HeroProductScene } from "@/components/site/HeroProductScene";
@@ -56,7 +57,7 @@ const Schools = () => {
 
   return (
     <div
-      className="min-h-screen w-full"
+      className="relative isolate overflow-x-clip min-h-screen w-full"
       style={{ background: "hsl(var(--cream-panel))", fontFamily: "'Outfit', 'Almarai', system-ui, sans-serif" }}
     >
       <Seo
@@ -66,6 +67,7 @@ const Schools = () => {
         descriptionAr="منصة تعليمية للمدارس في السعودية: فعّل نفلها عبر عدة صفوف ومعلمين، بدعم كامل لفصول بلا جهاز لكل طالب عبر نمط الألعاب الفعلية."
         descriptionEn="A student engagement platform for schools in Saudi Arabia: roll out nefelha across multiple classes and teachers, with full support for classrooms without a device per student via Physical Games mode."
       />
+      <PageShapes />
       <SiteNav />
 
       {/* ---------------- HERO ---------------- */}

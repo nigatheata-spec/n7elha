@@ -5,6 +5,7 @@ import saudiMap from "@/assets/saudi-map-light.svg";
 import zigzag from "@/assets/doodles/zigzag-trio.png";
 import beans from "@/assets/doodles/bean-pair.png";
 import { SiteNav } from "@/components/site/SiteNav";
+import { PageShapes } from "@/components/site/PageShapes";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { Seo } from "@/components/Seo";
 
@@ -95,7 +96,7 @@ const About = () => {
 
   return (
     <div
-      className="min-h-screen w-full"
+      className="relative isolate overflow-x-clip min-h-screen w-full"
       style={{ background: "hsl(var(--cream-panel))", fontFamily: "'Outfit', 'Almarai', system-ui, sans-serif" }}
     >
       <Seo
@@ -105,6 +106,7 @@ const About = () => {
         descriptionAr="نفلها شركة ناشئة سعودية في تقنية التعليم أسسها طلاب سابقون أرادوا منصة تعليمية تفاعلية مصممة للفصل العربي من الأساس، لا مترجمة عنه. تعرّف على قصتنا وقيمنا."
         descriptionEn="nefelha is a Saudi EdTech startup founded by former students who wanted an interactive learning platform built for the Arabic classroom from the ground up, not translated into it. Meet our story and values."
       />
+      <PageShapes />
       <SiteNav />
 
       {/* ---------------- HERO ---------------- */}

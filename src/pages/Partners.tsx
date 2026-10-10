@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import { Mail, Twitter, Instagram, Github, School, UserRound } from "lucide-react";
 import commas from "@/assets/doodles/comma-pair.png";
 import { SiteNav } from "@/components/site/SiteNav";
+import { PageShapes } from "@/components/site/PageShapes";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { Seo } from "@/components/Seo";
 
@@ -49,7 +50,7 @@ const Partners = () => {
 
   return (
     <div
-      className="min-h-screen w-full"
+      className="relative isolate overflow-x-clip min-h-screen w-full"
       style={{ background: "hsl(var(--cream-panel))", fontFamily: "'Outfit', 'Almarai', system-ui, sans-serif" }}
     >
       <Seo
@@ -59,6 +60,7 @@ const Partners = () => {
         descriptionAr="سواء كنت تدير مدرسة كاملة في السعودية أو معلمًا يجرّب نفلها لأول مرة، فريقنا يسمعك. تواصل معنا للشراكات أو الدعم الفني."
         descriptionEn="Whether you run a whole school in Saudi Arabia or you're one teacher trying nefelha for the first time, our team is listening. Reach out for partnerships or support."
       />
+      <PageShapes />
       <SiteNav />
 
       {/* ---------------- HERO ---------------- */}

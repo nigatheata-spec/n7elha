@@ -19,6 +19,7 @@ import {
 import triDoodle from "@/assets/doodles/triangle-trio.png";
 import { SQUARE_TYPES } from "@/lib/physicalGames";
 import { SiteNav } from "@/components/site/SiteNav";
+import { PageShapes } from "@/components/site/PageShapes";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { Seo } from "@/components/Seo";
 
@@ -140,7 +141,7 @@ const Services = () => {
 
   return (
     <div
-      className="min-h-screen w-full"
+      className="relative isolate overflow-x-clip min-h-screen w-full"
       style={{ background: "hsl(var(--cream-panel))", fontFamily: "'Outfit', 'Almarai', system-ui, sans-serif" }}
     >
       <Seo
@@ -150,6 +151,7 @@ const Services = () => {
         descriptionAr="تجربة تفاعلية تخلي طلابك يحبون الحصة: توليد أسئلة بالذكاء الاصطناعي، بث مباشر برمز واحد، وثمانية أنماط لعب من سباق كلاسيكي إلى حرب الزومبي — كل ما يحتاجه معلم الفصل العربي."
         descriptionEn="An interactive experience that makes students love learning: AI question generation, one-code live sessions, and eight play modes from Classic to Humans vs Zombies — everything an Arabic-classroom teacher needs."
       />
+      <PageShapes />
       <SiteNav />
 
       {/* ---------------- HERO ---------------- */}
